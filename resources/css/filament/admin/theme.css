@@ -1,0 +1,17 @@
+/*
+ |--------------------------------------------------------------------------
+ | Thawani POS — Filament Admin Theme
+ |--------------------------------------------------------------------------
+ |
+ | Custom Tailwind CSS v4 theme for the Filament admin panel.
+ | Referenced by AdminPanelProvider via ->viteTheme().
+ |
+ | Brand: Primary Orange (#FD8209), Secondary Yellow (#FFBF0D)
+ | Font : Cairo (Google Fonts, loaded via Filament ->font())
+ | BG   : Warm off-white (#F8F7F5)
+ |
+ */
+
+@import '/vendor/filament/filament/resources/css/theme.css';
+
+@config './tailwind.config.js';

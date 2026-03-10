@@ -25,8 +25,30 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->brandName('Thawani POS')
             ->colors([
-                'primary' => Color::Indigo,
+                // Thawani Brand: Primary Orange (#FD8209)
+                'primary' => Color::hex('#FD8209'),
+                'gray' => Color::Slate,
+                'danger' => Color::Red,
+                'info' => Color::Blue,
+                'success' => Color::Emerald,
+                'warning' => Color::Amber,
+            ])
+            ->font('Cairo')
+            ->viteTheme('resources/css/filament/admin/theme.css')
+            ->sidebarCollapsibleOnDesktop()
+            ->sidebarWidth('16rem')
+            ->maxContentWidth('full')
+            ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
+            ->navigationGroups([
+                'Core',
+                'Catalog & Inventory',
+                'People',
+                'Business',
+                'Integrations',
+                'Industry',
+                'Settings',
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

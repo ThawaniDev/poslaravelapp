@@ -6,6 +6,17 @@
 @source '../**/*.js';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    /* Thawani POS — Cairo font (Arabic-first) */
+    --font-sans: 'Cairo', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Brand Colors */
+    --color-brand: #FD8209;
+    --color-brand-light: #FFE8CC;
+    --color-brand-dark: #C2530A;
+    --color-secondary: #FFBF0D;
+    --color-secondary-light: #FFF3CD;
+    --color-secondary-dark: #B45309;
+    --color-warm-bg: #F8F7F5;
+    --color-warm-dark: #23190F;
 }
