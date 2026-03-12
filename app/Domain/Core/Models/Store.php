@@ -50,6 +50,14 @@ class Store extends Model
     {
         return $this->belongsTo(Organization::class);
     }
+    public function storeSettings(): HasOne
+    {
+        return $this->hasOne(StoreSettings::class);
+    }
+    public function workingHours(): HasMany
+    {
+        return $this->hasMany(StoreWorkingHour::class);
+    }
     public function users(): HasMany
     {
         return $this->hasMany(User::class);

@@ -5,6 +5,7 @@ namespace App\Domain\ProviderSubscription\Models;
 use App\Domain\Subscription\Enums\BillingCycle;
 use App\Domain\Payment\Enums\SubscriptionPaymentMethod;
 use App\Domain\Subscription\Enums\SubscriptionStatus;
+use App\Domain\Subscription\Models\SubscriptionPlan;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

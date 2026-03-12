@@ -1,22 +1,3 @@
-@import 'tailwindcss';
-
-@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
-@source '../../storage/framework/views/*.php';
-@source '../**/*.blade.php';
-@source '../**/*.js';
-
-@theme {
-    /* Thawani POS — Cairo font (Arabic-first) */
-    --font-sans: 'Cairo', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
-
-    /* Brand Colors */
-    --color-brand: #FD8209;
-    --color-brand-light: #FFE8CC;
-    --color-brand-dark: #C2530A;
-    --color-secondary: #FFBF0D;
-    --color-secondary-light: #FFF3CD;
-    --color-secondary-dark: #B45309;
-    --color-warm-bg: #F8F7F5;
-    --color-warm-dark: #23190F;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

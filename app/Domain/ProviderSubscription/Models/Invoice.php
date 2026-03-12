@@ -26,6 +26,7 @@ class Invoice extends Model
         'due_date',
         'paid_at',
         'pdf_url',
+        'created_at',
     ];
 
     protected $casts = [

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Subscription\Models;
 
+use App\Domain\ProviderSubscription\Models\StoreSubscription;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;

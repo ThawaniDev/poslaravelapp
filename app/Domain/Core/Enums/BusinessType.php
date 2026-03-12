@@ -12,6 +12,7 @@ enum BusinessType: string
     case MobileShop = 'mobile_shop';
     case FlowerShop = 'flower_shop';
     case Bakery = 'bakery';
+    case Cafe = 'cafe';
     case Service = 'service';
     case Custom = 'custom';
 }

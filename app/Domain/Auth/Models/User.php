@@ -3,19 +3,29 @@
 namespace App\Domain\Auth\Models;
 
 use App\Domain\Auth\Enums\UserRole;
+use App\Domain\Auth\Enums\UserStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasUuids;
+    use HasApiTokens, HasFactory, HasRoles, HasUuids, Notifiable;
 
     protected $table = 'users';
     public $incrementing = false;
     protected $keyType = 'string';
+
+    /**
+     * Spatie permission guard — matches the guard_name on roles/permissions tables.
+     */
+    protected string $guard_name = 'sanctum';
 
     protected $fillable = [
         'store_id',
@@ -44,14 +54,81 @@ class User extends Authenticatable
         'pin_hash',
     ];
 
+    // ─── Auth Overrides ──────────────────────────────────────────────
+
+    /**
+     * Column used by Laravel auth for password verification.
+     * Our schema uses `password_hash` instead of `password`.
+     */
+    public function getAuthPassword(): string
+    {
+        return $this->password_hash ?? '';
+    }
+
+    /**
+     * Convenience: set hashed password.
+     */
+    public function setPasswordAttribute(string $value): void
+    {
+        $this->attributes['password_hash'] = bcrypt($value);
+    }
+
+    /**
+     * Check if the user's account is active.
+     */
+    public function isActive(): bool
+    {
+        return $this->is_active === true;
+    }
+
+    /**
+     * Check if email is verified.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        return $this->email_verified_at !== null;
+    }
+
+    /**
+     * Mark email as verified.
+     */
+    public function markEmailAsVerified(): bool
+    {
+        return $this->forceFill([
+            'email_verified_at' => $this->freshTimestamp(),
+        ])->save();
+    }
+
+    /**
+     * Update last login timestamp.
+     */
+    public function touchLastLogin(): void
+    {
+        $this->forceFill(['last_login_at' => $this->freshTimestamp()])->save();
+    }
+
+    // ─── Relationships ───────────────────────────────────────────────
+
     public function store(): BelongsTo
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsTo(\App\Domain\Core\Models\Store::class);
     }
+
     public function organization(): BelongsTo
     {
-        return $this->belongsTo(Organization::class);
+        return $this->belongsTo(\App\Domain\Core\Models\Organization::class);
     }
+
+    public function otpVerifications(): HasMany
+    {
+        return $this->hasMany(OtpVerification::class);
+    }
+
+    public function devices(): HasMany
+    {
+        return $this->hasMany(UserDevice::class);
+    }
+
     public function pinOverrides(): HasMany
     {
         return $this->hasMany(PinOverride::class, 'requesting_user_id');

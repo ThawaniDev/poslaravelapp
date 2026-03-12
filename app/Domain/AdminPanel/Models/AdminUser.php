@@ -2,13 +2,23 @@
 
 namespace App\Domain\AdminPanel\Models;
 
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class AdminUser extends Authenticatable
+class AdminUser extends Authenticatable implements FilamentUser
 {
     use HasUuids;
+
+    /**
+     * Determine if the user can access the given Filament panel.
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->is_active;
+    }
 
     protected $table = 'admin_users';
     public $incrementing = false;
@@ -39,6 +49,14 @@ class AdminUser extends Authenticatable
         'password_hash',
         'two_factor_secret',
     ];
+
+    /**
+     * Override the default 'password' column for Laravel auth.
+     */
+    public function getAuthPassword(): string
+    {
+        return $this->password_hash;
+    }
 
     public function adminUserRoles(): HasMany
     {

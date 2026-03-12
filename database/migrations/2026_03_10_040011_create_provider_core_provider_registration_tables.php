@@ -16,6 +16,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (\Illuminate\Support\Facades\Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::unprepared(<<<'SQL'
 CREATE TABLE provider_registrations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

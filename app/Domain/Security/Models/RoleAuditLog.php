@@ -22,6 +22,7 @@ class RoleAuditLog extends Model
         'action',
         'role_id',
         'details',
+        'created_at',
     ];
 
     protected $casts = [
