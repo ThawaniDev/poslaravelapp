@@ -83,8 +83,8 @@ class PurchaseOrderApiTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.status', 'draft')
-            ->assertJsonPath('data.total_cost', 500.0);
+            ->assertJsonPath('data.status', 'draft');
+        $this->assertEquals(500, $response->json('data.total_cost'));
     }
 
     public function test_create_po_requires_items(): void

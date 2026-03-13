@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('inventory')->group(function () {
+Route::prefix('inventory')->middleware('auth:sanctum')->group(function () {
 
     // Stock Levels & Movements
     Route::get('stock-levels', [StockController::class, 'levels']);

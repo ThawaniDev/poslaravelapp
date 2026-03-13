@@ -25,6 +25,7 @@ class StoreCreditTransaction extends Model
         'payment_id',
         'notes',
         'performed_by',
+        'created_at',
     ];
 
     protected $casts = [

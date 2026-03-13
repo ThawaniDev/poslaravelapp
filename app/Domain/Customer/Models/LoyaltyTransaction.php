@@ -24,6 +24,7 @@ class LoyaltyTransaction extends Model
         'order_id',
         'notes',
         'performed_by',
+        'created_at',
     ];
 
     protected $casts = [

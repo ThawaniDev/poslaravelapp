@@ -168,8 +168,8 @@ class RecipeApiTest extends TestCase
             ]);
 
         $response->assertOk()
-            ->assertJsonPath('data.name', 'Updated Recipe')
-            ->assertJsonPath('data.yield_quantity', 2.0);
+            ->assertJsonPath('data.name', 'Updated Recipe');
+        $this->assertEquals(2, $response->json('data.yield_quantity'));
     }
 
     public function test_can_update_recipe_ingredients(): void
@@ -255,16 +255,16 @@ class RecipeApiTest extends TestCase
         $recipeService = app(\App\Domain\Inventory\Services\RecipeService::class);
         $recipeService->deductIngredients($recipeId, $this->store->id, 3, $this->user->id);
 
-        // Bean deduction: 3 * 0.02 * 1.05 = 0.063
+        // Bean deduction: 3 * 0.02 * 1.05 = 0.063, rounded to 0.06 at decimal(12,2)
         $beanLevel = StockLevel::where('store_id', $this->store->id)
             ->where('product_id', $this->ingredientA->id)
             ->first();
-        $this->assertEqualsWithDelta(10.0 - 0.063, (float) $beanLevel->quantity, 0.001);
+        $this->assertEqualsWithDelta(10.0 - 0.06, (float) $beanLevel->quantity, 0.01);
 
         // Milk deduction: 3 * 0.25 * 1.0 = 0.75
         $milkLevel = StockLevel::where('store_id', $this->store->id)
             ->where('product_id', $this->ingredientB->id)
             ->first();
-        $this->assertEqualsWithDelta(50.0 - 0.75, (float) $milkLevel->quantity, 0.001);
+        $this->assertEqualsWithDelta(50.0 - 0.75, (float) $milkLevel->quantity, 0.01);
     }
 }

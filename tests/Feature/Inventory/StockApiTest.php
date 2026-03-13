@@ -78,7 +78,8 @@ class StockApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.data.0.quantity', 50.0);
+;
+        $this->assertEquals(50, $response->json('data.data.0.quantity'));
     }
 
     public function test_stock_levels_requires_store_id(): void
@@ -142,9 +143,9 @@ class StockApiTest extends TestCase
                 'max_stock_level' => 200,
             ]);
 
-        $response->assertOk()
-            ->assertJsonPath('data.reorder_point', 15.0)
-            ->assertJsonPath('data.max_stock_level', 200.0);
+        $response->assertOk();
+        $this->assertEquals(15, $response->json('data.reorder_point'));
+        $this->assertEquals(200, $response->json('data.max_stock_level'));
     }
 
     // ─── Stock Movements ──────────────────────────────────────

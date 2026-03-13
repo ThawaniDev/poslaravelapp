@@ -20,7 +20,7 @@ class StockMovementResource extends JsonResource
             'reference_id' => $this->reference_id,
             'performed_by' => $this->performed_by,
             'reason' => $this->reason,
-            'created_at' => $this->created_at?->toIso8601String(),
+            'created_at' => $this->created_at,
         ];
     }
 }

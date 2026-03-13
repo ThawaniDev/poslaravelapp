@@ -1,17 +1,19 @@
 <?php
 
+use App\Domain\LabelPrinting\Controllers\Api\LabelController;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| LabelPrinting API Routes
-|--------------------------------------------------------------------------
-|
-| Routes for the LabelPrinting feature.
-| Prefix: /api/v2/labels
-|
-*/
+Route::prefix('labels')->middleware('auth:sanctum')->group(function () {
 
-Route::prefix('labels')->group(function () {
-    // TODO: Add LabelPrinting routes here
+    // Templates
+    Route::get('/templates', [LabelController::class, 'index']);
+    Route::get('/templates/presets', [LabelController::class, 'presets']);
+    Route::post('/templates', [LabelController::class, 'store']);
+    Route::get('/templates/{template}', [LabelController::class, 'show']);
+    Route::put('/templates/{template}', [LabelController::class, 'update']);
+    Route::delete('/templates/{template}', [LabelController::class, 'destroy']);
+
+    // Print history
+    Route::get('/print-history', [LabelController::class, 'printHistory']);
+    Route::post('/print-history', [LabelController::class, 'recordPrint']);
 });

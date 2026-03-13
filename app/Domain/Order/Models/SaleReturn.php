@@ -54,14 +54,14 @@ class SaleReturn extends Model
     }
     public function returnItems(): HasMany
     {
-        return $this->hasMany(ReturnItem::class);
+        return $this->hasMany(ReturnItem::class, 'return_id');
     }
     public function exchanges(): HasMany
     {
-        return $this->hasMany(Exchange::class);
+        return $this->hasMany(Exchange::class, 'return_id');
     }
     public function refunds(): HasMany
     {
-        return $this->hasMany(Refund::class);
+        return $this->hasMany(Refund::class, 'return_id');
     }
 }

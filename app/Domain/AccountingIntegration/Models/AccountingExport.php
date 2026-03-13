@@ -29,6 +29,7 @@ class AccountingExport extends Model
         'journal_entry_ids',
         'csv_url',
         'triggered_by',
+        'created_at',
         'completed_at',
     ];
 
@@ -39,6 +40,7 @@ class AccountingExport extends Model
         'journal_entry_ids' => 'array',
         'start_date' => 'date',
         'end_date' => 'date',
+        'created_at' => 'datetime',
         'completed_at' => 'datetime',
     ];
 
