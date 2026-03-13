@@ -2,6 +2,9 @@
 
 namespace App\Domain\Inventory\Models;
 
+use App\Domain\Auth\Models\User;
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Core\Models\Store;
 use App\Domain\Inventory\Enums\StockMovementType;
 use App\Domain\Inventory\Enums\StockReferenceType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

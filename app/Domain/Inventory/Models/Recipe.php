@@ -2,6 +2,8 @@
 
 namespace App\Domain\Inventory\Models;
 
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Core\Models\Organization;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +20,8 @@ class Recipe extends Model
     protected $fillable = [
         'organization_id',
         'product_id',
+        'name',
+        'description',
         'yield_quantity',
         'is_active',
     ];

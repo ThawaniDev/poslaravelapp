@@ -2,6 +2,10 @@
 
 namespace App\Domain\Inventory\Models;
 
+use App\Domain\Auth\Models\User;
+use App\Domain\Catalog\Models\Supplier;
+use App\Domain\Core\Models\Organization;
+use App\Domain\Core\Models\Store;
 use App\Domain\Inventory\Enums\PurchaseOrderStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

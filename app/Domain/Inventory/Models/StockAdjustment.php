@@ -2,6 +2,8 @@
 
 namespace App\Domain\Inventory\Models;
 
+use App\Domain\Auth\Models\User;
+use App\Domain\Core\Models\Store;
 use App\Domain\Inventory\Enums\StockAdjustmentType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

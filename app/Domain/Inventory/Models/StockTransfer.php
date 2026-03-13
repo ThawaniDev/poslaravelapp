@@ -2,6 +2,9 @@
 
 namespace App\Domain\Inventory\Models;
 
+use App\Domain\Auth\Models\User;
+use App\Domain\Core\Models\Organization;
+use App\Domain\Core\Models\Store;
 use App\Domain\Inventory\Enums\StockTransferStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -15,7 +18,6 @@ class StockTransfer extends Model
     protected $table = 'stock_transfers';
     public $incrementing = false;
     protected $keyType = 'string';
-    public $timestamps = false;
 
     protected $fillable = [
         'organization_id',

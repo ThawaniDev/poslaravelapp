@@ -20,6 +20,8 @@ class SubscriptionPlan extends Model
         'name',
         'name_ar',
         'slug',
+        'description',
+        'description_ar',
         'monthly_price',
         'annual_price',
         'trial_days',

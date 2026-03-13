@@ -322,6 +322,346 @@ return new class extends Migration
                 $table->timestamps();
             });
         }
+
+        // ══════════════════════════════════════════════════════
+        // ─── CATALOG DOMAIN ──────────────────────────────────
+        // ══════════════════════════════════════════════════════
+
+        // ─── Catalog: categories ─────────────────────────────
+        Schema::create('categories', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('parent_id')->nullable();
+            $table->string('name');
+            $table->string('name_ar')->nullable();
+            $table->text('image_url')->nullable();
+            $table->integer('sort_order')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->integer('sync_version')->default(1);
+            $table->timestamps();
+        });
+
+        // ─── Catalog: products ───────────────────────────────
+        Schema::create('products', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('category_id')->nullable();
+            $table->string('name');
+            $table->string('name_ar')->nullable();
+            $table->text('description')->nullable();
+            $table->text('description_ar')->nullable();
+            $table->string('sku', 100)->nullable();
+            $table->string('barcode', 50)->nullable();
+            $table->decimal('sell_price', 12, 2);
+            $table->decimal('cost_price', 12, 2)->nullable();
+            $table->string('unit', 20)->default('piece');
+            $table->decimal('tax_rate', 5, 2)->default(15.00);
+            $table->boolean('is_weighable')->default(false);
+            $table->decimal('tare_weight', 8, 3)->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->boolean('is_combo')->default(false);
+            $table->boolean('age_restricted')->default(false);
+            $table->text('image_url')->nullable();
+            $table->integer('sync_version')->default(1);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        // ─── Catalog: product_barcodes ───────────────────────
+        Schema::create('product_barcodes', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('product_id');
+            $table->string('barcode', 50)->unique();
+            $table->boolean('is_primary')->default(false);
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // ─── Catalog: store_prices ───────────────────────────
+        Schema::create('store_prices', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->uuid('product_id');
+            $table->decimal('sell_price', 12, 2);
+            $table->date('valid_from')->nullable();
+            $table->date('valid_to')->nullable();
+            $table->timestamps();
+            $table->unique(['store_id', 'product_id']);
+        });
+
+        // ─── Catalog: product_variant_groups ─────────────────
+        Schema::create('product_variant_groups', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->string('name', 100);
+            $table->string('name_ar', 100)->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // ─── Catalog: product_variants ───────────────────────
+        Schema::create('product_variants', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('product_id');
+            $table->uuid('variant_group_id');
+            $table->string('variant_value', 100);
+            $table->string('variant_value_ar', 100)->nullable();
+            $table->string('sku', 100)->nullable();
+            $table->string('barcode', 50)->nullable();
+            $table->decimal('price_adjustment', 12, 2)->default(0);
+            $table->text('image_url')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        // ─── Catalog: product_images ─────────────────────────
+        Schema::create('product_images', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('product_id');
+            $table->text('image_url');
+            $table->integer('sort_order')->default(0);
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // ─── Catalog: combo_products ─────────────────────────
+        Schema::create('combo_products', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('product_id');
+            $table->string('name');
+            $table->decimal('combo_price', 12, 2)->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // ─── Catalog: combo_product_items ────────────────────
+        Schema::create('combo_product_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('combo_product_id');
+            $table->uuid('product_id');
+            $table->decimal('quantity', 12, 3)->default(1);
+            $table->boolean('is_optional')->default(false);
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // ─── Catalog: modifier_groups ────────────────────────
+        Schema::create('modifier_groups', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('product_id');
+            $table->string('name');
+            $table->string('name_ar')->nullable();
+            $table->boolean('is_required')->default(false);
+            $table->integer('min_select')->default(0);
+            $table->integer('max_select')->default(1);
+            $table->integer('sort_order')->default(0);
+            $table->timestamps();
+        });
+
+        // ─── Catalog: modifier_options ───────────────────────
+        Schema::create('modifier_options', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('modifier_group_id');
+            $table->string('name');
+            $table->string('name_ar')->nullable();
+            $table->decimal('price_adjustment', 12, 2)->default(0);
+            $table->boolean('is_default')->default(false);
+            $table->integer('sort_order')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // ─── Catalog: suppliers ──────────────────────────────
+        Schema::create('suppliers', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->string('name');
+            $table->string('phone', 50)->nullable();
+            $table->string('email')->nullable();
+            $table->text('address')->nullable();
+            $table->text('notes')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        // ─── Catalog: product_suppliers ──────────────────────
+        Schema::create('product_suppliers', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('product_id');
+            $table->uuid('supplier_id');
+            $table->decimal('cost_price', 12, 2)->nullable();
+            $table->integer('lead_time_days')->nullable();
+            $table->string('supplier_sku', 100)->nullable();
+            $table->timestamp('created_at')->nullable();
+            $table->unique(['product_id', 'supplier_id']);
+        });
+
+        // ─── Catalog: internal_barcode_sequence ──────────────
+        Schema::create('internal_barcode_sequence', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id')->unique();
+            $table->integer('last_sequence')->default(0);
+            $table->timestamp('updated_at')->nullable();
+        });
+
+        // ═══════════════════════════════════════════════════════
+        // Inventory Domain
+        // ═══════════════════════════════════════════════════════
+
+        // ─── Inventory: stock_levels ─────────────────────────
+        Schema::create('stock_levels', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->uuid('product_id');
+            $table->decimal('quantity', 12, 2)->default(0);
+            $table->decimal('reserved_quantity', 12, 2)->default(0);
+            $table->decimal('reorder_point', 12, 2)->nullable();
+            $table->decimal('max_stock_level', 12, 2)->nullable();
+            $table->decimal('average_cost', 12, 2)->default(0);
+            $table->integer('sync_version')->default(1);
+            $table->unique(['store_id', 'product_id']);
+        });
+
+        // ─── Inventory: stock_movements ──────────────────────
+        Schema::create('stock_movements', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->uuid('product_id');
+            $table->string('type', 30);
+            $table->decimal('quantity', 12, 2);
+            $table->decimal('unit_cost', 12, 2)->nullable();
+            $table->string('reference_type', 30)->nullable();
+            $table->uuid('reference_id')->nullable();
+            $table->string('reason')->nullable();
+            $table->uuid('performed_by')->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
+
+        // ─── Inventory: goods_receipts ───────────────────────
+        Schema::create('goods_receipts', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->uuid('supplier_id')->nullable();
+            $table->uuid('purchase_order_id')->nullable();
+            $table->string('reference_number', 50)->nullable();
+            $table->string('status', 20)->default('draft');
+            $table->decimal('total_cost', 14, 2)->default(0);
+            $table->text('notes')->nullable();
+            $table->uuid('received_by')->nullable();
+            $table->timestamp('received_at')->nullable();
+            $table->timestamp('confirmed_at')->nullable();
+        });
+
+        // ─── Inventory: goods_receipt_items ───────────────────
+        Schema::create('goods_receipt_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('goods_receipt_id');
+            $table->uuid('product_id');
+            $table->decimal('quantity', 12, 2);
+            $table->decimal('unit_cost', 12, 2)->default(0);
+            $table->string('batch_number', 50)->nullable();
+            $table->date('expiry_date')->nullable();
+        });
+
+        // ─── Inventory: stock_adjustments ────────────────────
+        Schema::create('stock_adjustments', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->string('type', 20);
+            $table->string('reason_code', 30)->nullable();
+            $table->text('notes')->nullable();
+            $table->uuid('adjusted_by')->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
+
+        // ─── Inventory: stock_adjustment_items ───────────────
+        Schema::create('stock_adjustment_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('stock_adjustment_id');
+            $table->uuid('product_id');
+            $table->decimal('quantity', 12, 2);
+            $table->decimal('unit_cost', 12, 2)->nullable();
+        });
+
+        // ─── Inventory: stock_transfers ──────────────────────
+        Schema::create('stock_transfers', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('from_store_id');
+            $table->uuid('to_store_id');
+            $table->string('status', 20)->default('pending');
+            $table->string('reference_number', 50)->nullable();
+            $table->text('notes')->nullable();
+            $table->uuid('created_by')->nullable();
+            $table->uuid('approved_by')->nullable();
+            $table->uuid('received_by')->nullable();
+            $table->timestamp('approved_at')->nullable();
+            $table->timestamp('received_at')->nullable();
+            $table->timestamps();
+        });
+
+        // ─── Inventory: stock_transfer_items ─────────────────
+        Schema::create('stock_transfer_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('stock_transfer_id');
+            $table->uuid('product_id');
+            $table->decimal('quantity_sent', 12, 2);
+            $table->decimal('quantity_received', 12, 2)->nullable();
+        });
+
+        // ─── Inventory: purchase_orders ──────────────────────
+        Schema::create('purchase_orders', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('store_id');
+            $table->uuid('supplier_id')->nullable();
+            $table->string('reference_number', 50)->nullable();
+            $table->string('status', 30)->default('draft');
+            $table->date('expected_date')->nullable();
+            $table->decimal('total_cost', 14, 2)->default(0);
+            $table->text('notes')->nullable();
+            $table->uuid('created_by')->nullable();
+            $table->timestamps();
+        });
+
+        // ─── Inventory: purchase_order_items ─────────────────
+        Schema::create('purchase_order_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('purchase_order_id');
+            $table->uuid('product_id');
+            $table->decimal('quantity_ordered', 12, 2);
+            $table->decimal('unit_cost', 12, 2)->default(0);
+            $table->decimal('quantity_received', 12, 2)->default(0);
+        });
+
+        // ─── Inventory: stock_batches ────────────────────────
+        Schema::create('stock_batches', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->uuid('product_id');
+            $table->string('batch_number', 50)->nullable();
+            $table->date('expiry_date')->nullable();
+            $table->decimal('quantity', 12, 2)->default(0);
+            $table->decimal('unit_cost', 12, 2)->default(0);
+            $table->uuid('goods_receipt_id')->nullable();
+        });
+
+        // ─── Inventory: recipes ──────────────────────────────
+        Schema::create('recipes', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('product_id');
+            $table->string('name', 255)->nullable();
+            $table->text('description')->nullable();
+            $table->decimal('yield_quantity', 12, 2)->default(1);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        // ─── Inventory: recipe_ingredients ───────────────────
+        Schema::create('recipe_ingredients', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('recipe_id');
+            $table->uuid('ingredient_product_id');
+            $table->decimal('quantity', 12, 2);
+            $table->string('unit', 20)->nullable();
+            $table->decimal('waste_percent', 5, 2)->default(0);
+        });
     }
 
     public function down(): void
@@ -331,6 +671,20 @@ return new class extends Migration
         }
 
         $tables = [
+            // Inventory domain
+            'recipe_ingredients', 'recipes',
+            'stock_batches', 'purchase_order_items', 'purchase_orders',
+            'stock_transfer_items', 'stock_transfers',
+            'stock_adjustment_items', 'stock_adjustments',
+            'goods_receipt_items', 'goods_receipts',
+            'stock_movements', 'stock_levels',
+            // Catalog domain
+            'internal_barcode_sequence', 'product_suppliers', 'suppliers',
+            'modifier_options', 'modifier_groups',
+            'combo_product_items', 'combo_products',
+            'product_images', 'product_variants', 'product_variant_groups',
+            'store_prices', 'product_barcodes', 'products', 'categories',
+            // Original tables
             'audit_logs', 'role_audit_log', 'pin_overrides',
             'store_add_ons', 'plan_add_ons', 'add_ons',
             'subscription_usage_snapshots', 'provider_limit_overrides',
