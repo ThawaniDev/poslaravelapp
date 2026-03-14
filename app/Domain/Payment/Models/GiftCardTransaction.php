@@ -2,6 +2,8 @@
 
 namespace App\Domain\Payment\Models;
 
+use App\Domain\Auth\Models\User;
+use App\Domain\Core\Models\Store;
 use App\Domain\Payment\Enums\GiftCardTransactionType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

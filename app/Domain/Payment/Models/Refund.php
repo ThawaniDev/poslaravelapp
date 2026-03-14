@@ -2,6 +2,8 @@
 
 namespace App\Domain\Payment\Models;
 
+use App\Domain\Auth\Models\User;
+use App\Domain\Order\Models\SaleReturn;
 use App\Domain\Payment\Enums\PaymentMethodKey;
 use App\Domain\Payment\Enums\RefundStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

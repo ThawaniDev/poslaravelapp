@@ -22,10 +22,12 @@ class ProviderLimitOverride extends Model
         'reason',
         'set_by',
         'expires_at',
+        'created_at',
     ];
 
     protected $casts = [
         'expires_at' => 'datetime',
+        'created_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

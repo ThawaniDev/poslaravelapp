@@ -2,6 +2,7 @@
 
 namespace App\Domain\Payment\Models;
 
+use App\Domain\Auth\Models\User;
 use App\Domain\Payment\Enums\CashEventType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

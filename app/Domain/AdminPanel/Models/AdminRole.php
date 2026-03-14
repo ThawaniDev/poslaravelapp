@@ -23,7 +23,6 @@ class AdminRole extends Model
     ];
 
     protected $casts = [
-        'slug' => AdminRoleSlug::class,
         'is_system' => 'boolean',
     ];
 

@@ -23,8 +23,10 @@ return new class extends Migration
             $table->string('role', 30)->default('cashier');
             $table->string('locale', 10)->default('ar');
             $table->boolean('is_active')->default(true);
+            $table->boolean('must_change_password')->default(false);
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamp('last_login_at')->nullable();
+            $table->string('last_login_ip', 45)->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

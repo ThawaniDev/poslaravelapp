@@ -92,10 +92,786 @@ return new class extends Migration
                 $table->uuid('id')->primary();
                 $table->string('name');
                 $table->string('email')->unique();
-                $table->string('password');
+                $table->string('password_hash');
+                $table->string('phone', 50)->nullable();
+                $table->text('avatar_url')->nullable();
                 $table->boolean('is_active')->default(true);
+                $table->text('two_factor_secret')->nullable();
+                $table->boolean('two_factor_enabled')->default(false);
+                $table->timestamp('two_factor_confirmed_at')->nullable();
+                $table->timestamp('last_login_at')->nullable();
+                $table->string('last_login_ip', 45)->nullable();
                 $table->rememberToken();
                 $table->timestamps();
+            });
+        }
+
+        // ─── Admin: admin_roles ──────────────────────────────
+        if (!Schema::hasTable('admin_roles')) {
+            Schema::create('admin_roles', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('name', 100);
+                $table->string('slug', 50)->unique();
+                $table->text('description')->nullable();
+                $table->boolean('is_system')->default(false);
+                $table->timestamps();
+            });
+        }
+
+        // ─── Admin: admin_permissions ────────────────────────
+        if (!Schema::hasTable('admin_permissions')) {
+            Schema::create('admin_permissions', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('name', 100)->unique();
+                $table->string('group', 50);
+                $table->text('description')->nullable();
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        // ─── Admin: admin_role_permissions (pivot) ───────────
+        if (!Schema::hasTable('admin_role_permissions')) {
+            Schema::create('admin_role_permissions', function (Blueprint $table) {
+                $table->uuid('admin_role_id');
+                $table->uuid('admin_permission_id');
+                $table->foreign('admin_role_id')->references('id')->on('admin_roles')->cascadeOnDelete();
+                $table->foreign('admin_permission_id')->references('id')->on('admin_permissions')->cascadeOnDelete();
+                $table->primary(['admin_role_id', 'admin_permission_id']);
+            });
+        }
+
+        // ─── Admin: admin_user_roles (pivot) ─────────────────
+        if (!Schema::hasTable('admin_user_roles')) {
+            Schema::create('admin_user_roles', function (Blueprint $table) {
+                $table->uuid('admin_user_id');
+                $table->uuid('admin_role_id');
+                $table->timestamp('assigned_at')->nullable();
+                $table->uuid('assigned_by')->nullable();
+                $table->foreign('admin_user_id')->references('id')->on('admin_users')->cascadeOnDelete();
+                $table->foreign('admin_role_id')->references('id')->on('admin_roles')->cascadeOnDelete();
+                $table->primary(['admin_user_id', 'admin_role_id']);
+            });
+        }
+
+        // ─── Admin: admin_activity_logs ──────────────────────
+        if (!Schema::hasTable('admin_activity_logs')) {
+            Schema::create('admin_activity_logs', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('admin_user_id')->nullable();
+                $table->string('action', 100);
+                $table->string('entity_type', 50)->nullable();
+                $table->uuid('entity_id')->nullable();
+                $table->json('details')->nullable();
+                $table->string('ip_address', 45)->default('127.0.0.1');
+                $table->text('user_agent')->nullable();
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        // ─── Provider: provider_registrations ────────────────
+        if (!Schema::hasTable('provider_registrations')) {
+            Schema::create('provider_registrations', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('organization_name');
+                $table->string('organization_name_ar')->nullable();
+                $table->string('owner_name');
+                $table->string('owner_email');
+                $table->string('owner_phone', 50);
+                $table->string('cr_number', 50)->nullable();
+                $table->string('vat_number', 50)->nullable();
+                $table->uuid('business_type_id')->nullable();
+                $table->string('status', 20)->default('pending');
+                $table->uuid('reviewed_by')->nullable();
+                $table->timestamp('reviewed_at')->nullable();
+                $table->text('rejection_reason')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // ─── Provider: provider_notes ────────────────────────
+        if (!Schema::hasTable('provider_notes')) {
+            Schema::create('provider_notes', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('organization_id');
+                $table->uuid('admin_user_id');
+                $table->text('note_text');
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        // ─── Provider: cancellation_reasons ──────────────────
+        if (!Schema::hasTable('cancellation_reasons')) {
+            Schema::create('cancellation_reasons', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_subscription_id');
+                $table->string('reason_category', 30);
+                $table->text('reason_text')->nullable();
+                $table->timestamp('cancelled_at')->nullable();
+            });
+        }
+
+        // ─── Support: support_tickets ────────────────────────
+        if (!Schema::hasTable('support_tickets')) {
+            Schema::create('support_tickets', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('ticket_number', 20)->unique();
+                $table->uuid('organization_id');
+                $table->uuid('store_id')->nullable();
+                $table->uuid('user_id')->nullable();
+                $table->uuid('assigned_to')->nullable();
+                $table->string('category', 50);
+                $table->string('priority', 10)->default('medium');
+                $table->string('status', 20)->default('open');
+                $table->string('subject');
+                $table->text('description');
+                $table->timestamp('sla_deadline_at')->nullable();
+                $table->timestamp('first_response_at')->nullable();
+                $table->timestamp('resolved_at')->nullable();
+                $table->timestamp('closed_at')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // ─── Support: support_ticket_messages ────────────────
+        if (!Schema::hasTable('support_ticket_messages')) {
+            Schema::create('support_ticket_messages', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('support_ticket_id');
+                $table->string('sender_type', 10);
+                $table->uuid('sender_id');
+                $table->text('message_text');
+                $table->json('attachments')->nullable();
+                $table->boolean('is_internal_note')->default(false);
+                $table->timestamp('sent_at')->nullable();
+            });
+        }
+
+        // ─── Support: canned_responses ───────────────────────
+        if (!Schema::hasTable('canned_responses')) {
+            Schema::create('canned_responses', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('title');
+                $table->string('shortcut', 50)->unique()->nullable();
+                $table->text('body');
+                $table->text('body_ar');
+                $table->string('category', 50)->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->uuid('created_by')->nullable();
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        // ─── Support: knowledge_base_articles ────────────────
+        if (!Schema::hasTable('knowledge_base_articles')) {
+            Schema::create('knowledge_base_articles', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('title');
+                $table->string('title_ar');
+                $table->string('slug', 100)->unique();
+                $table->text('body');
+                $table->text('body_ar');
+                $table->string('category', 50)->nullable();
+                $table->uuid('delivery_platform_id')->nullable();
+                $table->boolean('is_published')->default(false);
+                $table->integer('sort_order')->default(0);
+                $table->timestamps();
+            });
+        }
+
+        // ─── Platform: platform_announcements ────────────────
+        if (!Schema::hasTable('platform_announcements')) {
+            Schema::create('platform_announcements', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('type', 20)->default('info');
+                $table->string('title');
+                $table->string('title_ar')->nullable();
+                $table->text('body');
+                $table->text('body_ar')->nullable();
+                $table->json('target_filter')->nullable();
+                $table->timestamp('display_start_at')->nullable();
+                $table->timestamp('display_end_at')->nullable();
+                $table->boolean('is_banner')->default(false);
+                $table->boolean('send_push')->default(false);
+                $table->boolean('send_email')->default(false);
+                $table->uuid('created_by')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // ─── Platform: platform_announcement_dismissals ──────
+        if (!Schema::hasTable('platform_announcement_dismissals')) {
+            Schema::create('platform_announcement_dismissals', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('announcement_id');
+                $table->uuid('store_id');
+                $table->uuid('user_id')->nullable();
+                $table->timestamp('dismissed_at')->nullable();
+            });
+        }
+
+        // ─── Platform: payment_reminders ─────────────────────
+        if (!Schema::hasTable('payment_reminders')) {
+            Schema::create('payment_reminders', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_subscription_id');
+                $table->string('reminder_type', 20);
+                $table->string('channel', 20);
+                $table->timestamp('sent_at')->nullable();
+                $table->timestamp('next_send_at')->nullable();
+                $table->boolean('is_sent')->default(false);
+            });
+        }
+
+        // ─── Billing: subscription_discounts ─────────────────
+        if (!Schema::hasTable('subscription_discounts')) {
+            Schema::create('subscription_discounts', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('code', 50)->unique();
+                $table->string('type', 20);
+                $table->decimal('value', 10, 2);
+                $table->integer('max_uses')->nullable();
+                $table->integer('times_used')->default(0);
+                $table->timestamp('valid_from')->nullable();
+                $table->timestamp('valid_to')->nullable();
+                $table->json('applicable_plan_ids')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // ─── Billing: subscription_credits ───────────────────
+        if (!Schema::hasTable('subscription_credits')) {
+            Schema::create('subscription_credits', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_subscription_id');
+                $table->uuid('applied_by');
+                $table->decimal('amount', 10, 2);
+                $table->text('reason');
+                $table->timestamp('applied_at')->nullable();
+            });
+        }
+
+        // ─── Billing: payment_gateway_configs ────────────────
+        if (!Schema::hasTable('payment_gateway_configs')) {
+            Schema::create('payment_gateway_configs', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('gateway_name', 50);
+                $table->json('credentials_encrypted');
+                $table->text('webhook_url')->nullable();
+                $table->string('environment', 20)->default('sandbox');
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+        }
+
+        // ─── Billing: hardware_sales ─────────────────────────
+        if (!Schema::hasTable('hardware_sales')) {
+            Schema::create('hardware_sales', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->uuid('sold_by');
+                $table->string('item_type', 50);
+                $table->string('item_description')->nullable();
+                $table->string('serial_number', 100)->nullable();
+                $table->decimal('amount', 10, 2);
+                $table->text('notes')->nullable();
+                $table->timestamp('sold_at')->nullable();
+            });
+        }
+
+        // ─── Billing: implementation_fees ────────────────────
+        if (!Schema::hasTable('implementation_fees')) {
+            Schema::create('implementation_fees', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->string('fee_type', 20);
+                $table->decimal('amount', 10, 2);
+                $table->string('status', 20)->default('invoiced');
+                $table->text('notes')->nullable();
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        // ─── Billing: payment_retry_rules ────────────────────
+        if (!Schema::hasTable('payment_retry_rules')) {
+            Schema::create('payment_retry_rules', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->integer('max_retries')->default(3);
+                $table->integer('retry_interval_hours')->default(24);
+                $table->integer('grace_period_after_failure_days')->default(7);
+                $table->timestamp('updated_at')->nullable();
+            });
+        }
+
+        // ─── Platform: system_settings ───────────────────────
+        if (!Schema::hasTable('system_settings')) {
+            Schema::create('system_settings', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('key', 100)->unique();
+                $table->json('value')->nullable();
+                $table->string('group', 50);
+                $table->text('description')->nullable();
+                $table->uuid('updated_by')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // ─── Platform: feature_flags ─────────────────────────
+        if (!Schema::hasTable('feature_flags')) {
+            Schema::create('feature_flags', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('flag_key', 50)->unique();
+                $table->boolean('is_enabled')->default(false);
+                $table->integer('rollout_percentage')->default(100);
+                $table->json('target_plan_ids')->nullable();
+                $table->json('target_store_ids')->nullable();
+                $table->text('description')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // ─── Platform: ab_tests ─────────────────────────────
+        if (!Schema::hasTable('ab_tests')) {
+            Schema::create('ab_tests', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('name', 150);
+                $table->text('description')->nullable();
+                $table->uuid('feature_flag_id')->nullable();
+                $table->string('status', 30)->default('draft'); // draft, running, completed, cancelled
+                $table->date('start_date')->nullable();
+                $table->date('end_date')->nullable();
+                $table->string('metric_key', 100)->nullable();
+                $table->integer('traffic_percentage')->default(100);
+                $table->timestamps();
+
+                $table->foreign('feature_flag_id')->references('id')->on('feature_flags')->nullOnDelete();
+            });
+        }
+
+        // ─── Platform: ab_test_variants ──────────────────────
+        if (!Schema::hasTable('ab_test_variants')) {
+            Schema::create('ab_test_variants', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('ab_test_id');
+                $table->string('variant_key', 50);
+                $table->string('variant_label', 150)->nullable();
+                $table->integer('weight')->default(50);
+                $table->boolean('is_control')->default(false);
+                $table->json('metadata')->nullable();
+                $table->timestamps();
+
+                $table->foreign('ab_test_id')->references('id')->on('ab_tests')->cascadeOnDelete();
+            });
+        }
+
+        // ─── Platform: notification_templates ────────────────
+        if (!Schema::hasTable('notification_templates')) {
+            Schema::create('notification_templates', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('event_key', 100);
+                $table->string('channel', 20);
+                $table->string('title')->nullable();
+                $table->string('title_ar')->nullable();
+                $table->text('body')->nullable();
+                $table->text('body_ar')->nullable();
+                $table->json('available_variables')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->timestamps();
+            });
+        }
+
+        // ─── Content: cms_pages ──────────────────────────────
+        if (!Schema::hasTable('cms_pages')) {
+            Schema::create('cms_pages', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('slug', 150)->unique();
+                $table->string('title');
+                $table->string('title_ar')->nullable();
+                $table->text('body')->nullable();
+                $table->text('body_ar')->nullable();
+                $table->string('page_type', 50)->default('general');
+                $table->boolean('is_published')->default(false);
+                $table->string('meta_title')->nullable();
+                $table->string('meta_title_ar')->nullable();
+                $table->text('meta_description')->nullable();
+                $table->text('meta_description_ar')->nullable();
+                $table->integer('sort_order')->default(0);
+                $table->timestamps();
+            });
+        }
+
+        // ─── Logs: platform_event_logs ────────────────────────
+        if (!Schema::hasTable('platform_event_logs')) {
+            Schema::create('platform_event_logs', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('event_type', 50);
+                $table->string('level', 20)->default('info');
+                $table->string('source', 100)->nullable();
+                $table->text('message');
+                $table->json('details')->nullable();
+                $table->uuid('admin_user_id')->nullable();
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        // ─── Logs: system_health_checks ──────────────────────
+        if (!Schema::hasTable('system_health_checks')) {
+            Schema::create('system_health_checks', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('service', 50);
+                $table->string('status', 20)->default('healthy');
+                $table->integer('response_time_ms')->nullable();
+                $table->json('details')->nullable();
+                $table->timestamp('checked_at')->nullable();
+            });
+        }
+
+        // ─── Delivery: delivery_platforms (registry) ─────────
+        if (!Schema::hasTable('delivery_platforms')) {
+            Schema::create('delivery_platforms', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('name');
+                $table->string('slug', 50)->unique();
+                $table->string('logo_url')->nullable();
+                $table->text('description')->nullable();
+                $table->string('auth_method', 20)->default('api_key');
+                $table->string('base_url')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->integer('sort_order')->default(0);
+                $table->timestamps();
+            });
+        }
+
+        // ─── Delivery: delivery_platform_fields ──────────────
+        if (!Schema::hasTable('delivery_platform_fields')) {
+            Schema::create('delivery_platform_fields', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('delivery_platform_id');
+                $table->string('field_key', 50);
+                $table->string('field_label');
+                $table->string('field_type', 20)->default('text');
+                $table->boolean('is_required')->default(false);
+                $table->boolean('is_encrypted')->default(false);
+                $table->text('placeholder')->nullable();
+                $table->integer('sort_order')->default(0);
+            });
+        }
+
+        // ─── Delivery: delivery_platform_endpoints ───────────
+        if (!Schema::hasTable('delivery_platform_endpoints')) {
+            Schema::create('delivery_platform_endpoints', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('delivery_platform_id');
+                $table->string('operation', 50);
+                $table->string('http_method', 10);
+                $table->string('path');
+                $table->json('headers')->nullable();
+                $table->json('request_body_template')->nullable();
+                $table->json('response_mapping')->nullable();
+            });
+        }
+
+        // ─── App: app_releases ───────────────────────────────
+        if (!Schema::hasTable('app_releases')) {
+            Schema::create('app_releases', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('platform', 20);
+                $table->string('version', 20);
+                $table->string('build_number', 20)->nullable();
+                $table->text('release_notes')->nullable();
+                $table->text('release_notes_ar')->nullable();
+                $table->boolean('is_mandatory')->default(false);
+                $table->boolean('is_active')->default(true);
+                $table->integer('rollout_percentage')->default(100);
+                $table->string('min_os_version', 20)->nullable();
+                $table->string('download_url')->nullable();
+                $table->uuid('released_by')->nullable();
+                $table->timestamp('released_at')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // ─── App: app_update_stats ───────────────────────────
+        if (!Schema::hasTable('app_update_stats')) {
+            Schema::create('app_update_stats', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('app_release_id');
+                $table->date('date');
+                $table->integer('total_installs')->default(0);
+                $table->integer('total_updates')->default(0);
+                $table->integer('total_rollbacks')->default(0);
+            });
+        }
+
+        // ─── Security: admin_ip_allowlist ────────────────────
+        if (!Schema::hasTable('admin_ip_allowlist')) {
+
+        // ─── BackupSync: database_backups ────────────────────
+        if (!Schema::hasTable('database_backups')) {
+            Schema::create('database_backups', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('backup_type', 20);
+                $table->text('file_path');
+                $table->bigInteger('file_size_bytes')->nullable();
+                $table->string('status', 20)->default('in_progress');
+                $table->text('error_message')->nullable();
+                $table->timestamp('started_at')->nullable();
+                $table->timestamp('completed_at')->nullable();
+            });
+        }
+
+        // ─── BackupSync: backup_history ──────────────────────
+        if (!Schema::hasTable('backup_history')) {
+            Schema::create('backup_history', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->uuid('terminal_id');
+                $table->string('backup_type', 20);
+                $table->string('storage_location', 20)->default('local');
+                $table->text('local_path')->nullable();
+                $table->string('cloud_key', 500)->nullable();
+                $table->bigInteger('file_size_bytes')->default(0);
+                $table->string('checksum', 64)->default('');
+                $table->integer('db_version')->default(1);
+                $table->integer('records_count')->nullable();
+                $table->boolean('is_verified')->default(false);
+                $table->boolean('is_encrypted')->default(true);
+                $table->string('status', 20)->default('completed');
+                $table->text('error_message')->nullable();
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        // ─── BackupSync: sync_log ────────────────────────────
+        if (!Schema::hasTable('sync_log')) {
+            Schema::create('sync_log', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->uuid('terminal_id');
+                $table->string('direction', 10);
+                $table->integer('records_count')->default(0);
+                $table->integer('duration_ms')->default(0);
+                $table->string('status', 20);
+                $table->text('error_message')->nullable();
+                $table->timestamp('started_at')->nullable();
+                $table->timestamp('completed_at')->nullable();
+            });
+        }
+
+        // ─── BackupSync: sync_conflicts ──────────────────────
+        if (!Schema::hasTable('sync_conflicts')) {
+            Schema::create('sync_conflicts', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->string('table_name', 100);
+                $table->uuid('record_id');
+                $table->text('local_data');
+                $table->text('cloud_data');
+                $table->string('resolution', 20)->nullable();
+                $table->uuid('resolved_by')->nullable();
+                $table->timestamp('detected_at')->nullable();
+                $table->timestamp('resolved_at')->nullable();
+            });
+        }
+
+        // ─── BackupSync: provider_backup_status ──────────────
+        if (!Schema::hasTable('provider_backup_status')) {
+            Schema::create('provider_backup_status', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->uuid('terminal_id');
+                $table->timestamp('last_successful_sync')->nullable();
+                $table->timestamp('last_cloud_backup')->nullable();
+                $table->bigInteger('storage_used_bytes')->default(0);
+                $table->string('status', 20)->default('unknown');
+                $table->timestamp('updated_at')->nullable();
+            });
+        }
+
+            Schema::create('admin_ip_allowlist', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('ip_address', 45);
+                $table->string('label')->nullable();
+                $table->uuid('added_by')->nullable();
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        // ─── Security: admin_ip_blocklist ────────────────────
+        if (!Schema::hasTable('admin_ip_blocklist')) {
+            Schema::create('admin_ip_blocklist', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('ip_address', 45);
+                $table->string('reason')->nullable();
+                $table->uuid('blocked_by')->nullable();
+                $table->timestamp('blocked_at')->nullable();
+                $table->timestamp('expires_at')->nullable();
+            });
+        }
+
+        // ─── Security: admin_trusted_devices ─────────────────
+        if (!Schema::hasTable('admin_trusted_devices')) {
+            Schema::create('admin_trusted_devices', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('admin_user_id');
+                $table->string('device_fingerprint');
+                $table->string('device_name')->nullable();
+                $table->string('ip_address', 45)->nullable();
+                $table->timestamp('trusted_at')->nullable();
+                $table->timestamp('last_used_at')->nullable();
+            });
+        }
+
+        // ─── Security: admin_sessions ────────────────────────
+        if (!Schema::hasTable('admin_sessions')) {
+            Schema::create('admin_sessions', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('admin_user_id');
+                $table->string('ip_address', 45);
+                $table->text('user_agent')->nullable();
+                $table->string('status', 20)->default('active');
+                $table->timestamp('started_at')->nullable();
+                $table->timestamp('last_activity_at')->nullable();
+                $table->timestamp('ended_at')->nullable();
+            });
+        }
+
+        // ─── Security: security_alerts ───────────────────────
+        if (!Schema::hasTable('security_alerts')) {
+            Schema::create('security_alerts', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('alert_type', 50);
+                $table->string('severity', 20);
+                $table->text('description');
+                $table->uuid('admin_user_id')->nullable();
+                $table->string('ip_address', 45)->nullable();
+                $table->json('details')->nullable();
+                $table->string('status', 20)->default('new');
+                $table->uuid('resolved_by')->nullable();
+                $table->text('resolution_notes')->nullable();
+                $table->timestamp('resolved_at')->nullable();
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        // ─── Security: device_registrations ──────────────────
+        if (!Schema::hasTable('device_registrations')) {
+            Schema::create('device_registrations', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->string('device_name');
+                $table->string('hardware_id');
+                $table->text('os_info')->nullable();
+                $table->string('app_version')->nullable();
+                $table->timestamp('last_active_at')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->boolean('remote_wipe_requested')->default(false);
+                $table->timestamp('registered_at')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // ─── Security: security_audit_log ────────────────────
+        if (!Schema::hasTable('security_audit_log')) {
+            Schema::create('security_audit_log', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id')->nullable();
+                $table->uuid('user_id')->nullable();
+                $table->string('user_type', 20)->nullable();
+                $table->string('action', 50);
+                $table->string('resource_type', 50)->nullable();
+                $table->uuid('resource_id')->nullable();
+                $table->json('details')->nullable();
+                $table->string('severity', 20)->default('info');
+                $table->string('ip_address', 45)->nullable();
+                $table->uuid('device_id')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // ─── Security: login_attempts ────────────────────────
+        if (!Schema::hasTable('login_attempts')) {
+            Schema::create('login_attempts', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id')->nullable();
+                $table->string('user_identifier');
+                $table->string('attempt_type', 30);
+                $table->boolean('is_successful')->default(false);
+                $table->string('ip_address', 45)->nullable();
+                $table->uuid('device_id')->nullable();
+                $table->timestamp('attempted_at')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // ─── Security: security_policies ─────────────────────
+        if (!Schema::hasTable('security_policies')) {
+            Schema::create('security_policies', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->integer('pin_min_length')->default(4);
+                $table->integer('pin_max_length')->default(8);
+                $table->integer('auto_lock_seconds')->default(300);
+                $table->integer('max_failed_attempts')->default(5);
+                $table->integer('lockout_duration_minutes')->default(15);
+                $table->boolean('require_2fa_owner')->default(false);
+                $table->integer('session_max_hours')->default(24);
+                $table->boolean('require_pin_override_void')->default(true);
+                $table->boolean('require_pin_override_return')->default(true);
+                $table->boolean('require_pin_override_discount')->default(false);
+                $table->decimal('discount_override_threshold', 5, 2)->default(0);
+                $table->timestamps();
+            });
+        }
+
+        // ─── Analytics: platform_daily_stats ─────────────────
+        if (!Schema::hasTable('platform_daily_stats')) {
+            Schema::create('platform_daily_stats', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->date('date')->unique();
+                $table->integer('total_active_stores')->default(0);
+                $table->integer('new_registrations')->default(0);
+                $table->integer('total_orders')->default(0);
+                $table->decimal('total_gmv', 14, 2)->default(0);
+                $table->decimal('total_mrr', 12, 2)->default(0);
+                $table->integer('churn_count')->default(0);
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        // ─── Analytics: platform_plan_stats ──────────────────
+        if (!Schema::hasTable('platform_plan_stats')) {
+            Schema::create('platform_plan_stats', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->date('date');
+                $table->uuid('subscription_plan_id');
+                $table->integer('active_stores')->default(0);
+                $table->integer('trial_stores')->default(0);
+                $table->integer('churned_stores')->default(0);
+                $table->decimal('revenue', 12, 2)->default(0);
+            });
+        }
+
+        // ─── Analytics: feature_adoption_stats ───────────────
+        if (!Schema::hasTable('feature_adoption_stats')) {
+            Schema::create('feature_adoption_stats', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->date('date');
+                $table->string('feature_key', 50);
+                $table->integer('stores_using')->default(0);
+                $table->integer('total_eligible')->default(0);
+            });
+        }
+
+        // ─── Analytics: store_health_snapshots ───────────────
+        if (!Schema::hasTable('store_health_snapshots')) {
+            Schema::create('store_health_snapshots', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->date('date');
+                $table->string('sync_status', 20)->default('ok');
+                $table->boolean('zatca_compliance')->default(false);
+                $table->integer('error_count')->default(0);
+                $table->timestamp('last_activity_at')->nullable();
             });
         }
 
@@ -232,6 +1008,7 @@ return new class extends Migration
             $table->string('reason')->nullable();
             $table->uuid('set_by')->nullable();
             $table->timestamp('expires_at')->nullable();
+            $table->timestamp('created_at')->nullable();
         });
 
         // ─── Billing: subscription_usage_snapshots ───────────
@@ -946,6 +1723,18 @@ return new class extends Migration
             $table->string('condition', 20)->default('good');
         });
 
+        // ─── Order: exchanges ─────────────────────────────────
+        Schema::create('exchanges', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->uuid('original_order_id');
+            $table->uuid('return_id');
+            $table->uuid('new_order_id');
+            $table->decimal('net_amount', 12, 2);
+            $table->uuid('processed_by');
+            $table->timestamp('created_at')->nullable();
+        });
+
         // ─── Payment: payments ────────────────────────────────
         Schema::create('payments', function (Blueprint $table) {
             $table->uuid('id')->primary();
@@ -1021,6 +1810,19 @@ return new class extends Migration
             $table->uuid('issued_at_store')->nullable();
             $table->date('expires_at')->nullable();
             $table->timestamps();
+        });
+
+        // ─── Payment: gift_card_transactions ────────────────
+        Schema::create('gift_card_transactions', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('gift_card_id');
+            $table->string('type', 20);
+            $table->decimal('amount', 12, 2);
+            $table->decimal('balance_after', 12, 2);
+            $table->uuid('payment_id')->nullable();
+            $table->uuid('store_id');
+            $table->uuid('performed_by');
+            $table->timestamp('created_at')->nullable();
         });
 
         // ─── Payment: refunds ─────────────────────────────────
@@ -1854,9 +2656,9 @@ return new class extends Migration
             'bundle_products', 'promotion_usage_log', 'coupon_codes',
             'promotion_customer_groups', 'promotion_categories', 'promotion_products', 'promotions',
             // Payment domain
-            'refunds', 'gift_cards', 'expenses', 'cash_events', 'cash_sessions', 'payments',
+            'refunds', 'gift_card_transactions', 'gift_cards', 'expenses', 'cash_events', 'cash_sessions', 'payments',
             // Order domain
-            'return_items', 'returns', 'order_status_history', 'order_items', 'orders',
+            'return_items', 'returns', 'exchanges', 'order_status_history', 'order_items', 'orders',
             // POS domain
             'held_carts', 'transaction_items', 'transactions', 'pos_sessions',
             // Label domain
@@ -1877,6 +2679,21 @@ return new class extends Migration
             'combo_product_items', 'combo_products',
             'product_images', 'product_variants', 'product_variant_groups',
             'store_prices', 'product_barcodes', 'products', 'categories',
+            // Platform Admin tables
+            'store_health_snapshots', 'feature_adoption_stats', 'platform_plan_stats', 'platform_daily_stats',
+            'security_alerts', 'security_policies', 'security_audit_log', 'login_attempts', 'device_registrations',
+            'admin_sessions', 'admin_trusted_devices', 'admin_ip_blocklist', 'admin_ip_allowlist',
+            'app_update_stats', 'app_releases',
+            'delivery_platform_endpoints', 'delivery_platform_fields', 'delivery_platforms',
+            'system_health_checks', 'platform_event_logs',
+            'cms_pages', 'notification_templates',
+            'feature_flags', 'ab_test_variants', 'ab_tests', 'system_settings',
+            'implementation_fees', 'hardware_sales', 'payment_gateway_configs', 'payment_retry_rules',
+            'subscription_credits', 'subscription_discounts',
+            'payment_reminders', 'platform_announcement_dismissals', 'platform_announcements',
+            'knowledge_base_articles', 'canned_responses', 'support_ticket_messages', 'support_tickets',
+            'cancellation_reasons', 'provider_notes', 'provider_registrations',
+            'admin_activity_logs', 'admin_user_roles', 'admin_role_permissions', 'admin_permissions', 'admin_roles',
             // Original tables
             'audit_logs', 'role_audit_log', 'pin_overrides',
             'store_add_ons', 'plan_add_ons', 'add_ons',

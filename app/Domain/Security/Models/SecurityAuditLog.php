@@ -2,6 +2,7 @@
 
 namespace App\Domain\Security\Models;
 
+use App\Domain\Core\Models\Store;
 use App\Domain\Security\Enums\AuditResourceType;
 use App\Domain\Security\Enums\AuditSeverity;
 use App\Domain\Security\Enums\AuditUserType;

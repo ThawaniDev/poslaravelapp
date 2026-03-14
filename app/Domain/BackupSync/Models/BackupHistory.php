@@ -4,6 +4,7 @@ namespace App\Domain\BackupSync\Models;
 
 use App\Domain\BackupSync\Enums\BackupHistoryStatus;
 use App\Domain\BackupSync\Enums\BackupType;
+use App\Domain\Core\Models\Store;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

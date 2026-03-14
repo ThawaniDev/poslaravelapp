@@ -2,6 +2,8 @@
 
 namespace App\Domain\Security\Models;
 
+use App\Domain\Core\Models\Store;
+use App\Domain\Core\Models\User;
 use App\Domain\Security\Enums\RoleAuditAction;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

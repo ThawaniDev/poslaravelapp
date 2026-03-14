@@ -7,10 +7,11 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
 class AdminUser extends Authenticatable implements FilamentUser
 {
-    use HasUuids;
+    use HasApiTokens, HasUuids;
 
     /**
      * Determine if the user can access the given Filament panel.

@@ -19,6 +19,7 @@ class ProviderNote extends Model
         'organization_id',
         'admin_user_id',
         'note_text',
+        'created_at',
     ];
 
     public function organization(): BelongsTo

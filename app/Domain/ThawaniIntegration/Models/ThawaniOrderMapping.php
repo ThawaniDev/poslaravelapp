@@ -2,6 +2,8 @@
 
 namespace App\Domain\ThawaniIntegration\Models;
 
+use App\Domain\Core\Models\Store;
+use App\Domain\Order\Models\Order;
 use App\Domain\ThawaniIntegration\Enums\ThawaniDeliveryType;
 use App\Domain\ThawaniIntegration\Enums\ThawaniOrderStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
