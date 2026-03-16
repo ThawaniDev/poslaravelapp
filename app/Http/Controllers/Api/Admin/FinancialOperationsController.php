@@ -18,6 +18,11 @@ use App\Domain\Report\Models\ProductSalesSummary;
 use App\Domain\ThawaniIntegration\Models\ThawaniOrderMapping;
 use App\Domain\ThawaniIntegration\Models\ThawaniSettlement;
 use App\Domain\ThawaniIntegration\Models\ThawaniStoreConfig;
+use App\Domain\AccountingIntegration\Enums\AccountingExportStatus;
+use App\Domain\AccountingIntegration\Enums\ExportTriggeredBy;
+use App\Domain\Payment\Enums\GiftCardStatus;
+use App\Domain\Payment\Enums\RefundStatus;
+use App\Domain\Security\Enums\SessionStatus;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -103,6 +108,25 @@ class FinancialOperationsController extends BaseApiController
         return $this->success($refund, 'Refund details');
     }
 
+    public function processRefund(Request $request, string $id): JsonResponse
+    {
+        $refund = Refund::find($id);
+        if (! $refund) return $this->notFound('Refund not found');
+
+        $validated = $request->validate([
+            'status'           => 'required|string|in:completed,failed',
+            'reference_number' => 'nullable|string|max:100',
+        ]);
+
+        $refund->forceFill([
+            'status'           => RefundStatus::from($validated['status']),
+            'reference_number' => $validated['reference_number'] ?? $refund->reference_number,
+            'processed_by'     => $request->user('admin-api')?->id,
+        ])->save();
+
+        return $this->success($refund->fresh(), 'Refund processed');
+    }
+
     // ── Cash Sessions ────────────────────────────────────────
     public function cashSessions(Request $request): JsonResponse
     {
@@ -123,6 +147,25 @@ class FinancialOperationsController extends BaseApiController
         $session = CashSession::find($id);
         if (! $session) return $this->notFound('Cash session not found');
         return $this->success($session, 'Cash session details');
+    }
+
+    public function forceCloseCashSession(Request $request, string $id): JsonResponse
+    {
+        $session = CashSession::find($id);
+        if (! $session) return $this->notFound('Cash session not found');
+
+        if ($session->status !== SessionStatus::Open) {
+            return $this->error('Cash session is not open', 422);
+        }
+
+        $session->forceFill([
+            'status'      => SessionStatus::Closed,
+            'closed_by'   => $request->user('admin-api')?->id,
+            'closed_at'   => now(),
+            'close_notes' => $request->input('notes', 'Force-closed by admin'),
+        ])->save();
+
+        return $this->success($session->fresh(), 'Cash session force-closed');
     }
 
     // ── Cash Events ──────────────────────────────────────────
@@ -169,6 +212,48 @@ class FinancialOperationsController extends BaseApiController
         return $this->success($expense, 'Expense details');
     }
 
+    public function createExpense(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'store_id'     => 'required|uuid',
+            'amount'       => 'required|numeric|min:0.01',
+            'category'     => 'required|string|max:30',
+            'description'  => 'nullable|string|max:1000',
+            'expense_date' => 'nullable|date',
+        ]);
+
+        $expense = Expense::forceCreate([
+            ...$validated,
+            'recorded_by' => $request->user('admin-api')?->id,
+        ]);
+
+        return $this->created($expense, 'Expense created');
+    }
+
+    public function updateExpense(Request $request, string $id): JsonResponse
+    {
+        $expense = Expense::find($id);
+        if (! $expense) return $this->notFound('Expense not found');
+
+        $validated = $request->validate([
+            'amount'       => 'sometimes|numeric|min:0.01',
+            'category'     => 'sometimes|string|max:30',
+            'description'  => 'sometimes|nullable|string|max:1000',
+            'expense_date' => 'sometimes|nullable|date',
+        ]);
+
+        $expense->forceFill($validated)->save();
+        return $this->success($expense->fresh(), 'Expense updated');
+    }
+
+    public function deleteExpense(string $id): JsonResponse
+    {
+        $expense = Expense::find($id);
+        if (! $expense) return $this->notFound('Expense not found');
+        $expense->delete();
+        return $this->success(null, 'Expense deleted');
+    }
+
     // ── Gift Cards ───────────────────────────────────────────
     public function giftCards(Request $request): JsonResponse
     {
@@ -188,6 +273,54 @@ class FinancialOperationsController extends BaseApiController
         return $this->success($card, 'Gift card details');
     }
 
+    public function issueGiftCard(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'organization_id' => 'required|uuid',
+            'code'            => 'required|string|max:50|unique:gift_cards,code',
+            'initial_amount'  => 'required|numeric|min:0.01',
+            'recipient_name'  => 'nullable|string|max:255',
+            'expires_at'      => 'nullable|date|after:today',
+        ]);
+
+        $card = GiftCard::forceCreate([
+            ...$validated,
+            'balance'         => $validated['initial_amount'],
+            'status'          => 'active',
+            'issued_by'       => $request->user('admin-api')?->id,
+        ]);
+
+        return $this->created($card, 'Gift card issued');
+    }
+
+    public function updateGiftCard(Request $request, string $id): JsonResponse
+    {
+        $card = GiftCard::find($id);
+        if (! $card) return $this->notFound('Gift card not found');
+
+        $validated = $request->validate([
+            'status'         => 'sometimes|string|in:active,deactivated,expired,redeemed',
+            'recipient_name' => 'sometimes|nullable|string|max:255',
+            'expires_at'     => 'sometimes|nullable|date',
+        ]);
+
+        if (isset($validated['status'])) {
+            $validated['status'] = GiftCardStatus::from($validated['status']);
+        }
+
+        $card->forceFill($validated)->save();
+        return $this->success($card->fresh(), 'Gift card updated');
+    }
+
+    public function voidGiftCard(string $id): JsonResponse
+    {
+        $card = GiftCard::find($id);
+        if (! $card) return $this->notFound('Gift card not found');
+
+        $card->forceFill(['status' => GiftCardStatus::Deactivated, 'balance' => 0])->save();
+        return $this->success($card->fresh(), 'Gift card voided');
+    }
+
     // ── Gift Card Transactions ───────────────────────────────
     public function giftCardTransactions(Request $request): JsonResponse
     {
@@ -201,6 +334,13 @@ class FinancialOperationsController extends BaseApiController
         }
 
         return $this->success($q->paginate($request->integer('per_page', 15)), 'Gift card transactions retrieved');
+    }
+
+    public function showGiftCardTransaction(string $id): JsonResponse
+    {
+        $transaction = GiftCardTransaction::find($id);
+        if (! $transaction) return $this->notFound('Gift card transaction not found');
+        return $this->success($transaction, 'Gift card transaction details');
     }
 
     // ── Accounting Configs ───────────────────────────────────
@@ -222,6 +362,50 @@ class FinancialOperationsController extends BaseApiController
         return $this->success($config, 'Accounting config details');
     }
 
+    public function createAccountingConfig(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'store_id'     => 'required|uuid|unique:store_accounting_configs,store_id',
+            'provider'     => 'required|string|max:20',
+            'company_name' => 'nullable|string|max:255',
+            'realm_id'     => 'nullable|string|max:50',
+            'tenant_id'    => 'nullable|string|max:50',
+        ]);
+
+        $config = StoreAccountingConfig::forceCreate([
+            ...$validated,
+            'access_token_encrypted'  => '',
+            'refresh_token_encrypted' => '',
+            'connected_at' => now(),
+        ]);
+
+        return $this->created($config, 'Accounting config created');
+    }
+
+    public function updateAccountingConfig(Request $request, string $id): JsonResponse
+    {
+        $config = StoreAccountingConfig::find($id);
+        if (! $config) return $this->notFound('Accounting config not found');
+
+        $validated = $request->validate([
+            'provider'     => 'sometimes|string|max:20',
+            'company_name' => 'sometimes|nullable|string|max:255',
+            'realm_id'     => 'sometimes|nullable|string|max:50',
+            'tenant_id'    => 'sometimes|nullable|string|max:50',
+        ]);
+
+        $config->forceFill($validated)->save();
+        return $this->success($config->fresh(), 'Accounting config updated');
+    }
+
+    public function deleteAccountingConfig(string $id): JsonResponse
+    {
+        $config = StoreAccountingConfig::find($id);
+        if (! $config) return $this->notFound('Accounting config not found');
+        $config->delete();
+        return $this->success(null, 'Accounting config deleted');
+    }
+
     // ── Account Mappings ─────────────────────────────────────
     public function accountMappings(Request $request): JsonResponse
     {
@@ -239,6 +423,42 @@ class FinancialOperationsController extends BaseApiController
         $mapping = AccountMapping::find($id);
         if (! $mapping) return $this->notFound('Account mapping not found');
         return $this->success($mapping, 'Account mapping details');
+    }
+
+    public function createAccountMapping(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'store_id'              => 'required|uuid',
+            'pos_account_key'       => 'required|string|max:50',
+            'provider_account_id'   => 'required|string|max:100',
+            'provider_account_name' => 'required|string|max:255',
+        ]);
+
+        $mapping = AccountMapping::forceCreate($validated);
+        return $this->created($mapping, 'Account mapping created');
+    }
+
+    public function updateAccountMapping(Request $request, string $id): JsonResponse
+    {
+        $mapping = AccountMapping::find($id);
+        if (! $mapping) return $this->notFound('Account mapping not found');
+
+        $validated = $request->validate([
+            'pos_account_key'       => 'sometimes|string|max:50',
+            'provider_account_id'   => 'sometimes|string|max:100',
+            'provider_account_name' => 'sometimes|string|max:255',
+        ]);
+
+        $mapping->forceFill($validated)->save();
+        return $this->success($mapping->fresh(), 'Account mapping updated');
+    }
+
+    public function deleteAccountMapping(string $id): JsonResponse
+    {
+        $mapping = AccountMapping::find($id);
+        if (! $mapping) return $this->notFound('Account mapping not found');
+        $mapping->delete();
+        return $this->success(null, 'Account mapping deleted');
     }
 
     // ── Accounting Exports ───────────────────────────────────
@@ -261,6 +481,42 @@ class FinancialOperationsController extends BaseApiController
         $export = AccountingExport::find($id);
         if (! $export) return $this->notFound('Accounting export not found');
         return $this->success($export, 'Accounting export details');
+    }
+
+    public function triggerAccountingExport(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'store_id'     => 'required|uuid',
+            'provider'     => 'required|string|max:20',
+            'start_date'   => 'required|date',
+            'end_date'     => 'required|date|after_or_equal:start_date',
+            'export_types' => 'nullable|array',
+        ]);
+
+        $export = AccountingExport::forceCreate([
+            ...$validated,
+            'status'       => AccountingExportStatus::Pending,
+            'triggered_by' => ExportTriggeredBy::Manual,
+        ]);
+
+        return $this->created($export, 'Accounting export triggered');
+    }
+
+    public function retryAccountingExport(string $id): JsonResponse
+    {
+        $export = AccountingExport::find($id);
+        if (! $export) return $this->notFound('Accounting export not found');
+
+        if ($export->status !== AccountingExportStatus::Failed) {
+            return $this->error('Only failed exports can be retried', 422);
+        }
+
+        $export->forceFill([
+            'status'        => AccountingExportStatus::Pending,
+            'error_message' => null,
+        ])->save();
+
+        return $this->success($export->fresh(), 'Accounting export queued for retry');
     }
 
     // ── Auto Export Configs ──────────────────────────────────
@@ -302,6 +558,32 @@ class FinancialOperationsController extends BaseApiController
         return $this->success($config->fresh(), 'Auto export config updated');
     }
 
+    public function createAutoExportConfig(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'store_id'         => 'required|uuid|unique:auto_export_configs,store_id',
+            'enabled'          => 'sometimes|boolean',
+            'frequency'        => 'sometimes|string|in:daily,weekly,monthly',
+            'day_of_week'      => 'nullable|integer|between:0,6',
+            'day_of_month'     => 'nullable|integer|between:1,31',
+            'time'             => 'sometimes|string',
+            'export_types'     => 'nullable|array',
+            'notify_email'     => 'nullable|email',
+            'retry_on_failure' => 'sometimes|boolean',
+        ]);
+
+        $config = AutoExportConfig::forceCreate($validated);
+        return $this->created($config, 'Auto export config created');
+    }
+
+    public function deleteAutoExportConfig(string $id): JsonResponse
+    {
+        $config = AutoExportConfig::find($id);
+        if (! $config) return $this->notFound('Auto export config not found');
+        $config->delete();
+        return $this->success(null, 'Auto export config deleted');
+    }
+
     // ── Thawani Settlements ──────────────────────────────────
     public function thawaniSettlements(Request $request): JsonResponse
     {
@@ -319,6 +601,25 @@ class FinancialOperationsController extends BaseApiController
         $settlement = ThawaniSettlement::find($id);
         if (! $settlement) return $this->notFound('Thawani settlement not found');
         return $this->success($settlement, 'Thawani settlement details');
+    }
+
+    public function reconcileThawaniSettlement(Request $request, string $id): JsonResponse
+    {
+        $settlement = ThawaniSettlement::find($id);
+        if (! $settlement) return $this->notFound('Thawani settlement not found');
+
+        $validated = $request->validate([
+            'reconciled' => 'required|boolean',
+            'notes'      => 'nullable|string|max:500',
+        ]);
+
+        $settlement->forceFill([
+            'reconciled'    => $validated['reconciled'],
+            'reconciled_at' => $validated['reconciled'] ? now() : null,
+            'reconciled_by' => $request->user('admin-api')?->id,
+        ])->save();
+
+        return $this->success($settlement->fresh(), 'Settlement reconciliation updated');
     }
 
     // ── Thawani Orders ───────────────────────────────────────
@@ -375,6 +676,13 @@ class FinancialOperationsController extends BaseApiController
         return $this->success($q->paginate($request->integer('per_page', 15)), 'Daily sales summary retrieved');
     }
 
+    public function showDailySalesSummary(string $id): JsonResponse
+    {
+        $summary = DailySalesSummary::find($id);
+        if (! $summary) return $this->notFound('Daily sales summary not found');
+        return $this->success($summary, 'Daily sales summary details');
+    }
+
     // ── Product Sales Summary ────────────────────────────────
     public function productSalesSummary(Request $request): JsonResponse
     {
@@ -394,5 +702,12 @@ class FinancialOperationsController extends BaseApiController
         }
 
         return $this->success($q->paginate($request->integer('per_page', 15)), 'Product sales summary retrieved');
+    }
+
+    public function showProductSalesSummary(string $id): JsonResponse
+    {
+        $summary = ProductSalesSummary::find($id);
+        if (! $summary) return $this->notFound('Product sales summary not found');
+        return $this->success($summary, 'Product sales summary details');
     }
 }

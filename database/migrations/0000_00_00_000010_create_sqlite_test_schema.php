@@ -1057,6 +1057,42 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
         });
 
+        // ─── Provider Roles: provider_permissions ────────────
+        if (!Schema::hasTable('provider_permissions')) {
+            Schema::create('provider_permissions', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('name', 50)->unique();
+                $table->string('group', 30);
+                $table->string('description', 255)->nullable();
+                $table->string('description_ar', 255)->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        // ─── Provider Roles: default_role_templates ──────────
+        if (!Schema::hasTable('default_role_templates')) {
+            Schema::create('default_role_templates', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('name', 50);
+                $table->string('name_ar', 50)->nullable();
+                $table->string('slug', 30)->unique();
+                $table->string('description', 255)->nullable();
+                $table->string('description_ar', 255)->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // ─── Provider Roles: default_role_template_permissions
+        if (!Schema::hasTable('default_role_template_permissions')) {
+            Schema::create('default_role_template_permissions', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('default_role_template_id');
+                $table->uuid('provider_permission_id');
+                $table->unique(['default_role_template_id', 'provider_permission_id'], 'drtp_template_permission_unique');
+            });
+        }
+
         // ─── Security: pin_overrides ─────────────────────────
         // Model: App\Domain\Security\Models\PinOverride
         if (!Schema::hasTable('pin_overrides')) {
@@ -2151,9 +2187,9 @@ return new class extends Migration
             $table->uuid('store_id')->unique();
             $table->foreign('store_id')->references('id')->on('stores')->cascadeOnDelete();
             $table->string('provider', 20);
-            $table->text('access_token_encrypted');
-            $table->text('refresh_token_encrypted');
-            $table->timestamp('token_expires_at');
+            $table->text('access_token_encrypted')->nullable()->default('');
+            $table->text('refresh_token_encrypted')->nullable()->default('');
+            $table->timestamp('token_expires_at')->nullable();
             $table->string('realm_id', 50)->nullable();
             $table->string('tenant_id', 50)->nullable();
             $table->string('company_name')->nullable();
@@ -2314,6 +2350,9 @@ return new class extends Migration
             $table->decimal('net_amount', 12, 3);
             $table->integer('order_count');
             $table->string('thawani_reference', 100)->nullable();
+            $table->boolean('reconciled')->default(false);
+            $table->timestamp('reconciled_at')->nullable();
+            $table->uuid('reconciled_by')->nullable();
             $table->timestamp('created_at')->nullable();
         });
 
@@ -2696,6 +2735,7 @@ return new class extends Migration
             'admin_activity_logs', 'admin_user_roles', 'admin_role_permissions', 'admin_permissions', 'admin_roles',
             // Original tables
             'audit_logs', 'role_audit_log', 'pin_overrides',
+            'default_role_template_permissions', 'default_role_templates', 'provider_permissions',
             'store_add_ons', 'plan_add_ons', 'add_ons',
             'subscription_usage_snapshots', 'provider_limit_overrides',
             'invoice_line_items', 'invoices', 'store_subscriptions',

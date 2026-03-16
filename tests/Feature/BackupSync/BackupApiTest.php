@@ -1,0 +1,444 @@
+<?php
+
+namespace Tests\Feature\BackupSync;
+
+use App\Domain\Auth\Models\User;
+use App\Domain\BackupSync\Models\BackupHistory;
+use App\Domain\BackupSync\Models\DatabaseBackup;
+use App\Domain\BackupSync\Models\ProviderBackupStatus;
+use App\Domain\Core\Models\Organization;
+use App\Domain\Core\Models\Store;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
+use Tests\TestCase;
+
+class BackupApiTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private string $token;
+    private string $storeId;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        if (!Schema::hasTable('organizations')) {
+            Schema::create('organizations', function ($t) {
+                $t->uuid('id')->primary();
+                $t->string('name');
+                $t->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('stores')) {
+            Schema::create('stores', function ($t) {
+                $t->uuid('id')->primary();
+                $t->foreignUuid('organization_id')->nullable();
+                $t->string('name');
+                $t->string('name_ar')->nullable();
+                $t->string('slug')->nullable();
+                $t->string('branch_code')->nullable();
+                $t->text('address')->nullable();
+                $t->string('city')->nullable();
+                $t->decimal('latitude', 10, 7)->nullable();
+                $t->decimal('longitude', 10, 7)->nullable();
+                $t->string('phone')->nullable();
+                $t->string('email')->nullable();
+                $t->string('timezone')->default('UTC');
+                $t->string('currency')->default('OMR');
+                $t->string('locale')->default('en');
+                $t->string('business_type')->nullable();
+                $t->boolean('is_active')->default(true);
+                $t->boolean('is_main_branch')->default(false);
+                $t->decimal('storage_used_mb', 10, 2)->default(0);
+                $t->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('users')) {
+            Schema::create('users', function ($t) {
+                $t->uuid('id')->primary();
+                $t->string('name');
+                $t->string('email')->unique();
+                $t->foreignUuid('store_id')->nullable();
+                $t->string('password_hash')->nullable();
+                $t->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('personal_access_tokens')) {
+            Schema::create('personal_access_tokens', function ($t) {
+                $t->id();
+                $t->uuidMorphs('tokenable');
+                $t->string('name');
+                $t->string('token', 64)->unique();
+                $t->text('abilities')->nullable();
+                $t->timestamp('last_used_at')->nullable();
+                $t->timestamp('expires_at')->nullable();
+                $t->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('database_backups')) {
+            Schema::create('database_backups', function ($t) {
+                $t->uuid('id')->primary();
+                $t->string('backup_type');
+                $t->string('file_path')->nullable();
+                $t->bigInteger('file_size_bytes')->default(0);
+                $t->string('status');
+                $t->text('error_message')->nullable();
+                $t->timestamp('started_at')->nullable();
+                $t->timestamp('completed_at')->nullable();
+            });
+        }
+
+        if (!Schema::hasTable('backup_history')) {
+            Schema::create('backup_history', function ($t) {
+                $t->uuid('id')->primary();
+                $t->foreignUuid('store_id');
+                $t->string('terminal_id')->nullable();
+                $t->string('backup_type');
+                $t->string('storage_location')->nullable();
+                $t->string('local_path')->nullable();
+                $t->string('cloud_key')->nullable();
+                $t->bigInteger('file_size_bytes')->default(0);
+                $t->string('checksum')->nullable();
+                $t->string('db_version')->nullable();
+                $t->integer('records_count')->default(0);
+                $t->boolean('is_verified')->default(false);
+                $t->boolean('is_encrypted')->default(false);
+                $t->string('status');
+                $t->text('error_message')->nullable();
+            });
+        }
+
+        if (!Schema::hasTable('provider_backup_status')) {
+            Schema::create('provider_backup_status', function ($t) {
+                $t->uuid('id')->primary();
+                $t->foreignUuid('store_id');
+                $t->string('terminal_id');
+                $t->timestamp('last_successful_sync')->nullable();
+                $t->timestamp('last_cloud_backup')->nullable();
+                $t->bigInteger('storage_used_bytes')->default(0);
+                $t->string('status')->nullable();
+            });
+        }
+
+        $org = Organization::create(['name' => 'Backup Org']);
+        $store = Store::create([
+            'organization_id' => $org->id,
+            'name' => 'Backup Store',
+        ]);
+        $this->storeId = $store->id;
+
+        $user = User::create([
+            'name' => 'Backup User',
+            'email' => 'backup@test.com',
+            'store_id' => $store->id,
+            'password_hash' => bcrypt('password'),
+        ]);
+        $this->token = $user->createToken('test', ['*'])->plainTextToken;
+    }
+
+    private function auth(): array
+    {
+        return ['Authorization' => 'Bearer ' . $this->token];
+    }
+
+    // ── Create Backup ────────────────────────────────────────
+
+    public function test_create_backup_success(): void
+    {
+        $res = $this->postJson('/api/v2/backup/create', [
+            'terminal_id' => fake()->uuid(),
+            'backup_type' => 'manual',
+        ], $this->auth());
+
+        $res->assertStatus(201);
+        $body = json_decode($res->getContent(), true);
+        $this->assertEquals('completed', $body['data']['status']);
+        $this->assertNotEmpty($body['data']['backup_id']);
+        $this->assertDatabaseHas('backup_history', ['store_id' => $this->storeId]);
+    }
+
+    public function test_create_backup_encrypted(): void
+    {
+        $res = $this->postJson('/api/v2/backup/create', [
+            'terminal_id' => fake()->uuid(),
+            'backup_type' => 'pre_update',
+            'encrypt' => true,
+        ], $this->auth());
+
+        $res->assertStatus(201);
+    }
+
+    public function test_create_backup_validation_fails(): void
+    {
+        $res = $this->postJson('/api/v2/backup/create', [], $this->auth());
+        $res->assertStatus(422);
+    }
+
+    public function test_create_backup_unauthenticated(): void
+    {
+        $res = $this->postJson('/api/v2/backup/create', ['terminal_id' => fake()->uuid()]);
+        $res->assertStatus(401);
+    }
+
+    // ── List Backups ─────────────────────────────────────────
+
+    public function test_list_backups_empty(): void
+    {
+        $res = $this->getJson('/api/v2/backup/list', $this->auth());
+
+        $res->assertOk();
+        $body = json_decode($res->getContent(), true);
+        $this->assertEmpty($body['data']['backups']);
+    }
+
+    public function test_list_backups_with_data(): void
+    {
+        BackupHistory::create([
+            'store_id' => $this->storeId,
+            'terminal_id' => 'term-1',
+            'backup_type' => 'manual',
+            'status' => 'completed',
+        ]);
+
+        $res = $this->getJson('/api/v2/backup/list', $this->auth());
+
+        $res->assertOk();
+        $body = json_decode($res->getContent(), true);
+        $this->assertCount(1, $body['data']['backups']);
+    }
+
+    public function test_list_backups_filter_by_type(): void
+    {
+        BackupHistory::create(['store_id' => $this->storeId, 'terminal_id' => 't1', 'backup_type' => 'manual', 'status' => 'completed']);
+        BackupHistory::create(['store_id' => $this->storeId, 'terminal_id' => 't2', 'backup_type' => 'auto', 'status' => 'completed']);
+
+        $res = $this->getJson('/api/v2/backup/list?backup_type=manual', $this->auth());
+
+        $res->assertOk();
+        $body = json_decode($res->getContent(), true);
+        $this->assertEquals(1, $body['data']['pagination']['total']);
+    }
+
+    // ── Show Backup ──────────────────────────────────────────
+
+    public function test_show_backup_success(): void
+    {
+        $backup = BackupHistory::create([
+            'store_id' => $this->storeId,
+            'terminal_id' => 'term-1',
+            'backup_type' => 'manual',
+            'status' => 'completed',
+            'checksum' => 'abc123',
+        ]);
+
+        $res = $this->getJson("/api/v2/backup/{$backup->id}", $this->auth());
+
+        $res->assertOk();
+    }
+
+    public function test_show_backup_not_found(): void
+    {
+        $res = $this->getJson('/api/v2/backup/' . fake()->uuid(), $this->auth());
+        $res->assertStatus(404);
+    }
+
+    // ── Restore Backup ───────────────────────────────────────
+
+    public function test_restore_backup_success(): void
+    {
+        $backup = BackupHistory::create([
+            'store_id' => $this->storeId,
+            'terminal_id' => 'term-1',
+            'backup_type' => 'manual',
+            'status' => 'completed',
+            'records_count' => 5000,
+        ]);
+
+        $res = $this->postJson("/api/v2/backup/{$backup->id}/restore", [], $this->auth());
+
+        $res->assertOk();
+        $body = json_decode($res->getContent(), true);
+        $this->assertTrue($body['data']['restore_initiated']);
+    }
+
+    public function test_restore_failed_backup_rejected(): void
+    {
+        $backup = BackupHistory::create([
+            'store_id' => $this->storeId,
+            'terminal_id' => 'term-1',
+            'backup_type' => 'manual',
+            'status' => 'failed',
+        ]);
+
+        $res = $this->postJson("/api/v2/backup/{$backup->id}/restore", [], $this->auth());
+
+        $res->assertStatus(422);
+    }
+
+    public function test_restore_backup_not_found(): void
+    {
+        $res = $this->postJson('/api/v2/backup/' . fake()->uuid() . '/restore', [], $this->auth());
+        $res->assertStatus(404);
+    }
+
+    // ── Verify Backup ────────────────────────────────────────
+
+    public function test_verify_backup_success(): void
+    {
+        $backup = BackupHistory::create([
+            'store_id' => $this->storeId,
+            'terminal_id' => 'term-1',
+            'backup_type' => 'manual',
+            'status' => 'completed',
+            'checksum' => 'somehash',
+        ]);
+
+        $res = $this->postJson("/api/v2/backup/{$backup->id}/verify", [], $this->auth());
+
+        $res->assertOk();
+        $body = json_decode($res->getContent(), true);
+        $this->assertTrue($body['data']['is_valid']);
+    }
+
+    public function test_verify_backup_not_found(): void
+    {
+        $res = $this->postJson('/api/v2/backup/' . fake()->uuid() . '/verify', [], $this->auth());
+        $res->assertStatus(404);
+    }
+
+    // ── Schedule ─────────────────────────────────────────────
+
+    public function test_get_schedule(): void
+    {
+        $res = $this->getJson('/api/v2/backup/schedule', $this->auth());
+
+        $res->assertOk();
+        $body = json_decode($res->getContent(), true);
+        $this->assertArrayHasKey('auto_backup_enabled', $body['data']);
+        $this->assertArrayHasKey('frequency', $body['data']);
+    }
+
+    public function test_update_schedule_success(): void
+    {
+        $res = $this->putJson('/api/v2/backup/schedule', [
+            'auto_backup_enabled' => true,
+            'frequency' => 'weekly',
+            'retention_days' => 60,
+            'encrypt_backups' => true,
+        ], $this->auth());
+
+        $res->assertOk();
+        $body = json_decode($res->getContent(), true);
+        $this->assertEquals('weekly', $body['data']['frequency']);
+        $this->assertEquals(60, $body['data']['retention_days']);
+    }
+
+    public function test_update_schedule_validation_fails(): void
+    {
+        $res = $this->putJson('/api/v2/backup/schedule', ['frequency' => 'monthly'], $this->auth());
+        $res->assertStatus(422);
+    }
+
+    // ── Storage ──────────────────────────────────────────────
+
+    public function test_storage_usage(): void
+    {
+        $res = $this->getJson('/api/v2/backup/storage', $this->auth());
+
+        $res->assertOk();
+        $body = json_decode($res->getContent(), true);
+        $this->assertArrayHasKey('total_backup_bytes', $body['data']);
+        $this->assertArrayHasKey('quota_bytes', $body['data']);
+    }
+
+    // ── Delete Backup ────────────────────────────────────────
+
+    public function test_delete_backup_success(): void
+    {
+        $backup = BackupHistory::create([
+            'store_id' => $this->storeId,
+            'terminal_id' => 'term-1',
+            'backup_type' => 'manual',
+            'status' => 'completed',
+        ]);
+
+        $res = $this->deleteJson("/api/v2/backup/{$backup->id}", [], $this->auth());
+
+        $res->assertOk();
+        $this->assertDatabaseMissing('backup_history', ['id' => $backup->id]);
+    }
+
+    public function test_delete_backup_not_found(): void
+    {
+        $res = $this->deleteJson('/api/v2/backup/' . fake()->uuid(), [], $this->auth());
+        $res->assertStatus(404);
+    }
+
+    // ── Export ────────────────────────────────────────────────
+
+    public function test_export_data_success(): void
+    {
+        $res = $this->postJson('/api/v2/backup/export', [
+            'tables' => ['orders', 'products'],
+            'format' => 'json',
+        ], $this->auth());
+
+        $res->assertStatus(201);
+        $body = json_decode($res->getContent(), true);
+        $this->assertEquals('json', $body['data']['format']);
+        $this->assertCount(2, $body['data']['tables']);
+    }
+
+    public function test_export_data_csv(): void
+    {
+        $res = $this->postJson('/api/v2/backup/export', [
+            'tables' => ['customers'],
+            'format' => 'csv',
+            'include_images' => true,
+        ], $this->auth());
+
+        $res->assertStatus(201);
+        $body = json_decode($res->getContent(), true);
+        $this->assertEquals('csv', $body['data']['format']);
+        $this->assertTrue($body['data']['include_images']);
+    }
+
+    public function test_export_data_validation_fails(): void
+    {
+        $res = $this->postJson('/api/v2/backup/export', [], $this->auth());
+        $res->assertStatus(422);
+    }
+
+    // ── Provider Status ──────────────────────────────────────
+
+    public function test_provider_status_empty(): void
+    {
+        $res = $this->getJson('/api/v2/backup/provider-status', $this->auth());
+
+        $res->assertOk();
+        $body = json_decode($res->getContent(), true);
+        $this->assertEquals(0, $body['data']['total_terminals']);
+    }
+
+    public function test_provider_status_with_data(): void
+    {
+        ProviderBackupStatus::create([
+            'store_id' => $this->storeId,
+            'terminal_id' => 'term-001',
+            'status' => 'healthy',
+            'storage_used_bytes' => 1048576,
+        ]);
+
+        $res = $this->getJson('/api/v2/backup/provider-status', $this->auth());
+
+        $res->assertOk();
+        $body = json_decode($res->getContent(), true);
+        $this->assertEquals(1, $body['data']['total_terminals']);
+        $this->assertEquals('healthy', $body['data']['terminals'][0]['status']);
+    }
+}

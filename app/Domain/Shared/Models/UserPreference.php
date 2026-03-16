@@ -24,12 +24,14 @@ class UserPreference extends Model
         'font_size',
         'theme',
         'pos_layout_id',
+        'accessibility_json',
     ];
 
     protected $casts = [
         'pos_handedness' => Handedness::class,
         'font_size' => FontSize::class,
         'theme' => UserTheme::class,
+        'accessibility_json' => 'array',
     ];
 
     public function user(): BelongsTo

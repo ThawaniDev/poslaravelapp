@@ -7,7 +7,9 @@ use App\Http\Controllers\Api\Admin\DataManagementController;
 use App\Http\Controllers\Api\Admin\DeploymentController;
 use App\Http\Controllers\Api\Admin\FeatureFlagController;
 use App\Http\Controllers\Api\Admin\FinancialOperationsController;
+use App\Http\Controllers\Api\Admin\InfrastructureController;
 use App\Http\Controllers\Api\Admin\LogMonitoringController;
+use App\Http\Controllers\Api\Admin\ProviderRolePermissionController;
 use App\Http\Controllers\Api\Admin\MarketplaceController;
 use App\Http\Controllers\Api\Admin\PackageSubscriptionController;
 use App\Http\Controllers\Api\Admin\PlatformRoleController;
@@ -494,11 +496,13 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
         Route::prefix('refunds')->group(function () {
             Route::get('/', [FinancialOperationsController::class, 'refunds']);
             Route::get('{id}', [FinancialOperationsController::class, 'showRefund']);
+            Route::post('{id}/process', [FinancialOperationsController::class, 'processRefund']);
         });
 
         Route::prefix('cash-sessions')->group(function () {
             Route::get('/', [FinancialOperationsController::class, 'cashSessions']);
             Route::get('{id}', [FinancialOperationsController::class, 'showCashSession']);
+            Route::post('{id}/force-close', [FinancialOperationsController::class, 'forceCloseCashSession']);
         });
 
         Route::prefix('cash-events')->group(function () {
@@ -508,40 +512,60 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
 
         Route::prefix('expenses')->group(function () {
             Route::get('/', [FinancialOperationsController::class, 'expenses']);
+            Route::post('/', [FinancialOperationsController::class, 'createExpense']);
             Route::get('{id}', [FinancialOperationsController::class, 'showExpense']);
+            Route::put('{id}', [FinancialOperationsController::class, 'updateExpense']);
+            Route::delete('{id}', [FinancialOperationsController::class, 'deleteExpense']);
         });
 
         Route::prefix('gift-cards')->group(function () {
             Route::get('/', [FinancialOperationsController::class, 'giftCards']);
+            Route::post('/', [FinancialOperationsController::class, 'issueGiftCard']);
             Route::get('{id}', [FinancialOperationsController::class, 'showGiftCard']);
+            Route::put('{id}', [FinancialOperationsController::class, 'updateGiftCard']);
+            Route::post('{id}/void', [FinancialOperationsController::class, 'voidGiftCard']);
         });
 
-        Route::get('gift-card-transactions', [FinancialOperationsController::class, 'giftCardTransactions']);
+        Route::prefix('gift-card-transactions')->group(function () {
+            Route::get('/', [FinancialOperationsController::class, 'giftCardTransactions']);
+            Route::get('{id}', [FinancialOperationsController::class, 'showGiftCardTransaction']);
+        });
 
         Route::prefix('accounting-configs')->group(function () {
             Route::get('/', [FinancialOperationsController::class, 'accountingConfigs']);
+            Route::post('/', [FinancialOperationsController::class, 'createAccountingConfig']);
             Route::get('{id}', [FinancialOperationsController::class, 'showAccountingConfig']);
+            Route::put('{id}', [FinancialOperationsController::class, 'updateAccountingConfig']);
+            Route::delete('{id}', [FinancialOperationsController::class, 'deleteAccountingConfig']);
         });
 
         Route::prefix('account-mappings')->group(function () {
             Route::get('/', [FinancialOperationsController::class, 'accountMappings']);
+            Route::post('/', [FinancialOperationsController::class, 'createAccountMapping']);
             Route::get('{id}', [FinancialOperationsController::class, 'showAccountMapping']);
+            Route::put('{id}', [FinancialOperationsController::class, 'updateAccountMapping']);
+            Route::delete('{id}', [FinancialOperationsController::class, 'deleteAccountMapping']);
         });
 
         Route::prefix('accounting-exports')->group(function () {
             Route::get('/', [FinancialOperationsController::class, 'accountingExports']);
+            Route::post('/', [FinancialOperationsController::class, 'triggerAccountingExport']);
             Route::get('{id}', [FinancialOperationsController::class, 'showAccountingExport']);
+            Route::post('{id}/retry', [FinancialOperationsController::class, 'retryAccountingExport']);
         });
 
         Route::prefix('auto-export-configs')->group(function () {
             Route::get('/', [FinancialOperationsController::class, 'autoExportConfigs']);
+            Route::post('/', [FinancialOperationsController::class, 'createAutoExportConfig']);
             Route::get('{id}', [FinancialOperationsController::class, 'showAutoExportConfig']);
             Route::put('{id}', [FinancialOperationsController::class, 'updateAutoExportConfig']);
+            Route::delete('{id}', [FinancialOperationsController::class, 'deleteAutoExportConfig']);
         });
 
         Route::prefix('thawani-settlements')->group(function () {
             Route::get('/', [FinancialOperationsController::class, 'thawaniSettlements']);
             Route::get('{id}', [FinancialOperationsController::class, 'showThawaniSettlement']);
+            Route::post('{id}/reconcile', [FinancialOperationsController::class, 'reconcileThawaniSettlement']);
         });
 
         Route::prefix('thawani-orders')->group(function () {
@@ -554,7 +578,69 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
             Route::get('{id}', [FinancialOperationsController::class, 'showThawaniStoreConfig']);
         });
 
-        Route::get('daily-sales-summary', [FinancialOperationsController::class, 'dailySalesSummary']);
-        Route::get('product-sales-summary', [FinancialOperationsController::class, 'productSalesSummary']);
+        Route::prefix('daily-sales-summary')->group(function () {
+            Route::get('/', [FinancialOperationsController::class, 'dailySalesSummary']);
+            Route::get('{id}', [FinancialOperationsController::class, 'showDailySalesSummary']);
+        });
+
+        Route::prefix('product-sales-summary')->group(function () {
+            Route::get('/', [FinancialOperationsController::class, 'productSalesSummary']);
+            Route::get('{id}', [FinancialOperationsController::class, 'showProductSalesSummary']);
+        });
+    });
+
+    // ─── P16: Infrastructure & Operations ────────────────────
+    Route::prefix('infrastructure')->group(function () {
+        Route::get('overview', [InfrastructureController::class, 'overview']);
+
+        Route::prefix('failed-jobs')->group(function () {
+            Route::get('/', [InfrastructureController::class, 'failedJobs']);
+            Route::get('{id}', [InfrastructureController::class, 'showFailedJob']);
+            Route::post('{id}/retry', [InfrastructureController::class, 'retryFailedJob']);
+            Route::delete('{id}', [InfrastructureController::class, 'deleteFailedJob']);
+        });
+
+        Route::prefix('database-backups')->group(function () {
+            Route::get('/', [InfrastructureController::class, 'databaseBackups']);
+            Route::get('{id}', [InfrastructureController::class, 'showDatabaseBackup']);
+        });
+
+        Route::prefix('health-checks')->group(function () {
+            Route::get('/', [InfrastructureController::class, 'healthChecks']);
+            Route::get('{id}', [InfrastructureController::class, 'showHealthCheck']);
+        });
+
+        Route::prefix('provider-backups')->group(function () {
+            Route::get('/', [InfrastructureController::class, 'providerBackups']);
+            Route::get('{id}', [InfrastructureController::class, 'showProviderBackup']);
+        });
+
+        Route::prefix('system-settings')->group(function () {
+            Route::get('/', [InfrastructureController::class, 'systemSettings']);
+            Route::get('{id}', [InfrastructureController::class, 'showSystemSetting']);
+        });
+
+        Route::get('server-metrics', [InfrastructureController::class, 'serverMetrics']);
+        Route::get('storage-usage', [InfrastructureController::class, 'storageUsage']);
+
+        Route::prefix('cache')->group(function () {
+            Route::get('stats', [InfrastructureController::class, 'cacheStats']);
+            Route::post('flush', [InfrastructureController::class, 'flushCache']);
+        });
+    });
+
+    // ─── P17: Provider Roles & Permissions ───────────────────
+    Route::prefix('provider-roles')->group(function () {
+        Route::get('permissions', [ProviderRolePermissionController::class, 'permissions']);
+
+        Route::prefix('templates')->group(function () {
+            Route::get('/', [ProviderRolePermissionController::class, 'templates']);
+            Route::post('/', [ProviderRolePermissionController::class, 'createTemplate']);
+            Route::get('{id}', [ProviderRolePermissionController::class, 'showTemplate']);
+            Route::put('{id}', [ProviderRolePermissionController::class, 'updateTemplate']);
+            Route::delete('{id}', [ProviderRolePermissionController::class, 'deleteTemplate']);
+            Route::get('{id}/permissions', [ProviderRolePermissionController::class, 'templatePermissions']);
+            Route::put('{id}/permissions', [ProviderRolePermissionController::class, 'updateTemplatePermissions']);
+        });
     });
 });

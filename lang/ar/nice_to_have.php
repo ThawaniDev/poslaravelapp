@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'wishlist_loaded' => 'تم تحميل قائمة الرغبات.',
+    'wishlist_added' => 'تمت إضافة العنصر إلى قائمة الرغبات.',
+    'wishlist_removed' => 'تمت إزالة العنصر من قائمة الرغبات.',
+    'appointments_loaded' => 'تم تحميل المواعيد.',
+    'appointment_created' => 'تم إنشاء الموعد.',
+    'appointment_updated' => 'تم تحديث الموعد.',
+    'appointment_cancelled' => 'تم إلغاء الموعد.',
+    'cfd_loaded' => 'تم تحميل إعدادات شاشة العميل.',
+    'cfd_updated' => 'تم تحديث إعدادات شاشة العميل.',
+    'registries_loaded' => 'تم تحميل سجلات الهدايا.',
+    'registry_created' => 'تم إنشاء سجل الهدايا.',
+    'registry_loaded' => 'تم تحميل سجل الهدايا.',
+    'registry_not_found' => 'سجل الهدايا غير موجود.',
+    'registry_item_added' => 'تمت إضافة عنصر إلى سجل الهدايا.',
+    'registry_items_loaded' => 'تم تحميل عناصر سجل الهدايا.',
+    'playlists_loaded' => 'تم تحميل قوائم اللافتات الرقمية.',
+    'playlist_created' => 'تم إنشاء قائمة اللافتات.',
+    'playlist_updated' => 'تم تحديث قائمة اللافتات.',
+    'playlist_deleted' => 'تم حذف قائمة اللافتات.',
+    'challenges_loaded' => 'تم تحميل تحديات الولاء.',
+    'badges_loaded' => 'تم تحميل الشارات.',
+    'tiers_loaded' => 'تم تحميل مستويات الولاء.',
+    'progress_loaded' => 'تم تحميل تقدم العميل.',
+];

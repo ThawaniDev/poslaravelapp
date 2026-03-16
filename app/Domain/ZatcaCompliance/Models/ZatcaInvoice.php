@@ -33,6 +33,7 @@ class ZatcaInvoice extends Model
         'zatca_response_code',
         'zatca_response_message',
         'submitted_at',
+        'created_at',
     ];
 
     protected $casts = [

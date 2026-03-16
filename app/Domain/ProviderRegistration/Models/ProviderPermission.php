@@ -2,6 +2,7 @@
 
 namespace App\Domain\ProviderRegistration\Models;
 
+use App\Domain\StaffManagement\Models\DefaultRoleTemplatePermission;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;

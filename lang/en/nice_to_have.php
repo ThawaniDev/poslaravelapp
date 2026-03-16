@@ -1,0 +1,27 @@
+<?php
+
+return [
+    'wishlist_loaded' => 'Wishlist loaded.',
+    'wishlist_added' => 'Item added to wishlist.',
+    'wishlist_removed' => 'Item removed from wishlist.',
+    'appointments_loaded' => 'Appointments loaded.',
+    'appointment_created' => 'Appointment created.',
+    'appointment_updated' => 'Appointment updated.',
+    'appointment_cancelled' => 'Appointment cancelled.',
+    'cfd_loaded' => 'Customer-facing display configuration loaded.',
+    'cfd_updated' => 'Customer-facing display configuration updated.',
+    'registries_loaded' => 'Gift registries loaded.',
+    'registry_created' => 'Gift registry created.',
+    'registry_loaded' => 'Gift registry loaded.',
+    'registry_not_found' => 'Gift registry not found.',
+    'registry_item_added' => 'Item added to gift registry.',
+    'registry_items_loaded' => 'Gift registry items loaded.',
+    'playlists_loaded' => 'Signage playlists loaded.',
+    'playlist_created' => 'Signage playlist created.',
+    'playlist_updated' => 'Signage playlist updated.',
+    'playlist_deleted' => 'Signage playlist deleted.',
+    'challenges_loaded' => 'Loyalty challenges loaded.',
+    'badges_loaded' => 'Badges loaded.',
+    'tiers_loaded' => 'Loyalty tiers loaded.',
+    'progress_loaded' => 'Customer progress loaded.',
+];

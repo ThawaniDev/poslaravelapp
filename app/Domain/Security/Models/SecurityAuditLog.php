@@ -31,6 +31,7 @@ class SecurityAuditLog extends Model
         'severity',
         'ip_address',
         'device_id',
+        'created_at',
     ];
 
     protected $casts = [

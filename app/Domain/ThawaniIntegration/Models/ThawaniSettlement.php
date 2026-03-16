@@ -24,6 +24,9 @@ class ThawaniSettlement extends Model
         'net_amount',
         'order_count',
         'thawani_reference',
+        'reconciled',
+        'reconciled_at',
+        'reconciled_by',
     ];
 
     protected $casts = [
@@ -31,6 +34,8 @@ class ThawaniSettlement extends Model
         'commission_amount' => 'decimal:2',
         'net_amount' => 'decimal:2',
         'settlement_date' => 'date',
+        'reconciled' => 'boolean',
+        'reconciled_at' => 'datetime',
     ];
 
     public function store(): BelongsTo
