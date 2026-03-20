@@ -29,6 +29,7 @@ class CashEvent extends Model
     protected $casts = [
         'type' => CashEventType::class,
         'amount' => 'decimal:2',
+        'created_at' => 'datetime',
     ];
 
     public function cashSession(): BelongsTo

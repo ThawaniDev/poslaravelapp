@@ -19,20 +19,22 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('auth')->group(function () {
 
     // ─── Public (no auth required) ────────────────────────────────
-    Route::post('/register', RegisterController::class)
-        ->name('auth.register');
+    Route::middleware('throttle:auth')->group(function () {
+        Route::post('/register', RegisterController::class)
+            ->name('auth.register');
 
-    Route::post('/login', [LoginController::class, 'login'])
-        ->name('auth.login');
+        Route::post('/login', [LoginController::class, 'login'])
+            ->name('auth.login');
 
-    Route::post('/login/pin', [LoginController::class, 'loginByPin'])
-        ->name('auth.login.pin');
+        Route::post('/login/pin', [LoginController::class, 'loginByPin'])
+            ->name('auth.login.pin');
 
-    Route::post('/otp/send', [OtpController::class, 'send'])
-        ->name('auth.otp.send');
+        Route::post('/otp/send', [OtpController::class, 'send'])
+            ->name('auth.otp.send');
 
-    Route::post('/otp/verify', [OtpController::class, 'verify'])
-        ->name('auth.otp.verify');
+        Route::post('/otp/verify', [OtpController::class, 'verify'])
+            ->name('auth.otp.verify');
+    });
 
     // ─── Authenticated ────────────────────────────────────────────
     Route::middleware('auth:sanctum')->group(function () {

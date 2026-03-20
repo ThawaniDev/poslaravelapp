@@ -51,9 +51,13 @@ class ProductController extends BaseApiController
         return $this->created(new ProductResource($product));
     }
 
-    public function show(string $product): JsonResponse
+    public function show(Request $request, string $product): JsonResponse
     {
         $found = $this->productService->find($product);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Product not found.');
+        }
 
         return $this->success(new ProductResource($found));
     }
@@ -120,9 +124,13 @@ class ProductController extends BaseApiController
         return $this->success(['barcode' => $barcode], 'Barcode generated successfully.');
     }
 
-    public function variants(string $product): JsonResponse
+    public function variants(Request $request, string $product): JsonResponse
     {
         $found = $this->productService->find($product);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Product not found.');
+        }
 
         return $this->success(
             $found->productVariants->map(fn ($v) => [
@@ -162,9 +170,13 @@ class ProductController extends BaseApiController
         return $this->success(new ProductResource($updated));
     }
 
-    public function modifiers(string $product): JsonResponse
+    public function modifiers(Request $request, string $product): JsonResponse
     {
         $found = $this->productService->find($product);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Product not found.');
+        }
 
         return $this->success(
             $found->modifierGroups->map(fn ($g) => [

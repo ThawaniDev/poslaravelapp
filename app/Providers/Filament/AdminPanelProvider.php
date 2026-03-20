@@ -43,11 +43,14 @@ class AdminPanelProvider extends PanelProvider
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             ->navigationGroups([
                 'Core',
-                'Catalog & Inventory',
-                'People',
                 'Business',
+                'People',
+                'Support',
+                'Content',
                 'Integrations',
-                'Industry',
+                'Notifications',
+                'Updates',
+                'Security',
                 'Settings',
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')

@@ -30,16 +30,16 @@ class FloristService
         return FlowerArrangement::create(array_merge($data, ['store_id' => $storeId]));
     }
 
-    public function updateArrangement(string $id, array $data): FlowerArrangement
+    public function updateArrangement(string $id, string $storeId, array $data): FlowerArrangement
     {
-        $arrangement = FlowerArrangement::findOrFail($id);
+        $arrangement = FlowerArrangement::where('store_id', $storeId)->findOrFail($id);
         $arrangement->update($data);
         return $arrangement->fresh();
     }
 
-    public function deleteArrangement(string $id): void
+    public function deleteArrangement(string $id, string $storeId): void
     {
-        FlowerArrangement::findOrFail($id)->delete();
+        FlowerArrangement::where('store_id', $storeId)->findOrFail($id)->delete();
     }
 
     public function listFreshnessLogs(string $storeId, array $filters = [])
@@ -61,9 +61,9 @@ class FloristService
         return FlowerFreshnessLog::create(array_merge($data, ['store_id' => $storeId]));
     }
 
-    public function updateFreshnessLogStatus(string $id, string $status): FlowerFreshnessLog
+    public function updateFreshnessLogStatus(string $id, string $storeId, string $status): FlowerFreshnessLog
     {
-        $log = FlowerFreshnessLog::findOrFail($id);
+        $log = FlowerFreshnessLog::where('store_id', $storeId)->findOrFail($id);
         $updateData = ['status' => $status];
         if ($status === 'marked_down') {
             $updateData['markdown_date'] = now()->toDateString();
@@ -94,16 +94,16 @@ class FloristService
         return FlowerSubscription::create(array_merge($data, ['store_id' => $storeId]));
     }
 
-    public function updateSubscription(string $id, array $data): FlowerSubscription
+    public function updateSubscription(string $id, string $storeId, array $data): FlowerSubscription
     {
-        $sub = FlowerSubscription::findOrFail($id);
+        $sub = FlowerSubscription::where('store_id', $storeId)->findOrFail($id);
         $sub->update($data);
         return $sub->fresh();
     }
 
-    public function toggleSubscription(string $id): FlowerSubscription
+    public function toggleSubscription(string $id, string $storeId): FlowerSubscription
     {
-        $sub = FlowerSubscription::findOrFail($id);
+        $sub = FlowerSubscription::where('store_id', $storeId)->findOrFail($id);
         $sub->update(['is_active' => ! $sub->is_active]);
         return $sub->fresh();
     }

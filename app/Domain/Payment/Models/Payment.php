@@ -40,6 +40,7 @@ class Payment extends Model
         'cash_tendered' => 'decimal:2',
         'change_given' => 'decimal:2',
         'tip_amount' => 'decimal:2',
+        'created_at' => 'datetime',
     ];
 
     public function transaction(): BelongsTo

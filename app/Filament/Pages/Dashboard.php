@@ -2,10 +2,10 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Widgets\ActiveCashiersWidget;
-use App\Filament\Widgets\DashboardStatsWidget;
-use App\Filament\Widgets\LowStockAlertsWidget;
-use App\Filament\Widgets\SalesTrendChart;
+use App\Filament\Widgets\OpenTicketsWidget;
+use App\Filament\Widgets\PlatformRevenueTrendChart;
+use App\Filament\Widgets\PlatformStatsWidget;
+use App\Filament\Widgets\RecentStoresWidget;
 use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
@@ -15,10 +15,10 @@ class Dashboard extends BaseDashboard
     public function getWidgets(): array
     {
         return [
-            DashboardStatsWidget::class,
-            SalesTrendChart::class,
-            LowStockAlertsWidget::class,
-            ActiveCashiersWidget::class,
+            PlatformStatsWidget::class,
+            PlatformRevenueTrendChart::class,
+            RecentStoresWidget::class,
+            OpenTicketsWidget::class,
         ];
     }
 

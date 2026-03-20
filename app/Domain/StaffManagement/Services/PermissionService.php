@@ -168,5 +168,98 @@ class PermissionService
             ['name' => 'promotions.update',        'display_name' => 'Update Promotions'],
             ['name' => 'promotions.delete',        'display_name' => 'Delete Promotions'],
         ],
+        'delivery' => [
+            ['name' => 'delivery.view',            'display_name' => 'View Delivery Integrations'],
+            ['name' => 'delivery.manage',          'display_name' => 'Manage Delivery Configs'],
+            ['name' => 'delivery.sync_menu',       'display_name' => 'Sync Menu to Platforms'],
+            ['name' => 'delivery.manage_orders',   'display_name' => 'Manage Delivery Orders'],
+        ],
+        'thawani' => [
+            ['name' => 'thawani.view',             'display_name' => 'View Thawani Integration'],
+            ['name' => 'thawani.manage',           'display_name' => 'Manage Thawani Config'],
+            ['name' => 'thawani.sync',             'display_name' => 'Sync Products to Thawani'],
+            ['name' => 'thawani.settlements',      'display_name' => 'View Settlements'],
+        ],
+        'security' => [
+            ['name' => 'security.view_audit',      'display_name' => 'View Security Audit Log'],
+            ['name' => 'security.manage_devices',  'display_name' => 'Manage Registered Devices'],
+            ['name' => 'security.manage_policies', 'display_name' => 'Manage Security Policies',  'requires_pin' => true],
+            ['name' => 'security.remote_wipe',     'display_name' => 'Remote Wipe Device',        'requires_pin' => true],
+        ],
+        'zatca' => [
+            ['name' => 'zatca.view',               'display_name' => 'View ZATCA Invoices'],
+            ['name' => 'zatca.submit',             'display_name' => 'Submit ZATCA Invoice'],
+            ['name' => 'zatca.enroll',             'display_name' => 'Enroll ZATCA Certificate',   'requires_pin' => true],
+        ],
+        'hardware' => [
+            ['name' => 'hardware.view',            'display_name' => 'View Hardware Configs'],
+            ['name' => 'hardware.manage',          'display_name' => 'Manage Hardware Devices'],
+        ],
+        'backup' => [
+            ['name' => 'backup.view',              'display_name' => 'View Backup History'],
+            ['name' => 'backup.create',            'display_name' => 'Create Backup'],
+            ['name' => 'backup.restore',           'display_name' => 'Restore Backup',             'requires_pin' => true],
+            ['name' => 'backup.delete',            'display_name' => 'Delete Backup',              'requires_pin' => true],
+        ],
+        'pos_customization' => [
+            ['name' => 'pos_customization.view',   'display_name' => 'View POS Customization'],
+            ['name' => 'pos_customization.update', 'display_name' => 'Update POS Customization'],
+        ],
+        'support' => [
+            ['name' => 'support.view',             'display_name' => 'View Support Tickets'],
+            ['name' => 'support.create',           'display_name' => 'Create Support Ticket'],
+            ['name' => 'support.reply',            'display_name' => 'Reply to Ticket'],
+        ],
+        'labels' => [
+            ['name' => 'labels.view',              'display_name' => 'View Label Templates'],
+            ['name' => 'labels.manage',            'display_name' => 'Manage Label Templates'],
+            ['name' => 'labels.print',             'display_name' => 'Print Labels'],
+        ],
+        'notifications' => [
+            ['name' => 'notifications.view',              'display_name' => 'View Notifications'],
+            ['name' => 'notifications.manage_templates',  'display_name' => 'Manage Notification Templates'],
+            ['name' => 'notifications.manage_preferences', 'display_name' => 'Manage Notification Preferences'],
+        ],
+        'bakery' => [
+            ['name' => 'bakery.view',              'display_name' => 'View Bakery Module'],
+            ['name' => 'bakery.recipes',           'display_name' => 'Manage Bakery Recipes'],
+            ['name' => 'bakery.orders',            'display_name' => 'Manage Custom Cake Orders'],
+            ['name' => 'bakery.production',        'display_name' => 'Manage Production Schedule'],
+        ],
+        'electronics' => [
+            ['name' => 'electronics.view',         'display_name' => 'View Electronics Module'],
+            ['name' => 'electronics.imei',         'display_name' => 'Manage IMEI Records'],
+            ['name' => 'electronics.repairs',      'display_name' => 'Manage Repair Jobs'],
+            ['name' => 'electronics.trade_in',     'display_name' => 'Manage Trade-Ins'],
+        ],
+        'florist' => [
+            ['name' => 'florist.view',             'display_name' => 'View Florist Module'],
+            ['name' => 'florist.manage',           'display_name' => 'Manage Arrangements'],
+            ['name' => 'florist.subscriptions',    'display_name' => 'Manage Flower Subscriptions'],
+            ['name' => 'florist.freshness',        'display_name' => 'Manage Freshness Tracking'],
+        ],
+        'jewelry' => [
+            ['name' => 'jewelry.view',             'display_name' => 'View Jewelry Module'],
+            ['name' => 'jewelry.manage',           'display_name' => 'Manage Jewelry Details'],
+            ['name' => 'jewelry.rates',            'display_name' => 'Manage Metal Rates'],
+            ['name' => 'jewelry.buyback',          'display_name' => 'Process Buyback',            'requires_pin' => true],
+        ],
+        'pharmacy' => [
+            ['name' => 'pharmacy.view',            'display_name' => 'View Pharmacy Module'],
+            ['name' => 'pharmacy.manage',          'display_name' => 'Manage Drug Schedules'],
+            ['name' => 'pharmacy.prescriptions',   'display_name' => 'Manage Prescriptions'],
+        ],
+        'restaurant' => [
+            ['name' => 'restaurant.view',          'display_name' => 'View Restaurant Module'],
+            ['name' => 'restaurant.tables',        'display_name' => 'Manage Tables'],
+            ['name' => 'restaurant.reservations',  'display_name' => 'Manage Reservations'],
+            ['name' => 'restaurant.kitchen',       'display_name' => 'Manage Kitchen Tickets'],
+            ['name' => 'restaurant.tabs',          'display_name' => 'Manage Open Tabs'],
+        ],
+        'accounting_integration' => [
+            ['name' => 'accounting.connect',       'display_name' => 'Connect Accounting Provider', 'requires_pin' => true],
+            ['name' => 'accounting.export',        'display_name' => 'Export to Accounting'],
+            ['name' => 'accounting.mappings',      'display_name' => 'Manage Account Mappings'],
+        ],
     ];
 }

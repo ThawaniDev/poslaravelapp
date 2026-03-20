@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\DeliveryIntegration\Controllers\Api\DeliveryController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -12,6 +13,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('delivery')->group(function () {
-    // TODO: Add DeliveryIntegration routes here
+Route::prefix('delivery')->middleware('auth:sanctum')->group(function () {
+    Route::get('stats', [DeliveryController::class, 'stats']);
+    Route::get('configs', [DeliveryController::class, 'configs']);
+    Route::post('configs', [DeliveryController::class, 'saveConfig']);
+    Route::put('configs/{id}/toggle', [DeliveryController::class, 'toggleConfig']);
+    Route::get('orders', [DeliveryController::class, 'orders']);
+    Route::get('sync-logs', [DeliveryController::class, 'syncLogs']);
 });

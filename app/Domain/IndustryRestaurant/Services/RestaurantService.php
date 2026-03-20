@@ -33,16 +33,16 @@ class RestaurantService
         return RestaurantTable::create(array_merge($data, ['store_id' => $storeId]));
     }
 
-    public function updateTable(string $id, array $data): RestaurantTable
+    public function updateTable(string $id, string $storeId, array $data): RestaurantTable
     {
-        $table = RestaurantTable::findOrFail($id);
+        $table = RestaurantTable::where('store_id', $storeId)->findOrFail($id);
         $table->update($data);
         return $table->fresh();
     }
 
-    public function updateTableStatus(string $id, string $status): RestaurantTable
+    public function updateTableStatus(string $id, string $storeId, string $status): RestaurantTable
     {
-        $table = RestaurantTable::findOrFail($id);
+        $table = RestaurantTable::where('store_id', $storeId)->findOrFail($id);
         $table->update(['status' => $status]);
         return $table->fresh();
     }
@@ -71,9 +71,9 @@ class RestaurantService
         return KitchenTicket::create(array_merge($data, ['store_id' => $storeId]));
     }
 
-    public function updateKitchenTicketStatus(string $id, string $status): KitchenTicket
+    public function updateKitchenTicketStatus(string $id, string $storeId, string $status): KitchenTicket
     {
-        $ticket = KitchenTicket::findOrFail($id);
+        $ticket = KitchenTicket::where('store_id', $storeId)->findOrFail($id);
         $updateData = ['status' => $status];
         if ($status === 'ready' || $status === 'served') {
             $updateData['completed_at'] = now();
@@ -96,8 +96,8 @@ class RestaurantService
         }
         if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
-                $q->where('customer_name', 'like', '%' . $filters['search'] . '%')
-                  ->orWhere('customer_phone', 'like', '%' . $filters['search'] . '%');
+                $q->where('customer_name', 'ilike', '%' . $filters['search'] . '%')
+                  ->orWhere('customer_phone', 'ilike', '%' . $filters['search'] . '%');
             });
         }
 
@@ -109,16 +109,16 @@ class RestaurantService
         return TableReservation::create(array_merge($data, ['store_id' => $storeId]));
     }
 
-    public function updateReservation(string $id, array $data): TableReservation
+    public function updateReservation(string $id, string $storeId, array $data): TableReservation
     {
-        $reservation = TableReservation::findOrFail($id);
+        $reservation = TableReservation::where('store_id', $storeId)->findOrFail($id);
         $reservation->update($data);
         return $reservation->fresh();
     }
 
-    public function updateReservationStatus(string $id, string $status): TableReservation
+    public function updateReservationStatus(string $id, string $storeId, string $status): TableReservation
     {
-        $reservation = TableReservation::findOrFail($id);
+        $reservation = TableReservation::where('store_id', $storeId)->findOrFail($id);
         $reservation->update(['status' => $status]);
         return $reservation->fresh();
     }
@@ -148,9 +148,9 @@ class RestaurantService
         ]));
     }
 
-    public function closeTab(string $id): OpenTab
+    public function closeTab(string $id, string $storeId): OpenTab
     {
-        $tab = OpenTab::findOrFail($id);
+        $tab = OpenTab::where('store_id', $storeId)->findOrFail($id);
         $tab->update([
             'status' => 'closed',
             'closed_at' => now(),

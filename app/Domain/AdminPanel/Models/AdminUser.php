@@ -5,20 +5,81 @@ namespace App\Domain\AdminPanel\Models;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
 class AdminUser extends Authenticatable implements FilamentUser
 {
     use HasApiTokens, HasUuids;
 
-    /**
-     * Determine if the user can access the given Filament panel.
-     */
+    /** @var bool|null Cached super-admin flag for this request */
+    protected ?bool $cachedIsSuperAdmin = null;
+
+    /** @var \Illuminate\Support\Collection|null Cached permission names for this request */
+    protected ?\Illuminate\Support\Collection $cachedPermissions = null;
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->is_active;
+    }
+
+    // ── Permission helpers ───────────────────────────────────────────
+
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            AdminRole::class,
+            'admin_user_roles',
+            'admin_user_id',
+            'admin_role_id',
+        );
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        if ($this->cachedIsSuperAdmin === null) {
+            $this->cachedIsSuperAdmin = $this->roles()->where('slug', 'super_admin')->exists();
+        }
+
+        return $this->cachedIsSuperAdmin;
+    }
+
+    /**
+     * Load all permission names for this user (once per request).
+     */
+    protected function loadPermissions(): \Illuminate\Support\Collection
+    {
+        if ($this->cachedPermissions === null) {
+            $roleIds = $this->roles()->pluck('admin_roles.id');
+
+            $this->cachedPermissions = DB::table('admin_role_permissions')
+                ->join('admin_permissions', 'admin_role_permissions.admin_permission_id', '=', 'admin_permissions.id')
+                ->whereIn('admin_role_permissions.admin_role_id', $roleIds)
+                ->pluck('admin_permissions.name');
+        }
+
+        return $this->cachedPermissions;
+    }
+
+    public function hasPermission(string $permissionName): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->loadPermissions()->contains($permissionName);
+    }
+
+    public function hasAnyPermission(array $permissionNames): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->loadPermissions()->intersect($permissionNames)->isNotEmpty();
     }
 
     protected $table = 'admin_users';

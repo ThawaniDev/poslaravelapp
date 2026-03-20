@@ -29,6 +29,7 @@ class StaffActivityLog extends Model
     protected $casts = [
         'entity_type' => ActivityEntityType::class,
         'details' => 'array',
+        'created_at' => 'datetime',
     ];
 
     public function staffUser(): BelongsTo

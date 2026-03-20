@@ -17,6 +17,7 @@ class CashEventResource extends JsonResource
             'reason'          => $this->reason,
             'notes'           => $this->notes,
             'performed_by'    => $this->performed_by,
+            'created_at'      => $this->created_at?->toIso8601String(),
         ];
     }
 }

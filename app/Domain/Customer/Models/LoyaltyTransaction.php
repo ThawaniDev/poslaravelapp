@@ -29,6 +29,7 @@ class LoyaltyTransaction extends Model
 
     protected $casts = [
         'type' => LoyaltyTransactionType::class,
+        'created_at' => 'datetime',
     ];
 
     public function customer(): BelongsTo

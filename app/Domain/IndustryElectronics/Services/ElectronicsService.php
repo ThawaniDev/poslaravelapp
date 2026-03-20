@@ -17,8 +17,8 @@ class ElectronicsService
         }
         if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
-                $q->where('imei', 'like', '%' . $filters['search'] . '%')
-                  ->orWhere('serial_number', 'like', '%' . $filters['search'] . '%');
+                $q->where('imei', 'ilike', '%' . $filters['search'] . '%')
+                  ->orWhere('serial_number', 'ilike', '%' . $filters['search'] . '%');
             });
         }
 
@@ -30,9 +30,9 @@ class ElectronicsService
         return DeviceImeiRecord::create(array_merge($data, ['store_id' => $storeId]));
     }
 
-    public function updateImeiRecord(string $id, array $data): DeviceImeiRecord
+    public function updateImeiRecord(string $id, string $storeId, array $data): DeviceImeiRecord
     {
-        $record = DeviceImeiRecord::findOrFail($id);
+        $record = DeviceImeiRecord::where('store_id', $storeId)->findOrFail($id);
         $record->update($data);
         return $record->fresh();
     }
@@ -45,7 +45,7 @@ class ElectronicsService
             $query->where('status', $filters['status']);
         }
         if (! empty($filters['search'])) {
-            $query->where('device_description', 'like', '%' . $filters['search'] . '%');
+            $query->where('device_description', 'ilike', '%' . $filters['search'] . '%');
         }
 
         return $query->orderByDesc('received_at')->paginate($filters['per_page'] ?? 15);
@@ -53,19 +53,21 @@ class ElectronicsService
 
     public function createRepairJob(string $storeId, array $data): RepairJob
     {
+        $data['received_at'] = now();
+        $data['status'] = 'received';
         return RepairJob::create(array_merge($data, ['store_id' => $storeId]));
     }
 
-    public function updateRepairJob(string $id, array $data): RepairJob
+    public function updateRepairJob(string $id, string $storeId, array $data): RepairJob
     {
-        $job = RepairJob::findOrFail($id);
+        $job = RepairJob::where('store_id', $storeId)->findOrFail($id);
         $job->update($data);
         return $job->fresh();
     }
 
-    public function updateRepairJobStatus(string $id, string $status): RepairJob
+    public function updateRepairJobStatus(string $id, string $storeId, string $status): RepairJob
     {
-        $job = RepairJob::findOrFail($id);
+        $job = RepairJob::where('store_id', $storeId)->findOrFail($id);
         $updateData = ['status' => $status];
         if ($status === 'collected') {
             $updateData['collected_at'] = now();
@@ -85,7 +87,7 @@ class ElectronicsService
             $query->where('customer_id', $filters['customer_id']);
         }
         if (! empty($filters['search'])) {
-            $query->where('device_description', 'like', '%' . $filters['search'] . '%');
+            $query->where('device_description', 'ilike', '%' . $filters['search'] . '%');
         }
 
         return $query->orderByDesc('created_at')->paginate($filters['per_page'] ?? 15);

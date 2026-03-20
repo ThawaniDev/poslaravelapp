@@ -32,6 +32,7 @@ class StoreCreditTransaction extends Model
         'type' => StoreCreditTransactionType::class,
         'amount' => 'decimal:2',
         'balance_after' => 'decimal:2',
+        'created_at' => 'datetime',
     ];
 
     public function customer(): BelongsTo

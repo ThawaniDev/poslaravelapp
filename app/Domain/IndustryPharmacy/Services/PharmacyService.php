@@ -23,9 +23,9 @@ class PharmacyService
         return Prescription::create(array_merge($data, ['store_id' => $storeId]));
     }
 
-    public function updatePrescription(string $id, array $data): Prescription
+    public function updatePrescription(string $id, string $storeId, array $data): Prescription
     {
-        $prescription = Prescription::findOrFail($id);
+        $prescription = Prescription::where('store_id', $storeId)->findOrFail($id);
         $prescription->update($data);
         return $prescription->fresh();
     }

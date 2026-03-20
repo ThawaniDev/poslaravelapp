@@ -8,6 +8,7 @@ use App\Domain\ZatcaCompliance\Requests\SubmitBatchRequest;
 use App\Domain\ZatcaCompliance\Requests\SubmitInvoiceRequest;
 use App\Domain\ZatcaCompliance\Services\ZatcaComplianceService;
 use App\Http\Controllers\Api\BaseApiController;
+use Illuminate\Http\Request;
 
 class ZatcaComplianceController extends BaseApiController
 {
@@ -25,9 +26,9 @@ class ZatcaComplianceController extends BaseApiController
         return $this->created($result, __('zatca.enrolled'));
     }
 
-    public function renew()
+    public function renew(Request $request)
     {
-        $storeId = request()->user()->store_id;
+        $storeId = $request->user()->store_id;
         $result = $this->service->renewCertificate($storeId);
 
         return $this->success($result, __('zatca.renewed'));
@@ -57,9 +58,9 @@ class ZatcaComplianceController extends BaseApiController
         return $this->success($result, __('zatca.invoices_retrieved'));
     }
 
-    public function invoiceXml(string $invoiceId)
+    public function invoiceXml(Request $request, string $invoiceId)
     {
-        $storeId = request()->user()->store_id;
+        $storeId = $request->user()->store_id;
         $xml = $this->service->getInvoiceXml($storeId, $invoiceId);
 
         if (! $xml) {
@@ -69,9 +70,9 @@ class ZatcaComplianceController extends BaseApiController
         return response($xml, 200, ['Content-Type' => 'application/xml']);
     }
 
-    public function complianceSummary()
+    public function complianceSummary(Request $request)
     {
-        $storeId = request()->user()->store_id;
+        $storeId = $request->user()->store_id;
         $result = $this->service->complianceSummary($storeId);
 
         return $this->success($result, __('zatca.summary_retrieved'));

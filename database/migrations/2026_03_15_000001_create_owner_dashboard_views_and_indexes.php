@@ -34,19 +34,19 @@ return new class extends Migration
             DB::statement('
                 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_product_performance AS
                 SELECT
-                    p.store_id,
+                    o.store_id,
                     p.id AS product_id,
                     p.name_ar,
                     p.name AS name_en,
                     p.sku,
                     SUM(oi.quantity) AS total_qty_sold,
-                    SUM(oi.line_total) AS total_revenue,
+                    SUM(oi.total) AS total_revenue,
                     COUNT(DISTINCT oi.order_id) AS order_count
                 FROM products p
                 JOIN order_items oi ON oi.product_id = p.id
                 JOIN orders o ON o.id = oi.order_id
                 WHERE o.status NOT IN (\'cancelled\', \'voided\')
-                GROUP BY p.store_id, p.id, p.name_ar, p.name, p.sku
+                GROUP BY o.store_id, p.id, p.name_ar, p.name, p.sku
             ');
 
             DB::statement('

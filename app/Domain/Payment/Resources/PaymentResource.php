@@ -24,6 +24,7 @@ class PaymentResource extends JsonResource
             'gift_card_code'     => $this->gift_card_code,
             'coupon_code'        => $this->coupon_code,
             'loyalty_points_used' => $this->loyalty_points_used,
+            'created_at'          => $this->created_at?->toIso8601String(),
         ];
     }
 }

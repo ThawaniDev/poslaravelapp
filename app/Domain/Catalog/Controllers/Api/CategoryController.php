@@ -36,9 +36,13 @@ class CategoryController extends BaseApiController
         return $this->created(new CategoryResource($category));
     }
 
-    public function show(string $category): JsonResponse
+    public function show(Request $request, string $category): JsonResponse
     {
         $found = $this->categoryService->find($category);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Category not found.');
+        }
 
         return $this->success(new CategoryResource($found));
     }
