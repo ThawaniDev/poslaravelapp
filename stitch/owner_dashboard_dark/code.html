@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html class="dark" dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+Arabic:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#1a1209",
+                        "surface-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "Noto Sans Arabic", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.75rem",
+                        "lg": "0.75rem",
+                        "xl": "1rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', 'Noto Sans Arabic', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .elevation-1 {
+            box-shadow: 0px 1px 3px 1px rgba(0, 0, 0, 0.15), 0px 1px 2px 0px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background-dark text-slate-100 font-display">
+<div class="flex min-h-screen w-full overflow-x-hidden">
+<!-- Sidebar -->
+<aside class="w-64 border-l border-primary/10 bg-surface-dark flex flex-col justify-between p-4 hidden lg:flex">
+<div class="flex flex-col gap-8">
+<div class="flex items-center gap-3 px-2">
+<div class="size-10 rounded-full bg-primary flex items-center justify-center text-background-dark">
+<span class="material-symbols-outlined font-bold">point_of_sale</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-100 text-base font-bold leading-none">ثواني POS</h1>
+<p class="text-primary/70 text-xs font-medium">لوحة المالك</p>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary text-background-dark font-semibold" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm">الرئيسية</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/10 text-slate-300 transition-colors" href="#">
+<span class="material-symbols-outlined text-primary">receipt_long</span>
+<span class="text-sm">المبيعات</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/10 text-slate-300 transition-colors" href="#">
+<span class="material-symbols-outlined text-primary">inventory_2</span>
+<span class="text-sm">المنتجات</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/10 text-slate-300 transition-colors" href="#">
+<span class="material-symbols-outlined text-primary">person_apron</span>
+<span class="text-sm">الكاشيرية</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/10 text-slate-300 transition-colors" href="#">
+<span class="material-symbols-outlined text-primary">local_shipping</span>
+<span class="text-sm">التوصيل</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/10 text-slate-300 transition-colors" href="#">
+<span class="material-symbols-outlined text-primary">settings</span>
+<span class="text-sm">الإعدادات</span>
+</a>
+</nav>
+</div>
+<button class="w-full py-3 bg-primary text-background-dark font-bold rounded-xl flex items-center justify-center gap-2 hover:brightness-110 transition-all">
+<span class="material-symbols-outlined">add</span>
+<span>إضافة بيع جديد</span>
+</button>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col min-w-0">
+<!-- Header -->
+<header class="h-16 flex items-center justify-between px-8 border-b border-primary/10 bg-surface-dark/50 sticky top-0 z-10 backdrop-blur-md">
+<div class="flex items-center gap-6 flex-1">
+<h2 class="text-xl font-bold text-slate-100">لوحة التحكم</h2>
+<div class="relative max-w-md w-full">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-primary/50">search</span>
+<input class="w-full bg-background-dark border-none rounded-xl pr-10 text-sm focus:ring-1 focus:ring-primary text-slate-200 placeholder:text-slate-500" placeholder="بحث في المبيعات، المنتجات..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="size-10 rounded-xl bg-surface-dark border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="size-10 rounded-xl bg-surface-dark border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">dark_mode</span>
+</button>
+<div class="h-10 w-[1px] bg-primary/10 mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="text-left hidden md:block">
+<p class="text-sm font-semibold leading-none">أحمد العجمي</p>
+<p class="text-[10px] text-primary">مدير النظام</p>
+</div>
+<img class="size-10 rounded-full border-2 border-primary/20" data-alt="User profile avatar of the owner" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSz-SJ54UXkCCBm4LeqbqtdIYWJrhuzvXZ3CJSzj3R41OmKV2Osa6DHITT6o2jqRo1IFYIUxkUXeHooHiBwx_wHGk_FqMwvX9XSqhaOPxh0ZzOhWww4m88GC6q5DafU2bTTKdR0ca1XYIONSwIzQBiAw7s2RTz2NMNmP0Xlda30qokUSocaMewXTl3_r4OogDGkJh0UpbkNrObqNFfSg6oXeLjCwOho_gPVVa7oumxzSpJaQCZK4PVvp96XrI807B00uGVw2TLCMf3"/>
+</div>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="p-8 flex flex-col gap-8">
+<!-- KPI Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="p-6 bg-surface-dark rounded-xl border border-primary/5 elevation-1">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined p-2 bg-primary/10 text-primary rounded-lg">payments</span>
+<span class="text-emerald-500 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-full">+12.5%</span>
+</div>
+<p class="text-slate-400 text-sm font-medium">إجمالي المبيعات</p>
+<p class="text-2xl font-bold mt-1 text-slate-100">4,250.00 ر.ع</p>
+</div>
+<div class="p-6 bg-surface-dark rounded-xl border border-primary/5 elevation-1">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined p-2 bg-primary/10 text-primary rounded-lg">shopping_cart</span>
+<span class="text-rose-500 text-xs font-bold bg-rose-500/10 px-2 py-1 rounded-full">-2.4%</span>
+</div>
+<p class="text-slate-400 text-sm font-medium">عدد الطلبات</p>
+<p class="text-2xl font-bold mt-1 text-slate-100">128</p>
+</div>
+<div class="p-6 bg-surface-dark rounded-xl border border-primary/5 elevation-1">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined p-2 bg-primary/10 text-primary rounded-lg">trending_up</span>
+<span class="text-emerald-500 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-full">+8.1%</span>
+</div>
+<p class="text-slate-400 text-sm font-medium">صافي الربح</p>
+<p class="text-2xl font-bold mt-1 text-slate-100">1,120.00 ر.ع</p>
+</div>
+<div class="p-6 bg-surface-dark rounded-xl border border-primary/5 elevation-1">
+<div class="flex justify-between items-start mb-4">
+<span class="material-symbols-outlined p-2 bg-primary/10 text-primary rounded-lg">group</span>
+<span class="text-emerald-500 text-xs font-bold bg-emerald-500/10 px-2 py-1 rounded-full">+5.0%</span>
+</div>
+<p class="text-slate-400 text-sm font-medium">العملاء الجدد</p>
+<p class="text-2xl font-bold mt-1 text-slate-100">85</p>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Chart Section -->
+<div class="lg:col-span-2 bg-surface-dark rounded-xl p-6 border border-primary/5 elevation-1">
+<div class="flex items-center justify-between mb-8">
+<div>
+<h3 class="text-lg font-bold">نظرة عامة على المبيعات</h3>
+<p class="text-xs text-slate-400 mt-1">إحصائيات المبيعات خلال الـ 7 أيام الماضية</p>
+</div>
+<select class="bg-background-dark border-none rounded-lg text-xs font-semibold py-2 px-4 focus:ring-1 focus:ring-primary">
+<option>آخر 7 أيام</option>
+<option>آخر 30 يوم</option>
+</select>
+</div>
+<div class="h-64 relative flex items-end justify-between gap-4 px-2">
+<!-- Simple SVG Visualization for Chart -->
+<div class="absolute inset-0 flex flex-col justify-between py-2 pointer-events-none opacity-10">
+<div class="border-t border-slate-100 w-full"></div>
+<div class="border-t border-slate-100 w-full"></div>
+<div class="border-t border-slate-100 w-full"></div>
+<div class="border-t border-slate-100 w-full"></div>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full bg-primary/20 rounded-t-lg transition-all group-hover:bg-primary" style="height: 60%"></div>
+<span class="text-[10px] text-slate-500 font-bold uppercase">السبت</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full bg-primary/20 rounded-t-lg transition-all group-hover:bg-primary" style="height: 85%"></div>
+<span class="text-[10px] text-slate-500 font-bold uppercase">الأحد</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full bg-primary/20 rounded-t-lg transition-all group-hover:bg-primary" style="height: 45%"></div>
+<span class="text-[10px] text-slate-500 font-bold uppercase">الاثنين</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full bg-primary/20 rounded-t-lg transition-all group-hover:bg-primary" style="height: 70%"></div>
+<span class="text-[10px] text-slate-500 font-bold uppercase">الثلاثاء</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full bg-primary/20 rounded-t-lg transition-all group-hover:bg-primary" style="height: 95%"></div>
+<span class="text-[10px] text-slate-500 font-bold uppercase">الأربعاء</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full bg-primary/20 rounded-t-lg transition-all group-hover:bg-primary" style="height: 55%"></div>
+<span class="text-[10px] text-slate-500 font-bold uppercase">الخميس</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full bg-primary/20 rounded-t-lg transition-all group-hover:bg-primary" style="height: 40%"></div>
+<span class="text-[10px] text-slate-500 font-bold uppercase">الجمعة</span>
+</div>
+</div>
+</div>
+<!-- Top Selling Products -->
+<div class="bg-surface-dark rounded-xl p-6 border border-primary/5 elevation-1">
+<h3 class="text-lg font-bold mb-6">الأكثر مبيعاً</h3>
+<div class="flex flex-col gap-5">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-background-dark flex items-center justify-center p-2">
+<span class="material-symbols-outlined text-primary">coffee</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold">قهوة مختصة - إثيوبي</p>
+<p class="text-xs text-slate-500">450 طلب</p>
+</div>
+<p class="text-sm font-bold text-primary">1,250 ر.ع</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-background-dark flex items-center justify-center p-2">
+<span class="material-symbols-outlined text-primary">restaurant</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold">ساندويتش دجاج حار</p>
+<p class="text-xs text-slate-500">320 طلب</p>
+</div>
+<p class="text-sm font-bold text-primary">960 ر.ع</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-background-dark flex items-center justify-center p-2">
+<span class="material-symbols-outlined text-primary">icecream</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold">آيس كريم فانيلا</p>
+<p class="text-xs text-slate-500">280 طلب</p>
+</div>
+<p class="text-sm font-bold text-primary">420 ر.ع</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-lg bg-background-dark flex items-center justify-center p-2">
+<span class="material-symbols-outlined text-primary">local_bar</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold">عصير برتقال طازج</p>
+<p class="text-xs text-slate-500">210 طلب</p>
+</div>
+<p class="text-sm font-bold text-primary">315 ر.ع</p>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Low Stock Alerts -->
+<div class="bg-surface-dark rounded-xl p-6 border border-primary/5 elevation-1">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-base font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-rose-500 text-sm">warning</span>
+                                تنبيهات المخزون
+                            </h3>
+<a class="text-[10px] font-bold text-primary border-b border-primary/30" href="#">عرض الكل</a>
+</div>
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between p-3 bg-background-dark/50 rounded-xl border border-primary/5">
+<div class="flex flex-col">
+<p class="text-sm font-medium">حبوب البن المحمصة</p>
+<p class="text-[10px] text-rose-400">بقي 2.5 كجم فقط</p>
+</div>
+<button class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg">إعادة طلب</button>
+</div>
+<div class="flex items-center justify-between p-3 bg-background-dark/50 rounded-xl border border-primary/5">
+<div class="flex flex-col">
+<p class="text-sm font-medium">أكواب ورقية وسط</p>
+<p class="text-[10px] text-rose-400">بقي 15 وحدة</p>
+</div>
+<button class="px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold rounded-lg">إعادة طلب</button>
+</div>
+</div>
+</div>
+<!-- Active Cashiers -->
+<div class="bg-surface-dark rounded-xl p-6 border border-primary/5 elevation-1">
+<h3 class="text-base font-bold mb-6">الكاشيرية المتصلون</h3>
+<div class="flex flex-col gap-4">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img class="size-10 rounded-full" data-alt="Active cashier avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD95FFaxSnUkJParB-hFRxer7CxysoN7OFsQLtdAGXXZddvxbiBnGQolJMU7FKOydt9igwRQ3OvHTGx5D6LAHYlXZCkSTAosO9I9WJpiDoPqwX3r6ihQe9sgz0OAK43MmBqiBSDjpthmNy6ymQ1Lto8gDtFo0UqpcCfYX7ZkaY4ebVuxlIkz_J4q1TfKgDNVag5H6WgHDdIzhKXBKUetysZA9h71ZJg1Q_PCARdrM_9jC4M5Il9yzRwacwZ9GQZdMSe6X6JOet7DXNc"/>
+<div class="absolute bottom-0 left-0 size-3 bg-emerald-500 border-2 border-surface-dark rounded-full"></div>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium">مازن البوسعيدي</p>
+<p class="text-[10px] text-slate-500">الوردية الصباحية • متصل</p>
+</div>
+<div class="text-left">
+<p class="text-xs font-bold text-slate-300">125.4 ر.ع</p>
+<p class="text-[10px] text-slate-500">في الدرج</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="relative">
+<img class="size-10 rounded-full" data-alt="Active cashier avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBW1d8sYVE5WEAiwrC0mfhBhRinNp9CMO3NrPcFPdI9ay6gPNfPhd2KaETDiimq1Ng2RxRcQNVir0w7NhJ44UaszYq6ygIvriVDKgSE_p1gUj_YmNKemVDK7B9CHlG-d4ZgjTqkcScLoeknmuZ0vR-hSmA3QIwItZ0b4SzrRV-pjsB_hAg3FO8Y9aGfXgz_Iqb7u0aTUxtCxna51VTXd9-o39mUhLqoF9dJeIVV9p_6IePBkidUIHTEbZuBfK6ywtJKYtiO5qTeyqNG"/>
+<div class="absolute bottom-0 left-0 size-3 bg-emerald-500 border-2 border-surface-dark rounded-full"></div>
+</div>
+<div class="flex-1">
+<p class="text-sm font-medium">سارة البلوشي</p>
+<p class="text-[10px] text-slate-500">الوردية الصباحية • متصل</p>
+</div>
+<div class="text-left">
+<p class="text-xs font-bold text-slate-300">89.2 ر.ع</p>
+<p class="text-[10px] text-slate-500">في الدرج</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Delivery Feed -->
+<div class="bg-surface-dark rounded-xl p-6 border border-primary/5 elevation-1">
+<h3 class="text-base font-bold mb-6">طلبات التوصيل النشطة</h3>
+<div class="flex flex-col gap-4">
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg text-sm">moped</span>
+<div class="flex-1 border-b border-primary/5 pb-3">
+<div class="flex justify-between items-start">
+<p class="text-sm font-medium">طلب #2940</p>
+<span class="text-[10px] font-bold text-amber-500">قيد التوصيل</span>
+</div>
+<p class="text-[10px] text-slate-500 mt-1">الموقع: الخوير، مسقط</p>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg text-sm">moped</span>
+<div class="flex-1 border-b border-primary/5 pb-3">
+<div class="flex justify-between items-start">
+<p class="text-sm font-medium">طلب #2938</p>
+<span class="text-[10px] font-bold text-emerald-500">تم التسليم</span>
+</div>
+<p class="text-[10px] text-slate-500 mt-1">الموقع: العذيبة، مسقط</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

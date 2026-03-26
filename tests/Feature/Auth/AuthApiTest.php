@@ -27,8 +27,8 @@ class AuthApiTest extends TestCase
             'organization_name' => 'Test Org',
             'store_name' => 'Test Store',
             'country' => 'OM',
-            'currency' => 'OMR',
-            'business_type' => 'retail',
+            'currency' => 'SAR',
+            'business_type' => 'grocery',
         ]);
 
         $response->assertStatus(201)
@@ -46,7 +46,7 @@ class AuthApiTest extends TestCase
 
         $this->assertDatabaseHas('users', ['email' => 'test@example.com']);
         $this->assertDatabaseHas('organizations', ['email' => 'test@example.com']);
-        $this->assertDatabaseHas('stores', ['currency' => 'OMR']);
+        $this->assertDatabaseHas('stores', ['currency' => 'SAR']);
     }
 
     public function test_register_requires_valid_data(): void
@@ -329,7 +329,7 @@ class AuthApiTest extends TestCase
             'name' => 'Test Store',
             'name_ar' => 'متجر تجريبي',
             'slug' => 'test-store-' . Str::random(6),
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'locale' => 'ar',
             'timezone' => 'Asia/Muscat',
             'is_active' => true,

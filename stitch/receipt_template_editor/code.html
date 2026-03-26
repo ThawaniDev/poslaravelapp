@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .thermal-paper {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            background-image: linear-gradient(to bottom, #ffffff 0%, #fcfcfc 100%);
+        }
+        .receipt-dotted {
+            border-top: 1px dashed #e2e8f0;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-6 py-3 shrink-0">
+<div class="flex items-center gap-4">
+<div class="flex items-center justify-center bg-primary rounded-lg p-1.5 text-white">
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+<div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight">Receipt Editor</h2>
+<p class="text-slate-500 text-xs font-medium">Thawani POS • 80mm Standard</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-lg">settings</span>
+                    Settings
+                </button>
+<button class="flex items-center gap-2 bg-primary text-white px-6 py-2 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all">
+<span class="material-symbols-outlined text-lg">save</span>
+                    Save Template
+                </button>
+<div class="h-8 w-px bg-slate-200 mx-2"></div>
+<div class="h-10 w-10 rounded-full bg-slate-200 overflow-hidden border-2 border-slate-100">
+<img alt="User Profile" data-alt="User profile avatar circle" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsfdv37KDYjV7LqwZMXeHJvK5wfs0X5sZ2c8Vzkq3tD6p08e4efF9-H0r1arpFoBXYUYQyqhPi31ezy9-7CvqOjtIJtKZ-8H_kvwOtumtZBEbzBXQUINvhCdnuvxf0T0wadcOHfMCQHldg2fuANvZAyHulYeGPp6Q6g1a5L2PhAd09re_HzbryZtMdZoLcxfUcTswcsIlT7gfRAWK6QkKUrT7BKjanbrbStNa8wWAymMhUsOUxPGKS-4gi1JtgvdvVxirfJbXw95MY"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex flex-1 overflow-hidden">
+<!-- Left Sidebar: Controls -->
+<aside class="w-96 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-y-auto p-6">
+<div class="space-y-8">
+<!-- Section: General Layout -->
+<section>
+<h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Header Elements</h3>
+<div class="space-y-4">
+<label class="flex items-center justify-between cursor-pointer group">
+<span class="text-sm font-medium text-slate-700">Show Brand Logo</span>
+<div class="relative inline-flex items-center">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</label>
+<div class="space-y-2">
+<span class="text-sm font-medium text-slate-700 block">Header Text (EN)</span>
+<textarea class="w-full text-sm border-slate-200 rounded-lg focus:ring-primary focus:border-primary" rows="2">Thank you for visiting Thawani Coffee Shop!</textarea>
+</div>
+<div class="space-y-2">
+<span class="text-sm font-medium text-slate-700 block text-right">Header Text (AR)</span>
+<textarea class="w-full text-sm border-slate-200 rounded-lg focus:ring-primary focus:border-primary text-right" dir="rtl" rows="2">شكراً لزيارتكم مقهى ثواني!</textarea>
+</div>
+</div>
+</section>
+<!-- Section: Transaction Details -->
+<section>
+<h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Transaction Details</h3>
+<div class="space-y-4">
+<label class="flex items-center justify-between cursor-pointer">
+<span class="text-sm font-medium text-slate-700">Show VAT Breakdown</span>
+<div class="relative inline-flex items-center">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</label>
+<label class="flex items-center justify-between cursor-pointer">
+<span class="text-sm font-medium text-slate-700">Show Loyalty Points</span>
+<div class="relative inline-flex items-center">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</label>
+</div>
+</section>
+<!-- Section: Footer Elements -->
+<section>
+<h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Footer Elements</h3>
+<div class="space-y-4">
+<label class="flex items-center justify-between cursor-pointer">
+<span class="text-sm font-medium text-slate-700">Show QR Code (E-Invoice)</span>
+<div class="relative inline-flex items-center">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</label>
+<div class="space-y-2">
+<span class="text-sm font-medium text-slate-700 block">Footer Message</span>
+<input class="w-full text-sm border-slate-200 rounded-lg focus:ring-primary focus:border-primary" type="text" value="Please visit us again soon"/>
+</div>
+<div class="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+<div class="flex gap-3">
+<span class="material-symbols-outlined text-primary">info</span>
+<p class="text-xs text-slate-600 leading-relaxed">Changes are reflected in real-time in the preview on the right. Ensure your thermal printer supports the selected elements.</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+</aside>
+<!-- Right Sidebar: WYSIWYG Preview -->
+<section class="flex-1 bg-background-light dark:bg-background-dark overflow-y-auto flex justify-center py-12 px-6">
+<!-- 80mm Thermal Receipt Simulation -->
+<div class="w-[400px] h-fit thermal-paper bg-white p-10 font-mono text-slate-800 rounded-sm relative">
+<!-- Tear Effect Top -->
+<div class="absolute top-0 left-0 w-full h-2 bg-[radial-gradient(circle,transparent_70%,#f8f7f5_72%)] bg-[length:12px_12px] bg-repeat-x"></div>
+<div class="text-center space-y-4">
+<!-- Brand Logo -->
+<div class="flex justify-center mb-2">
+<div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center text-primary border-4 border-primary/5">
+<span class="material-symbols-outlined text-5xl">local_cafe</span>
+</div>
+</div>
+<div class="space-y-1">
+<h4 class="text-lg font-bold uppercase tracking-tighter">THAWANI CAFE</h4>
+<p class="text-xs">Muscat, Oman - Al Mouj</p>
+<p class="text-xs">VAT ID: 123456789</p>
+</div>
+<div class="receipt-dotted pt-4"></div>
+<!-- Header Texts -->
+<div class="space-y-1">
+<p class="text-xs italic">Thank you for visiting Thawani Coffee Shop!</p>
+<p class="text-sm font-semibold" dir="rtl">شكراً لزيارتكم مقهى ثواني!</p>
+</div>
+<div class="receipt-dotted pt-4"></div>
+<!-- Order Info -->
+<div class="flex justify-between text-xs font-bold uppercase py-2">
+<span>Order #842</span>
+<span>15-Oct-2023 14:22</span>
+</div>
+<div class="receipt-dotted"></div>
+<!-- Items Table -->
+<div class="space-y-2 py-4 text-xs">
+<div class="flex justify-between">
+<span class="w-8 text-left">1x</span>
+<span class="flex-1 text-left">Spanish Latte (Large)</span>
+<span class="w-16 text-right">2.800</span>
+</div>
+<div class="flex justify-between">
+<span class="w-8 text-left">2x</span>
+<span class="flex-1 text-left">Pistachio Croissant</span>
+<span class="w-16 text-right">3.400</span>
+</div>
+<div class="flex justify-between">
+<span class="w-8 text-left">1x</span>
+<span class="flex-1 text-left">Bottled Water</span>
+<span class="w-16 text-right">0.500</span>
+</div>
+</div>
+<div class="receipt-dotted"></div>
+<!-- Totals -->
+<div class="space-y-1 py-4">
+<div class="flex justify-between text-sm">
+<span>Subtotal</span>
+<span>6.345</span>
+</div>
+<div class="flex justify-between text-xs text-slate-500 italic">
+<span>VAT (5%)</span>
+<span>0.355</span>
+</div>
+<div class="flex justify-between text-base font-bold pt-2 border-t border-slate-100">
+<span>TOTAL OMR</span>
+<span>6.700</span>
+</div>
+</div>
+<div class="receipt-dotted"></div>
+<!-- Loyalty Points -->
+<div class="bg-slate-50 p-2 text-xs border border-slate-100 rounded">
+<div class="flex justify-between">
+<span>Loyalty Points Earned:</span>
+<span class="font-bold">+67 pts</span>
+</div>
+<div class="flex justify-between text-slate-500">
+<span>New Balance:</span>
+<span>1,242 pts</span>
+</div>
+</div>
+<!-- QR Code -->
+<div class="flex flex-col items-center gap-2 py-4">
+<div class="w-24 h-24 bg-white border-2 border-slate-800 p-1">
+<img alt="Invoice QR" data-alt="Mock QR code for digital invoice tracking" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAXUcpJOcjhh9EBq6AJ-OMFuCG7bDqV9g-uWTj7NMBSGJKRpntT83hP-XOe4CqmCbVqNsYNWDBidHdqMpwp7AqeQnN-0pYktlLo_F-q9T4SrKUsL-E2M1EVadOAE5xjbHmmqU7FNToK20DGuH1ncu1-IWjkVz1N9Lu1AiCTcm0TN6I9Rbp6elVja1u-Pd1PrTggCiDeKNfLqYrLQHAV_9nVdcl4boMBeZ9qmLM-kjf9aVfIVQtC0I7FqMq4vAJiXAf4hUbfePIxnQjX"/>
+</div>
+<span class="text-[10px] text-slate-400">Scan for digital invoice</span>
+</div>
+<!-- Footer -->
+<div class="space-y-1 pb-6">
+<p class="text-xs">Please visit us again soon</p>
+<p class="text-[10px] text-slate-400">Powered by Thawani POS</p>
+</div>
+</div>
+<!-- Tear Effect Bottom -->
+<div class="absolute bottom-0 left-0 w-full h-2 bg-[radial-gradient(circle,transparent_70%,#f8f7f5_72%)] bg-[length:12px_12px] bg-repeat-x transform rotate-180"></div>
+</div>
+</section>
+</main>
+</div>
+</body></html>

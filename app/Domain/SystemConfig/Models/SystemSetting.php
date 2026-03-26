@@ -2,6 +2,7 @@
 
 namespace App\Domain\SystemConfig\Models;
 
+use App\Domain\AdminPanel\Models\AdminUser;
 use App\Domain\SystemConfig\Enums\SystemSettingsGroup;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

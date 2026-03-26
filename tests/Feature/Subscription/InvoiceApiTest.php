@@ -28,15 +28,15 @@ class InvoiceApiTest extends TestCase
 
         $org = Organization::create([
             'name' => 'Test Organization',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $org->id,
             'name' => 'Test Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -63,7 +63,7 @@ class InvoiceApiTest extends TestCase
         ]);
 
         $this->subscription = StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->store->organization_id,
             'subscription_plan_id' => $this->plan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',

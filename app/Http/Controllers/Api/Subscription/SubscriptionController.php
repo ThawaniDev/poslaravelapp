@@ -25,13 +25,13 @@ class SubscriptionController extends BaseApiController
      */
     public function current(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $organizationId = $request->user()->organization_id;
 
-        if (! $storeId) {
-            return $this->error('No store assigned to this user.', 404);
+        if (! $organizationId) {
+            return $this->error('No organization assigned to this user.', 404);
         }
 
-        $subscription = $this->billingService->getCurrentSubscription($storeId);
+        $subscription = $this->billingService->getCurrentSubscription($organizationId);
 
         if (! $subscription) {
             return $this->success(null, 'No active subscription.');
@@ -45,10 +45,10 @@ class SubscriptionController extends BaseApiController
      */
     public function subscribe(SubscribeRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $organizationId = $request->user()->organization_id;
 
-        if (! $storeId) {
-            return $this->error('No store assigned to this user.', 404);
+        if (! $organizationId) {
+            return $this->error('No organization assigned to this user.', 404);
         }
 
         try {
@@ -57,7 +57,7 @@ class SubscriptionController extends BaseApiController
                 : BillingCycle::Monthly;
 
             $subscription = $this->billingService->subscribe(
-                storeId: $storeId,
+                organizationId: $organizationId,
                 planId: $request->input('plan_id'),
                 billingCycle: $billingCycle,
                 paymentMethod: $request->input('payment_method'),
@@ -76,10 +76,10 @@ class SubscriptionController extends BaseApiController
      */
     public function changePlan(ChangePlanRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $organizationId = $request->user()->organization_id;
 
-        if (! $storeId) {
-            return $this->error('No store assigned to this user.', 404);
+        if (! $organizationId) {
+            return $this->error('No organization assigned to this user.', 404);
         }
 
         try {
@@ -88,7 +88,7 @@ class SubscriptionController extends BaseApiController
                 : BillingCycle::Monthly;
 
             $subscription = $this->billingService->changePlan(
-                storeId: $storeId,
+                organizationId: $organizationId,
                 newPlanId: $request->input('plan_id'),
                 billingCycle: $billingCycle,
             );
@@ -106,15 +106,15 @@ class SubscriptionController extends BaseApiController
      */
     public function cancel(CancelSubscriptionRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $organizationId = $request->user()->organization_id;
 
-        if (! $storeId) {
-            return $this->error('No store assigned to this user.', 404);
+        if (! $organizationId) {
+            return $this->error('No organization assigned to this user.', 404);
         }
 
         try {
             $subscription = $this->billingService->cancelSubscription(
-                storeId: $storeId,
+                organizationId: $organizationId,
                 reason: $request->input('reason'),
             );
 
@@ -129,14 +129,14 @@ class SubscriptionController extends BaseApiController
      */
     public function resume(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $organizationId = $request->user()->organization_id;
 
-        if (! $storeId) {
-            return $this->error('No store assigned to this user.', 404);
+        if (! $organizationId) {
+            return $this->error('No organization assigned to this user.', 404);
         }
 
         try {
-            $subscription = $this->billingService->resumeSubscription($storeId);
+            $subscription = $this->billingService->resumeSubscription($organizationId);
 
             return $this->success(new StoreSubscriptionResource($subscription), 'Subscription resumed.');
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -149,13 +149,13 @@ class SubscriptionController extends BaseApiController
      */
     public function usage(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $organizationId = $request->user()->organization_id;
 
-        if (! $storeId) {
-            return $this->error('No store assigned to this user.', 404);
+        if (! $organizationId) {
+            return $this->error('No organization assigned to this user.', 404);
         }
 
-        $summary = $this->enforcementService->getUsageSummary($storeId);
+        $summary = $this->enforcementService->getUsageSummary($organizationId);
 
         return $this->success($summary);
     }
@@ -165,13 +165,13 @@ class SubscriptionController extends BaseApiController
      */
     public function checkFeature(Request $request, string $featureKey): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $organizationId = $request->user()->organization_id;
 
-        if (! $storeId) {
-            return $this->error('No store assigned to this user.', 404);
+        if (! $organizationId) {
+            return $this->error('No organization assigned to this user.', 404);
         }
 
-        $enabled = $this->enforcementService->isFeatureEnabled($storeId, $featureKey);
+        $enabled = $this->enforcementService->isFeatureEnabled($organizationId, $featureKey);
 
         return $this->success([
             'feature_key' => $featureKey,
@@ -184,13 +184,13 @@ class SubscriptionController extends BaseApiController
      */
     public function checkLimit(Request $request, string $limitKey): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $organizationId = $request->user()->organization_id;
 
-        if (! $storeId) {
-            return $this->error('No store assigned to this user.', 404);
+        if (! $organizationId) {
+            return $this->error('No organization assigned to this user.', 404);
         }
 
-        $remaining = $this->enforcementService->getRemainingQuota($storeId, $limitKey);
+        $remaining = $this->enforcementService->getRemainingQuota($organizationId, $limitKey);
 
         return $this->success([
             'limit_key' => $limitKey,

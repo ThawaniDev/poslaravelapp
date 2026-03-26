@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Domain\Core\Models\Store;
 use App\Domain\ProviderRegistration\Services\ProviderManagementService;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Admin\AddProviderNoteRequest;
@@ -128,13 +129,13 @@ class ProviderManagementController extends BaseApiController
         $result = $this->service->createStoreManually(
             [
                 'name' => $request->input('organization_name'),
-                'business_type' => $request->input('organization_business_type', 'retail'),
+                'business_type' => $request->input('organization_business_type', 'grocery'),
                 'country' => $request->input('organization_country', 'OM'),
             ],
             [
                 'name' => $request->input('store_name'),
                 'business_type' => $request->input('store_business_type'),
-                'currency' => $request->input('store_currency', 'OMR'),
+                'currency' => $request->input('store_currency', 'SAR'),
                 'is_active' => $request->input('store_is_active', true),
             ],
             $request->user()->id
@@ -266,8 +267,10 @@ class ProviderManagementController extends BaseApiController
      */
     public function setLimitOverride(SetLimitOverrideRequest $request, string $storeId): JsonResponse
     {
+        $store = Store::findOrFail($storeId);
+
         $override = $this->service->setLimitOverride(
-            $storeId,
+            $store->organization_id,
             $request->input('limit_key'),
             $request->input('override_value'),
             $request->user()->id,
@@ -287,7 +290,8 @@ class ProviderManagementController extends BaseApiController
      */
     public function listLimitOverrides(string $storeId): JsonResponse
     {
-        $overrides = $this->service->listLimitOverrides($storeId);
+        $store = Store::findOrFail($storeId);
+        $overrides = $this->service->listLimitOverrides($store->organization_id);
 
         return $this->success(LimitOverrideResource::collection($overrides));
     }
@@ -298,7 +302,8 @@ class ProviderManagementController extends BaseApiController
      */
     public function removeLimitOverride(Request $request, string $storeId, string $limitKey): JsonResponse
     {
-        $removed = $this->service->removeLimitOverride($storeId, $limitKey, $request->user()->id);
+        $store = Store::findOrFail($storeId);
+        $removed = $this->service->removeLimitOverride($store->organization_id, $limitKey, $request->user()->id);
 
         if (!$removed) {
             return $this->notFound('Limit override not found');

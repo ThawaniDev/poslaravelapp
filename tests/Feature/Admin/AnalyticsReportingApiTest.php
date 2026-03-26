@@ -8,6 +8,7 @@ use App\Domain\Analytics\Models\FeatureAdoptionStat;
 use App\Domain\Analytics\Models\PlatformDailyStat;
 use App\Domain\Analytics\Models\PlatformPlanStat;
 use App\Domain\Analytics\Models\StoreHealthSnapshot;
+use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
 use App\Domain\ProviderSubscription\Models\Invoice;
 use App\Domain\ProviderSubscription\Models\StoreSubscription;
@@ -21,6 +22,7 @@ class AnalyticsReportingApiTest extends TestCase
     use RefreshDatabase;
 
     private AdminUser $admin;
+    private Organization $org;
     private Store $store;
     private SubscriptionPlan $plan;
 
@@ -37,8 +39,15 @@ class AnalyticsReportingApiTest extends TestCase
 
         Sanctum::actingAs($this->admin, ['*'], 'admin-api');
 
+        $this->org = Organization::forceCreate([
+            'name' => 'Test Analytics Org',
+            'business_type' => 'grocery',
+            'country' => 'OM',
+        ]);
+
         $this->store = Store::forceCreate([
             'name' => 'Test Analytics Store',
+            'organization_id' => $this->org->id,
             'is_active' => true,
         ]);
 
@@ -313,7 +322,7 @@ class AnalyticsReportingApiTest extends TestCase
     public function test_revenue_dashboard_counts_failed_payments(): void
     {
         $sub = StoreSubscription::forceCreate([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->plan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -369,25 +378,27 @@ class AnalyticsReportingApiTest extends TestCase
 
     public function test_subscription_dashboard_counts_by_status(): void
     {
-        $store2 = Store::forceCreate(['name' => 'Store 2', 'is_active' => true]);
-        $store3 = Store::forceCreate(['name' => 'Store 3', 'is_active' => true]);
+        $org2 = Organization::forceCreate(['name' => 'Org 2', 'business_type' => 'grocery', 'country' => 'OM']);
+        $org3 = Organization::forceCreate(['name' => 'Org 3', 'business_type' => 'grocery', 'country' => 'OM']);
+        $store2 = Store::forceCreate(['name' => 'Store 2', 'organization_id' => $org2->id, 'is_active' => true]);
+        $store3 = Store::forceCreate(['name' => 'Store 3', 'organization_id' => $org3->id, 'is_active' => true]);
 
         StoreSubscription::forceCreate([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->plan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
         ]);
 
         StoreSubscription::forceCreate([
-            'store_id' => $store2->id,
+            'organization_id' => $org2->id,
             'subscription_plan_id' => $this->plan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
         ]);
 
         StoreSubscription::forceCreate([
-            'store_id' => $store3->id,
+            'organization_id' => $org3->id,
             'subscription_plan_id' => $this->plan->id,
             'status' => 'trial',
             'billing_cycle' => 'monthly',
@@ -444,26 +455,28 @@ class AnalyticsReportingApiTest extends TestCase
 
     public function test_subscription_dashboard_conversion_rate(): void
     {
-        $store2 = Store::forceCreate(['name' => 'Store 2', 'is_active' => true]);
-        $store3 = Store::forceCreate(['name' => 'Store 3', 'is_active' => true]);
+        $org2 = Organization::forceCreate(['name' => 'Org 2', 'business_type' => 'grocery', 'country' => 'OM']);
+        $org3 = Organization::forceCreate(['name' => 'Org 3', 'business_type' => 'grocery', 'country' => 'OM']);
+        $store2 = Store::forceCreate(['name' => 'Store 2', 'organization_id' => $org2->id, 'is_active' => true]);
+        $store3 = Store::forceCreate(['name' => 'Store 3', 'organization_id' => $org3->id, 'is_active' => true]);
 
         // 2 active, 1 trial => conversion = 2/(2+1) * 100 = 66.67
         StoreSubscription::forceCreate([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->plan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
         ]);
 
         StoreSubscription::forceCreate([
-            'store_id' => $store2->id,
+            'organization_id' => $org2->id,
             'subscription_plan_id' => $this->plan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
         ]);
 
         StoreSubscription::forceCreate([
-            'store_id' => $store3->id,
+            'organization_id' => $org3->id,
             'subscription_plan_id' => $this->plan->id,
             'status' => 'trial',
             'billing_cycle' => 'monthly',
@@ -1035,7 +1048,7 @@ class AnalyticsReportingApiTest extends TestCase
     public function test_export_subscriptions_creates_export(): void
     {
         $sub = StoreSubscription::forceCreate([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->plan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',

@@ -39,7 +39,7 @@ class StoreOnboardingServiceTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'Main Store',
             'slug' => 'main-' . Str::random(4),
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -51,7 +51,7 @@ class StoreOnboardingServiceTest extends TestCase
     {
         StoreSettings::create([
             'store_id' => $this->store->id,
-            'currency_code' => 'OMR',
+            'currency_code' => 'SAR',
         ]);
 
         $store = $this->storeService->getStore($this->store->id);
@@ -66,7 +66,7 @@ class StoreOnboardingServiceTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'Branch 2',
             'slug' => 'branch2-' . Str::random(4),
-            'currency' => 'OMR',
+            'currency' => 'SAR',
         ]);
 
         $stores = $this->storeService->listStores($this->org->id);
@@ -79,7 +79,7 @@ class StoreOnboardingServiceTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'AAA Branch',
             'slug' => 'aaa-' . Str::random(4),
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'is_main_branch' => false,
         ]);
 
@@ -118,7 +118,7 @@ class StoreOnboardingServiceTest extends TestCase
         StoreSettings::create([
             'store_id' => $this->store->id,
             'tax_rate' => 15.00,
-            'currency_code' => 'OMR',
+            'currency_code' => 'SAR',
         ]);
 
         $settings = $this->storeService->updateSettings($this->store->id, [

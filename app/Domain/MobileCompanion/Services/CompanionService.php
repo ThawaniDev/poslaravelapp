@@ -24,7 +24,7 @@ class CompanionService
             'active_staff' => rand(0, 10),
             'low_stock_items' => rand(0, 25),
             'last_sync' => now()->subMinutes(rand(1, 120))->toIso8601String(),
-            'currency' => $store?->currency ?? 'OMR',
+            'currency' => $store?->currency ?? 'SAR',
         ];
     }
 

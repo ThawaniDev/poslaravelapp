@@ -80,7 +80,7 @@ class HardwareApiTest extends TestCase
         $store = Store::create([
             'organization_id' => $org->id,
             'name' => 'Hardware Test Store',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
@@ -504,7 +504,7 @@ class HardwareApiTest extends TestCase
         $otherStore = Store::create([
             'organization_id' => $org2->id,
             'name' => 'Other Store',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
@@ -533,7 +533,7 @@ class HardwareApiTest extends TestCase
         $otherStore = Store::create([
             'organization_id' => $org2->id,
             'name' => 'Other Store 2',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,

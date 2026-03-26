@@ -7,8 +7,13 @@ use App\Domain\Auth\Policies\UserPolicy;
 use App\Domain\Auth\Services\AuthService;
 use App\Domain\Auth\Services\OtpService;
 use App\Domain\Auth\Services\TokenService;
+use App\Domain\Billing\Models\HardwareSale;
+use App\Domain\Billing\Models\ImplementationFee;
 use App\Domain\Core\Services\OnboardingService;
 use App\Domain\Core\Services\StoreService;
+use App\Domain\ProviderSubscription\Observers\HardwareSaleObserver;
+use App\Domain\ProviderSubscription\Observers\ImplementationFeeObserver;
+use App\Domain\ProviderSubscription\Services\BillingService;
 use App\Domain\Security\Services\PinOverrideService;
 use App\Domain\StaffManagement\Services\PermissionService;
 use App\Domain\StaffManagement\Services\RoleService;
@@ -40,6 +45,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(OnboardingService::class, function ($app) {
             return new OnboardingService($app->make(StoreService::class));
         });
+
+        // Billing service
+        $this->app->singleton(BillingService::class);
     }
 
     public function boot(): void
@@ -55,6 +63,10 @@ class AppServiceProvider extends ServiceProvider
 
         // Register policies
         Gate::policy(User::class, UserPolicy::class);
+
+        // Register model observers for auto-invoicing
+        HardwareSale::observe(HardwareSaleObserver::class);
+        ImplementationFee::observe(ImplementationFeeObserver::class);
 
         // Configure API rate limiters
         RateLimiter::for('api', function (Request $request) {

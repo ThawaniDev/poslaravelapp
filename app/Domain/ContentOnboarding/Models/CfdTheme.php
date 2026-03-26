@@ -6,8 +6,10 @@ use App\Domain\ContentOnboarding\Enums\AnimationStyle;
 use App\Domain\ContentOnboarding\Enums\CfdCartLayout;
 use App\Domain\ContentOnboarding\Enums\CfdIdleLayout;
 use App\Domain\ContentOnboarding\Enums\ThankYouAnimation;
+use App\Domain\Subscription\Models\SubscriptionPlan;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CfdTheme extends Model
@@ -48,5 +50,15 @@ class CfdTheme extends Model
     public function cfdThemePackageVisibility(): HasMany
     {
         return $this->hasMany(CfdThemePackageVisibility::class);
+    }
+
+    public function subscriptionPlans(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            SubscriptionPlan::class,
+            'cfd_theme_package_visibility',
+            'cfd_theme_id',
+            'subscription_plan_id',
+        );
     }
 }

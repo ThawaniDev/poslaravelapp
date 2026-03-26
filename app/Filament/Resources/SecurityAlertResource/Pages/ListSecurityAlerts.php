@@ -4,7 +4,6 @@ namespace App\Filament\Resources\SecurityAlertResource\Pages;
 
 use App\Filament\Resources\SecurityAlertResource;
 use Filament\Resources\Pages\ListRecords;
-use Filament\Actions;
 
 class ListSecurityAlerts extends ListRecords
 {
@@ -12,6 +11,6 @@ class ListSecurityAlerts extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [Actions\CreateAction::make()];
+        return [];
     }
 }

@@ -224,7 +224,7 @@ class PackageSubscriptionController extends BaseApiController
         }
 
         if ($request->has('store_id')) {
-            $query->where('store_id', $request->input('store_id'));
+            $query->where('organization_id', $request->input('store_id'));
         }
 
         $subscriptions = $query->paginate($request->integer('per_page', 15));

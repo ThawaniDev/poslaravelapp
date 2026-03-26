@@ -2,6 +2,7 @@
 
 namespace App\Domain\ProviderSubscription\Models;
 
+use App\Domain\Core\Models\Organization;
 use App\Domain\Subscription\Enums\SubscriptionResourceType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,7 @@ class SubscriptionUsageSnapshot extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'store_id',
+        'organization_id',
         'resource_type',
         'current_count',
         'plan_limit',
@@ -29,8 +30,8 @@ class SubscriptionUsageSnapshot extends Model
         'snapshot_date' => 'date',
     ];
 
-    public function store(): BelongsTo
+    public function organization(): BelongsTo
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsTo(Organization::class);
     }
 }

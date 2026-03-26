@@ -4,21 +4,44 @@ namespace App\Domain\AdminPanel\Enums;
 
 enum AdminPermissionGroup: string
 {
-    case Stores = 'Stores';
-    case Billing = 'Billing';
-    case Tickets = 'Tickets';
-    case Integrations = 'Integrations';
-    case Settings = 'Settings';
-    case Analytics = 'Analytics';
-    case Announcements = 'Announcements';
-    case Users = 'Users';
-    case AppUpdates = 'App Updates';
-    case AdminTeam = 'Admin Team';
-    case ProviderRoles = 'Provider Roles';
-    case Infrastructure = 'Infrastructure';
-    case Content = 'Content';
-    case Notifications = 'Notifications';
-    case UI = 'UI';
-    case Security = 'Security';
-    case KnowledgeBase = 'Knowledge Base';
+    case Stores = 'stores';
+    case Billing = 'billing';
+    case Tickets = 'tickets';
+    case Integrations = 'integrations';
+    case Settings = 'settings';
+    case Analytics = 'analytics';
+    case Announcements = 'announcements';
+    case Users = 'users';
+    case AppUpdates = 'app_updates';
+    case AdminTeam = 'admin_team';
+    case ProviderRoles = 'provider_roles';
+    case Infrastructure = 'infrastructure';
+    case Content = 'content';
+    case Notifications = 'notifications';
+    case UI = 'ui';
+    case Security = 'security';
+    case KnowledgeBase = 'kb';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Stores => 'Stores',
+            self::Billing => 'Billing',
+            self::Tickets => 'Tickets',
+            self::Integrations => 'Integrations',
+            self::Settings => 'Settings',
+            self::Analytics => 'Analytics',
+            self::Announcements => 'Announcements',
+            self::Users => 'Users',
+            self::AppUpdates => 'App Updates',
+            self::AdminTeam => 'Admin Team',
+            self::ProviderRoles => 'Provider Roles',
+            self::Infrastructure => 'Infrastructure',
+            self::Content => 'Content',
+            self::Notifications => 'Notifications',
+            self::UI => 'UI',
+            self::Security => 'Security',
+            self::KnowledgeBase => 'Knowledge Base',
+        };
+    }
 }

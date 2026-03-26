@@ -6,4 +6,5 @@ enum ReminderType: string
 {
     case Upcoming = 'upcoming';
     case Overdue = 'overdue';
+    case TrialEnding = 'trial_ending';
 }

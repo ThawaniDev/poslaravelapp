@@ -30,15 +30,15 @@ class SubscriptionApiTest extends TestCase
 
         $this->org = Organization::create([
             'name' => 'Test Organization',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $this->org->id,
             'name' => 'Test Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -113,7 +113,7 @@ class SubscriptionApiTest extends TestCase
             ->assertJsonPath('data.status', 'active');
 
         $this->assertDatabaseHas('store_subscriptions', [
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->growthPlan->id,
             'status' => 'active',
         ]);
@@ -206,7 +206,7 @@ class SubscriptionApiTest extends TestCase
     public function test_can_get_current_subscription(): void
     {
         StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->growthPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -233,7 +233,7 @@ class SubscriptionApiTest extends TestCase
     public function test_can_change_plan(): void
     {
         StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->starterPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -252,7 +252,7 @@ class SubscriptionApiTest extends TestCase
     public function test_change_plan_fails_when_already_on_same_plan(): void
     {
         StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->growthPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -281,7 +281,7 @@ class SubscriptionApiTest extends TestCase
     public function test_can_cancel_subscription(): void
     {
         StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->growthPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -300,7 +300,7 @@ class SubscriptionApiTest extends TestCase
     public function test_cancel_enters_grace_period(): void
     {
         StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->growthPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -327,7 +327,7 @@ class SubscriptionApiTest extends TestCase
     public function test_can_resume_cancelled_subscription(): void
     {
         StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->growthPlan->id,
             'status' => 'cancelled',
             'billing_cycle' => 'monthly',
@@ -347,7 +347,7 @@ class SubscriptionApiTest extends TestCase
     public function test_cannot_resume_active_subscription(): void
     {
         StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->growthPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -365,7 +365,7 @@ class SubscriptionApiTest extends TestCase
     public function test_can_check_feature_enabled(): void
     {
         StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->starterPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -385,7 +385,7 @@ class SubscriptionApiTest extends TestCase
     public function test_can_check_limit_remaining(): void
     {
         StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->starterPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -404,7 +404,7 @@ class SubscriptionApiTest extends TestCase
     public function test_can_get_usage_summary(): void
     {
         StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->starterPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -427,20 +427,20 @@ class SubscriptionApiTest extends TestCase
             ->assertJsonPath('data.is_enabled', false);
     }
 
-    // ─── User without store ──────────────────────────────────────
+    // ─── User without organization ──────────────────────────────
 
-    public function test_subscription_endpoints_fail_without_store(): void
+    public function test_subscription_endpoints_fail_without_organization(): void
     {
-        $userNoStore = User::create([
-            'name' => 'No Store User',
-            'email' => 'nostore@test.com',
+        $userNoOrg = User::create([
+            'name' => 'No Org User',
+            'email' => 'noorg@test.com',
             'password_hash' => bcrypt('password'),
-            'store_id' => null,
-            'organization_id' => $this->org->id,
+            'store_id' => $this->store->id,
+            'organization_id' => null,
             'role' => 'owner',
             'is_active' => true,
         ]);
-        $tokenNoStore = $userNoStore->createToken('test', ['*'])->plainTextToken;
+        $tokenNoOrg = $userNoOrg->createToken('test', ['*'])->plainTextToken;
 
         $endpoints = [
             ['POST', '/api/v2/subscription/subscribe', ['plan_id' => $this->growthPlan->id]],
@@ -452,9 +452,9 @@ class SubscriptionApiTest extends TestCase
 
         foreach ($endpoints as [$method, $url, $data]) {
             $response = match ($method) {
-                'GET' => $this->withToken($tokenNoStore)->getJson($url),
-                'POST' => $this->withToken($tokenNoStore)->postJson($url, $data),
-                default => $this->withToken($tokenNoStore)->getJson($url),
+                'GET' => $this->withToken($tokenNoOrg)->getJson($url),
+                'POST' => $this->withToken($tokenNoOrg)->postJson($url, $data),
+                default => $this->withToken($tokenNoOrg)->getJson($url),
             };
 
             $response->assertStatus(404);

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Domain\AdminPanel\Models\AdminUser;
+use App\Domain\ContentOnboarding\Models\KnowledgeBaseArticle;
 use App\Domain\Support\Models\CannedResponse;
 use App\Domain\Support\Models\SupportTicket;
 use App\Domain\Support\Models\SupportTicketMessage;
@@ -54,7 +55,7 @@ class SupportTicketApiTest extends TestCase
     {
         $this->getJson('/api/v2/admin/support/tickets')
             ->assertOk()
-            ->assertJsonPath('message', 'Support tickets retrieved')
+            ->assertJsonPath('message', 'Support tickets retrieved.')
             ->assertJsonPath('data.total', 0);
     }
 
@@ -190,10 +191,10 @@ class SupportTicketApiTest extends TestCase
         $this->postJson("/api/v2/admin/support/tickets/{$ticket->id}/status", [
             'status' => 'resolved',
         ])
-            ->assertOk()
-            ->assertJsonPath('data.status', 'resolved');
+            ->assertOk();
 
         $ticket->refresh();
+        $this->assertEquals('resolved', $ticket->status->value);
         $this->assertNotNull($ticket->resolved_at);
     }
 
@@ -204,10 +205,10 @@ class SupportTicketApiTest extends TestCase
         $this->postJson("/api/v2/admin/support/tickets/{$ticket->id}/status", [
             'status' => 'closed',
         ])
-            ->assertOk()
-            ->assertJsonPath('data.status', 'closed');
+            ->assertOk();
 
         $ticket->refresh();
+        $this->assertEquals('closed', $ticket->status->value);
         $this->assertNotNull($ticket->closed_at);
     }
 
@@ -304,7 +305,7 @@ class SupportTicketApiTest extends TestCase
 
         $this->getJson("/api/v2/admin/support/tickets/{$ticket->id}/messages")
             ->assertOk()
-            ->assertJsonPath('message', 'Ticket messages retrieved')
+            ->assertJsonPath('message', 'Messages retrieved.')
             ->assertJsonCount(1, 'data');
     }
 
@@ -383,7 +384,7 @@ class SupportTicketApiTest extends TestCase
 
         $this->getJson('/api/v2/admin/support/canned-responses')
             ->assertOk()
-            ->assertJsonPath('message', 'Canned responses retrieved')
+            ->assertJsonPath('message', 'Canned responses retrieved.')
             ->assertJsonCount(1, 'data');
     }
 
@@ -541,5 +542,210 @@ class SupportTicketApiTest extends TestCase
             'subject'         => 'Test ticket ' . Str::random(4),
             'description'     => 'Test description',
         ], $overrides));
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  ADMIN STATS
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_admin_stats_endpoint(): void
+    {
+        $this->createTicket(['status' => 'open']);
+        $this->createTicket(['status' => 'in_progress']);
+        $this->createTicket(['status' => 'resolved', 'resolved_at' => now()]);
+
+        $this->getJson('/api/v2/admin/support/stats')
+            ->assertOk()
+            ->assertJsonStructure(['data' => ['total', 'open', 'in_progress', 'unresolved', 'sla_breached', 'resolved_today']]);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  HARDWARE CATEGORY
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_create_ticket_with_hardware_category(): void
+    {
+        $this->postJson('/api/v2/admin/support/tickets', [
+            'organization_id' => $this->orgId,
+            'subject'         => 'POS terminal broken',
+            'description'     => 'Hardware malfunction',
+            'category'        => 'hardware',
+            'priority'        => 'high',
+        ])
+            ->assertStatus(201)
+            ->assertJsonPath('data.category', 'hardware');
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  SLA BREACH FILTER
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_filter_tickets_by_sla_breached(): void
+    {
+        $this->createTicket([
+            'status'          => 'open',
+            'sla_deadline_at' => now()->subHour(),
+        ]);
+        $this->createTicket([
+            'status'          => 'open',
+            'sla_deadline_at' => now()->addDay(),
+        ]);
+
+        $this->getJson('/api/v2/admin/support/tickets?sla_breached=1')
+            ->assertOk()
+            ->assertJsonPath('data.total', 1);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  KNOWLEDGE BASE ARTICLES
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_list_kb_articles(): void
+    {
+        KnowledgeBaseArticle::forceCreate([
+            'title'        => 'Getting Started Guide',
+            'title_ar'     => 'دليل البدء',
+            'slug'         => 'getting-started',
+            'body'         => 'Welcome to the POS system',
+            'body_ar'      => 'مرحبا بكم في نظام نقطة البيع',
+            'category'     => 'getting_started',
+            'is_published' => true,
+            'sort_order'   => 1,
+        ]);
+
+        $this->getJson('/api/v2/admin/support/kb')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_create_kb_article(): void
+    {
+        $this->postJson('/api/v2/admin/support/kb', [
+            'title'        => 'How to manage inventory',
+            'title_ar'     => 'كيفية إدارة المخزون',
+            'slug'         => 'manage-inventory',
+            'body'         => 'Step 1: Go to inventory...',
+            'body_ar'      => 'الخطوة 1: اذهب إلى المخزون...',
+            'category'     => 'inventory',
+            'is_published' => true,
+            'sort_order'   => 5,
+        ])
+            ->assertStatus(201)
+            ->assertJsonPath('data.title', 'How to manage inventory')
+            ->assertJsonPath('data.slug', 'manage-inventory');
+
+        $this->assertDatabaseHas('knowledge_base_articles', ['slug' => 'manage-inventory']);
+    }
+
+    public function test_create_kb_article_validation(): void
+    {
+        $this->postJson('/api/v2/admin/support/kb', [])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['title', 'title_ar', 'slug', 'body', 'body_ar', 'category']);
+    }
+
+    public function test_create_kb_article_validates_unique_slug(): void
+    {
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'A', 'title_ar' => 'أ', 'slug' => 'existing-slug',
+            'body' => 'B', 'body_ar' => 'ب', 'category' => 'billing',
+            'is_published' => true, 'sort_order' => 0,
+        ]);
+
+        $this->postJson('/api/v2/admin/support/kb', [
+            'title' => 'C', 'title_ar' => 'ج', 'slug' => 'existing-slug',
+            'body' => 'D', 'body_ar' => 'د', 'category' => 'billing',
+        ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['slug']);
+    }
+
+    public function test_show_kb_article(): void
+    {
+        $article = KnowledgeBaseArticle::forceCreate([
+            'title' => 'Delivery Setup', 'title_ar' => 'إعداد التوصيل',
+            'slug' => 'delivery-setup', 'body' => 'How to set up delivery',
+            'body_ar' => 'كيفية إعداد التوصيل', 'category' => 'delivery',
+            'is_published' => true, 'sort_order' => 0,
+        ]);
+
+        $this->getJson("/api/v2/admin/support/kb/{$article->id}")
+            ->assertOk()
+            ->assertJsonPath('data.title', 'Delivery Setup');
+    }
+
+    public function test_show_kb_article_not_found(): void
+    {
+        $this->getJson('/api/v2/admin/support/kb/nonexistent')
+            ->assertNotFound();
+    }
+
+    public function test_update_kb_article(): void
+    {
+        $article = KnowledgeBaseArticle::forceCreate([
+            'title' => 'Old Title', 'title_ar' => 'قديم',
+            'slug' => 'old-title', 'body' => 'Old body',
+            'body_ar' => 'قديم', 'category' => 'billing',
+            'is_published' => false, 'sort_order' => 0,
+        ]);
+
+        $this->putJson("/api/v2/admin/support/kb/{$article->id}", [
+            'title'        => 'Updated Title',
+            'is_published' => true,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.title', 'Updated Title')
+            ->assertJsonPath('data.is_published', true);
+    }
+
+    public function test_delete_kb_article(): void
+    {
+        $article = KnowledgeBaseArticle::forceCreate([
+            'title' => 'Delete Me', 'title_ar' => 'حذفني',
+            'slug' => 'delete-me', 'body' => 'B', 'body_ar' => 'ب',
+            'category' => 'troubleshooting', 'is_published' => false,
+            'sort_order' => 0,
+        ]);
+
+        $this->deleteJson("/api/v2/admin/support/kb/{$article->id}")
+            ->assertOk();
+
+        $this->assertDatabaseMissing('knowledge_base_articles', ['id' => $article->id]);
+    }
+
+    public function test_filter_kb_articles_by_category(): void
+    {
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'A', 'title_ar' => 'أ', 'slug' => 'a-slug',
+            'body' => 'B', 'body_ar' => 'ب', 'category' => 'billing',
+            'is_published' => true, 'sort_order' => 0,
+        ]);
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'C', 'title_ar' => 'ج', 'slug' => 'c-slug',
+            'body' => 'D', 'body_ar' => 'د', 'category' => 'inventory',
+            'is_published' => true, 'sort_order' => 1,
+        ]);
+
+        $this->getJson('/api/v2/admin/support/kb?category=billing')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_filter_kb_articles_by_published(): void
+    {
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'Published', 'title_ar' => 'منشور', 'slug' => 'pub',
+            'body' => 'B', 'body_ar' => 'ب', 'category' => 'billing',
+            'is_published' => true, 'sort_order' => 0,
+        ]);
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'Draft', 'title_ar' => 'مسودة', 'slug' => 'draft',
+            'body' => 'D', 'body_ar' => 'د', 'category' => 'billing',
+            'is_published' => false, 'sort_order' => 1,
+        ]);
+
+        $this->getJson('/api/v2/admin/support/kb?is_published=true')
+            ->assertOk()
+            ->assertJsonCount(1, 'data');
     }
 }

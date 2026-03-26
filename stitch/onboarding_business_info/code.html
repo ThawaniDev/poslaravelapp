@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thawani POS - Onboarding Step 1</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Header -->
+<header class="flex items-center justify-between border-b border-primary/10 px-6 py-4 bg-white dark:bg-background-dark sticky top-0 z-50">
+<div class="flex items-center gap-3">
+<div class="bg-primary p-2 rounded-lg text-white">
+<span class="material-symbols-outlined block">point_of_sale</span>
+</div>
+<h2 class="text-xl font-bold tracking-tight">Thawani POS</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden md:flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-xl">help</span>
+                    Support
+                </button>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center">
+<div class="w-full max-w-4xl px-4 py-8">
+<!-- Stepper Progress -->
+<div class="mb-10">
+<div class="flex justify-between items-end mb-4">
+<div class="space-y-1">
+<span class="inline-block px-2 py-1 rounded bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">Step 1 of 10</span>
+<h1 class="text-2xl font-bold">Business Information</h1>
+</div>
+<div class="text-right">
+<span class="text-sm font-semibold text-primary">10% Complete</span>
+</div>
+</div>
+<!-- Progress Bar -->
+<div class="h-2 w-full bg-primary/10 rounded-full overflow-hidden mb-8">
+<div class="h-full bg-primary rounded-full transition-all duration-500" style="width: 10%;"></div>
+</div>
+<!-- Step Labels (Scrollable on mobile) -->
+<div class="flex overflow-x-auto pb-4 gap-6 no-scrollbar">
+<div class="flex-shrink-0 flex flex-col items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center text-sm font-bold">1</div>
+<span class="text-xs font-bold text-primary whitespace-nowrap">Business Info</span>
+</div>
+<div class="flex-shrink-0 flex flex-col items-center gap-2 opacity-40">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-sm font-bold">2</div>
+<span class="text-xs font-medium whitespace-nowrap">Store Setup</span>
+</div>
+<div class="flex-shrink-0 flex flex-col items-center gap-2 opacity-40">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-sm font-bold">3</div>
+<span class="text-xs font-medium whitespace-nowrap">ZATCA Reg</span>
+</div>
+<div class="flex-shrink-0 flex flex-col items-center gap-2 opacity-40">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-sm font-bold">4</div>
+<span class="text-xs font-medium whitespace-nowrap">Printer Config</span>
+</div>
+<div class="flex-shrink-0 flex flex-col items-center gap-2 opacity-40">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-sm font-bold">5</div>
+<span class="text-xs font-medium whitespace-nowrap">Import Products</span>
+</div>
+<div class="flex-shrink-0 flex flex-col items-center gap-2 opacity-40">
+<div class="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-sm font-bold">6</div>
+<span class="text-xs font-medium whitespace-nowrap">Payments</span>
+</div>
+</div>
+</div>
+<!-- Form Content -->
+<div class="bg-white dark:bg-slate-900 border border-primary/10 rounded-xl shadow-sm overflow-hidden">
+<div class="p-6 md:p-8 space-y-8">
+<!-- Logo Upload Section -->
+<div class="flex flex-col md:flex-row gap-8 items-start md:items-center">
+<div class="relative group">
+<div class="size-32 rounded-xl bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-primary/30 flex flex-col items-center justify-center gap-2 overflow-hidden text-slate-400 group-hover:border-primary transition-colors cursor-pointer" data-alt="Abstract orange and gray logo placeholder pattern">
+<span class="material-symbols-outlined text-4xl">add_a_photo</span>
+</div>
+<button class="absolute -bottom-2 -right-2 bg-primary text-white p-1.5 rounded-full shadow-lg">
+<span class="material-symbols-outlined text-sm">edit</span>
+</button>
+</div>
+<div class="space-y-1">
+<h3 class="text-lg font-bold">Business Logo</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">Upload your official logo. PNG or JPG, max 5MB. This will appear on your receipts and customer displays.</p>
+<button class="mt-2 text-sm font-bold text-primary hover:underline">Upload Image</button>
+</div>
+</div>
+<hr class="border-primary/5"/>
+<!-- Main Form Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Business Name EN -->
+<div class="space-y-2">
+<label class="text-sm font-bold text-slate-700 dark:text-slate-300">Business Name (English) *</label>
+<div class="relative">
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:border-primary focus:ring-primary transition-all p-3 text-base" placeholder="e.g. Thawani Cafe" type="text"/>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">language</span>
+</div>
+</div>
+<!-- Business Name AR -->
+<div class="space-y-2" dir="rtl">
+<label class="text-sm font-bold text-slate-700 dark:text-slate-300">اسم المنشأة (بالعربية) *</label>
+<div class="relative">
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:border-primary focus:ring-primary transition-all p-3 text-base" placeholder="مثال: مقهى ثواني" type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">translate</span>
+</div>
+</div>
+<!-- CR Number -->
+<div class="space-y-2">
+<label class="text-sm font-bold text-slate-700 dark:text-slate-300">CR Number (Commercial Registration) *</label>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:border-primary focus:ring-primary transition-all p-3 text-base" placeholder="1010XXXXXX" type="text"/>
+</div>
+<!-- VAT Number -->
+<div class="space-y-2">
+<label class="text-sm font-bold text-slate-700 dark:text-slate-300">VAT Number</label>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:border-primary focus:ring-primary transition-all p-3 text-base" placeholder="300XXXXXXXXXXXX" type="text"/>
+</div>
+<!-- Phone Number -->
+<div class="space-y-2">
+<label class="text-sm font-bold text-slate-700 dark:text-slate-300">Business Phone Number</label>
+<div class="flex">
+<span class="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 text-slate-500 text-sm font-bold">+966</span>
+<input class="w-full rounded-r-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:border-primary focus:ring-primary transition-all p-3 text-base" placeholder="5XXXXXXXX" type="tel"/>
+</div>
+</div>
+<!-- Category Select -->
+<div class="space-y-2">
+<label class="text-sm font-bold text-slate-700 dark:text-slate-300">Business Category</label>
+<select class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:border-primary focus:ring-primary transition-all p-3 text-base appearance-none">
+<option value="">Select Category</option>
+<option value="fnb">Food &amp; Beverage</option>
+<option value="retail">Retail</option>
+<option value="services">Professional Services</option>
+<option value="pharmacy">Pharmacy</option>
+</select>
+</div>
+<!-- Address Area -->
+<div class="space-y-2 md:col-span-2">
+<label class="text-sm font-bold text-slate-700 dark:text-slate-300">Business Address</label>
+<div class="relative">
+<textarea class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:border-primary focus:ring-primary transition-all p-3 text-base" placeholder="Building No, Street Name, District, City, Zip Code" rows="3"></textarea>
+<button class="absolute bottom-3 right-3 flex items-center gap-1 text-primary text-xs font-bold bg-primary/10 px-2 py-1 rounded hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-sm">location_on</span>
+                                        Detect Location
+                                    </button>
+</div>
+</div>
+</div>
+<!-- Info Alert -->
+<div class="bg-primary/5 border-l-4 border-primary p-4 rounded-r-lg flex gap-3">
+<span class="material-symbols-outlined text-primary">info</span>
+<p class="text-sm text-slate-600 dark:text-slate-400">
+                                This information will be used for your <strong>ZATCA phase 2 integration</strong> and official tax invoices. Please ensure it matches your commercial registration certificates.
+                            </p>
+</div>
+</div>
+<!-- Action Footer -->
+<div class="bg-slate-50 dark:bg-slate-800/50 px-6 py-6 border-t border-primary/10 flex flex-col md:flex-row justify-between gap-4">
+<button class="w-full md:w-auto px-8 py-3 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            Save Draft
+                        </button>
+<button class="w-full md:w-auto px-12 py-3 rounded-lg bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2">
+                            Continue to Store Setup
+                            <span class="material-symbols-outlined text-xl">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Assistance Footer -->
+<div class="mt-8 text-center text-slate-500 text-sm">
+<p>Need help with your registration? <a class="text-primary font-bold hover:underline" href="#">Contact our setup experts</a></p>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

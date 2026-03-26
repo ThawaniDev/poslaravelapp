@@ -3,6 +3,7 @@
 namespace Tests\Feature\Admin;
 
 use App\Domain\AdminPanel\Models\AdminUser;
+use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
 use App\Domain\ProviderSubscription\Models\Invoice;
 use App\Domain\ProviderSubscription\Models\InvoiceLineItem;
@@ -23,6 +24,8 @@ class PackageSubscriptionApiTest extends TestCase
     private AdminUser $admin;
     private SubscriptionPlan $basicPlan;
     private SubscriptionPlan $premiumPlan;
+    private Organization $org1;
+    private Organization $org2;
     private Store $store1;
     private Store $store2;
 
@@ -39,13 +42,25 @@ class PackageSubscriptionApiTest extends TestCase
 
         Sanctum::actingAs($this->admin, ['*'], 'admin-api');
 
+        $this->org1 = Organization::forceCreate([
+            'name' => 'Org One',
+            'is_active' => true,
+        ]);
+
+        $this->org2 = Organization::forceCreate([
+            'name' => 'Org Two',
+            'is_active' => true,
+        ]);
+
         $this->store1 = Store::forceCreate([
             'name' => 'Store One',
+            'organization_id' => $this->org1->id,
             'is_active' => true,
         ]);
 
         $this->store2 = Store::forceCreate([
             'name' => 'Store Two',
+            'organization_id' => $this->org2->id,
             'is_active' => true,
         ]);
 
@@ -332,7 +347,7 @@ class PackageSubscriptionApiTest extends TestCase
     public function test_delete_plan_with_active_subscribers_fails(): void
     {
         StoreSubscription::forceCreate([
-            'store_id' => $this->store1->id,
+            'organization_id' => $this->org1->id,
             'subscription_plan_id' => $this->basicPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -573,7 +588,7 @@ class PackageSubscriptionApiTest extends TestCase
     public function test_list_subscriptions(): void
     {
         StoreSubscription::forceCreate([
-            'store_id' => $this->store1->id,
+            'organization_id' => $this->org1->id,
             'subscription_plan_id' => $this->basicPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -590,7 +605,7 @@ class PackageSubscriptionApiTest extends TestCase
     public function test_list_subscriptions_filter_by_status(): void
     {
         StoreSubscription::forceCreate([
-            'store_id' => $this->store1->id,
+            'organization_id' => $this->org1->id,
             'subscription_plan_id' => $this->basicPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -599,7 +614,7 @@ class PackageSubscriptionApiTest extends TestCase
         ]);
 
         StoreSubscription::forceCreate([
-            'store_id' => $this->store2->id,
+            'organization_id' => $this->org2->id,
             'subscription_plan_id' => $this->premiumPlan->id,
             'status' => 'trial',
             'billing_cycle' => 'monthly',
@@ -617,7 +632,7 @@ class PackageSubscriptionApiTest extends TestCase
     public function test_show_subscription_with_plan_and_invoices(): void
     {
         $sub = StoreSubscription::forceCreate([
-            'store_id' => $this->store1->id,
+            'organization_id' => $this->org1->id,
             'subscription_plan_id' => $this->basicPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -628,7 +643,7 @@ class PackageSubscriptionApiTest extends TestCase
         $response = $this->getJson("/api/v2/admin/subscriptions/{$sub->id}");
 
         $response->assertOk()
-            ->assertJsonPath('data.store_id', $this->store1->id)
+            ->assertJsonPath('data.organization_id', $this->org1->id)
             ->assertJsonPath('data.status', 'active');
     }
 
@@ -639,7 +654,7 @@ class PackageSubscriptionApiTest extends TestCase
     public function test_list_invoices(): void
     {
         $sub = StoreSubscription::forceCreate([
-            'store_id' => $this->store1->id,
+            'organization_id' => $this->org1->id,
             'subscription_plan_id' => $this->basicPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -666,7 +681,7 @@ class PackageSubscriptionApiTest extends TestCase
     public function test_show_invoice_with_line_items(): void
     {
         $sub = StoreSubscription::forceCreate([
-            'store_id' => $this->store1->id,
+            'organization_id' => $this->org1->id,
             'subscription_plan_id' => $this->basicPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -707,7 +722,7 @@ class PackageSubscriptionApiTest extends TestCase
     public function test_revenue_dashboard_returns_subscription_stats(): void
     {
         StoreSubscription::forceCreate([
-            'store_id' => $this->store1->id,
+            'organization_id' => $this->org1->id,
             'subscription_plan_id' => $this->basicPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -716,7 +731,7 @@ class PackageSubscriptionApiTest extends TestCase
         ]);
 
         StoreSubscription::forceCreate([
-            'store_id' => $this->store2->id,
+            'organization_id' => $this->org2->id,
             'subscription_plan_id' => $this->premiumPlan->id,
             'status' => 'trial',
             'billing_cycle' => 'monthly',
@@ -807,7 +822,7 @@ class PackageSubscriptionApiTest extends TestCase
     public function test_list_invoices_filter_by_status(): void
     {
         $sub = StoreSubscription::forceCreate([
-            'store_id' => $this->store1->id,
+            'organization_id' => $this->org1->id,
             'subscription_plan_id' => $this->basicPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',

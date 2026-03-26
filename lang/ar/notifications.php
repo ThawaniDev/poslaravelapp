@@ -1,6 +1,7 @@
 <?php
 
 return [
+    // ─── API Messages ────────────────────────────────────────
     'list_retrieved' => 'تم استرجاع الإشعارات.',
     'marked_read' => 'تم تعيين الإشعار كمقروء.',
     'marked_all_read' => 'تم تعيين جميع الإشعارات كمقروءة.',
@@ -14,4 +15,73 @@ return [
     'sent_successfully' => 'تم إرسال الإشعار بنجاح.',
     'delivery_logs_retrieved' => 'تم استرجاع سجلات التسليم.',
     'provider_status_retrieved' => 'تم استرجاع حالة المزود.',
+    'invalid_channel' => 'قناة إشعار غير صالحة.',
+    'event_not_found' => 'لم يتم العثور على الحدث في الكتالوج.',
+    'dispatch_queued' => 'تم وضع الإشعار في قائمة الانتظار للتسليم.',
+
+    // ─── Template Resource ───────────────────────────────────
+    'template_details' => 'تفاصيل القالب',
+    'event_key' => 'مفتاح الحدث',
+    'channel' => 'القناة',
+    'is_active' => 'نشط',
+    'english_content' => 'المحتوى بالإنجليزية',
+    'arabic_content' => 'المحتوى بالعربية',
+    'title_en' => 'العنوان (إنجليزي)',
+    'title_ar' => 'العنوان (عربي)',
+    'body_en' => 'المحتوى (إنجليزي)',
+    'body_ar' => 'المحتوى (عربي)',
+    'available_variables' => 'المتغيرات المتاحة',
+    'available_variables_hint' => 'المتغيرات التي يمكن استخدامها كـ {{variable}} في العنوان والمحتوى.',
+    'add_variable' => 'إضافة متغير...',
+    'variable_hint' => 'استخدم {{اسم_المتغير}} للمحتوى الديناميكي.',
+    'updated_at' => 'تاريخ التحديث',
+
+    // ─── Channels ────────────────────────────────────────────
+    'channel_in_app' => 'داخل التطبيق',
+    'channel_push' => 'إشعار فوري',
+    'channel_sms' => 'رسالة نصية',
+    'channel_email' => 'بريد إلكتروني',
+    'channel_whatsapp' => 'واتساب',
+    'channel_sound' => 'صوت',
+
+    // ─── Template Actions ────────────────────────────────────
+    'preview' => 'معاينة',
+    'preview_template' => 'معاينة القالب',
+    'preview_english' => 'المعاينة بالإنجليزية',
+    'preview_arabic' => 'المعاينة بالعربية',
+    'sample_data_used' => 'البيانات النموذجية المستخدمة',
+    'close' => 'إغلاق',
+    'activate' => 'تفعيل',
+    'deactivate' => 'تعطيل',
+    'template_activated' => 'تم تفعيل القالب.',
+    'template_deactivated' => 'تم تعطيل القالب.',
+
+    // ─── Event Catalog ───────────────────────────────────────
+    'event_catalog' => 'كتالوج الأحداث',
+    'event_catalog_title' => 'كتالوج أحداث الإشعارات',
+    'critical' => 'حرج',
+    'default_recipients' => 'المستلمون الافتراضيون',
+
+    // ─── Provider Status ─────────────────────────────────────
+    'provider_status' => 'حالة المزودين',
+    'provider_status_title' => 'حالة مزودي الإشعارات',
+    'provider_status_description' => 'إدارة مزودي تسليم الإشعارات. تفعيل/تعطيل المزودين، تعديل ترتيب الأولوية، ومراقبة مقاييس الصحة. يتم تجربة المزودين بترتيب الأولوية؛ في حال فشل أحدهم، يتم تجربة التالي تلقائياً.',
+    'provider' => 'المزود',
+    'priority' => 'الأولوية',
+    'enabled' => 'مفعّل',
+    'healthy' => 'سليم',
+    'success_24h' => 'نجاح (24 ساعة)',
+    'failure_24h' => 'فشل (24 ساعة)',
+    'avg_latency' => 'متوسط التأخير',
+    'last_success' => 'آخر نجاح',
+    'last_failure' => 'آخر فشل',
+    'disabled_reason' => 'سبب التعطيل',
+    'enable' => 'تفعيل',
+    'disable' => 'تعطيل',
+    'provider_enabled' => 'تم تفعيل المزود.',
+    'provider_disabled' => 'تم تعطيل المزود.',
+    'update_priority' => 'تحديث الأولوية',
+    'priority_updated' => 'تم تحديث الأولوية.',
+    'reset_health' => 'إعادة تعيين الصحة',
+    'health_reset' => 'تم إعادة تعيين مقاييس الصحة.',
 ];

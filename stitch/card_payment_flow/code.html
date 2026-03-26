@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                        "success": "#10b981",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Thawani POS - Payment State</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex items-center justify-center p-4 sm:p-8">
+<!-- Modal Backdrop -->
+<div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+<!-- Modal Container (Material 3 Style) -->
+<div class="bg-white dark:bg-slate-900 w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[500px]">
+<!-- Left Side: Waiting for Card (Pending State) -->
+<div class="flex-1 p-8 md:p-12 border-b md:border-b-0 md:border-r border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center">
+<div class="mb-8 relative">
+<div class="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-6xl animate-pulse">contactless</span>
+</div>
+<!-- Card Reader Animation Representation -->
+<div class="absolute -bottom-2 -right-2 bg-white dark:bg-slate-800 p-2 rounded-xl shadow-lg border border-slate-100 dark:border-slate-700">
+<span class="material-symbols-outlined text-slate-400">credit_card</span>
+</div>
+</div>
+<h2 class="text-2xl font-bold mb-2">Waiting for card...</h2>
+<p class="text-slate-500 dark:text-slate-400 max-w-xs">Please tap, insert, or swipe the customer's card on the terminal</p>
+<div class="mt-8 flex gap-2">
+<span class="w-2 h-2 rounded-full bg-primary/40"></span>
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="w-2 h-2 rounded-full bg-primary/40"></span>
+</div>
+</div>
+<!-- Right Side: Payment Approved (Success State) -->
+<div class="flex-1 p-8 md:p-12 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center text-center">
+<div class="mb-8">
+<div class="w-32 h-32 rounded-full bg-success/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-success text-6xl">check_circle</span>
+</div>
+</div>
+<h2 class="text-3xl font-extrabold text-success mb-2">Payment Approved ✓</h2>
+<p class="text-slate-600 dark:text-slate-300 mb-1">Transaction ID: #88291-00</p>
+<p class="text-4xl font-bold mb-10">OMR 45.500</p>
+<!-- Action Buttons -->
+<div class="w-full max-w-sm space-y-3">
+<button class="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-colors shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">receipt</span>
+<span>Print Receipt</span>
+</button>
+<button class="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 font-bold py-4 rounded-xl transition-colors">
+<span>Done</span>
+</button>
+</div>
+<div class="mt-8 flex items-center gap-4 grayscale opacity-50">
+<div class="h-6 w-10 bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center text-[10px] font-bold">VISA</div>
+<div class="h-6 w-10 bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center text-[10px] font-bold">MC</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Background UI (Behind Modal) -->
+<div class="w-full max-w-[960px] blur-[2px] pointer-events-none">
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm">point_of_sale</span>
+</div>
+<h1 class="text-lg font-bold">Thawani POS</h1>
+</div>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-slate-400">wifi</span>
+<span class="material-symbols-outlined text-slate-400">battery_full</span>
+</div>
+</header>
+<main class="p-6">
+<div class="grid grid-cols-3 gap-6">
+<div class="col-span-2 space-y-6">
+<div class="h-40 bg-slate-100 dark:bg-slate-800 rounded-2xl"></div>
+<div class="grid grid-cols-3 gap-4">
+<div class="h-32 bg-slate-100 dark:bg-slate-800 rounded-xl"></div>
+<div class="h-32 bg-slate-100 dark:bg-slate-800 rounded-xl"></div>
+<div class="h-32 bg-slate-100 dark:bg-slate-800 rounded-xl"></div>
+</div>
+</div>
+<div class="bg-slate-100 dark:bg-slate-800 rounded-2xl p-6 h-[500px]">
+<div class="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded mb-4"></div>
+<div class="space-y-4">
+<div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+<div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+<div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-lg"></div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

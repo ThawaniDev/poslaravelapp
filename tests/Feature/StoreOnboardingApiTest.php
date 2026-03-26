@@ -28,14 +28,14 @@ class StoreOnboardingApiTest extends TestCase
 
         $this->org = Organization::create([
             'name'          => 'Test Organization',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country'       => 'SA',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $this->org->id,
             'name'            => 'Main Branch',
-            'business_type'   => 'retail',
+            'business_type'   => 'grocery',
             'currency'        => 'SAR',
             'is_active'       => true,
             'is_main_branch'  => true,
@@ -81,7 +81,7 @@ class StoreOnboardingApiTest extends TestCase
         Store::create([
             'organization_id' => $this->org->id,
             'name'            => 'Second Branch',
-            'business_type'   => 'retail',
+            'business_type'   => 'grocery',
             'currency'        => 'SAR',
         ]);
 
@@ -172,7 +172,7 @@ class StoreOnboardingApiTest extends TestCase
                 'tax_rate'       => 5.00,
                 'tax_label'      => 'GST',
                 'enable_tips'    => true,
-                'currency_code'  => 'OMR',
+                'currency_code'  => 'SAR',
             ]);
 
         $response->assertOk();
@@ -266,7 +266,7 @@ class StoreOnboardingApiTest extends TestCase
     {
         // Seed a template
         BusinessTypeTemplate::create([
-            'code'          => 'retail',
+            'code'          => 'grocery',
             'name_en'       => 'Retail Store',
             'name_ar'       => 'متجر تجزئة',
             'icon'          => 'store',

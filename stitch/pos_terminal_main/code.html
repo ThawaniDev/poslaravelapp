@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thawani POS Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 overflow-hidden h-screen">
+<div class="flex h-full w-full">
+<!-- Left Section: Products (60%) -->
+<section class="w-[60%] flex flex-col border-l border-slate-200 dark:border-slate-800">
+<!-- Search Header -->
+<header class="p-4 bg-white dark:bg-background-dark/50 border-b border-slate-200 dark:border-slate-800">
+<div class="flex gap-3">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full pr-10 pl-4 py-3 bg-slate-100 dark:bg-slate-800 border-none rounded-xl focus:ring-2 focus:ring-primary/50 text-right" placeholder="بحث عن منتج أو مسح باركود..." type="text"/>
+</div>
+<button class="bg-slate-100 dark:bg-slate-800 p-3 rounded-xl flex items-center justify-center hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">barcode_scanner</span>
+</button>
+</div>
+</header>
+<!-- Category Filter -->
+<nav class="p-4 flex gap-2 overflow-x-auto no-scrollbar whitespace-nowrap bg-white/50 dark:bg-background-dark/30">
+<button class="px-6 py-2 rounded-full bg-primary text-white font-semibold">الكل</button>
+<button class="px-6 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary">الفواكه</button>
+<button class="px-6 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary">الألبان</button>
+<button class="px-6 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary">المشروبات</button>
+<button class="px-6 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary">المخبوزات</button>
+<button class="px-6 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary">الحلويات</button>
+<button class="px-6 py-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary">اللحوم</button>
+</nav>
+<!-- Product Grid -->
+<div class="flex-1 overflow-y-auto p-4 grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 no-scrollbar">
+<!-- Product Card -->
+<div class="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-all cursor-pointer group">
+<div class="aspect-square rounded-lg bg-slate-100 dark:bg-slate-700 mb-3 bg-cover bg-center overflow-hidden" data-alt="Fresh red apples in a pile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB-dkdzGa_JKQ49n2jfe-_0oyj4SJXYZAlfHqdnmRj6KfVHol9tjXXzm4PbY8dgSOglBajWgU9QL2kAJzX8Ezp-7qJGxITc_8UJr7Cd7VDQKLqYVYjeQP1siDcxd-GkMGtYlWRBzUh8F1TYfndJMrFG4xcxl07SSmgu39vRfVkaZA08mtHhcCz-inNRHRm3UOBsY_YdJ8tYXHHWjX8Lg938VBr1LjVgvDmakv7VOqHJYkMIR46g4H2qSykAk25nU48yZmfD3bP51DO8');"></div>
+<h3 class="font-bold text-lg mb-1 group-hover:text-primary transition-colors">تفاح أحمر</h3>
+<div class="flex justify-between items-center">
+<span class="text-primary font-bold">5.00 OMR</span>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-xs text-slate-500">12 متوفر</span>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-all cursor-pointer group">
+<div class="aspect-square rounded-lg bg-slate-100 dark:bg-slate-700 mb-3 bg-cover bg-center overflow-hidden" data-alt="Fresh organic milk bottle" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBN6D13cNhh1nW9crXCCb7xmMwDW7ZWEriIz11ZIDtv0Q9exPWX7UYvI38a201gC8nWoKN-1E532e6jp7W6GnZaYJWuGslvjyfUc4Cli4LSHOZa_x--GHZOrROs6ITohBPdUy-FJZsAJNUkQ5izI8v0lteZDuTtcrMggUC0aSH76LTp5U20Y_6G1K61saKNPbgo1i6ugRY1M3n45VFZmB0FrM6Hsn90DTuhjt5Na_XMpkZTXR6jIcQ2ZRhqhC1QVjYYwPs1zZXm94rp');"></div>
+<h3 class="font-bold text-lg mb-1 group-hover:text-primary transition-colors">حليب طازج</h3>
+<div class="flex justify-between items-center">
+<span class="text-primary font-bold">3.50 OMR</span>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-xs text-slate-500">5 متوفر</span>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-all cursor-pointer group">
+<div class="aspect-square rounded-lg bg-slate-100 dark:bg-slate-700 mb-3 bg-cover bg-center overflow-hidden" data-alt="Cold orange juice glass" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA24bSBEvd1ADymnvoIANaY3G7evQ9JvjXQYlpqxtbUgH3rMypqR7HcVF_P-yVZKFOH41LrN5_Ck5o-WG8-b-h6gBDDi22SX9X9VcHPLd1kEqRDdxo8FkDLd0h8shZ7Qzjwh5-fl4FaeKgWAfUP70Ny8IuTuSI5rHy1mL7AB0PqGFB5ctnlbFgDqWfLenxafw3PNsWBDJojE_nVOR5X15hoioGBJekxIzSIPI51rXLWG2vZC2DOQxholi-EPmdFBTNjgFYA8DWPGnkM');"></div>
+<h3 class="font-bold text-lg mb-1 group-hover:text-primary transition-colors">عصير برتقال</h3>
+<div class="flex justify-between items-center">
+<span class="text-primary font-bold">1.20 OMR</span>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-orange-500"></span>
+<span class="text-xs text-slate-500">20 متوفر</span>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-all cursor-pointer group">
+<div class="aspect-square rounded-lg bg-slate-100 dark:bg-slate-700 mb-3 bg-cover bg-center overflow-hidden" data-alt="Sliced whole wheat toast bread" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDKTvqdb2CIYvekEcvFsbv2oUxFlGsZly611vvpjWlaBqAwBGLYtOmMFozDDV7qXMBQmF8b9GCsH83uIf9wMwe5kH3xCEfFM7xgpGAbZYPiBtiRQEbTq7Pmk0P3TbOAq3yYa1Rz99eNuO6SHpxL-XRHe5Pr4FDdbMC00imVoZUPj9BJBJjqhNUe_atvhl2xVaRZI9PaLTnljRgWrZvM6KzXZ6t8NF_uyCqBMR8yaSDMIfhhBenIqdwEwX8RjDe45VrBMErz-Hdsw5x3');"></div>
+<h3 class="font-bold text-lg mb-1 group-hover:text-primary transition-colors">خبز توست</h3>
+<div class="flex justify-between items-center">
+<span class="text-primary font-bold">0.80 OMR</span>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-red-500"></span>
+<span class="text-xs text-slate-500">2 متوفر</span>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-all cursor-pointer group">
+<div class="aspect-square rounded-lg bg-slate-100 dark:bg-slate-700 mb-3 bg-cover bg-center overflow-hidden" data-alt="White feta cheese blocks with herbs" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCJjhSVBR7xkYCFhIEFXNl6bq6DN-tWywc4ebVkb2SZqrcm9G3---8asFdzb1KhdtHYle0ycTqPSo_cFruaUgUsvhBYONHiufPIbpXIqdWTFoxzi9GMgCJia0QNq2l7J74cK6Y6hkVZ-at5nI0e8tTrRwnmm10DsQOpV6izlmpWZbWv07oaWt9jUzlKxeJPMX3PFSvQMpPugxDyCzLjd7qawxgvR21EhO8fVIuu8oU5F-yKBAhNlqW1CUaREUVFIG8djfvFeIyf3RvY');"></div>
+<h3 class="font-bold text-lg mb-1 group-hover:text-primary transition-colors">جبنة فيتا</h3>
+<div class="flex justify-between items-center">
+<span class="text-primary font-bold">2.40 OMR</span>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-xs text-slate-500">15 متوفر</span>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 p-3 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 hover:shadow-md transition-all cursor-pointer group">
+<div class="aspect-square rounded-lg bg-slate-100 dark:bg-slate-700 mb-3 bg-cover bg-center overflow-hidden" data-alt="Clear mineral water bottle" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCae5wH0fD7lBBLpf3pAFQWFeDfjU3gLYutOdPlMAUbQJRSmJibjEaEjGQrPOSLWT4Nt9pshvBPHuCV8DDHyD8KXF932O6mgB7DoyOUXwLnatDE0iKDkKBrtp_Xy5kgVQiLX_W-HGUYzVKVTKYW9zqpQQ3PomRq7rjULpYahrsDkcaLM5sTo8iyrqHpWRS3DdHGtcaO0KggzvAG13zK2XVUFmqT_P1vkzEGh8MyQZKOo5sIrrlFhsyHzn1lyeJFvJXdyc_7C-q8rkx9');"></div>
+<h3 class="font-bold text-lg mb-1 group-hover:text-primary transition-colors">مياه معدنية</h3>
+<div class="flex justify-between items-center">
+<span class="text-primary font-bold">0.25 OMR</span>
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="text-xs text-slate-500">50 متوفر</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Section: Cart (40%) -->
+<aside class="w-[40%] flex flex-col bg-white dark:bg-background-dark shadow-2xl z-10">
+<!-- Customer Bar -->
+<div class="p-4 bg-primary/10 dark:bg-primary/5 border-b border-primary/20 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-full bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">person</span>
+</div>
+<div>
+<p class="font-bold text-sm">عميل: زائر</p>
+<p class="text-xs text-slate-500">ضيف نقدي</p>
+</div>
+</div>
+<button class="text-primary text-sm font-bold bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-primary/30">تغيير</button>
+</div>
+<!-- Cart List -->
+<div class="flex-1 overflow-y-auto p-4 space-y-4 no-scrollbar">
+<!-- Cart Item -->
+<div class="flex gap-3 items-center pb-4 border-b border-slate-100 dark:border-slate-800">
+<div class="size-16 rounded-lg bg-slate-100 dark:bg-slate-800 flex-shrink-0 bg-cover bg-center" data-alt="Fresh red apples" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDcTP0RAfJksKnvIEllIxL7kX9BX2OhLp2hCycQDteYE8rBlG2Mk_mm-RjSSQ9-HWQdn602NFzsSLe7SWk-COu-leHLDbsIi3X2gqnpE_HKFsdbnGdUpe7njMj6GL97Wiohk0hwbphNXW9HqmTkz4sx7861dFwgVKIPfrPeS3s8WK8Jq3Njorz3stcRO38DAbIC6h8v-_LO88-K9-cUzxBxBjl689sdV7V4J-8TYMbWJ-CbTPE6cbN1qx21uUB2wz8HUFAljgJ_2ohb');"></div>
+<div class="flex-1 min-w-0">
+<h4 class="font-bold text-sm truncate">تفاح أحمر طازج</h4>
+<p class="text-xs text-slate-400">5.00 OMR / الوحدة</p>
+<div class="flex items-center gap-2 mt-2">
+<button class="size-7 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+<span class="font-bold w-6 text-center">2</span>
+<button class="size-7 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-sm text-primary">add</span>
+</button>
+</div>
+</div>
+<div class="text-left flex flex-col items-end gap-2">
+<span class="font-bold text-primary">10.00 OMR</span>
+<button class="text-slate-300 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+<div class="flex gap-3 items-center pb-4 border-b border-slate-100 dark:border-slate-800">
+<div class="size-16 rounded-lg bg-slate-100 dark:bg-slate-800 flex-shrink-0 bg-cover bg-center" data-alt="Fresh organic milk" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDqBdmjuv4YphKWqA0d7J7OcSSdOIjcMLcAwicAYy0smwRuowibJIvYHbitz5ea-6aMJkg--aOleL5ifCYbPqXtKdFpRXWzkvVwuWZEy66cLZtU5daP5tqwRsn4zUvB0GL_dSS-dEKU_0EkngCc-tAi_rSNX8mYPIiAozUegVUUWafR6ncLib6o-w37J7kia5w10GXT86KXYBw230rN0edmeUe_EAOpi_NLPpCoTdWm-i-961YL1fmOef658juJFnKk77QWI-eip4m1');"></div>
+<div class="flex-1 min-w-0">
+<h4 class="font-bold text-sm truncate">حليب كامل الدسم</h4>
+<p class="text-xs text-slate-400">3.50 OMR / الوحدة</p>
+<div class="flex items-center gap-2 mt-2">
+<button class="size-7 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+<span class="font-bold w-6 text-center">1</span>
+<button class="size-7 rounded-lg border border-slate-200 dark:border-slate-700 flex items-center justify-center hover:bg-slate-50 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-sm text-primary">add</span>
+</button>
+</div>
+</div>
+<div class="text-left flex flex-col items-end gap-2">
+<span class="font-bold text-primary">3.50 OMR</span>
+<button class="text-slate-300 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Totals Section -->
+<div class="p-4 bg-slate-50 dark:bg-slate-800/50 space-y-2">
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">المجموع الفرعي</span>
+<span>13.50 OMR</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">ضريبة القيمة المضافة (15%)</span>
+<span>2.025 OMR</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">الخصم</span>
+<span class="text-red-500">-0.00 OMR</span>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700 mt-2">
+<span class="text-lg font-bold">الإجمالي</span>
+<span class="text-2xl font-black text-primary">15.525 OMR</span>
+</div>
+</div>
+<!-- Control Buttons Grid -->
+<div class="grid grid-cols-2 gap-2 p-2">
+<button class="flex items-center justify-center gap-2 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined">pause_circle</span>
+                    تعليق البيع
+                </button>
+<button class="flex items-center justify-center gap-2 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined">percent</span>
+                    الخصم
+                </button>
+<button class="flex items-center justify-center gap-2 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined">person_add</span>
+                    العميل
+                </button>
+<button class="flex items-center justify-center gap-2 py-3 rounded-lg bg-slate-100 dark:bg-slate-800 font-bold hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined">sticky_note_2</span>
+                    ملاحظة
+                </button>
+</div>
+<!-- Payment Button -->
+<div class="p-2">
+<button class="w-full bg-primary text-white py-5 rounded-xl font-bold text-xl flex items-center justify-center gap-3 hover:opacity-90 transition-opacity active:scale-[0.98]">
+<span>دفع (Pay)</span>
+<span class="material-symbols-outlined">point_of_sale</span>
+</button>
+</div>
+</aside>
+</div>
+</body></html>

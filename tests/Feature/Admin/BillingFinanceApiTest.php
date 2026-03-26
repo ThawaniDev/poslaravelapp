@@ -7,6 +7,7 @@ use App\Domain\Billing\Models\HardwareSale;
 use App\Domain\Billing\Models\ImplementationFee;
 use App\Domain\Billing\Models\PaymentGatewayConfig;
 use App\Domain\Billing\Models\PaymentRetryRule;
+use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
 use App\Domain\ProviderSubscription\Models\Invoice;
 use App\Domain\ProviderSubscription\Models\InvoiceLineItem;
@@ -22,6 +23,7 @@ class BillingFinanceApiTest extends TestCase
     use RefreshDatabase;
 
     private AdminUser $admin;
+    private Organization $org;
     private Store $store;
     private SubscriptionPlan $plan;
     private StoreSubscription $subscription;
@@ -42,8 +44,14 @@ class BillingFinanceApiTest extends TestCase
 
         Sanctum::actingAs($this->admin, ['*'], 'admin-api');
 
+        $this->org = Organization::forceCreate([
+            'name' => 'Test Org',
+            'is_active' => true,
+        ]);
+
         $this->store = Store::forceCreate([
             'name' => 'Test Store',
+            'organization_id' => $this->org->id,
             'is_active' => true,
         ]);
 
@@ -62,7 +70,7 @@ class BillingFinanceApiTest extends TestCase
         ]);
 
         $this->subscription = StoreSubscription::forceCreate([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->plan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',

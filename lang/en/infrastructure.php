@@ -1,0 +1,81 @@
+<?php
+
+return [
+    // ─── Navigation & Headings ───────────────────────────────
+    'dashboard' => 'Infrastructure',
+    'infrastructure_dashboard' => 'Infrastructure Dashboard',
+    'failed_jobs' => 'Failed Jobs',
+    'failed_job' => 'Failed Job',
+    'database_backups' => 'Database Backups',
+    'database_backup' => 'Database Backup',
+    'health_checks' => 'Health Checks',
+    'health_check' => 'Health Check',
+
+    // ─── Dashboard Stats ─────────────────────────────────────
+    'failed_jobs_total' => 'Failed Jobs',
+    'failed_last_24h' => 'Failed (24h)',
+    'backups_completed' => 'Backups Completed',
+    'backups_failed' => 'Backups Failed',
+    'last_backup' => 'Last Backup',
+    'healthy_services' => 'Healthy',
+    'warning_services' => 'Warning',
+    'critical_services' => 'Critical',
+    'server_info' => 'Server Info',
+    'latest_health_checks' => 'Latest Health Checks',
+    'recent_failed_jobs' => 'Recent Failed Jobs',
+    'no_recent_failures' => 'No recent failures',
+    'all_healthy' => 'All services healthy',
+
+    // ─── Failed Jobs ─────────────────────────────────────────
+    'uuid' => 'UUID',
+    'queue' => 'Queue',
+    'connection' => 'Connection',
+    'job_name' => 'Job',
+    'exception' => 'Exception',
+    'failed_at' => 'Failed At',
+    'view_exception' => 'View Exception',
+    'retry' => 'Retry',
+    'retry_selected' => 'Retry Selected',
+    'retry_success' => 'Job retried successfully',
+    'job_retried' => 'Job retried successfully',
+    'retry_selected_success' => 'Selected jobs retried',
+
+    // ─── Database Backups ────────────────────────────────────
+    'backup_type' => 'Type',
+    'file_path' => 'File Path',
+    'file_size' => 'File Size',
+    'status' => 'Status',
+    'error' => 'Error',
+    'error_message' => 'Error',
+    'started_at' => 'Started At',
+    'completed_at' => 'Completed At',
+    'type_auto_daily' => 'Auto (Daily)',
+    'type_auto_weekly' => 'Auto (Weekly)',
+    'type_manual' => 'Manual',
+    'backup_type_automated' => 'Automated',
+    'backup_type_auto_daily' => 'Auto (Daily)',
+    'backup_type_auto_weekly' => 'Auto (Weekly)',
+    'backup_type_manual' => 'Manual',
+    'backup_status_completed' => 'Completed',
+    'backup_status_in_progress' => 'In Progress',
+    'backup_status_failed' => 'Failed',
+    'status_in_progress' => 'In Progress',
+    'status_completed' => 'Completed',
+    'status_failed' => 'Failed',
+
+    // ─── Health Checks ───────────────────────────────────────
+    'service' => 'Service',
+    'response_time' => 'Response Time (ms)',
+    'details' => 'Details',
+    'checked_at' => 'Checked At',
+    'healthy' => 'Healthy',
+    'warning' => 'Warning',
+    'critical' => 'Critical',
+    'status_healthy' => 'Healthy',
+    'status_warning' => 'Warning',
+    'status_critical' => 'Critical',
+
+    // ─── Actions ─────────────────────────────────────────────
+    'flush_cache' => 'Flush Cache',
+    'cache_flushed' => 'Cache flushed successfully',
+];

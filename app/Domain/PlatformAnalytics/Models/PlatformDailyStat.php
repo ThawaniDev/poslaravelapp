@@ -30,4 +30,10 @@ class PlatformDailyStat extends Model
         'date' => 'date',
     ];
 
+    public function setDateAttribute($value): void
+    {
+        $this->attributes['date'] = $value instanceof \DateTimeInterface
+            ? $value->format('Y-m-d')
+            : $value;
+    }
 }

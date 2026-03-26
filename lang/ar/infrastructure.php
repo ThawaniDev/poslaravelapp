@@ -1,0 +1,81 @@
+<?php
+
+return [
+    // ─── Navigation & Headings ───────────────────────────────
+    'dashboard' => 'البنية التحتية',
+    'infrastructure_dashboard' => 'لوحة البنية التحتية',
+    'failed_jobs' => 'المهام الفاشلة',
+    'failed_job' => 'مهمة فاشلة',
+    'database_backups' => 'النسخ الاحتياطية',
+    'database_backup' => 'نسخة احتياطية',
+    'health_checks' => 'فحوصات الصحة',
+    'health_check' => 'فحص الصحة',
+
+    // ─── Dashboard Stats ─────────────────────────────────────
+    'failed_jobs_total' => 'المهام الفاشلة',
+    'failed_last_24h' => 'فشل (24 ساعة)',
+    'backups_completed' => 'نسخ مكتملة',
+    'backups_failed' => 'نسخ فاشلة',
+    'last_backup' => 'آخر نسخة',
+    'healthy_services' => 'سليمة',
+    'warning_services' => 'تحذير',
+    'critical_services' => 'حرجة',
+    'server_info' => 'معلومات الخادم',
+    'latest_health_checks' => 'آخر فحوصات الصحة',
+    'recent_failed_jobs' => 'المهام الفاشلة الأخيرة',
+    'no_recent_failures' => 'لا توجد إخفاقات حديثة',
+    'all_healthy' => 'جميع الخدمات سليمة',
+
+    // ─── Failed Jobs ─────────────────────────────────────────
+    'uuid' => 'المعرف',
+    'queue' => 'الطابور',
+    'connection' => 'الاتصال',
+    'job_name' => 'المهمة',
+    'exception' => 'الخطأ',
+    'failed_at' => 'وقت الفشل',
+    'view_exception' => 'عرض الخطأ',
+    'retry' => 'إعادة المحاولة',
+    'retry_selected' => 'إعادة المحاولة للمحدد',
+    'retry_success' => 'تمت إعادة المحاولة بنجاح',
+    'job_retried' => 'تمت إعادة المحاولة بنجاح',
+    'retry_selected_success' => 'تمت إعادة المحاولة للمحدد',
+
+    // ─── Database Backups ────────────────────────────────────
+    'backup_type' => 'النوع',
+    'file_path' => 'مسار الملف',
+    'file_size' => 'حجم الملف',
+    'status' => 'الحالة',
+    'error' => 'الخطأ',
+    'error_message' => 'الخطأ',
+    'started_at' => 'وقت البداية',
+    'completed_at' => 'وقت الاكتمال',
+    'type_auto_daily' => 'تلقائي (يومي)',
+    'type_auto_weekly' => 'تلقائي (أسبوعي)',
+    'type_manual' => 'يدوي',
+    'backup_type_automated' => 'تلقائي',
+    'backup_type_auto_daily' => 'تلقائي (يومي)',
+    'backup_type_auto_weekly' => 'تلقائي (أسبوعي)',
+    'backup_type_manual' => 'يدوي',
+    'backup_status_completed' => 'مكتمل',
+    'backup_status_in_progress' => 'جاري',
+    'backup_status_failed' => 'فشل',
+    'status_in_progress' => 'جاري',
+    'status_completed' => 'مكتمل',
+    'status_failed' => 'فشل',
+
+    // ─── Health Checks ───────────────────────────────────────
+    'service' => 'الخدمة',
+    'response_time' => 'وقت الاستجابة (مس)',
+    'details' => 'التفاصيل',
+    'checked_at' => 'وقت الفحص',
+    'healthy' => 'سليم',
+    'warning' => 'تحذير',
+    'critical' => 'حرج',
+    'status_healthy' => 'سليم',
+    'status_warning' => 'تحذير',
+    'status_critical' => 'حرج',
+
+    // ─── Actions ─────────────────────────────────────────────
+    'flush_cache' => 'مسح الذاكرة المؤقتة',
+    'cache_flushed' => 'تم مسح الذاكرة المؤقتة بنجاح',
+];

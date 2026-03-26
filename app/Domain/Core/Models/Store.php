@@ -2,7 +2,104 @@
 
 namespace App\Domain\Core\Models;
 
+use App\Domain\AccountingIntegration\Models\AccountingExport;
+use App\Domain\AccountingIntegration\Models\AccountMapping;
+use App\Domain\AccountingIntegration\Models\AutoExportConfig;
+use App\Domain\AccountingIntegration\Models\StoreAccountingConfig;
+use App\Domain\Analytics\Models\StoreHealthSnapshot;
+use App\Domain\Announcement\Models\PlatformAnnouncementDismissal;
+use App\Domain\AppUpdateManagement\Models\AppUpdateStat;
+use App\Domain\Auth\Models\User;
+use App\Domain\BackupSync\Models\BackupHistory;
+use App\Domain\BackupSync\Models\ProviderBackupStatus;
+use App\Domain\BackupSync\Models\SyncConflict;
+use App\Domain\BackupSync\Models\SyncLog;
+use App\Domain\Billing\Models\HardwareSale;
+use App\Domain\Billing\Models\ImplementationFee;
+use App\Domain\Catalog\Models\InternalBarcodeSequence;
+use App\Domain\Catalog\Models\StorePrice;
 use App\Domain\Core\Enums\BusinessType;
+use App\Domain\Customer\Models\Appointment;
+use App\Domain\Customer\Models\CfdConfiguration;
+use App\Domain\Customer\Models\GiftRegistry;
+use App\Domain\Customer\Models\LoyaltyBadge;
+use App\Domain\Customer\Models\LoyaltyChallenge;
+use App\Domain\Customer\Models\LoyaltyTier;
+use App\Domain\Customer\Models\SignagePlaylist;
+use App\Domain\Customer\Models\Wishlist;
+use App\Domain\DeliveryIntegration\Models\DeliveryMenuSyncLog;
+use App\Domain\DeliveryIntegration\Models\DeliveryPlatformConfig;
+use App\Domain\DeliveryIntegration\Models\StoreDeliveryPlatform;
+use App\Domain\DeliveryIntegration\Models\StoreDeliveryPlatformEnrollment;
+use App\Domain\Hardware\Models\HardwareConfiguration;
+use App\Domain\Hardware\Models\HardwareEventLog;
+use App\Domain\IndustryBakery\Models\BakeryRecipe;
+use App\Domain\IndustryBakery\Models\CustomCakeOrder;
+use App\Domain\IndustryBakery\Models\ProductionSchedule;
+use App\Domain\IndustryElectronics\Models\DeviceImeiRecord;
+use App\Domain\IndustryElectronics\Models\RepairJob;
+use App\Domain\IndustryElectronics\Models\TradeInRecord;
+use App\Domain\IndustryFlorist\Models\FlowerArrangement;
+use App\Domain\IndustryFlorist\Models\FlowerFreshnessLog;
+use App\Domain\IndustryFlorist\Models\FlowerSubscription;
+use App\Domain\IndustryJewelry\Models\BuybackTransaction;
+use App\Domain\IndustryJewelry\Models\DailyMetalRate;
+use App\Domain\IndustryPharmacy\Models\Prescription;
+use App\Domain\IndustryRestaurant\Models\KitchenTicket;
+use App\Domain\IndustryRestaurant\Models\RestaurantTable;
+use App\Domain\IndustryRestaurant\Models\TableReservation;
+use App\Domain\Inventory\Models\GoodsReceipt;
+use App\Domain\Inventory\Models\PurchaseOrder;
+use App\Domain\Inventory\Models\StockAdjustment;
+use App\Domain\Inventory\Models\StockBatch;
+use App\Domain\Inventory\Models\StockLevel;
+use App\Domain\Inventory\Models\StockMovement;
+use App\Domain\Inventory\Models\StockTransfer;
+use App\Domain\LabelPrinting\Models\LabelPrintHistory;
+use App\Domain\Order\Models\Exchange;
+use App\Domain\Order\Models\Order;
+use App\Domain\Order\Models\PendingOrder;
+use App\Domain\Order\Models\SaleReturn;
+use App\Domain\Payment\Models\CashSession;
+use App\Domain\Payment\Models\Expense;
+use App\Domain\Payment\Models\GiftCard;
+use App\Domain\Payment\Models\GiftCardTransaction;
+use App\Domain\PosCustomization\Models\PosCustomizationSetting;
+use App\Domain\PosCustomization\Models\QuickAccessConfig;
+use App\Domain\PosCustomization\Models\ReceiptTemplate;
+use App\Domain\PosTerminal\Models\HeldCart;
+use App\Domain\PosTerminal\Models\PosSession;
+use App\Domain\PosTerminal\Models\Transaction;
+use App\Domain\ProviderRegistration\Models\OnboardingProgress;
+use App\Domain\ProviderSubscription\Models\ProviderLimitOverride;
+use App\Domain\ProviderSubscription\Models\StoreAddOn;
+use App\Domain\ProviderSubscription\Models\StoreSubscription;
+use App\Domain\ProviderSubscription\Models\SubscriptionUsageSnapshot;
+use App\Domain\Report\Models\DailySalesSummary;
+use App\Domain\Report\Models\ProductSalesSummary;
+use App\Domain\Security\Models\DeviceRegistration;
+use App\Domain\Security\Models\LoginAttempt;
+use App\Domain\Security\Models\PinOverride;
+use App\Domain\Security\Models\RoleAuditLog;
+use App\Domain\Security\Models\SecurityAuditLog;
+use App\Domain\Security\Models\SecurityPolicy;
+use App\Domain\StaffManagement\Models\AttendanceRecord;
+use App\Domain\StaffManagement\Models\CommissionRule;
+use App\Domain\StaffManagement\Models\Role;
+use App\Domain\StaffManagement\Models\ShiftSchedule;
+use App\Domain\StaffManagement\Models\ShiftTemplate;
+use App\Domain\StaffManagement\Models\StaffActivityLog;
+use App\Domain\StaffManagement\Models\StaffBranchAssignment;
+use App\Domain\StaffManagement\Models\StaffUser;
+use App\Domain\StaffManagement\Models\TrainingSession;
+use App\Domain\Support\Models\SupportTicket;
+use App\Domain\SystemConfig\Models\TranslationOverride;
+use App\Domain\ThawaniIntegration\Models\ThawaniOrderMapping;
+use App\Domain\ThawaniIntegration\Models\ThawaniProductMapping;
+use App\Domain\ThawaniIntegration\Models\ThawaniSettlement;
+use App\Domain\ThawaniIntegration\Models\ThawaniStoreConfig;
+use App\Domain\ZatcaCompliance\Models\ZatcaCertificate;
+use App\Domain\ZatcaCompliance\Models\ZatcaInvoice;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -70,25 +167,13 @@ class Store extends Model
     {
         return $this->hasMany(AppUpdateStat::class);
     }
-    public function storeSubscription(): HasOne
-    {
-        return $this->hasOne(StoreSubscription::class);
-    }
     public function storeAddOns(): HasMany
     {
         return $this->hasMany(StoreAddOn::class);
     }
-    public function subscriptionUsageSnapshots(): HasMany
-    {
-        return $this->hasMany(SubscriptionUsageSnapshot::class);
-    }
     public function providerBackupStatus(): HasMany
     {
         return $this->hasMany(ProviderBackupStatus::class);
-    }
-    public function providerLimitOverrides(): HasMany
-    {
-        return $this->hasMany(ProviderLimitOverride::class);
     }
     public function roles(): HasMany
     {

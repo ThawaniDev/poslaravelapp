@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#fd8208",
+              "background-light": "#f8f7f5",
+              "background-dark": "#23190f",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<title>ZATCA Submission Queue - Thawani POS</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between border-b border-primary/10 bg-white dark:bg-background-dark px-6 py-4 md:px-20 lg:px-40">
+<div class="flex items-center gap-4">
+<div class="text-primary">
+<span class="material-symbols-outlined text-3xl">receipt_long</span>
+</div>
+<div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">ZATCA Submission Queue</h2>
+<p class="text-xs font-medium text-slate-500 dark:text-slate-400">Thawani POS • Terminal ID: T-8821</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center rounded-full h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-full h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<main class="flex flex-1 flex-col items-center py-8 px-4 md:px-20 lg:px-40">
+<div class="w-full max-w-[960px] flex flex-col gap-6">
+<!-- Dashboard Summary Card -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-primary/10 shadow-sm">
+<p class="text-sm font-medium text-slate-500">Processed Invoices</p>
+<h3 class="text-2xl font-bold mt-1">130 <span class="text-sm font-normal text-slate-400">/ 200</span></h3>
+<div class="mt-4 h-2 w-full bg-primary/10 rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 65%;"></div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-primary/10 shadow-sm">
+<p class="text-sm font-medium text-slate-500">Submission Rate</p>
+<h3 class="text-2xl font-bold mt-1">94.2%</h3>
+<p class="text-xs text-green-600 font-medium flex items-center mt-2">
+<span class="material-symbols-outlined text-sm mr-1">trending_up</span> +2.4% from last hour
+                        </p>
+</div>
+<div class="bg-white dark:bg-slate-900 p-5 rounded-xl border border-primary/10 shadow-sm">
+<p class="text-sm font-medium text-slate-500">Failed Items</p>
+<h3 class="text-2xl font-bold mt-1 text-red-500">12</h3>
+<p class="text-xs text-slate-400 mt-2">Requires immediate attention</p>
+</div>
+</div>
+<!-- Batch Action Banner -->
+<div class="flex flex-col md:flex-row items-center justify-between gap-4 p-5 rounded-xl border border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-900/30">
+<div class="flex items-center gap-4">
+<div class="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20 text-red-600">
+<span class="material-symbols-outlined text-2xl">error</span>
+</div>
+<div>
+<p class="text-base font-bold text-slate-900 dark:text-slate-100">Batch Retry Failed Items</p>
+<p class="text-sm text-slate-600 dark:text-slate-400">There are 12 failed ZATCA submissions waiting in the queue.</p>
+</div>
+</div>
+<button class="w-full md:w-auto px-6 py-2.5 bg-primary hover:bg-primary/90 text-white rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">refresh</span>
+                        Retry All
+                    </button>
+</div>
+<!-- Queue List Container -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
+<div class="px-6 py-4 border-b border-primary/10 flex justify-between items-center">
+<h2 class="text-lg font-bold">Real-time Queue</h2>
+<div class="flex gap-2">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">Live Updates</span>
+</div>
+</div>
+<div class="divide-y divide-primary/5">
+<!-- Item: Processing -->
+<div class="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="relative flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined animate-spin">sync</span>
+</div>
+<div>
+<p class="text-sm font-bold">Invoice #INV-2024-0891</p>
+<p class="text-xs text-slate-500">Amount: SAR 1,450.00 • 2 mins ago</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="hidden md:inline-block text-xs font-semibold px-2 py-1 rounded bg-slate-100 dark:bg-slate-800">PROCESSING</span>
+<div class="text-slate-300 dark:text-slate-700">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Item: Failed -->
+<div class="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600">
+<span class="material-symbols-outlined">close</span>
+</div>
+<div>
+<p class="text-sm font-bold">Invoice #INV-2024-0889</p>
+<p class="text-xs text-red-500">Error: Certificate Validation Failed</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center h-8 px-3 rounded bg-primary text-white text-xs font-bold hover:bg-primary/90">
+                                    Retry
+                                </button>
+<button class="flex items-center justify-center h-8 w-8 rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-lg">info</span>
+</button>
+</div>
+</div>
+<!-- Item: Success -->
+<div class="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/20 text-green-600">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div>
+<p class="text-sm font-bold">Invoice #INV-2024-0888</p>
+<p class="text-xs text-slate-500">Amount: SAR 420.00 • Cleared by ZATCA</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-xs text-slate-400">12:44 PM</span>
+<div class="text-slate-300 dark:text-slate-700">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Item: Success -->
+<div class="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/20 text-green-600">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div>
+<p class="text-sm font-bold">Invoice #INV-2024-0887</p>
+<p class="text-xs text-slate-500">Amount: SAR 98.00 • Cleared by ZATCA</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-xs text-slate-400">12:40 PM</span>
+<div class="text-slate-300 dark:text-slate-700">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+</div>
+<!-- Item: Failed -->
+<div class="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600">
+<span class="material-symbols-outlined">close</span>
+</div>
+<div>
+<p class="text-sm font-bold">Invoice #INV-2024-0886</p>
+<p class="text-xs text-red-500">Error: Internal Server Error (500)</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center h-8 px-3 rounded bg-primary text-white text-xs font-bold hover:bg-primary/90">
+                                    Retry
+                                </button>
+<button class="flex items-center justify-center h-8 w-8 rounded text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-lg">info</span>
+</button>
+</div>
+</div>
+<!-- Item: Success -->
+<div class="flex items-center justify-between p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/20 text-green-600">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div>
+<p class="text-sm font-bold">Invoice #INV-2024-0885</p>
+<p class="text-xs text-slate-500">Amount: SAR 3,120.00 • Cleared by ZATCA</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-xs text-slate-400">12:35 PM</span>
+<div class="text-slate-300 dark:text-slate-700">
+<span class="material-symbols-outlined">chevron_right</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer / Pagination -->
+<div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/30 flex items-center justify-between">
+<p class="text-xs text-slate-500">Showing 1-6 of 200 items</p>
+<div class="flex gap-2">
+<button class="px-3 py-1 text-xs font-medium rounded border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 disabled:opacity-50">Previous</button>
+<button class="px-3 py-1 text-xs font-medium rounded border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800">Next</button>
+</div>
+</div>
+</div>
+<!-- Settings Sidebar (integrated as full width bottom section for design flow) -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/10 shadow-sm">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-primary">hub</span>
+<h3 class="font-bold">Integration Status</h3>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between items-center text-sm">
+<span class="text-slate-500">API Connection</span>
+<span class="text-green-600 font-bold flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-green-600"></span> Online
+                                </span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-slate-500">Last Sync</span>
+<span class="text-slate-900 dark:text-slate-100">12 seconds ago</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-slate-500">Submission Mode</span>
+<span class="bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-bold uppercase">Real-time</span>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/10 shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-primary">history</span>
+<h3 class="font-bold">Queue Reports</h3>
+</div>
+<p class="text-sm text-slate-500 mb-4">Download comprehensive reports for tax compliance and audit purposes.</p>
+</div>
+<button class="w-full py-2 border-2 border-primary text-primary hover:bg-primary hover:text-white rounded-lg font-bold text-sm transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">description</span>
+                            Generate CSV Report
+                        </button>
+</div>
+</div>
+</div>
+</main>
+<footer class="py-10 border-t border-primary/10 flex flex-col items-center gap-4 text-slate-400">
+<div class="flex gap-6">
+<a class="text-xs hover:text-primary transition-colors" href="#">Documentation</a>
+<a class="text-xs hover:text-primary transition-colors" href="#">Support</a>
+<a class="text-xs hover:text-primary transition-colors" href="#">ZATCA Portal</a>
+</div>
+<p class="text-[10px] tracking-widest uppercase font-bold">Thawani POS Cloud Services</p>
+</footer>
+</div>
+</div>
+</body></html>

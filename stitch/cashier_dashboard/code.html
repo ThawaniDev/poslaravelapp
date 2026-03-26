@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#fd8208",
+              "background-light": "#f8f7f5",
+              "background-dark": "#23190f",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.75rem", "lg": "0.75rem", "xl": "1rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen flex-col">
+<!-- Top Navigation -->
+<header class="flex items-center justify-between bg-white dark:bg-background-dark/50 border-b border-slate-200 dark:border-slate-800 px-6 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="bg-primary p-2 rounded-lg">
+<span class="material-symbols-outlined text-white">point_of_sale</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight">ثواني POS</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">5</span>
+</button>
+</div>
+<div class="flex items-center gap-3 border-r border-slate-200 dark:border-slate-700 pr-4">
+<div class="text-left leading-tight hidden sm:block">
+<p class="text-sm font-semibold">أحمد علي</p>
+<p class="text-xs text-slate-500">كاشير #01</p>
+</div>
+<div class="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border-2 border-primary">
+<img alt="Cashier Profile" data-alt="Profile picture of a male cashier" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvckLs0Yn2SbmZsyP4xHyoDNdW3wkZcSZARmZ4k4LRu0sIPFtjN_RHieFNvav8WgkVInJKpJ6EQNv37NMdDX_DzyauNRVLoA_Ztv3cDU5FR90NblJ1wY5-LAFFwmxZa9PGDy3t7ByiH3v1pnbGz9u1BMOrWRoDQJy9dEGfoZX4GZSpoE_7IlH3XIE1_6lQzT119vJK9N_qjNIhQXXRRZ_YTmXHL90T9T-JRqjZTk9cxfS5_YjYBakLBdWx8eFNQu32VKG37h-bCO-w"/>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6">
+<!-- Quick Launch Section -->
+<section class="max-w-4xl mx-auto">
+<button class="w-full bg-primary hover:bg-primary/90 text-white p-6 rounded-xl shadow-lg flex flex-col items-center justify-center gap-4 transition-transform active:scale-95">
+<div class="bg-white/20 p-4 rounded-full">
+<span class="material-symbols-outlined !text-5xl">launch</span>
+</div>
+<span class="text-2xl font-bold">تشغيل محطة البيع السريع</span>
+<span class="text-white/80 text-sm">ابدأ عملية بيع جديدة فوراً</span>
+</button>
+</section>
+<!-- Status Alerts -->
+<section class="max-w-4xl mx-auto">
+<div class="bg-orange-50 dark:bg-primary/10 border border-primary/20 p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 bg-primary/20 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">shopping_bag</span>
+</div>
+<div>
+<p class="font-bold text-slate-900 dark:text-slate-100">طلبات ثواني المعلقة</p>
+<p class="text-sm text-slate-600 dark:text-slate-400">لديك 12 طلباً بانتظار التأكيد</p>
+</div>
+</div>
+<div class="bg-primary text-white font-bold px-4 py-1 rounded-full text-sm">
+                        12 طلب
+                    </div>
+</div>
+</section>
+<!-- Shift Info Grid -->
+<section class="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4">
+<div class="h-12 w-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-blue-600 dark:text-blue-400">schedule</span>
+</div>
+<div>
+<p class="text-xs text-slate-500 font-medium">وقت البدء</p>
+<p class="text-lg font-bold">08:00 AM</p>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4">
+<div class="h-12 w-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-green-600 dark:text-green-400">payments</span>
+</div>
+<div>
+<p class="text-xs text-slate-500 font-medium">إجمالي المبيعات</p>
+<p class="text-lg font-bold">1,240.00 ر.س</p>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-5 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-4">
+<div class="h-12 w-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-purple-600 dark:text-purple-400">receipt_long</span>
+</div>
+<div>
+<p class="text-xs text-slate-500 font-medium">العمليات</p>
+<p class="text-lg font-bold">18 معاملة</p>
+</div>
+</div>
+</section>
+<!-- Recent Transactions -->
+<section class="max-w-4xl mx-auto">
+<div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+<div class="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+<h3 class="font-bold">آخر المعاملات</h3>
+<button class="text-primary text-sm font-semibold hover:underline">عرض الكل</button>
+</div>
+<div class="divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Transaction Item -->
+<div class="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">shopping_cart</span>
+</div>
+<div>
+<p class="font-semibold text-sm">فاتورة #45920</p>
+<p class="text-xs text-slate-500">منذ 5 دقائق • دفع نقدي</p>
+</div>
+</div>
+<div class="text-left">
+<p class="font-bold text-sm">145.00 ر.س</p>
+<span class="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full font-bold">ناجح</span>
+</div>
+</div>
+<!-- Transaction Item -->
+<div class="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">credit_card</span>
+</div>
+<div>
+<p class="font-semibold text-sm">فاتورة #45919</p>
+<p class="text-xs text-slate-500">منذ 12 دقيقة • بطاقة مدى</p>
+</div>
+</div>
+<div class="text-left">
+<p class="font-bold text-sm">82.50 ر.س</p>
+<span class="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full font-bold">ناجح</span>
+</div>
+</div>
+<!-- Transaction Item -->
+<div class="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">smartphone</span>
+</div>
+<div>
+<p class="font-semibold text-sm">فاتورة #45918</p>
+<p class="text-xs text-slate-500">منذ 24 دقيقة • محفظة ثواني</p>
+</div>
+</div>
+<div class="text-left">
+<p class="font-bold text-sm">210.00 ر.س</p>
+<span class="text-[10px] bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-full font-bold">ناجح</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Tab Bar for Mobile -->
+<nav class="md:hidden bg-white dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 px-6 py-2 flex justify-between items-center">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-bold">الرئيسية</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">history</span>
+<span class="text-[10px]">العمليات</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-[10px]">المخزون</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-slate-400">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px]">الإعدادات</span>
+</button>
+</nav>
+</div>
+</body></html>

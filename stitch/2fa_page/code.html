@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom hide spin buttons for number inputs */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen font-display">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 px-6 md:px-20 py-4 bg-white dark:bg-background-dark/50 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center gap-3">
+<div class="size-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">point_of_sale</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-xl font-bold tracking-tight">Thawani POS</h2>
+</div>
+<button class="flex items-center justify-center rounded-full size-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</header>
+<!-- Main Content Container -->
+<main class="flex flex-1 justify-center items-center p-4">
+<div class="w-full max-w-[480px] bg-white dark:bg-slate-900/50 p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+<!-- Title Section -->
+<div class="flex flex-col gap-2 mb-8 text-center">
+<div class="mx-auto size-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-4">
+<span class="material-symbols-outlined text-4xl">verified_user</span>
+</div>
+<h1 class="text-slate-900 dark:text-slate-100 text-3xl font-bold leading-tight">التحقق من الهوية</h1>
+<p class="text-slate-500 dark:text-slate-400 text-base">لقد أرسلنا رمز التحقق المكون من 6 أرقام إلى رقم هاتفك المسجل.</p>
+</div>
+<!-- OTP Input Fieldset -->
+<div class="flex justify-center mb-8" dir="ltr">
+<fieldset class="flex gap-3">
+<input autofocus="" class="flex h-14 w-12 text-center text-xl font-bold bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" max="9" maxlength="1" type="number"/>
+<input class="flex h-14 w-12 text-center text-xl font-bold bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" max="9" maxlength="1" type="number"/>
+<input class="flex h-14 w-12 text-center text-xl font-bold bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" max="9" maxlength="1" type="number"/>
+<input class="flex h-14 w-12 text-center text-xl font-bold bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" max="9" maxlength="1" type="number"/>
+<input class="flex h-14 w-12 text-center text-xl font-bold bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" max="9" maxlength="1" type="number"/>
+<input class="flex h-14 w-12 text-center text-xl font-bold bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" max="9" maxlength="1" type="number"/>
+</fieldset>
+</div>
+<!-- Timer Display -->
+<div class="flex gap-4 mb-8">
+<div class="flex grow basis-0 flex-col items-center gap-2 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+<span class="text-primary text-2xl font-bold">01</span>
+<span class="text-slate-500 dark:text-slate-400 text-xs font-medium">دقائق</span>
+</div>
+<div class="flex grow basis-0 flex-col items-center gap-2 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700">
+<span class="text-primary text-2xl font-bold">59</span>
+<span class="text-slate-500 dark:text-slate-400 text-xs font-medium">ثواني</span>
+</div>
+</div>
+<!-- Action Button -->
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl text-lg transition-all shadow-lg shadow-primary/20 mb-6">
+                        تأكيد الرمز
+                    </button>
+<!-- Footer Link -->
+<div class="text-center">
+<p class="text-slate-500 dark:text-slate-400 text-sm">
+                            لم تستلم الرمز؟ 
+                            <a class="text-primary font-bold hover:underline decoration-2 underline-offset-4" href="#">إعادة الإرسال</a>
+</p>
+</div>
+</div>
+</main>
+<!-- Bottom Illustration/Background (Subtle) -->
+<footer class="py-10 flex justify-center opacity-20 grayscale pointer-events-none">
+<div class="flex gap-8">
+<span class="material-symbols-outlined text-6xl">security</span>
+<span class="material-symbols-outlined text-6xl">shield_lock</span>
+<span class="material-symbols-outlined text-6xl">fingerprint</span>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

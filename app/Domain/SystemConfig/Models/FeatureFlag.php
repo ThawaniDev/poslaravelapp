@@ -14,6 +14,8 @@ class FeatureFlag extends Model
     public $incrementing = false;
     protected $keyType = 'string';
 
+    const CREATED_AT = null;
+
     protected $fillable = [
         'flag_key',
         'is_enabled',

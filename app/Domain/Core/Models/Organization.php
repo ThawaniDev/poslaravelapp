@@ -3,6 +3,9 @@
 namespace App\Domain\Core\Models;
 
 use App\Domain\Core\Enums\BusinessType;
+use App\Domain\ProviderSubscription\Models\ProviderLimitOverride;
+use App\Domain\ProviderSubscription\Models\StoreSubscription;
+use App\Domain\ProviderSubscription\Models\SubscriptionUsageSnapshot;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -40,6 +43,18 @@ class Organization extends Model
     public function stores(): HasMany
     {
         return $this->hasMany(Store::class);
+    }
+    public function subscription(): HasOne
+    {
+        return $this->hasOne(StoreSubscription::class);
+    }
+    public function subscriptionUsageSnapshots(): HasMany
+    {
+        return $this->hasMany(SubscriptionUsageSnapshot::class);
+    }
+    public function providerLimitOverrides(): HasMany
+    {
+        return $this->hasMany(ProviderLimitOverride::class);
     }
     public function users(): HasMany
     {

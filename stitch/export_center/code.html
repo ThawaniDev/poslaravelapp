@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thawani POS - Reports Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-6 md:px-10 py-3 bg-white dark:bg-slate-900">
+<div class="flex items-center gap-4">
+<div class="size-8 flex items-center justify-center bg-primary rounded-lg text-white">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">Thawani POS</h2>
+<p class="text-xs text-slate-500 dark:text-slate-400">Merchant Portal</p>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-4 items-center">
+<button class="flex items-center justify-center rounded-full h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden border border-primary/30">
+<img class="w-full h-full object-cover" data-alt="User profile avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBubKRGCaaZVTdoWYCwmu6DTfCNKe_sM4IXqyEyZvhSPI5eG7opFtcu60hpmBNUQFJr75ja9QTOPAxz27QXe0_Ko_1iN9SVujui-713hRIwuS3cYHo2dexODetJMc1-oIlL5mFvN56JQyNZJrm1vcVyF4Rqy_G_MWZbzIKUV03pJvFDZsijbPrRhbjh347FPnUta7603A4GJLCKk8LTf8zqsAw0vD4iWTdpxc_PwehyJUgincmo_YMFltLoY4rwndSFwMM2Y5pO1jY9"/>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-[1200px] mx-auto w-full p-4 md:p-10 space-y-8">
+<!-- Page Title Area -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div class="flex flex-col gap-1">
+<h1 class="text-slate-900 dark:text-slate-100 text-3xl font-bold tracking-tight">Export Reports Center</h1>
+<p class="text-slate-500 dark:text-slate-400">Select and download your business performance data across different modules.</p>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-lg font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-lg">history</span>
+                        Export History
+                    </button>
+</div>
+</div>
+<!-- Tabs Navigation -->
+<div class="flex border-b border-slate-200 dark:border-slate-800 gap-8 overflow-x-auto no-scrollbar">
+<button class="flex flex-col items-center justify-center border-b-[3px] border-primary text-primary pb-3 pt-2 font-bold text-sm whitespace-nowrap">
+                    Sales Reports
+                </button>
+<button class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 pb-3 pt-2 font-medium text-sm hover:text-slate-700 dark:hover:text-slate-200 whitespace-nowrap">
+                    Product Performance
+                </button>
+<button class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 pb-3 pt-2 font-medium text-sm hover:text-slate-700 dark:hover:text-slate-200 whitespace-nowrap">
+                    Staff &amp; Productivity
+                </button>
+<button class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 pb-3 pt-2 font-medium text-sm hover:text-slate-700 dark:hover:text-slate-200 whitespace-nowrap">
+                    Inventory &amp; Stock
+                </button>
+<button class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 dark:text-slate-400 pb-3 pt-2 font-medium text-sm hover:text-slate-700 dark:hover:text-slate-200 whitespace-nowrap">
+                    ZATCA Compliance
+                </button>
+</div>
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Reports List Section -->
+<div class="lg:col-span-2 space-y-4">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">assessment</span>
+                        Available Reports
+                    </h3>
+<!-- Report Card 1 -->
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center gap-6 group hover:border-primary/50 transition-colors">
+<div class="size-16 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-3xl">bar_chart</span>
+</div>
+<div class="flex-1 space-y-1">
+<h4 class="font-bold text-lg">Sales Summary Report</h4>
+<p class="text-sm text-slate-500 dark:text-slate-400">Comprehensive view of all transactions, VAT, and payment methods for a selected period.</p>
+</div>
+<div class="flex gap-2 w-full md:w-auto">
+<button class="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+                                PDF
+                            </button>
+<button class="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-sm">table_view</span>
+                                Excel
+                            </button>
+</div>
+</div>
+<!-- Report Card 2 -->
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center gap-6 group hover:border-primary/50 transition-colors">
+<div class="size-16 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 shrink-0">
+<span class="material-symbols-outlined text-3xl">inventory_2</span>
+</div>
+<div class="flex-1 space-y-1">
+<h4 class="font-bold text-lg">Inventory Valuation</h4>
+<p class="text-sm text-slate-500 dark:text-slate-400">Current stock levels, cost prices, and total retail value of your existing inventory.</p>
+</div>
+<div class="flex gap-2 w-full md:w-auto">
+<button class="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+                                PDF
+                            </button>
+<button class="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-sm">table_view</span>
+                                Excel
+                            </button>
+</div>
+</div>
+<!-- Report Card 3 -->
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center gap-6 group hover:border-primary/50 transition-colors">
+<div class="size-16 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 shrink-0">
+<span class="material-symbols-outlined text-3xl">verified</span>
+</div>
+<div class="flex-1 space-y-1">
+<h4 class="font-bold text-lg">ZATCA Audit File (XML)</h4>
+<p class="text-sm text-slate-500 dark:text-slate-400">Standardized report for tax compliance required by the Saudi Zakat, Tax and Customs Authority.</p>
+</div>
+<div class="flex gap-2 w-full md:w-auto">
+<button class="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-sm">download</span>
+                                XML
+                            </button>
+<button class="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+                                PDF
+                            </button>
+</div>
+</div>
+<!-- Report Card 4 -->
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row items-center gap-6 group hover:border-primary/50 transition-colors">
+<div class="size-16 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 shrink-0">
+<span class="material-symbols-outlined text-3xl">badge</span>
+</div>
+<div class="flex-1 space-y-1">
+<h4 class="font-bold text-lg">Staff Performance Report</h4>
+<p class="text-sm text-slate-500 dark:text-slate-400">Track individual sales, average transaction value, and performance metrics for all employees.</p>
+</div>
+<div class="flex gap-2 w-full md:w-auto">
+<button class="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-semibold text-sm hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-sm">picture_as_pdf</span>
+                                PDF
+                            </button>
+<button class="flex-1 md:flex-initial flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg font-semibold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-sm">table_view</span>
+                                Excel
+                            </button>
+</div>
+</div>
+</div>
+<!-- Scheduling Section -->
+<div class="space-y-6">
+<div class="bg-primary/5 dark:bg-primary/10 rounded-2xl p-6 border border-primary/20 space-y-6">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-2xl">schedule_send</span>
+<h3 class="text-lg font-bold">Email Scheduling</h3>
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-400">Automate your business reporting. Receive reports directly in your inbox daily, weekly, or monthly.</p>
+<form class="space-y-4">
+<div class="space-y-2">
+<label class="text-sm font-semibold">Select Report</label>
+<select class="w-full bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary">
+<option>Daily Sales Summary</option>
+<option>Weekly Stock Audit</option>
+<option>Monthly ZATCA Report</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-semibold">Frequency</label>
+<div class="grid grid-cols-3 gap-2">
+<button class="py-2 text-xs font-bold border border-primary bg-primary text-white rounded-lg" type="button">Daily</button>
+<button class="py-2 text-xs font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-lg hover:border-primary transition-colors" type="button">Weekly</button>
+<button class="py-2 text-xs font-medium border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 rounded-lg hover:border-primary transition-colors" type="button">Monthly</button>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-semibold">Recipient Email</label>
+<input class="w-full bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:ring-primary focus:border-primary" placeholder="manager@business.com" type="email"/>
+</div>
+<button class="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary/90 transition-shadow shadow-lg shadow-primary/20 mt-2">
+                                Schedule Report
+                            </button>
+</form>
+<div class="pt-4 border-t border-primary/10">
+<h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Active Schedules</h4>
+<div class="space-y-3">
+<div class="flex items-center justify-between bg-white dark:bg-slate-800 p-3 rounded-lg border border-primary/10">
+<div class="flex flex-col">
+<span class="text-sm font-bold">Daily Sales</span>
+<span class="text-[10px] text-slate-500 uppercase">Daily at 11:59 PM</span>
+</div>
+<button class="text-red-500 hover:text-red-600">
+<span class="material-symbols-outlined text-lg">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Help Box -->
+<div class="bg-slate-900 text-white rounded-2xl p-6 space-y-4">
+<span class="material-symbols-outlined text-primary text-3xl">help_outline</span>
+<h4 class="font-bold text-lg">Need Custom Reports?</h4>
+<p class="text-sm text-slate-400 leading-relaxed">Our enterprise team can help you build customized data exports and integrations.</p>
+<a class="inline-flex items-center gap-2 text-primary font-bold text-sm" href="#">
+                            Contact Support
+                            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</main>
+<footer class="mt-auto py-8 text-center text-slate-500 dark:text-slate-400 text-sm border-t border-slate-200 dark:border-slate-800">
+            © 2024 Thawani POS. Powered by Thawani Technologies.
+        </footer>
+</div>
+</div>
+</body></html>

@@ -2,11 +2,12 @@
 
 namespace App\Domain\ProviderSubscription\Models;
 
+use App\Domain\Announcement\Models\PaymentReminder;
 use App\Domain\Subscription\Enums\BillingCycle;
 use App\Domain\Payment\Enums\SubscriptionPaymentMethod;
 use App\Domain\Subscription\Enums\SubscriptionStatus;
 use App\Domain\Subscription\Models\SubscriptionPlan;
-use App\Domain\Core\Models\Store;
+use App\Domain\Core\Models\Organization;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -21,7 +22,7 @@ class StoreSubscription extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'store_id',
+        'organization_id',
         'subscription_plan_id',
         'status',
         'billing_cycle',
@@ -42,9 +43,9 @@ class StoreSubscription extends Model
         'cancelled_at' => 'datetime',
     ];
 
-    public function store(): BelongsTo
+    public function organization(): BelongsTo
     {
-        return $this->belongsTo(Store::class);
+        return $this->belongsTo(Organization::class);
     }
     public function subscriptionPlan(): BelongsTo
     {

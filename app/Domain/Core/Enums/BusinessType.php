@@ -4,15 +4,12 @@ namespace App\Domain\Core\Enums;
 
 enum BusinessType: string
 {
-    case Retail = 'retail';
+    case Grocery = 'grocery';
     case Restaurant = 'restaurant';
     case Pharmacy = 'pharmacy';
-    case Grocery = 'grocery';
-    case Jewelry = 'jewelry';
-    case MobileShop = 'mobile_shop';
-    case FlowerShop = 'flower_shop';
     case Bakery = 'bakery';
-    case Cafe = 'cafe';
-    case Service = 'service';
-    case Custom = 'custom';
+    case Electronics = 'electronics';
+    case Florist = 'florist';
+    case Jewelry = 'jewelry';
+    case Fashion = 'fashion';
 }

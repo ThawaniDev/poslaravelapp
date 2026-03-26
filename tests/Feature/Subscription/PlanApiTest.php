@@ -29,15 +29,15 @@ class PlanApiTest extends TestCase
 
         $this->org = Organization::create([
             'name' => 'Test Organization',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $this->org->id,
             'name' => 'Test Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -362,7 +362,7 @@ class PlanApiTest extends TestCase
     {
         // Create a subscription
         \App\Domain\ProviderSubscription\Models\StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->starterPlan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',

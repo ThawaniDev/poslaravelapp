@@ -2,9 +2,11 @@
 
 namespace App\Domain\ContentOnboarding\Models;
 
+use App\Domain\Subscription\Models\SubscriptionPlan;
 use App\Domain\ZatcaCompliance\Enums\ZatcaQrPosition;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ReceiptLayoutTemplate extends Model
@@ -41,5 +43,15 @@ class ReceiptLayoutTemplate extends Model
     public function receiptTemplatePackageVisibility(): HasMany
     {
         return $this->hasMany(ReceiptTemplatePackageVisibility::class);
+    }
+
+    public function subscriptionPlans(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            SubscriptionPlan::class,
+            'receipt_template_package_visibility',
+            'receipt_layout_template_id',
+            'subscription_plan_id',
+        );
     }
 }

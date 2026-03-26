@@ -81,7 +81,7 @@ class AuthEdgeCasesApiTest extends TestCase
             'store_name' => 'My Store',
             'country' => 'SA',
             'currency' => 'SAR',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
         ]);
 
         $response->assertStatus(201);
@@ -101,8 +101,8 @@ class AuthEdgeCasesApiTest extends TestCase
             'organization_name' => 'شركة التقنية',
             'store_name' => 'المتجر الرئيسي',
             'country' => 'OM',
-            'currency' => 'OMR',
-            'business_type' => 'retail',
+            'currency' => 'SAR',
+            'business_type' => 'grocery',
         ]);
 
         $response->assertStatus(201);
@@ -117,8 +117,8 @@ class AuthEdgeCasesApiTest extends TestCase
             'password' => 'Password123!',
             'password_confirmation' => 'Password123!',
             'country' => 'OM',
-            'currency' => 'OMR',
-            'business_type' => 'retail',
+            'currency' => 'SAR',
+            'business_type' => 'grocery',
         ]);
 
         $response->assertStatus(201);
@@ -478,7 +478,7 @@ class AuthEdgeCasesApiTest extends TestCase
             'organization_id' => $org->id,
             'name' => 'Test Store',
             'slug' => 'store-' . Str::random(6),
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);

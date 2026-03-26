@@ -705,6 +705,7 @@ return new class extends Migration
                 $table->uuid('blocked_by')->nullable();
                 $table->timestamp('blocked_at')->nullable();
                 $table->timestamp('expires_at')->nullable();
+                $table->timestamp('created_at')->nullable();
             });
         }
 
@@ -716,6 +717,7 @@ return new class extends Migration
                 $table->string('device_fingerprint');
                 $table->string('device_name')->nullable();
                 $table->string('ip_address', 45)->nullable();
+                $table->text('user_agent')->nullable();
                 $table->timestamp('trusted_at')->nullable();
                 $table->timestamp('last_used_at')->nullable();
             });
@@ -726,12 +728,16 @@ return new class extends Migration
             Schema::create('admin_sessions', function (Blueprint $table) {
                 $table->uuid('id')->primary();
                 $table->uuid('admin_user_id');
+                $table->string('session_token_hash', 64)->nullable();
                 $table->string('ip_address', 45);
                 $table->text('user_agent')->nullable();
                 $table->string('status', 20)->default('active');
+                $table->boolean('two_fa_verified')->default(false);
                 $table->timestamp('started_at')->nullable();
                 $table->timestamp('last_activity_at')->nullable();
+                $table->timestamp('expires_at')->nullable();
                 $table->timestamp('ended_at')->nullable();
+                $table->timestamp('revoked_at')->nullable();
             });
         }
 
@@ -954,8 +960,8 @@ return new class extends Migration
         // Model: App\Domain\ProviderSubscription\Models\StoreSubscription
         Schema::create('store_subscriptions', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('store_id');
-            $table->foreign('store_id')->references('id')->on('stores')->cascadeOnDelete();
+            $table->uuid('organization_id');
+            $table->foreign('organization_id')->references('id')->on('organizations')->cascadeOnDelete();
             $table->uuid('subscription_plan_id');
             $table->foreign('subscription_plan_id')->references('id')->on('subscription_plans');
             $table->string('status', 30)->default('active');
@@ -1001,8 +1007,8 @@ return new class extends Migration
         // Model: App\Domain\ProviderSubscription\Models\ProviderLimitOverride
         Schema::create('provider_limit_overrides', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('store_id');
-            $table->foreign('store_id')->references('id')->on('stores');
+            $table->uuid('organization_id');
+            $table->foreign('organization_id')->references('id')->on('organizations');
             $table->string('limit_key');
             $table->integer('override_value');
             $table->string('reason')->nullable();
@@ -1015,8 +1021,8 @@ return new class extends Migration
         // Model: App\Domain\ProviderSubscription\Models\SubscriptionUsageSnapshot
         Schema::create('subscription_usage_snapshots', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('store_id');
-            $table->foreign('store_id')->references('id')->on('stores');
+            $table->uuid('organization_id');
+            $table->foreign('organization_id')->references('id')->on('organizations');
             $table->string('resource_type');
             $table->integer('current_count')->default(0);
             $table->integer('plan_limit')->nullable();
@@ -1055,6 +1061,466 @@ return new class extends Migration
             $table->uuid('plan_add_on_id');
             $table->timestamp('activated_at')->nullable();
             $table->boolean('is_active')->default(true);
+        });
+
+        // ─── Content Onboarding: business_types ──────────────
+        Schema::create('business_types', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('name', 100);
+            $table->string('name_ar', 100);
+            $table->string('slug', 50)->unique();
+            $table->string('icon', 10)->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->integer('sort_order')->default(0);
+            $table->timestamps();
+        });
+
+        // ─── Content Onboarding: pos_layout_templates ────────
+        Schema::create('pos_layout_templates', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('business_type_id');
+            $table->foreign('business_type_id')->references('id')->on('business_types');
+            $table->string('layout_key', 50)->unique();
+            $table->string('name', 100);
+            $table->string('name_ar', 100)->nullable();
+            $table->text('description')->nullable();
+            $table->text('preview_image_url')->nullable();
+            $table->json('config');
+            $table->boolean('is_default')->default(false);
+            $table->boolean('is_active')->default(true);
+            $table->integer('sort_order')->default(0);
+            $table->integer('canvas_columns')->default(24);
+            $table->integer('canvas_rows')->default(16);
+            $table->integer('canvas_gap_px')->default(4);
+            $table->integer('canvas_padding_px')->default(8);
+            $table->json('breakpoints')->default('{}');
+            $table->string('version', 20)->default('1.0.0');
+            $table->boolean('is_locked')->default(false);
+            $table->uuid('clone_source_id')->nullable();
+            $table->timestamp('published_at')->nullable();
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
+        });
+
+        // ─── Content Onboarding: platform_ui_defaults ────────
+        Schema::create('platform_ui_defaults', function (Blueprint $table) {
+            $table->string('key', 50)->primary();
+            $table->string('value', 100);
+        });
+
+        // ─── Content Onboarding: themes ──────────────────────
+        Schema::create('themes', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('name', 100);
+            $table->string('slug', 50)->unique();
+            $table->string('primary_color', 7);
+            $table->string('secondary_color', 7);
+            $table->string('background_color', 7);
+            $table->string('text_color', 7);
+            $table->boolean('is_active')->default(true);
+            $table->boolean('is_system')->default(false);
+            $table->json('typography_config')->default('{}');
+            $table->json('spacing_config')->default('{}');
+            $table->json('border_config')->default('{}');
+            $table->json('shadow_config')->default('{}');
+            $table->json('animation_config')->default('{}');
+            $table->json('css_variables')->default('{}');
+            $table->timestamps();
+        });
+
+        // ─── Content Onboarding: theme_package_visibility ────
+        Schema::create('theme_package_visibility', function (Blueprint $table) {
+            $table->uuid('theme_id');
+            $table->uuid('subscription_plan_id');
+            $table->foreign('theme_id')->references('id')->on('themes')->cascadeOnDelete();
+            $table->foreign('subscription_plan_id')->references('id')->on('subscription_plans')->cascadeOnDelete();
+            $table->primary(['theme_id', 'subscription_plan_id']);
+        });
+
+        // ─── Content Onboarding: layout_package_visibility ───
+        Schema::create('layout_package_visibility', function (Blueprint $table) {
+            $table->uuid('pos_layout_template_id');
+            $table->uuid('subscription_plan_id');
+            $table->foreign('pos_layout_template_id')->references('id')->on('pos_layout_templates')->cascadeOnDelete();
+            $table->foreign('subscription_plan_id')->references('id')->on('subscription_plans')->cascadeOnDelete();
+            $table->primary(['pos_layout_template_id', 'subscription_plan_id']);
+        });
+
+        // ─── Content Onboarding: receipt_layout_templates ────
+        Schema::create('receipt_layout_templates', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('name', 100);
+            $table->string('name_ar', 100);
+            $table->string('slug', 50)->unique();
+            $table->integer('paper_width')->default(80);
+            $table->json('header_config')->default('{}');
+            $table->json('body_config')->default('{}');
+            $table->json('footer_config')->default('{}');
+            $table->string('zatca_qr_position', 10)->default('footer');
+            $table->boolean('show_bilingual')->default(true);
+            $table->boolean('is_active')->default(true);
+            $table->integer('sort_order')->default(0);
+            $table->timestamps();
+        });
+
+        // ─── Content Onboarding: receipt_template_package_visibility
+        Schema::create('receipt_template_package_visibility', function (Blueprint $table) {
+            $table->uuid('receipt_layout_template_id');
+            $table->uuid('subscription_plan_id');
+            $table->foreign('receipt_layout_template_id')->references('id')->on('receipt_layout_templates')->cascadeOnDelete();
+            $table->foreign('subscription_plan_id')->references('id')->on('subscription_plans')->cascadeOnDelete();
+            $table->primary(['receipt_layout_template_id', 'subscription_plan_id']);
+        });
+
+        // ─── Content Onboarding: cfd_themes ─────────────────
+        Schema::create('cfd_themes', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('name', 100);
+            $table->string('slug', 50)->unique();
+            $table->string('background_color', 7)->default('#FFFFFF');
+            $table->string('text_color', 7)->default('#333333');
+            $table->string('accent_color', 7)->default('#1A56A0');
+            $table->string('font_family', 50)->default('system');
+            $table->string('cart_layout', 10)->default('list');
+            $table->string('idle_layout', 20)->default('slideshow');
+            $table->string('animation_style', 10)->default('fade');
+            $table->integer('transition_seconds')->default(5);
+            $table->boolean('show_store_logo')->default(true);
+            $table->boolean('show_running_total')->default(true);
+            $table->string('thank_you_animation', 15)->default('check');
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        // ─── Content Onboarding: cfd_theme_package_visibility
+        Schema::create('cfd_theme_package_visibility', function (Blueprint $table) {
+            $table->uuid('cfd_theme_id');
+            $table->uuid('subscription_plan_id');
+            $table->foreign('cfd_theme_id')->references('id')->on('cfd_themes')->cascadeOnDelete();
+            $table->foreign('subscription_plan_id')->references('id')->on('subscription_plans')->cascadeOnDelete();
+            $table->primary(['cfd_theme_id', 'subscription_plan_id']);
+        });
+
+        // ─── Content Onboarding: signage_templates ───────────
+        Schema::create('signage_templates', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('name', 100);
+            $table->string('name_ar', 100);
+            $table->string('slug', 50)->unique();
+            $table->string('template_type', 20);
+            $table->json('layout_config')->default('[]');
+            $table->json('placeholder_content')->nullable();
+            $table->string('background_color', 7)->default('#FFFFFF');
+            $table->string('text_color', 7)->default('#333333');
+            $table->string('font_family', 50)->default('system');
+            $table->string('transition_style', 10)->default('fade');
+            $table->text('preview_image_url')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        // ─── Content Onboarding: signage_template_business_types
+        Schema::create('signage_template_business_types', function (Blueprint $table) {
+            $table->uuid('signage_template_id');
+            $table->uuid('business_type_id');
+            $table->foreign('signage_template_id')->references('id')->on('signage_templates')->cascadeOnDelete();
+            $table->foreign('business_type_id')->references('id')->on('business_types')->cascadeOnDelete();
+            $table->primary(['signage_template_id', 'business_type_id']);
+        });
+
+        // ─── Content Onboarding: signage_template_package_visibility
+        Schema::create('signage_template_package_visibility', function (Blueprint $table) {
+            $table->uuid('signage_template_id');
+            $table->uuid('subscription_plan_id');
+            $table->foreign('signage_template_id')->references('id')->on('signage_templates')->cascadeOnDelete();
+            $table->foreign('subscription_plan_id')->references('id')->on('subscription_plans')->cascadeOnDelete();
+            $table->primary(['signage_template_id', 'subscription_plan_id']);
+        });
+
+        // ─── Content Onboarding: label_layout_templates ──────
+        Schema::create('label_layout_templates', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('name', 100);
+            $table->string('name_ar', 100);
+            $table->string('slug', 50)->unique();
+            $table->string('label_type', 20);
+            $table->integer('label_width_mm');
+            $table->integer('label_height_mm');
+            $table->string('barcode_type', 15)->default('CODE128');
+            $table->json('barcode_position')->nullable();
+            $table->boolean('show_barcode_number')->default(true);
+            $table->json('field_layout')->default('[]');
+            $table->string('font_family', 50)->default('system');
+            $table->string('default_font_size', 10)->default('small');
+            $table->boolean('show_border')->default(false);
+            $table->string('border_style', 10)->default('solid');
+            $table->string('background_color', 7)->default('#FFFFFF');
+            $table->text('preview_image_url')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        // ─── Content Onboarding: label_template_business_types
+        Schema::create('label_template_business_types', function (Blueprint $table) {
+            $table->uuid('label_layout_template_id');
+            $table->uuid('business_type_id');
+            $table->foreign('label_layout_template_id')->references('id')->on('label_layout_templates')->cascadeOnDelete();
+            $table->foreign('business_type_id')->references('id')->on('business_types')->cascadeOnDelete();
+            $table->primary(['label_layout_template_id', 'business_type_id']);
+        });
+
+        // ─── Content Onboarding: label_template_package_visibility
+        Schema::create('label_template_package_visibility', function (Blueprint $table) {
+            $table->uuid('label_layout_template_id');
+            $table->uuid('subscription_plan_id');
+            $table->foreign('label_layout_template_id')->references('id')->on('label_layout_templates')->cascadeOnDelete();
+            $table->foreign('subscription_plan_id')->references('id')->on('subscription_plans')->cascadeOnDelete();
+            $table->primary(['label_layout_template_id', 'subscription_plan_id']);
+        });
+
+        // ─── Content Onboarding: user_preferences ────────────
+        Schema::create('user_preferences', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('user_id');
+            $table->string('pos_handedness', 10)->nullable();
+            $table->string('font_size', 15)->nullable();
+            $table->string('theme', 50)->nullable();
+            $table->uuid('pos_layout_id')->nullable();
+            $table->json('accessibility_json')->nullable();
+        });
+
+        // ─── Content Onboarding: pos_customization_settings ──
+        if (!Schema::hasTable('pos_customization_settings')) {
+            Schema::create('pos_customization_settings', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->string('theme', 20)->nullable();
+                $table->string('primary_color', 7)->nullable();
+                $table->string('secondary_color', 7)->nullable();
+                $table->string('accent_color', 7)->nullable();
+                $table->decimal('font_scale', 3, 1)->nullable();
+                $table->string('handedness', 10)->nullable();
+                $table->integer('grid_columns')->nullable();
+                $table->boolean('show_product_images')->nullable();
+                $table->boolean('show_price_on_grid')->nullable();
+                $table->string('cart_display_mode', 20)->nullable();
+                $table->string('layout_direction', 5)->nullable();
+                $table->integer('sync_version')->default(1);
+                $table->timestamps();
+            });
+        }
+
+        // ─── Layout Builder: layout_widgets ──────────────────
+        Schema::create('layout_widgets', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('slug', 50)->unique();
+            $table->string('name', 100);
+            $table->string('name_ar', 100);
+            $table->text('description')->nullable();
+            $table->text('description_ar')->nullable();
+            $table->string('category', 30);
+            $table->string('icon', 50)->nullable();
+            $table->integer('default_width')->default(6);
+            $table->integer('default_height')->default(4);
+            $table->integer('min_width')->default(2);
+            $table->integer('min_height')->default(2);
+            $table->integer('max_width')->default(24);
+            $table->integer('max_height')->default(16);
+            $table->boolean('is_resizable')->default(true);
+            $table->boolean('is_required')->default(false);
+            $table->json('properties_schema')->default('[]');
+            $table->json('default_properties')->default('{}');
+            $table->boolean('is_active')->default(true);
+            $table->integer('sort_order')->default(0);
+            $table->timestamps();
+        });
+
+        // ─── Layout Builder: layout_widget_placements ────────
+        Schema::create('layout_widget_placements', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('pos_layout_template_id');
+            $table->foreign('pos_layout_template_id')->references('id')->on('pos_layout_templates')->cascadeOnDelete();
+            $table->uuid('layout_widget_id');
+            $table->foreign('layout_widget_id')->references('id')->on('layout_widgets');
+            $table->string('instance_key', 50);
+            $table->integer('grid_x')->default(0);
+            $table->integer('grid_y')->default(0);
+            $table->integer('grid_w')->default(6);
+            $table->integer('grid_h')->default(4);
+            $table->integer('z_index')->default(0);
+            $table->json('properties')->default('{}');
+            $table->boolean('is_visible')->default(true);
+            $table->timestamp('created_at')->nullable();
+            $table->unique(['pos_layout_template_id', 'instance_key']);
+        });
+
+        // ─── Layout Builder: widget_theme_overrides ──────────
+        Schema::create('widget_theme_overrides', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('layout_widget_placement_id');
+            $table->foreign('layout_widget_placement_id')->references('id')->on('layout_widget_placements')->cascadeOnDelete();
+            $table->string('variable_key', 100);
+            $table->string('value', 255);
+            $table->unique(['layout_widget_placement_id', 'variable_key'], 'wto_placement_key_unique');
+        });
+
+        // ─── Marketplace: marketplace_categories ─────────────
+        Schema::create('marketplace_categories', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('name', 100);
+            $table->string('name_ar', 100);
+            $table->string('slug', 50)->unique();
+            $table->string('icon', 50)->nullable();
+            $table->text('description')->nullable();
+            $table->text('description_ar')->nullable();
+            $table->uuid('parent_id')->nullable();
+            $table->integer('sort_order')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        // ─── Marketplace: template_marketplace_listings ──────
+        Schema::create('template_marketplace_listings', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('pos_layout_template_id')->unique();
+            $table->foreign('pos_layout_template_id')->references('id')->on('pos_layout_templates')->cascadeOnDelete();
+            $table->uuid('theme_id')->nullable();
+            $table->foreign('theme_id')->references('id')->on('themes')->nullOnDelete();
+            $table->string('publisher_name', 100);
+            $table->text('publisher_avatar_url')->nullable();
+            $table->string('title', 150);
+            $table->string('title_ar', 150);
+            $table->text('description');
+            $table->text('description_ar');
+            $table->string('short_description', 300)->nullable();
+            $table->string('short_description_ar', 300)->nullable();
+            $table->json('preview_images')->default('[]');
+            $table->text('demo_video_url')->nullable();
+            $table->string('pricing_type', 20)->default('free');
+            $table->decimal('price_amount', 10, 2)->default(0.00);
+            $table->string('price_currency', 3)->default('SAR');
+            $table->string('subscription_interval', 10)->nullable();
+            $table->uuid('category_id')->nullable();
+            $table->foreign('category_id')->references('id')->on('marketplace_categories')->nullOnDelete();
+            $table->json('tags')->default('[]');
+            $table->string('version', 20)->default('1.0.0');
+            $table->text('changelog')->nullable();
+            $table->integer('download_count')->default(0);
+            $table->decimal('average_rating', 2, 1)->default(0.0);
+            $table->integer('review_count')->default(0);
+            $table->boolean('is_featured')->default(false);
+            $table->boolean('is_verified')->default(false);
+            $table->string('status', 20)->default('draft');
+            $table->text('rejection_reason')->nullable();
+            $table->uuid('approved_by')->nullable();
+            $table->timestamp('approved_at')->nullable();
+            $table->timestamp('published_at')->nullable();
+            $table->timestamps();
+        });
+
+        // ─── Marketplace: template_purchases ─────────────────
+        Schema::create('template_purchases', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->foreign('store_id')->references('id')->on('stores')->cascadeOnDelete();
+            $table->uuid('marketplace_listing_id');
+            $table->foreign('marketplace_listing_id')->references('id')->on('template_marketplace_listings');
+            $table->string('purchase_type', 20);
+            $table->decimal('amount_paid', 10, 2)->default(0.00);
+            $table->string('currency', 3)->default('SAR');
+            $table->string('payment_reference', 100)->nullable();
+            $table->string('payment_gateway', 30)->nullable();
+            $table->timestamp('subscription_starts_at')->nullable();
+            $table->timestamp('subscription_expires_at')->nullable();
+            $table->boolean('auto_renew')->default(true);
+            $table->boolean('is_active')->default(true);
+            $table->timestamp('cancelled_at')->nullable();
+            $table->timestamp('refunded_at')->nullable();
+            $table->uuid('invoice_id')->nullable();
+            $table->timestamps();
+        });
+
+        // ─── Marketplace: template_reviews ───────────────────
+        Schema::create('template_reviews', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('marketplace_listing_id');
+            $table->foreign('marketplace_listing_id')->references('id')->on('template_marketplace_listings')->cascadeOnDelete();
+            $table->uuid('store_id');
+            $table->foreign('store_id')->references('id')->on('stores')->cascadeOnDelete();
+            $table->uuid('user_id');
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->smallInteger('rating');
+            $table->string('title', 200)->nullable();
+            $table->text('body')->nullable();
+            $table->boolean('is_verified_purchase')->default(false);
+            $table->boolean('is_published')->default(true);
+            $table->text('admin_response')->nullable();
+            $table->timestamp('admin_responded_at')->nullable();
+            $table->timestamps();
+            $table->unique(['marketplace_listing_id', 'user_id']);
+        });
+
+        // ─── Marketplace: marketplace_purchase_invoices ──────
+        Schema::create('marketplace_purchase_invoices', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('template_purchase_id');
+            $table->foreign('template_purchase_id')->references('id')->on('template_purchases')->cascadeOnDelete();
+            $table->string('invoice_number', 30)->unique();
+            $table->string('status', 20)->default('paid');
+            $table->uuid('store_id');
+            $table->foreign('store_id')->references('id')->on('stores')->cascadeOnDelete();
+            $table->string('seller_name', 150);
+            $table->string('seller_email', 150)->nullable();
+            $table->string('seller_vat_number', 30)->nullable();
+            $table->string('buyer_store_name', 200);
+            $table->string('buyer_organization_name', 200)->nullable();
+            $table->string('buyer_vat_number', 30)->nullable();
+            $table->string('buyer_email', 150)->nullable();
+            $table->string('item_description', 500);
+            $table->integer('quantity')->default(1);
+            $table->decimal('unit_price', 10, 2);
+            $table->decimal('subtotal', 10, 2);
+            $table->decimal('tax_rate', 5, 2)->default(15.00);
+            $table->decimal('tax_amount', 10, 2);
+            $table->decimal('discount_amount', 10, 2)->default(0.00);
+            $table->decimal('total_amount', 10, 2);
+            $table->string('currency', 3)->default('SAR');
+            $table->string('payment_method', 30)->nullable();
+            $table->string('payment_reference', 100)->nullable();
+            $table->timestamp('paid_at')->nullable();
+            $table->string('billing_period', 50)->nullable();
+            $table->boolean('is_recurring')->default(false);
+            $table->text('notes')->nullable();
+            $table->text('notes_ar')->nullable();
+            $table->timestamps();
+        });
+
+        // ─── Versioning: template_versions ───────────────────
+        Schema::create('template_versions', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('pos_layout_template_id');
+            $table->foreign('pos_layout_template_id')->references('id')->on('pos_layout_templates')->cascadeOnDelete();
+            $table->string('version_number', 20);
+            $table->text('changelog')->nullable();
+            $table->json('canvas_snapshot');
+            $table->json('theme_snapshot')->nullable();
+            $table->json('widget_placements_snapshot');
+            $table->uuid('published_by')->nullable();
+            $table->timestamp('published_at')->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // ─── Theming: theme_variables ────────────────────────
+        Schema::create('theme_variables', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('theme_id');
+            $table->foreign('theme_id')->references('id')->on('themes')->cascadeOnDelete();
+            $table->string('variable_key', 100);
+            $table->string('variable_value', 255);
+            $table->string('variable_type', 20);
+            $table->string('category', 30);
+            $table->timestamps();
+            $table->unique(['theme_id', 'variable_key']);
         });
 
         // ─── Provider Roles: provider_permissions ────────────
@@ -2181,6 +2647,37 @@ return new class extends Migration
             $table->timestamp('sent_at')->nullable();
         });
 
+        Schema::create('notification_provider_status', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('provider', 30);
+            $table->string('channel', 20);
+            $table->boolean('is_enabled')->default(true);
+            $table->integer('priority')->default(1);
+            $table->boolean('is_healthy')->default(true);
+            $table->timestamp('last_success_at')->nullable();
+            $table->timestamp('last_failure_at')->nullable();
+            $table->integer('failure_count_24h')->default(0);
+            $table->integer('success_count_24h')->default(0);
+            $table->integer('avg_latency_ms')->nullable();
+            $table->text('disabled_reason')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('notification_delivery_logs', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('notification_id')->nullable();
+            $table->string('channel', 20);
+            $table->string('provider', 30);
+            $table->string('recipient', 500);
+            $table->string('status', 20);
+            $table->string('provider_message_id', 255)->nullable();
+            $table->text('error_message')->nullable();
+            $table->integer('latency_ms')->nullable();
+            $table->boolean('is_fallback')->default(false);
+            $table->json('attempted_providers')->nullable();
+            $table->timestamp('created_at')->useCurrent();
+        });
+
         // ─── Accounting Integration ─────────────────────────
         Schema::create('store_accounting_configs', function (Blueprint $table) {
             $table->uuid('id')->primary();
@@ -2250,13 +2747,21 @@ return new class extends Migration
             $table->uuid('store_id');
             $table->foreign('store_id')->references('id')->on('stores');
             $table->string('platform', 50);
-            $table->text('api_key');
+            $table->text('api_key')->nullable();
             $table->string('merchant_id', 100)->nullable();
             $table->text('webhook_secret')->nullable();
             $table->string('branch_id_on_platform', 100)->nullable();
             $table->boolean('is_enabled')->default(false);
             $table->boolean('auto_accept')->default(true);
             $table->integer('throttle_limit')->nullable();
+            $table->integer('max_daily_orders')->nullable();
+            $table->boolean('operating_hours_synced')->default(false);
+            $table->timestamp('last_order_received_at')->nullable();
+            $table->integer('daily_order_count')->default(0);
+            $table->boolean('sync_menu_on_product_change')->default(true);
+            $table->integer('menu_sync_interval_hours')->default(6);
+            $table->text('webhook_url')->nullable();
+            $table->string('status', 20)->default('inactive');
             $table->timestamp('last_menu_sync_at')->nullable();
             $table->timestamps();
             $table->unique(['store_id', 'platform']);
@@ -2264,14 +2769,29 @@ return new class extends Migration
 
         Schema::create('delivery_order_mappings', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('order_id');
-            $table->foreign('order_id')->references('id')->on('orders');
+            $table->uuid('store_id')->nullable();
+            $table->uuid('order_id')->nullable();
             $table->string('platform', 50);
             $table->string('external_order_id', 100);
             $table->string('external_status', 50)->nullable();
+            $table->string('delivery_status', 30)->default('pending');
             $table->decimal('commission_amount', 12, 2)->default(0);
             $table->decimal('commission_percent', 5, 2)->nullable();
             $table->json('raw_payload')->nullable();
+            $table->string('customer_name', 255)->nullable();
+            $table->string('customer_phone', 30)->nullable();
+            $table->text('delivery_address')->nullable();
+            $table->decimal('delivery_fee', 12, 2)->default(0);
+            $table->decimal('subtotal', 12, 2)->default(0);
+            $table->decimal('total_amount', 12, 2)->default(0);
+            $table->integer('items_count')->default(0);
+            $table->text('rejection_reason')->nullable();
+            $table->timestamp('accepted_at')->nullable();
+            $table->timestamp('ready_at')->nullable();
+            $table->timestamp('dispatched_at')->nullable();
+            $table->timestamp('delivered_at')->nullable();
+            $table->integer('estimated_prep_minutes')->nullable();
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
 
@@ -2284,6 +2804,9 @@ return new class extends Migration
             $table->integer('items_synced')->default(0);
             $table->integer('items_failed')->default(0);
             $table->json('error_details')->nullable();
+            $table->string('triggered_by', 30)->default('manual');
+            $table->string('sync_type', 30)->default('full');
+            $table->integer('duration_seconds')->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
         });
@@ -2682,6 +3205,7 @@ return new class extends Migration
             // Accounting integration
             'auto_export_configs', 'accounting_exports', 'account_mappings', 'store_accounting_configs',
             // Notifications
+            'notification_delivery_logs', 'notification_provider_status',
             'notification_events_log', 'fcm_tokens', 'notification_preferences', 'notifications_custom',
             // Reports & Analytics
             'daily_sales_summary', 'product_sales_summary',
@@ -2733,6 +3257,19 @@ return new class extends Migration
             'knowledge_base_articles', 'canned_responses', 'support_ticket_messages', 'support_tickets',
             'cancellation_reasons', 'provider_notes', 'provider_registrations',
             'admin_activity_logs', 'admin_user_roles', 'admin_role_permissions', 'admin_permissions', 'admin_roles',
+            // Content onboarding
+            'pos_customization_settings', 'user_preferences',
+            'label_template_package_visibility', 'label_template_business_types', 'label_layout_templates',
+            'signage_template_package_visibility', 'signage_template_business_types', 'signage_templates',
+            'cfd_theme_package_visibility', 'cfd_themes',
+            'receipt_template_package_visibility', 'receipt_layout_templates',
+            'layout_package_visibility', 'theme_package_visibility',
+            // Layout builder & marketplace
+            'theme_variables', 'template_versions',
+            'template_reviews', 'template_purchases', 'template_marketplace_listings',
+            'marketplace_categories',
+            'widget_theme_overrides', 'layout_widget_placements', 'layout_widgets',
+            'themes', 'platform_ui_defaults', 'pos_layout_templates', 'business_types',
             // Original tables
             'audit_logs', 'role_audit_log', 'pin_overrides',
             'default_role_template_permissions', 'default_role_templates', 'provider_permissions',

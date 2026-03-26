@@ -27,15 +27,15 @@ class StockTransferApiTest extends TestCase
 
         $this->org = Organization::create([
             'name' => 'Test Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
         $this->storeA = Store::create([
             'organization_id' => $this->org->id,
             'name' => 'Store A',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -43,8 +43,8 @@ class StockTransferApiTest extends TestCase
         $this->storeB = Store::create([
             'organization_id' => $this->org->id,
             'name' => 'Store B',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => false,
         ]);

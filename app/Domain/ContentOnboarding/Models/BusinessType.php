@@ -4,6 +4,7 @@ namespace App\Domain\ContentOnboarding\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -39,6 +40,26 @@ class BusinessType extends Model
     public function labelTemplateBusinessTypes(): HasMany
     {
         return $this->hasMany(LabelTemplateBusinessType::class);
+    }
+
+    public function signageTemplates(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            SignageTemplate::class,
+            'signage_template_business_types',
+            'business_type_id',
+            'signage_template_id',
+        );
+    }
+
+    public function labelLayoutTemplates(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            LabelLayoutTemplate::class,
+            'label_template_business_types',
+            'business_type_id',
+            'label_layout_template_id',
+        );
     }
     public function businessTypeCategoryTemplates(): HasMany
     {

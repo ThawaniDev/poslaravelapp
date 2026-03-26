@@ -43,7 +43,7 @@ class CompanionApiTest extends TestCase
                 $t->string('phone')->nullable();
                 $t->string('email')->nullable();
                 $t->string('timezone')->default('UTC');
-                $t->string('currency')->default('OMR');
+                $t->string('currency')->default('SAR');
                 $t->string('locale')->default('en');
                 $t->string('business_type')->nullable();
                 $t->boolean('is_active')->default(true);
@@ -96,7 +96,7 @@ class CompanionApiTest extends TestCase
         $store = Store::create([
             'organization_id' => $org->id,
             'name' => 'Companion Store',
-            'currency' => 'OMR',
+            'currency' => 'SAR',
         ]);
         $this->storeId = $store->id;
 
@@ -125,7 +125,7 @@ class CompanionApiTest extends TestCase
         $this->assertArrayHasKey('today_revenue', $body['data']);
         $this->assertArrayHasKey('today_transactions', $body['data']);
         $this->assertArrayHasKey('pending_orders', $body['data']);
-        $this->assertEquals('OMR', $body['data']['currency']);
+        $this->assertEquals('SAR', $body['data']['currency']);
     }
 
     public function test_quick_stats_unauthenticated(): void

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings Hub - Thawani POS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex flex-col min-h-screen">
+<header class="flex items-center justify-between border-b border-primary/10 bg-white dark:bg-zinc-900 px-6 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="p-2 bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-primary text-2xl">point_of_sale</span>
+</div>
+<div>
+<h1 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight">Thawani POS</h1>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium">Terminal #8829 • Active</p>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center bg-slate-100 dark:bg-zinc-800 rounded-lg px-3 py-1.5 w-64 border border-transparent focus-within:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-slate-400 text-xl">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-slate-400 text-slate-700 dark:text-slate-200" placeholder="Search settings..." type="text"/>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors relative">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-white dark:border-zinc-900"></span>
+</button>
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-300">help</span>
+</button>
+<div class="h-8 w-[1px] bg-slate-200 dark:bg-zinc-700 mx-1"></div>
+<div class="flex items-center gap-3 pl-1">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-semibold leading-none">Admin User</p>
+<p class="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Store Manager</p>
+</div>
+<div class="w-10 h-10 rounded-full bg-primary/20 border-2 border-primary/10 flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User profile avatar icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBW0qOpz5xpgiNPKll8JRiBnVL-ubFSG5rBtS1YLMjHwm486IPuhx1qoofugL6y5HaPT8n4vcAUQESLGsSEpzY1krbC2IRr0dkpaLt3RBoQK72V2RCyRB-viWGZCG4ubs5OTvqm6ype6amwz-SJrKjh-cTcXflZlay5Bt6PI3E0rYLn_3IACxCR090HGz0lckfUU-GaKzZf_t4VBdU_6plktTiiorsutLx0otPqKhUE-8AN0opYLlH6qn0zd7jg4k3PjXqDuQRyx4D_"/>
+</div>
+</div>
+</div>
+</div>
+</header>
+<div class="flex flex-1">
+<aside class="w-64 border-r border-primary/5 bg-white dark:bg-zinc-900 hidden lg:flex flex-col p-4 gap-2 sticky top-[65px] h-[calc(100vh-65px)]">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">dashboard</span>
+<span class="text-sm font-semibold">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">receipt_long</span>
+<span class="text-sm font-semibold">Transactions</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl transition-all group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors">inventory_2</span>
+<span class="text-sm font-semibold">Inventory</span>
+</a>
+<div class="my-2 h-[1px] bg-slate-100 dark:bg-zinc-800"></div>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary/10 text-primary rounded-xl transition-all" href="#">
+<span class="material-symbols-outlined active-icon">settings</span>
+<span class="text-sm font-bold">Settings Hub</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-zinc-800 rounded-xl transition-all group mt-auto" href="#">
+<span class="material-symbols-outlined group-hover:text-red-500 transition-colors">logout</span>
+<span class="text-sm font-semibold">Logout</span>
+</a>
+</aside>
+<main class="flex-1 p-6 md:p-10 max-w-7xl mx-auto">
+<div class="mb-10">
+<h2 class="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">Settings Hub</h2>
+<p class="text-slate-500 dark:text-slate-400 text-lg">Configure your point-of-sale environment and business preferences.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+<div class="group flex flex-col p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">store</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">General</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Business profile, localization, and operating hours configuration.</p>
+</div>
+<div class="group flex flex-col p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">monitor</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">POS Display</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Customize interface theme, layout density, and visual assets.</p>
+</div>
+<div class="group flex flex-col p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">description</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">Receipt Template</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Design print layouts, headers, footers, and logo placement.</p>
+</div>
+<div class="group flex flex-col p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">print</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">Printers</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Manage thermal printers, network status, and kitchen routing.</p>
+</div>
+<div class="group flex flex-col p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">credit_card</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">Payment Methods</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Gateway integration, card readers, and digital wallet setup.</p>
+</div>
+<div class="group flex flex-col p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">percent</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">Tax / VAT</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Define tax groups, VAT rates, and regional compliance rules.</p>
+</div>
+<div class="group flex flex-col p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">notifications_active</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">Notifications</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Alert thresholds, sound patterns, and system status pings.</p>
+</div>
+<div class="group flex flex-col p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">shield_locked</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">Security</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Operator PINs, role permissions, and audit log access.</p>
+</div>
+<div class="group flex flex-col p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">hub</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">Integrations</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Connect CRM, ERP, and third-party delivery services.</p>
+</div>
+<div class="group flex flex-col p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200 dark:border-zinc-800 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-xl hover:shadow-primary/5 transition-all cursor-pointer">
+<div class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">cloud_sync</span>
+</div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">Backup</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">Automated cloud syncing, local data recovery, and snapshots.</p>
+</div>
+</div>
+<div class="mt-12 p-6 bg-primary/5 rounded-3xl border border-primary/10">
+<div class="flex flex-col md:flex-row items-center justify-between gap-6">
+<div class="flex items-center gap-4">
+<div class="w-14 h-14 bg-white dark:bg-zinc-800 rounded-2xl flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary text-3xl">health_and_safety</span>
+</div>
+<div>
+<h4 class="text-xl font-bold text-slate-900 dark:text-slate-100">System Health Status</h4>
+<p class="text-slate-600 dark:text-slate-400 text-sm">All core systems are operational. Last sync: 2 mins ago.</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-zinc-900 bg-green-500"></div>
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-zinc-900 bg-green-500"></div>
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-zinc-900 bg-green-500"></div>
+<div class="w-8 h-8 rounded-full border-2 border-white dark:border-zinc-900 bg-slate-200 dark:bg-zinc-700 flex items-center justify-center text-[10px] font-bold">+2</div>
+</div>
+<button class="px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:shadow-lg hover:shadow-primary/30 active:scale-95 transition-all">
+                                Run Diagnostics
+                            </button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<footer class="mt-auto py-6 px-10 border-t border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-slate-500 dark:text-slate-400 text-sm">© 2024 Thawani POS. All rights reserved.</p>
+<div class="flex gap-6">
+<a class="text-slate-500 dark:text-slate-400 text-sm hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="text-slate-500 dark:text-slate-400 text-sm hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="text-slate-500 dark:text-slate-400 text-sm hover:text-primary transition-colors" href="#">System Logs</a>
+</div>
+<p class="text-slate-400 dark:text-slate-500 text-xs font-mono">v4.2.1-stable-orange</p>
+</footer>
+</div>
+</body></html>

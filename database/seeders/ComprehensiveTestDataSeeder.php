@@ -408,7 +408,7 @@ class ComprehensiveTestDataSeeder extends Seeder
             ['device_type' => 'cash_drawer', 'brand' => 'APG', 'model' => 'VB320-BL1616', 'driver_protocol' => 'rj12_kick', 'is_certified' => true],
             ['device_type' => 'card_terminal', 'brand' => 'Ingenico', 'model' => 'Move5000', 'driver_protocol' => 'nexo', 'is_certified' => true],
             ['device_type' => 'label_printer', 'brand' => 'Zebra', 'model' => 'ZD421', 'driver_protocol' => 'zpl', 'is_certified' => true],
-            ['device_type' => 'scale', 'brand' => 'CAS', 'model' => 'SW-1S', 'driver_protocol' => 'serial_cas', 'is_certified' => true],
+            ['device_type' => 'weighing_scale', 'brand' => 'CAS', 'model' => 'SW-1S', 'driver_protocol' => 'serial_cas', 'is_certified' => true],
         ];
         foreach ($hardware as $h) {
             DB::table('certified_hardware')->insertOrIgnore(array_merge($h, ['created_at' => now(), 'updated_at' => now()]));
@@ -714,6 +714,8 @@ class ComprehensiveTestDataSeeder extends Seeder
             ['name' => 'staff.manage', 'display_name' => 'Manage Staff', 'module' => 'staff', 'guard_name' => 'web', 'requires_pin' => false],
             ['name' => 'settings.manage', 'display_name' => 'Manage Settings', 'module' => 'settings', 'guard_name' => 'web', 'requires_pin' => true],
             ['name' => 'customers.manage', 'display_name' => 'Manage Customers', 'module' => 'customers', 'guard_name' => 'web', 'requires_pin' => false],
+            ['name' => 'delivery.view', 'display_name' => 'View Delivery', 'module' => 'delivery', 'guard_name' => 'web', 'requires_pin' => false],
+            ['name' => 'delivery.manage', 'display_name' => 'Manage Delivery', 'module' => 'delivery', 'guard_name' => 'web', 'requires_pin' => false],
         ];
         foreach ($perms as $p) {
             DB::table('permissions')->insertOrIgnore(array_merge($p, ['created_at' => now(), 'updated_at' => now()]));
@@ -1634,9 +1636,16 @@ class ComprehensiveTestDataSeeder extends Seeder
 
         // Delivery Platforms
         $platforms = [
-            ['name' => 'Jahez', 'slug' => 'jahez', 'logo_url' => 'delivery/jahez.png', 'auth_method' => 'api_key', 'is_active' => true],
-            ['name' => 'HungerStation', 'slug' => 'hungerstation', 'logo_url' => 'delivery/hunger.png', 'auth_method' => 'oauth2', 'is_active' => true],
-            ['name' => 'ToYou', 'slug' => 'toyou', 'logo_url' => 'delivery/toyou.png', 'auth_method' => 'api_key', 'is_active' => true],
+            ['name' => 'Jahez', 'slug' => 'jahez', 'logo_url' => 'delivery/jahez.png', 'auth_method' => 'api_key', 'is_active' => true, 'sort_order' => 1, 'name_ar' => 'جاهز'],
+            ['name' => 'HungerStation', 'slug' => 'hungerstation', 'logo_url' => 'delivery/hunger.png', 'auth_method' => 'oauth2', 'is_active' => true, 'sort_order' => 2, 'name_ar' => 'هنقرستيشن'],
+            ['name' => 'ToYou', 'slug' => 'toyou', 'logo_url' => 'delivery/toyou.png', 'auth_method' => 'api_key', 'is_active' => true, 'sort_order' => 3, 'name_ar' => 'تويو'],
+            ['name' => 'Marsool', 'slug' => 'marsool', 'logo_url' => 'delivery/marsool.png', 'auth_method' => 'api_key', 'is_active' => true, 'sort_order' => 4, 'name_ar' => 'مرسول'],
+            ['name' => 'Keeta', 'slug' => 'keeta', 'logo_url' => 'delivery/keeta.png', 'auth_method' => 'api_key', 'is_active' => true, 'sort_order' => 5, 'name_ar' => 'كيتا'],
+            ['name' => 'Noon Food', 'slug' => 'noon_food', 'logo_url' => 'delivery/noon_food.png', 'auth_method' => 'oauth2', 'is_active' => true, 'sort_order' => 6, 'name_ar' => 'نون فود'],
+            ['name' => 'Ninja', 'slug' => 'ninja', 'logo_url' => 'delivery/ninja.png', 'auth_method' => 'api_key', 'is_active' => true, 'sort_order' => 7, 'name_ar' => 'نينجا'],
+            ['name' => 'The Chefz', 'slug' => 'the_chefz', 'logo_url' => 'delivery/the_chefz.png', 'auth_method' => 'api_key', 'is_active' => true, 'sort_order' => 8, 'name_ar' => 'ذا شفز'],
+            ['name' => 'Talabat', 'slug' => 'talabat', 'logo_url' => 'delivery/talabat.png', 'auth_method' => 'oauth2', 'is_active' => true, 'sort_order' => 9, 'name_ar' => 'طلبات'],
+            ['name' => 'Carriage', 'slug' => 'carriage', 'logo_url' => 'delivery/carriage.png', 'auth_method' => 'api_key', 'is_active' => true, 'sort_order' => 10, 'name_ar' => 'كاريدج'],
         ];
         foreach ($platforms as $p) {
             DB::table('delivery_platforms')->insertOrIgnore(array_merge($p, ['created_at' => now(), 'updated_at' => now()]));
@@ -2086,7 +2095,7 @@ class ComprehensiveTestDataSeeder extends Seeder
         ]);
 
         DB::table('support_ticket_messages')->insert([
-            ['support_ticket_id' => $ticketId, 'sender_type' => 'user', 'sender_id' => $this->ownerId,
+            ['support_ticket_id' => $ticketId, 'sender_type' => 'provider', 'sender_id' => $this->ownerId,
              'message_text' => 'My Epson printer stopped connecting after the last update. It was working fine before.',
              'is_internal_note' => false, 'sent_at' => now()->subHours(6)],
             ['support_ticket_id' => $ticketId, 'sender_type' => 'admin', 'sender_id' => $this->adminId,

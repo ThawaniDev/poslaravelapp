@@ -31,15 +31,15 @@ class ProductApiTest extends TestCase
 
         $this->org = Organization::create([
             'name' => 'Test Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $this->org->id,
             'name' => 'Main Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -177,7 +177,7 @@ class ProductApiTest extends TestCase
     {
         $otherOrg = Organization::create([
             'name' => 'Other Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 

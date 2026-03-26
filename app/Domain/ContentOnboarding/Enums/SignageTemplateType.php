@@ -8,4 +8,5 @@ enum SignageTemplateType: string
     case PromoSlideshow = 'promo_slideshow';
     case QueueDisplay = 'queue_display';
     case InfoBoard = 'info_board';
+    case Welcome = 'welcome';
 }

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#fd8208",
+                "background-light": "#f8f7f5",
+                "background-dark": "#23190f",
+              },
+              fontFamily: {
+                "display": ["Inter"]
+              },
+              borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+          },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex min-h-screen flex-col overflow-x-hidden">
+<div class="flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between border-b border-primary/10 bg-white dark:bg-background-dark px-6 py-4">
+<div class="flex items-center gap-4">
+<div class="flex items-center justify-center size-10 rounded-lg bg-primary/10 text-primary">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight">Cash Payment</h2>
+<p class="text-xs text-slate-500 dark:text-slate-400">Thawani POS System</p>
+</div>
+</div>
+<button class="flex items-center justify-center rounded-full size-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</header>
+<main class="flex-1 flex flex-col md:flex-row max-w-7xl mx-auto w-full gap-6 p-6">
+<!-- Left Panel: Summary & Denominations -->
+<div class="flex-1 flex flex-col gap-6">
+<!-- Billing Summary -->
+<div class="bg-white dark:bg-slate-800/50 rounded-xl p-6 shadow-sm border border-primary/5">
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-slate-500 dark:text-slate-400 font-medium">Total Due</span>
+<span class="text-2xl font-bold text-slate-900 dark:text-white">SAR 245.50</span>
+</div>
+<div class="flex justify-between items-center pt-4 border-t border-slate-100 dark:border-slate-700">
+<span class="text-slate-500 dark:text-slate-400 font-medium">Amount Tendered</span>
+<span class="text-2xl font-bold text-primary">SAR 300.00</span>
+</div>
+</div>
+<div class="mt-8 p-6 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800/30 text-center">
+<p class="text-green-600 dark:text-green-400 text-sm font-bold uppercase tracking-wider mb-1">Change Due</p>
+<h1 class="text-green-600 dark:text-green-400 text-4xl font-black">SAR 54.50</h1>
+</div>
+</div>
+<!-- Quick Denominations -->
+<div class="flex flex-col gap-3">
+<h4 class="text-slate-600 dark:text-slate-400 text-sm font-bold px-1">Quick SAR Denominations</h4>
+<div class="grid grid-cols-4 gap-3">
+<button class="flex h-14 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 hover:border-primary/40 text-slate-900 dark:text-slate-100 font-bold text-lg shadow-sm">1</button>
+<button class="flex h-14 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 hover:border-primary/40 text-slate-900 dark:text-slate-100 font-bold text-lg shadow-sm">5</button>
+<button class="flex h-14 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 hover:border-primary/40 text-slate-900 dark:text-slate-100 font-bold text-lg shadow-sm">10</button>
+<button class="flex h-14 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 hover:border-primary/40 text-slate-900 dark:text-slate-100 font-bold text-lg shadow-sm">20</button>
+<button class="flex h-14 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 hover:border-primary/40 text-slate-900 dark:text-slate-100 font-bold text-lg shadow-sm">50</button>
+<button class="flex h-14 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 hover:border-primary/40 text-slate-900 dark:text-slate-100 font-bold text-lg shadow-sm">100</button>
+<button class="flex h-14 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 hover:border-primary/40 text-slate-900 dark:text-slate-100 font-bold text-lg shadow-sm">200</button>
+<button class="flex h-14 items-center justify-center rounded-xl bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 hover:border-primary/40 text-slate-900 dark:text-slate-100 font-bold text-lg shadow-sm">500</button>
+</div>
+</div>
+</div>
+<!-- Right Panel: Keypad & Action -->
+<div class="w-full md:w-[400px] flex flex-col gap-6">
+<!-- Keypad -->
+<div class="grid grid-cols-3 gap-3 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-primary/5">
+<button class="h-20 rounded-xl bg-background-light dark:bg-slate-700/50 text-2xl font-bold flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600">1</button>
+<button class="h-20 rounded-xl bg-background-light dark:bg-slate-700/50 text-2xl font-bold flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600">2</button>
+<button class="h-20 rounded-xl bg-background-light dark:bg-slate-700/50 text-2xl font-bold flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600">3</button>
+<button class="h-20 rounded-xl bg-background-light dark:bg-slate-700/50 text-2xl font-bold flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600">4</button>
+<button class="h-20 rounded-xl bg-background-light dark:bg-slate-700/50 text-2xl font-bold flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600">5</button>
+<button class="h-20 rounded-xl bg-background-light dark:bg-slate-700/50 text-2xl font-bold flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600">6</button>
+<button class="h-20 rounded-xl bg-background-light dark:bg-slate-700/50 text-2xl font-bold flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600">7</button>
+<button class="h-20 rounded-xl bg-background-light dark:bg-slate-700/50 text-2xl font-bold flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600">8</button>
+<button class="h-20 rounded-xl bg-background-light dark:bg-slate-700/50 text-2xl font-bold flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600">9</button>
+<button class="h-20 rounded-xl bg-background-light dark:bg-slate-700/50 text-2xl font-bold flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600">.</button>
+<button class="h-20 rounded-xl bg-background-light dark:bg-slate-700/50 text-2xl font-bold flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600">0</button>
+<button class="h-20 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-100">
+<span class="material-symbols-outlined text-3xl">backspace</span>
+</button>
+</div>
+<!-- Final Action -->
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold text-xl py-6 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-3 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-3xl">check_circle</span>
+                        Complete Sale
+                    </button>
+<div class="flex items-center justify-center gap-2 text-slate-400 dark:text-slate-500 text-sm">
+<span class="material-symbols-outlined text-sm">print</span>
+<span>Auto-print receipt enabled</span>
+</div>
+</div>
+</main>
+</div>
+</div>
+</body></html>

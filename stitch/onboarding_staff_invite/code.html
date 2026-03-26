@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/10 px-6 lg:px-40 py-3 bg-white dark:bg-background-dark/50">
+<div class="flex items-center gap-4 text-slate-900 dark:text-slate-100">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">point_of_sale</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em]">Thawani POS</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex size-10 cursor-pointer items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors hover:bg-primary/20">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+<img alt="Profile" class="h-full w-full object-cover" data-alt="User profile avatar circular image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjYQP0xJ4hIF0eEeQnZjsGGCDnLZaAPS236u2ArNTwX6YVR0ECIjftx6ddMHmY33l3GpgN8IstqYatvmTIaL5mte7PG-5tPxjYV1mxNKzamnu5y5mFHw0aR7cbROacFN2lZIwFjtrG6yqQXkFrEpIqJKCINLURaMg4ZVUNCgjruux85ysd3c3qb_P2fIRuDtEBeLpSWgVEkyaCQsjZgCiEIU-98XI2r_huup8-VQI0ifHYqFoHpW-a5LN_wZZe-Zdj_M3ljLrtEulA"/>
+</div>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center">
+<div class="w-full max-w-[960px] px-6 py-8">
+<div class="flex flex-col gap-4 mb-8">
+<div class="flex items-center justify-between mb-2">
+<span class="text-primary font-bold text-sm uppercase tracking-wider">Step 7: Staff Invite</span>
+<span class="text-slate-500 text-sm font-medium">70% Complete</span>
+</div>
+<div class="flex gap-2 h-2">
+<div class="flex-1 rounded-full bg-primary"></div>
+<div class="flex-1 rounded-full bg-primary"></div>
+<div class="flex-1 rounded-full bg-primary"></div>
+<div class="flex-1 rounded-full bg-primary"></div>
+<div class="flex-1 rounded-full bg-primary"></div>
+<div class="flex-1 rounded-full bg-primary"></div>
+<div class="flex-1 rounded-full bg-primary"></div>
+<div class="flex-1 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+<div class="flex-1 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+<div class="flex-1 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+</div>
+</div>
+<div class="mb-8">
+<h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100 mb-2">Invite Your Team</h1>
+<p class="text-slate-500 dark:text-slate-400">Add your staff members and assign them roles to start managing your point of sale system efficiently.</p>
+</div>
+<section class="mb-8">
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Business Owner</h3>
+<div class="flex items-center p-4 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+<img alt="Owner" class="size-12 rounded-full mr-4" data-alt="Portrait of a smiling professional male" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5RTb3xcaF20y00BskiPSWCn109t4esS_euSvOLrXMX7xAT0fi-ePU3BLBKCJH_8nuj9Ma9DaZqLEBCuq_4HCAcwZYGUYmGUpGi_GrOLAfMaqOjyjMY3m3yFpZFlyvm98pYVnb_gJuX5eViDK02Sih_wA2bI2E83cE0yOiZ2xU7nufuxpcrU6nPKutfq06i2WtFMvZ2dTE2EndnqTIoYrPoYmyW1JCGi6VlNqhhOc02W5x0tiMyrr8C8gxpmts1SSok2d758NxQmBm"/>
+<div class="flex-1">
+<h4 class="font-bold text-slate-900 dark:text-slate-100">Ahmed Al-Raisi</h4>
+<p class="text-sm text-slate-500">ahmed.alraisi@example.com</p>
+</div>
+<span class="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">OWNER</span>
+</div>
+</section>
+<section class="mb-8">
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Roles Overview</h3>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="p-4 bg-white dark:bg-slate-800 rounded-xl border-l-4 border-blue-500 shadow-sm">
+<h5 class="font-bold text-sm mb-1">Manager</h5>
+<p class="text-xs text-slate-500">Full access to store operations and reports.</p>
+</div>
+<div class="p-4 bg-white dark:bg-slate-800 rounded-xl border-l-4 border-emerald-500 shadow-sm">
+<h5 class="font-bold text-sm mb-1">Cashier</h5>
+<p class="text-xs text-slate-500">Access to sales, returns, and daily totals.</p>
+</div>
+<div class="p-4 bg-white dark:bg-slate-800 rounded-xl border-l-4 border-purple-500 shadow-sm">
+<h5 class="font-bold text-sm mb-1">Inventory</h5>
+<p class="text-xs text-slate-500">Manage products, stock levels, and suppliers.</p>
+</div>
+<div class="p-4 bg-white dark:bg-slate-800 rounded-xl border-l-4 border-slate-400 shadow-sm">
+<h5 class="font-bold text-sm mb-1">Viewer</h5>
+<p class="text-xs text-slate-500">Read-only access to sales and analytics.</p>
+</div>
+</div>
+</section>
+<section class="mb-12">
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">Invite New Staff</h3>
+<div class="space-y-4">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+<div class="md:col-span-3">
+<label class="block text-xs font-bold text-slate-500 mb-1">Full Name</label>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:border-primary focus:ring-primary" placeholder="e.g. Salim Hana" type="text"/>
+</div>
+<div class="md:col-span-3">
+<label class="block text-xs font-bold text-slate-500 mb-1">Email or Phone</label>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:border-primary focus:ring-primary" placeholder="name@email.com" type="text"/>
+</div>
+<div class="md:col-span-3">
+<label class="block text-xs font-bold text-slate-500 mb-1">Role</label>
+<select class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:border-primary focus:ring-primary">
+<option>Select Role</option>
+<option>Manager</option>
+<option>Cashier</option>
+<option>Inventory</option>
+<option>Viewer</option>
+</select>
+</div>
+<div class="md:col-span-2">
+<label class="block text-xs font-bold text-slate-500 mb-1">Branch</label>
+<select class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:border-primary focus:ring-primary">
+<option>Main Office</option>
+<option>Mall Branch</option>
+<option>West Outlet</option>
+</select>
+</div>
+<div class="md:col-span-1 flex justify-end">
+<button class="text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<button class="flex items-center gap-2 text-primary font-bold text-sm px-4 py-2 rounded-lg hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-lg">add_circle</span>
+                                Add Another Staff Member
+                            </button>
+</div>
+</section>
+</div>
+</main>
+<footer class="sticky bottom-0 w-full bg-white dark:bg-background-dark border-t border-slate-200 dark:border-slate-700 px-6 lg:px-40 py-4 z-50">
+<div class="max-w-[960px] mx-auto flex items-center justify-between">
+<button class="flex items-center gap-2 px-6 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+                        Back
+                    </button>
+<div class="hidden md:flex flex-col items-center">
+<span class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Onboarding</span>
+<span class="text-sm font-black text-slate-900 dark:text-slate-100">Step 7 of 10</span>
+</div>
+<button class="flex items-center gap-2 px-8 py-2.5 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:brightness-110 transition-all">
+                        Next Step
+                        <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

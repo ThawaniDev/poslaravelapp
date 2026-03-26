@@ -8,13 +8,18 @@ use Illuminate\Support\Facades\DB;
 
 class PlatformRevenueTrendChart extends ChartWidget
 {
-    protected static ?string $heading = 'Platform Revenue — Last 30 Days';
+    protected static ?string $heading = null;
 
     protected static ?int $sort = 2;
 
-    protected int|string|array $columnSpan = 2;
+    protected int|string|array $columnSpan = 1;
 
     protected static ?string $maxHeight = '300px';
+
+    public function getHeading(): ?string
+    {
+        return __('admin_dashboard.revenue_trend_heading');
+    }
 
     protected function getData(): array
     {
@@ -45,7 +50,7 @@ class PlatformRevenueTrendChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Revenue (OMR)',
+                    'label' => __('admin_dashboard.revenue_sar'),
                     'data' => $days->map(fn ($d) => (float) ($revenue[$d] ?? 0))->values()->toArray(),
                     'borderColor' => '#fd8208',
                     'backgroundColor' => 'rgba(253, 130, 8, 0.1)',
@@ -54,7 +59,7 @@ class PlatformRevenueTrendChart extends ChartWidget
                     'yAxisID' => 'y',
                 ],
                 [
-                    'label' => 'New Stores',
+                    'label' => __('admin_dashboard.new_stores'),
                     'data' => $days->map(fn ($d) => (int) ($newStores[$d] ?? 0))->values()->toArray(),
                     'borderColor' => '#3b82f6',
                     'backgroundColor' => 'rgba(59, 130, 246, 0.1)',

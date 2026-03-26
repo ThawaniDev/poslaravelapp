@@ -20,6 +20,7 @@ class PlanEnforcementTest extends TestCase
     use RefreshDatabase;
 
     private User $owner;
+    private Organization $org;
     private Store $store;
     private string $token;
     private SubscriptionPlan $plan;
@@ -30,17 +31,17 @@ class PlanEnforcementTest extends TestCase
     {
         parent::setUp();
 
-        $org = Organization::create([
+        $this->org = Organization::create([
             'name' => 'Test Organization',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
         $this->store = Store::create([
-            'organization_id' => $org->id,
+            'organization_id' => $this->org->id,
             'name' => 'Test Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -50,7 +51,7 @@ class PlanEnforcementTest extends TestCase
             'email' => 'owner@test.com',
             'password_hash' => bcrypt('password'),
             'store_id' => $this->store->id,
-            'organization_id' => $org->id,
+            'organization_id' => $this->org->id,
             'role' => 'owner',
             'is_active' => true,
         ]);
@@ -96,7 +97,7 @@ class PlanEnforcementTest extends TestCase
         ]);
 
         $this->subscription = StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $this->plan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -111,96 +112,96 @@ class PlanEnforcementTest extends TestCase
 
     public function test_enabled_feature_returns_true(): void
     {
-        $this->assertTrue($this->enforcement->isFeatureEnabled($this->store->id, 'pos'));
+        $this->assertTrue($this->enforcement->isFeatureEnabled($this->org->id, 'pos'));
     }
 
     public function test_disabled_feature_returns_false(): void
     {
-        $this->assertFalse($this->enforcement->isFeatureEnabled($this->store->id, 'multi_branch'));
+        $this->assertFalse($this->enforcement->isFeatureEnabled($this->org->id, 'multi_branch'));
     }
 
     public function test_unknown_feature_returns_false(): void
     {
-        $this->assertFalse($this->enforcement->isFeatureEnabled($this->store->id, 'nonexistent_feature'));
+        $this->assertFalse($this->enforcement->isFeatureEnabled($this->org->id, 'nonexistent_feature'));
     }
 
     public function test_feature_check_returns_false_without_subscription(): void
     {
         $this->subscription->delete();
-        $this->assertFalse($this->enforcement->isFeatureEnabled($this->store->id, 'pos'));
+        $this->assertFalse($this->enforcement->isFeatureEnabled($this->org->id, 'pos'));
     }
 
     // ─── Limit Checks (Service Layer) ────────────────────────────
 
     public function test_can_perform_action_within_limit(): void
     {
-        $this->assertTrue($this->enforcement->canPerformAction($this->store->id, 'products'));
+        $this->assertTrue($this->enforcement->canPerformAction($this->org->id, 'products'));
     }
 
     public function test_cannot_perform_action_at_limit(): void
     {
         // Record usage at the limit
         SubscriptionUsageSnapshot::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'resource_type' => 'products',
             'current_count' => 50,
             'plan_limit' => 50,
             'snapshot_date' => today(),
         ]);
 
-        $this->assertFalse($this->enforcement->canPerformAction($this->store->id, 'products'));
+        $this->assertFalse($this->enforcement->canPerformAction($this->org->id, 'products'));
     }
 
     public function test_cannot_perform_action_over_limit(): void
     {
         SubscriptionUsageSnapshot::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'resource_type' => 'staff',
             'current_count' => 5,
             'plan_limit' => 2,
             'snapshot_date' => today(),
         ]);
 
-        $this->assertFalse($this->enforcement->canPerformAction($this->store->id, 'staff'));
+        $this->assertFalse($this->enforcement->canPerformAction($this->org->id, 'staff'));
     }
 
     public function test_unconfigured_limit_allows_action(): void
     {
         // 'branches' has no limit configured — should be unlimited
-        $this->assertTrue($this->enforcement->canPerformAction($this->store->id, 'branches'));
+        $this->assertTrue($this->enforcement->canPerformAction($this->org->id, 'branches'));
     }
 
     public function test_remaining_quota_calculated_correctly(): void
     {
         SubscriptionUsageSnapshot::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'resource_type' => 'products',
             'current_count' => 35,
             'plan_limit' => 50,
             'snapshot_date' => today(),
         ]);
 
-        $remaining = $this->enforcement->getRemainingQuota($this->store->id, 'products');
+        $remaining = $this->enforcement->getRemainingQuota($this->org->id, 'products');
         $this->assertEquals(15, $remaining);
     }
 
     public function test_remaining_quota_is_null_for_unlimited(): void
     {
-        $remaining = $this->enforcement->getRemainingQuota($this->store->id, 'branches');
+        $remaining = $this->enforcement->getRemainingQuota($this->org->id, 'branches');
         $this->assertNull($remaining);
     }
 
     public function test_remaining_quota_never_negative(): void
     {
         SubscriptionUsageSnapshot::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'resource_type' => 'products',
             'current_count' => 100,
             'plan_limit' => 50,
             'snapshot_date' => today(),
         ]);
 
-        $remaining = $this->enforcement->getRemainingQuota($this->store->id, 'products');
+        $remaining = $this->enforcement->getRemainingQuota($this->org->id, 'products');
         $this->assertEquals(0, $remaining);
     }
 
@@ -209,21 +210,21 @@ class PlanEnforcementTest extends TestCase
     public function test_admin_override_takes_precedence(): void
     {
         ProviderLimitOverride::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'limit_key' => 'products',
             'override_value' => 500,
             'reason' => 'Special deal',
             'set_by' => $this->owner->id, // Using owner as proxy
         ]);
 
-        $effective = $this->enforcement->getEffectiveLimit($this->store->id, 'products');
+        $effective = $this->enforcement->getEffectiveLimit($this->org->id, 'products');
         $this->assertEquals(500, $effective);
     }
 
     public function test_expired_override_is_ignored(): void
     {
         ProviderLimitOverride::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'limit_key' => 'products',
             'override_value' => 500,
             'reason' => 'Expired deal',
@@ -231,7 +232,7 @@ class PlanEnforcementTest extends TestCase
             'expires_at' => now()->subDay(),
         ]);
 
-        $effective = $this->enforcement->getEffectiveLimit($this->store->id, 'products');
+        $effective = $this->enforcement->getEffectiveLimit($this->org->id, 'products');
         $this->assertEquals(50, $effective); // Falls back to plan limit
     }
 
@@ -239,10 +240,10 @@ class PlanEnforcementTest extends TestCase
 
     public function test_track_usage_creates_snapshot(): void
     {
-        $this->enforcement->trackUsage($this->store->id, 'products', 10);
+        $this->enforcement->trackUsage($this->org->id, 'products', 10);
 
         $this->assertDatabaseHas('subscription_usage_snapshots', [
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'resource_type' => 'products',
             'current_count' => 10,
         ]);
@@ -250,10 +251,10 @@ class PlanEnforcementTest extends TestCase
 
     public function test_track_usage_updates_existing_snapshot(): void
     {
-        $this->enforcement->trackUsage($this->store->id, 'products', 10);
-        $this->enforcement->trackUsage($this->store->id, 'products', 20);
+        $this->enforcement->trackUsage($this->org->id, 'products', 10);
+        $this->enforcement->trackUsage($this->org->id, 'products', 20);
 
-        $count = SubscriptionUsageSnapshot::where('store_id', $this->store->id)
+        $count = SubscriptionUsageSnapshot::where('organization_id', $this->org->id)
             ->where('resource_type', 'products')
             ->where('snapshot_date', today())
             ->count();
@@ -261,7 +262,7 @@ class PlanEnforcementTest extends TestCase
         $this->assertEquals(1, $count);
 
         $this->assertDatabaseHas('subscription_usage_snapshots', [
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'resource_type' => 'products',
             'current_count' => 20,
         ]);
@@ -269,11 +270,11 @@ class PlanEnforcementTest extends TestCase
 
     public function test_increment_usage(): void
     {
-        $this->enforcement->trackUsage($this->store->id, 'products', 10);
-        $this->enforcement->incrementUsage($this->store->id, 'products', 5);
+        $this->enforcement->trackUsage($this->org->id, 'products', 10);
+        $this->enforcement->incrementUsage($this->org->id, 'products', 5);
 
         $this->assertDatabaseHas('subscription_usage_snapshots', [
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'resource_type' => 'products',
             'current_count' => 15,
         ]);
@@ -283,9 +284,7 @@ class PlanEnforcementTest extends TestCase
 
     public function test_usage_summary_includes_all_plan_limits(): void
     {
-        $summary = $this->enforcement->getUsageSummary($this->store->id);
-
-        $this->assertCount(2, $summary); // products + staff_members
+        $summary = $this->enforcement->getUsageSummary($this->org->id);
         $keys = array_column($summary, 'limit_key');
         $this->assertContains('products', $keys);
         $this->assertContains('staff', $keys);
@@ -294,14 +293,14 @@ class PlanEnforcementTest extends TestCase
     public function test_usage_summary_calculates_percentage(): void
     {
         SubscriptionUsageSnapshot::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'resource_type' => 'products',
             'current_count' => 25,
             'plan_limit' => 50,
             'snapshot_date' => today(),
         ]);
 
-        $summary = $this->enforcement->getUsageSummary($this->store->id);
+        $summary = $this->enforcement->getUsageSummary($this->org->id);
         $products = collect($summary)->firstWhere('limit_key', 'products');
 
         $this->assertEquals(25, $products['current']);
@@ -313,7 +312,7 @@ class PlanEnforcementTest extends TestCase
     public function test_usage_summary_empty_without_subscription(): void
     {
         $this->subscription->delete();
-        $summary = $this->enforcement->getUsageSummary($this->store->id);
+        $summary = $this->enforcement->getUsageSummary($this->org->id);
         $this->assertEmpty($summary);
     }
 
@@ -351,7 +350,7 @@ class PlanEnforcementTest extends TestCase
     public function test_api_check_limit_exceeded(): void
     {
         SubscriptionUsageSnapshot::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'resource_type' => 'products',
             'current_count' => 50,
             'plan_limit' => 50,

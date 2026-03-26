@@ -38,8 +38,8 @@ class AuthServiceTest extends TestCase
             email: 'register@test.com',
             password: 'Password123!',
             country: 'OM',
-            currency: 'OMR',
-            businessType: 'retail',
+            currency: 'SAR',
+            businessType: 'grocery',
         );
 
         $result = $this->authService->register($dto);
@@ -62,7 +62,7 @@ class AuthServiceTest extends TestCase
             password: 'Password123!',
             country: 'SA',
             currency: 'SAR',
-            businessType: 'retail',
+            businessType: 'grocery',
         );
 
         $result = $this->authService->register($dto);
@@ -76,8 +76,8 @@ class AuthServiceTest extends TestCase
             email: 'om@test.com',
             password: 'Password123!',
             country: 'OM',
-            currency: 'OMR',
-            businessType: 'retail',
+            currency: 'SAR',
+            businessType: 'grocery',
         );
 
         $result = $this->authService->register($dto);
@@ -91,7 +91,7 @@ class AuthServiceTest extends TestCase
             email: 'autogen@test.com',
             password: 'Password123!',
             country: 'OM',
-            currency: 'OMR',
+            currency: 'SAR',
         );
 
         $result = $this->authService->register($dto);
@@ -313,7 +313,7 @@ class AuthServiceTest extends TestCase
             'organization_id' => $org->id,
             'name' => 'Test Store',
             'slug' => 'store-' . Str::random(6),
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);

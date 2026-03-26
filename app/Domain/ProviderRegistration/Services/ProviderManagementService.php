@@ -74,8 +74,8 @@ class ProviderManagementService
             return [];
         }
 
-        $subscription = StoreSubscription::where('store_id', $storeId)->first();
-        $overrides = ProviderLimitOverride::where('store_id', $storeId)
+        $subscription = StoreSubscription::where('organization_id', $store->organization_id)->first();
+        $overrides = ProviderLimitOverride::where('organization_id', $store->organization_id)
             ->where(function ($q) {
                 $q->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
@@ -245,10 +245,10 @@ class ProviderManagementService
     // ─── Limit Overrides ─────────────────────────────────────────
 
     /**
-     * Set or update a limit override for a store.
+     * Set or update a limit override for an organization.
      */
     public function setLimitOverride(
-        string $storeId,
+        string $organizationId,
         string $limitKey,
         int $overrideValue,
         string $adminUserId,
@@ -256,7 +256,7 @@ class ProviderManagementService
         ?string $expiresAt = null
     ): ProviderLimitOverride {
         $override = ProviderLimitOverride::updateOrCreate(
-            ['store_id' => $storeId, 'limit_key' => $limitKey],
+            ['organization_id' => $organizationId, 'limit_key' => $limitKey],
             [
                 'override_value' => $overrideValue,
                 'reason' => $reason,
@@ -267,7 +267,7 @@ class ProviderManagementService
         );
 
         $this->logActivity($adminUserId, 'limit_override.set', 'provider_limit_override', $override->id, [
-            'store_id' => $storeId,
+            'organization_id' => $organizationId,
             'limit_key' => $limitKey,
             'override_value' => $overrideValue,
         ]);
@@ -276,11 +276,11 @@ class ProviderManagementService
     }
 
     /**
-     * Remove a limit override for a store.
+     * Remove a limit override for an organization.
      */
-    public function removeLimitOverride(string $storeId, string $limitKey, string $adminUserId): bool
+    public function removeLimitOverride(string $organizationId, string $limitKey, string $adminUserId): bool
     {
-        $override = ProviderLimitOverride::where('store_id', $storeId)
+        $override = ProviderLimitOverride::where('organization_id', $organizationId)
             ->where('limit_key', $limitKey)
             ->first();
 
@@ -289,7 +289,7 @@ class ProviderManagementService
         }
 
         $this->logActivity($adminUserId, 'limit_override.remove', 'provider_limit_override', $override->id, [
-            'store_id' => $storeId,
+            'organization_id' => $organizationId,
             'limit_key' => $limitKey,
         ]);
 
@@ -299,11 +299,11 @@ class ProviderManagementService
     }
 
     /**
-     * List active limit overrides for a store.
+     * List active limit overrides for an organization.
      */
-    public function listLimitOverrides(string $storeId): Collection
+    public function listLimitOverrides(string $organizationId): Collection
     {
-        return ProviderLimitOverride::where('store_id', $storeId)
+        return ProviderLimitOverride::where('organization_id', $organizationId)
             ->orderBy('limit_key')
             ->get();
     }
@@ -353,15 +353,15 @@ class ProviderManagementService
         return DB::transaction(function () use ($orgData, $storeData, $adminUserId) {
             $org = Organization::create([
                 'name' => $orgData['name'],
-                'business_type' => $orgData['business_type'] ?? 'retail',
+                'business_type' => $orgData['business_type'] ?? 'grocery',
                 'country' => $orgData['country'] ?? 'OM',
             ]);
 
             $store = Store::create([
                 'organization_id' => $org->id,
                 'name' => $storeData['name'],
-                'business_type' => $storeData['business_type'] ?? $org->business_type ?? 'retail',
-                'currency' => $storeData['currency'] ?? 'OMR',
+                'business_type' => $storeData['business_type'] ?? $org->business_type ?? 'grocery',
+                'currency' => $storeData['currency'] ?? 'SAR',
                 'is_active' => $storeData['is_active'] ?? true,
                 'is_main_branch' => true,
             ]);

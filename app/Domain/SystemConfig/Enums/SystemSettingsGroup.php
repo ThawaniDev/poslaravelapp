@@ -4,6 +4,8 @@ namespace App\Domain\SystemConfig\Enums;
 
 enum SystemSettingsGroup: string
 {
+    case General = 'general';
+    case System = 'system';
     case Zatca = 'zatca';
     case Payment = 'payment';
     case Sms = 'sms';

@@ -33,7 +33,7 @@ class OwnerDashboardApiTest extends TestCase
 
         $this->org = Organization::create([
             'name' => 'Dashboard Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
@@ -41,8 +41,8 @@ class OwnerDashboardApiTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'Main Store',
             'name_ar' => 'المتجر الرئيسي',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -61,14 +61,14 @@ class OwnerDashboardApiTest extends TestCase
         // Another org for data isolation test
         $this->otherOrg = Organization::create([
             'name' => 'Other Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
         $this->otherStore = Store::create([
             'organization_id' => $this->otherOrg->id,
             'name' => 'Other Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -468,8 +468,8 @@ class OwnerDashboardApiTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'Branch 2',
             'name_ar' => 'الفرع ٢',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => false,
         ]);

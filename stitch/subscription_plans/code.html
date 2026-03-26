@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Thawani POS - Subscription Plans</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto w-full flex-col">
+<div class="layout-container flex h-full grow flex-col">
+<header class="flex items-center justify-between border-b border-primary/10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md px-6 md:px-20 py-4 sticky top-0 z-50">
+<div class="flex items-center gap-3">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">point_of_sale</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-xl font-bold tracking-tight">Thawani POS</h2>
+</div>
+<div class="hidden md:flex flex-1 justify-end gap-8 items-center">
+<nav class="flex items-center gap-8">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors text-sm font-medium" href="#">Dashboard</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors text-sm font-medium" href="#">Transactions</a>
+<a class="text-primary text-sm font-bold border-b-2 border-primary pb-1" href="#">Subscriptions</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors text-sm font-medium" href="#">Settings</a>
+</nav>
+<div class="flex items-center gap-4 border-l border-primary/10 pl-8">
+<button class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-all">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="flex items-center gap-3">
+<div class="text-right hidden sm:block">
+<p class="text-sm font-bold leading-none">Coffee House LLC</p>
+<p class="text-xs text-slate-500">Admin Panel</p>
+</div>
+<div class="size-10 rounded-full bg-slate-200 overflow-hidden border-2 border-primary/20">
+<img class="w-full h-full object-cover" data-alt="User profile avatar icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCEC8GxSEWMenHbMotJL6-0ymMHjDKY5Xpk5Qph6Ty2va1lKCHflL-IyhV2_nM7y4HAQlWumbqfdNerUv6um9uJcF2w-5_lpxhEJUZU2WZUxyMXql9f-6NawAneGUxTfp_3WtCD4IuYOxmrtYAH-lrQxFOfwTASPRqMT30F9jRHBX4papp_0ZHy0FHS7ZS8Gm8XlKXwZxl_VuxR2N6OM5UywFW80lH189vEekB-oNPsb_8XIU22FoXU9E40A8Bs2aVdGJ8TpRBTqWmi"/>
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full px-6 py-12">
+<div class="mb-12 text-center md:text-left">
+<h1 class="text-slate-900 dark:text-slate-100 text-4xl font-extrabold tracking-tight mb-4">Subscription Plans</h1>
+<p class="text-slate-600 dark:text-slate-400 text-lg max-w-2xl">Scale your business with ease. Switch between plans at any time to match your store's growing needs.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+<div class="group relative flex flex-col p-8 rounded-xl bg-white dark:bg-slate-800 border-2 border-primary shadow-xl ring-4 ring-primary/5 transition-all">
+<div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider">
+                            Current Plan
+                        </div>
+<div class="mb-8">
+<h3 class="text-slate-900 dark:text-white text-xl font-bold mb-2">Starter</h3>
+<div class="flex items-baseline gap-1">
+<span class="text-4xl font-black text-primary">149</span>
+<span class="text-lg font-semibold text-slate-500">SAR/mo</span>
+</div>
+</div>
+<button class="w-full py-3 px-4 mb-8 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-400 font-bold cursor-not-allowed">
+                            Active
+                        </button>
+<ul class="space-y-4 flex-1">
+<li class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm">1 Register terminal</span>
+</li>
+<li class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm">Basic sales reports</span>
+</li>
+<li class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm">Email support</span>
+</li>
+<li class="flex items-center gap-3 text-slate-400 line-through">
+<span class="material-symbols-outlined text-slate-300 text-lg">cancel</span>
+<span class="text-sm">ZATCA integration</span>
+</li>
+</ul>
+</div>
+<div class="group relative flex flex-col p-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary transition-all hover:shadow-lg">
+<div class="mb-8">
+<h3 class="text-slate-900 dark:text-white text-xl font-bold mb-2">Professional</h3>
+<div class="flex items-baseline gap-1">
+<span class="text-4xl font-black text-slate-900 dark:text-white group-hover:text-primary transition-colors">249</span>
+<span class="text-lg font-semibold text-slate-500">SAR/mo</span>
+</div>
+</div>
+<button class="w-full py-3 px-4 mb-8 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
+                            Upgrade
+                        </button>
+<ul class="space-y-4 flex-1">
+<li class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm font-bold text-slate-900 dark:text-white">3 Register terminals</span>
+</li>
+<li class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm">Advanced inventory</span>
+</li>
+<li class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm">Priority email support</span>
+</li>
+<li class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm">ZATCA Stage 1 ready</span>
+</li>
+</ul>
+</div>
+<div class="group relative flex flex-col p-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary transition-all hover:shadow-lg">
+<div class="absolute -top-3 right-4 bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded">
+                            BEST VALUE
+                        </div>
+<div class="mb-8">
+<h3 class="text-slate-900 dark:text-white text-xl font-bold mb-2">Business</h3>
+<div class="flex items-baseline gap-1">
+<span class="text-4xl font-black text-slate-900 dark:text-white group-hover:text-primary transition-colors">449</span>
+<span class="text-lg font-semibold text-slate-500">SAR/mo</span>
+</div>
+</div>
+<button class="w-full py-3 px-4 mb-8 rounded-lg bg-primary text-white font-bold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
+                            Upgrade
+                        </button>
+<ul class="space-y-4 flex-1">
+<li class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm font-bold text-slate-900 dark:text-white">10 Register terminals</span>
+</li>
+<li class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm font-bold">ZATCA Cloud Sync</span>
+</li>
+<li class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm">Custom API access</span>
+</li>
+<li class="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm">Dedicated account manager</span>
+</li>
+</ul>
+</div>
+<div class="group relative flex flex-col p-8 rounded-xl bg-slate-900 border border-slate-800 transition-all hover:shadow-lg">
+<div class="mb-8">
+<h3 class="text-white text-xl font-bold mb-2">Enterprise</h3>
+<div class="flex items-baseline gap-1">
+<span class="text-4xl font-black text-white">Custom</span>
+</div>
+<p class="text-slate-400 text-sm mt-2">Tailored for large chains</p>
+</div>
+<button class="w-full py-3 px-4 mb-8 rounded-lg bg-white text-slate-900 font-bold hover:bg-slate-100 transition-colors">
+                            Contact Sales
+                        </button>
+<ul class="space-y-4 flex-1">
+<li class="flex items-center gap-3 text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm">Unlimited registers</span>
+</li>
+<li class="flex items-center gap-3 text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm">On-site setup &amp; training</span>
+</li>
+<li class="flex items-center gap-3 text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm">24/7 Phone support</span>
+</li>
+<li class="flex items-center gap-3 text-slate-300">
+<span class="material-symbols-outlined text-primary text-lg">check_circle</span>
+<span class="text-sm">Multi-country compliance</span>
+</li>
+</ul>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+<div class="p-6 border-b border-slate-200 dark:border-slate-700">
+<h2 class="text-xl font-bold text-slate-900 dark:text-white">Feature Comparison</h2>
+<p class="text-slate-500 text-sm mt-1">Deep dive into our available features across all tiers.</p>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-900/50">
+<th class="p-4 text-sm font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 min-w-[200px]">Features</th>
+<th class="p-4 text-sm font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 text-center">Starter</th>
+<th class="p-4 text-sm font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 text-center">Professional</th>
+<th class="p-4 text-sm font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 text-center">Business</th>
+<th class="p-4 text-sm font-bold text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 text-center">Enterprise</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-700">
+<tr>
+<td class="p-4 text-sm text-slate-600 dark:text-slate-400">Registers Allowed</td>
+<td class="p-4 text-sm font-medium text-center">1</td>
+<td class="p-4 text-sm font-medium text-center">3</td>
+<td class="p-4 text-sm font-medium text-center">10</td>
+<td class="p-4 text-sm font-medium text-center">Unlimited</td>
+</tr>
+<tr>
+<td class="p-4 text-sm text-slate-600 dark:text-slate-400">ZATCA E-Invoicing</td>
+<td class="p-4 text-center text-slate-300"><span class="material-symbols-outlined">remove</span></td>
+<td class="p-4 text-center text-primary"><span class="material-symbols-outlined">check</span></td>
+<td class="p-4 text-center text-primary"><span class="material-symbols-outlined">check</span></td>
+<td class="p-4 text-center text-primary"><span class="material-symbols-outlined">check</span></td>
+</tr>
+<tr>
+<td class="p-4 text-sm text-slate-600 dark:text-slate-400">Cloud Sync Interval</td>
+<td class="p-4 text-sm font-medium text-center text-slate-500">1 Hour</td>
+<td class="p-4 text-sm font-medium text-center text-slate-500">15 Mins</td>
+<td class="p-4 text-sm font-medium text-center text-primary font-bold">Real-time</td>
+<td class="p-4 text-sm font-medium text-center text-primary font-bold">Real-time</td>
+</tr>
+<tr>
+<td class="p-4 text-sm text-slate-600 dark:text-slate-400">Analytics Dashboard</td>
+<td class="p-4 text-sm text-center text-slate-500">Basic</td>
+<td class="p-4 text-sm text-center text-slate-500">Advanced</td>
+<td class="p-4 text-sm text-center text-slate-900 dark:text-white font-bold">Predictive</td>
+<td class="p-4 text-sm text-center text-slate-900 dark:text-white font-bold">Custom BI</td>
+</tr>
+<tr>
+<td class="p-4 text-sm text-slate-600 dark:text-slate-400">Inventory Management</td>
+<td class="p-4 text-center text-primary"><span class="material-symbols-outlined">check</span></td>
+<td class="p-4 text-center text-primary"><span class="material-symbols-outlined">check</span></td>
+<td class="p-4 text-center text-primary"><span class="material-symbols-outlined">check</span></td>
+<td class="p-4 text-center text-primary"><span class="material-symbols-outlined">check</span></td>
+</tr>
+<tr>
+<td class="p-4 text-sm text-slate-600 dark:text-slate-400">Loyalty Program</td>
+<td class="p-4 text-center text-slate-300"><span class="material-symbols-outlined">remove</span></td>
+<td class="p-4 text-center text-slate-300"><span class="material-symbols-outlined">remove</span></td>
+<td class="p-4 text-center text-primary"><span class="material-symbols-outlined">check</span></td>
+<td class="p-4 text-center text-primary"><span class="material-symbols-outlined">check</span></td>
+</tr>
+<tr>
+<td class="p-4 text-sm text-slate-600 dark:text-slate-400">Support Level</td>
+<td class="p-4 text-sm text-center text-slate-500">Email</td>
+<td class="p-4 text-sm text-center text-slate-500">Priority Email</td>
+<td class="p-4 text-sm text-center text-slate-900 dark:text-white font-bold">Dedicated Manager</td>
+<td class="p-4 text-sm text-center text-slate-900 dark:text-white font-bold">24/7 Phone</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+<footer class="bg-white dark:bg-background-dark py-12 px-6 md:px-20 border-t border-primary/10">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="flex items-center gap-2">
+<div class="size-6 bg-primary rounded flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-xs">point_of_sale</span>
+</div>
+<span class="text-slate-900 dark:text-white font-bold">Thawani POS</span>
+</div>
+<p class="text-slate-500 text-sm">© 2024 Thawani Payment Solutions. All rights reserved.</p>
+<div class="flex gap-6">
+<a class="text-slate-500 hover:text-primary transition-colors text-sm" href="#">Privacy Policy</a>
+<a class="text-slate-500 hover:text-primary transition-colors text-sm" href="#">Terms of Service</a>
+</div>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

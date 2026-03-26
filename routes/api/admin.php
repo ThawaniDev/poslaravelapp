@@ -324,6 +324,9 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
     // ─── Support Ticket System (P10) ─────────────────────────
     Route::prefix('support')->group(function () {
 
+        // Stats
+        Route::get('stats', [SupportTicketController::class, 'stats']);
+
         // Tickets
         Route::prefix('tickets')->group(function () {
             Route::get('/', [SupportTicketController::class, 'listTickets']);
@@ -344,6 +347,15 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
             Route::put('{responseId}', [SupportTicketController::class, 'updateCannedResponse']);
             Route::delete('{responseId}', [SupportTicketController::class, 'destroyCannedResponse']);
             Route::post('{responseId}/toggle', [SupportTicketController::class, 'toggleCannedResponse']);
+        });
+
+        // Knowledge Base Articles
+        Route::prefix('kb')->group(function () {
+            Route::get('/', [SupportTicketController::class, 'listKbArticles']);
+            Route::post('/', [SupportTicketController::class, 'createKbArticle']);
+            Route::get('{articleId}', [SupportTicketController::class, 'showKbArticle']);
+            Route::put('{articleId}', [SupportTicketController::class, 'updateKbArticle']);
+            Route::delete('{articleId}', [SupportTicketController::class, 'destroyKbArticle']);
         });
     });
 

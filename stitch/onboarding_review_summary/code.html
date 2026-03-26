@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .step-completed {
+            background-color: #10b981; /* Green-500 equivalent */
+            color: white;
+        }
+        .step-active {
+            background-color: #fd8208;
+            color: white;
+        }
+        .step-inactive {
+            background-color: #e5e7eb;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-6 py-4 bg-white dark:bg-background-dark sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="text-primary">
+<span class="material-symbols-outlined text-4xl">point_of_sale</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">Thawani POS</h2>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center rounded-full h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="flex items-center justify-center rounded-full h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center py-8 px-4 sm:px-10 lg:px-40">
+<div class="w-full max-w-[960px] flex flex-col gap-8">
+<!-- Stepper -->
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between px-2 overflow-x-auto pb-4 gap-2 no-scrollbar">
+<!-- Steps 1-8 (Completed) -->
+<div class="flex flex-col items-center gap-2 min-w-[40px]">
+<div class="step-completed w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+</div>
+<div class="h-1 flex-1 min-w-[10px] bg-emerald-500 rounded-full"></div>
+<div class="flex flex-col items-center gap-2 min-w-[40px]">
+<div class="step-completed w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+</div>
+<div class="h-1 flex-1 min-w-[10px] bg-emerald-500 rounded-full"></div>
+<div class="flex flex-col items-center gap-2 min-w-[40px]">
+<div class="step-completed w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+</div>
+<div class="h-1 flex-1 min-w-[10px] bg-emerald-500 rounded-full"></div>
+<div class="flex flex-col items-center gap-2 min-w-[40px]">
+<div class="step-completed w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+</div>
+<div class="h-1 flex-1 min-w-[10px] bg-emerald-500 rounded-full"></div>
+<div class="flex flex-col items-center gap-2 min-w-[40px]">
+<div class="step-completed w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+</div>
+<div class="h-1 flex-1 min-w-[10px] bg-emerald-500 rounded-full"></div>
+<div class="flex flex-col items-center gap-2 min-w-[40px]">
+<div class="step-completed w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+</div>
+<div class="h-1 flex-1 min-w-[10px] bg-emerald-500 rounded-full"></div>
+<div class="flex flex-col items-center gap-2 min-w-[40px]">
+<div class="step-completed w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+</div>
+<div class="h-1 flex-1 min-w-[10px] bg-emerald-500 rounded-full"></div>
+<div class="flex flex-col items-center gap-2 min-w-[40px]">
+<div class="step-completed w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
+<span class="material-symbols-outlined text-sm">check</span>
+</div>
+</div>
+<!-- Step 9 (Active) -->
+<div class="h-1 flex-1 min-w-[10px] bg-emerald-500 rounded-full"></div>
+<div class="flex flex-col items-center gap-2 min-w-[40px]">
+<div class="step-active w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ring-4 ring-primary/20">9</div>
+</div>
+<!-- Step 10 (Inactive) -->
+<div class="h-1 flex-1 min-w-[10px] bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+<div class="flex flex-col items-center gap-2 min-w-[40px]">
+<div class="step-inactive w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">10</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 items-center md:items-start">
+<h1 class="text-3xl font-black tracking-tight">Review Your Setup</h1>
+<p class="text-slate-500 dark:text-slate-400">Step 9 of 10: Verify all information before completing onboarding.</p>
+</div>
+</div>
+<!-- Readiness Score Card -->
+<div class="bg-primary/5 border border-primary/20 rounded-xl p-6 flex flex-col md:flex-row items-center gap-6">
+<div class="relative flex items-center justify-center w-24 h-24">
+<svg class="w-24 h-24 transform -rotate-90">
+<circle class="text-slate-200 dark:text-slate-700" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-primary" cx="48" cy="48" fill="transparent" r="40" stroke="currentColor" stroke-dasharray="251.2" stroke-dashoffset="37.68" stroke-width="8"></circle>
+</svg>
+<span class="absolute text-xl font-bold">85%</span>
+</div>
+<div class="flex-1 text-center md:text-left">
+<h3 class="text-lg font-bold">Readiness Score</h3>
+<p class="text-slate-600 dark:text-slate-400 text-sm">Your profile is almost ready. Complete the final review to reach 100% and launch your POS system.</p>
+</div>
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-primary">auto_awesome</span>
+<span class="text-sm font-semibold text-primary">Ready to Launch</span>
+</div>
+</div>
+<!-- Collapsible Review Sections -->
+<div class="flex flex-col gap-3">
+<!-- Business Details -->
+<details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden" open="">
+<summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 p-2 rounded-lg">
+<span class="material-symbols-outlined text-xl">business</span>
+</div>
+<span class="font-bold text-slate-800 dark:text-slate-200">Business Details</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-lg">edit</span>
+<span class="text-sm font-medium">Edit</span>
+</button>
+<span class="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
+</div>
+</summary>
+<div class="p-6 pt-2 border-t border-slate-100 dark:border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+<div>
+<p class="text-slate-400">Legal Name</p>
+<p class="font-semibold">Thawani Retail Solutions LLC</p>
+</div>
+<div>
+<p class="text-slate-400">Tax ID / CR Number</p>
+<p class="font-semibold">300012345600003</p>
+</div>
+<div>
+<p class="text-slate-400">HQ Address</p>
+<p class="font-semibold">King Fahd Road, Riyadh, KSA</p>
+</div>
+<div>
+<p class="text-slate-400">Phone</p>
+<p class="font-semibold">+966 50 123 4567</p>
+</div>
+</div>
+</details>
+<!-- Store Information -->
+<details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+<summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 p-2 rounded-lg">
+<span class="material-symbols-outlined text-xl">store</span>
+</div>
+<span class="font-bold text-slate-800 dark:text-slate-200">Store Information</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-lg">edit</span>
+<span class="text-sm font-medium">Edit</span>
+</button>
+<span class="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
+</div>
+</summary>
+<div class="p-6 pt-2 border-t border-slate-100 dark:border-slate-800 text-sm">
+<p class="text-slate-400">Store Name: <span class="text-slate-900 dark:text-slate-100 font-semibold">Thawani Flagship Store</span></p>
+<p class="text-slate-400 mt-2">Location: <span class="text-slate-900 dark:text-slate-100 font-semibold">Riyadh Park Mall, G-Floor</span></p>
+</div>
+</details>
+<!-- ZATCA Integration -->
+<details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+<summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 p-2 rounded-lg">
+<span class="material-symbols-outlined text-xl">verified_user</span>
+</div>
+<span class="font-bold text-slate-800 dark:text-slate-200">ZATCA Integration (Fatoora)</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-lg">edit</span>
+<span class="text-sm font-medium">Edit</span>
+</button>
+<span class="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
+</div>
+</summary>
+<div class="p-6 pt-2 border-t border-slate-100 dark:border-slate-800 text-sm">
+<p class="text-emerald-500 font-bold flex items-center gap-2">
+<span class="material-symbols-outlined">check_circle</span> Phase 2 E-Invoicing Ready
+                                </p>
+</div>
+</details>
+<!-- Printer Configuration -->
+<details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+<summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 p-2 rounded-lg">
+<span class="material-symbols-outlined text-xl">print</span>
+</div>
+<span class="font-bold text-slate-800 dark:text-slate-200">Printers &amp; Peripherals</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-lg">edit</span>
+<span class="text-sm font-medium">Edit</span>
+</button>
+<span class="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
+</div>
+</summary>
+<div class="p-6 pt-2 border-t border-slate-100 dark:border-slate-800 text-sm">
+<p>Default Printer: <span class="font-bold">Epson TM-T88VI (IP: 192.168.1.100)</span></p>
+</div>
+</details>
+<!-- Product Catalog -->
+<details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+<summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 p-2 rounded-lg">
+<span class="material-symbols-outlined text-xl">inventory_2</span>
+</div>
+<span class="font-bold text-slate-800 dark:text-slate-200">Product Catalog</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-lg">edit</span>
+<span class="text-sm font-medium">Edit</span>
+</button>
+<span class="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
+</div>
+</summary>
+<div class="p-6 pt-2 border-t border-slate-100 dark:border-slate-800 text-sm">
+<p>Total SKU: <span class="font-bold">1,240 Items</span></p>
+<p>Categories: <span class="font-bold">12 Active Categories</span></p>
+</div>
+</details>
+<!-- Payment Methods -->
+<details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+<summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 p-2 rounded-lg">
+<span class="material-symbols-outlined text-xl">payments</span>
+</div>
+<span class="font-bold text-slate-800 dark:text-slate-200">Payment Methods</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-lg">edit</span>
+<span class="text-sm font-medium">Edit</span>
+</button>
+<span class="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
+</div>
+</summary>
+<div class="p-6 pt-2 border-t border-slate-100 dark:border-slate-800 text-sm flex gap-4">
+<span class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full font-semibold">Cash</span>
+<span class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full font-semibold">Mada / Visa</span>
+<span class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full font-semibold">Apple Pay</span>
+</div>
+</details>
+<!-- Staff Management -->
+<details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+<summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 p-2 rounded-lg">
+<span class="material-symbols-outlined text-xl">group</span>
+</div>
+<span class="font-bold text-slate-800 dark:text-slate-200">Staff Management</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-lg">edit</span>
+<span class="text-sm font-medium">Edit</span>
+</button>
+<span class="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
+</div>
+</summary>
+<div class="p-6 pt-2 border-t border-slate-100 dark:border-slate-800 text-sm">
+<p>Staff Members: <span class="font-bold">5 Registered</span></p>
+<p>Roles: <span class="font-bold">1 Manager, 4 Cashiers</span></p>
+</div>
+</details>
+<!-- Device Connectivity -->
+<details class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+<summary class="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-3">
+<div class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 p-2 rounded-lg">
+<span class="material-symbols-outlined text-xl">router</span>
+</div>
+<span class="font-bold text-slate-800 dark:text-slate-200">Device Connectivity</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-slate-400 hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-lg">edit</span>
+<span class="text-sm font-medium">Edit</span>
+</button>
+<span class="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
+</div>
+</summary>
+<div class="p-6 pt-2 border-t border-slate-100 dark:border-slate-800 text-sm">
+<div class="flex items-center gap-2">
+<div class="size-2 bg-emerald-500 rounded-full animate-pulse"></div>
+<span>Primary Network: <span class="font-bold">Thawani_Retail_5G</span></span>
+</div>
+</div>
+</details>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<footer class="sticky bottom-0 bg-white dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 p-4 sm:px-10 lg:px-40 z-50">
+<div class="max-w-[960px] mx-auto flex items-center justify-between gap-4">
+<button class="flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+                        Back
+                    </button>
+<button class="flex items-center gap-3 bg-primary hover:bg-orange-600 text-white px-8 py-4 rounded-xl font-black text-lg transition-all shadow-lg shadow-primary/20">
+                        Complete Setup
+                        <span class="material-symbols-outlined">rocket_launch</span>
+</button>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

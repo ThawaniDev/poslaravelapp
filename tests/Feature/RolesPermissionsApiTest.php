@@ -29,15 +29,15 @@ class RolesPermissionsApiTest extends TestCase
         // Create org, store, owner
         $org = Organization::create([
             'name'          => 'Test Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country'       => 'OM',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $org->id,
             'name'            => 'Test Store',
-            'business_type'   => 'retail',
-            'currency'        => 'OMR',
+            'business_type'   => 'grocery',
+            'currency'        => 'SAR',
         ]);
 
         $this->owner = User::create([

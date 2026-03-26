@@ -66,7 +66,7 @@ class ZatcaComplianceApiTest extends TestCase
 
         $this->org = Organization::create([
             'name' => 'ZATCA Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'SA',
         ]);
 
@@ -74,7 +74,7 @@ class ZatcaComplianceApiTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'SA Store',
             'name_ar' => 'متجر السعودية',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
@@ -94,13 +94,13 @@ class ZatcaComplianceApiTest extends TestCase
         // Another store for isolation tests
         $otherOrg = Organization::create([
             'name' => 'Other ZATCA Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'SA',
         ]);
         $this->otherStore = Store::create([
             'organization_id' => $otherOrg->id,
             'name' => 'Other SA Store',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,

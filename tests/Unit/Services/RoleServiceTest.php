@@ -35,7 +35,7 @@ class RoleServiceTest extends TestCase
         $this->store = Store::create([
             'organization_id' => $org->id,
             'name' => 'Test Store',
-            'currency' => 'OMR',
+            'currency' => 'SAR',
         ]);
 
         $this->owner = User::create([

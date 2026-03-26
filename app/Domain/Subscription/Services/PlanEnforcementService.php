@@ -12,13 +12,13 @@ use App\Domain\Subscription\Models\PlanLimit;
 class PlanEnforcementService
 {
     /**
-     * Check whether a feature is enabled for the store's current plan.
+     * Check whether a feature is enabled for the organization's current plan.
      *
      * @return bool True if the feature is enabled.
      */
-    public function isFeatureEnabled(string $storeId, string $featureKey): bool
+    public function isFeatureEnabled(string $organizationId, string $featureKey): bool
     {
-        $subscription = $this->getActiveSubscription($storeId);
+        $subscription = $this->getActiveSubscription($organizationId);
 
         if (! $subscription) {
             return false;
@@ -32,14 +32,14 @@ class PlanEnforcementService
     }
 
     /**
-     * Check whether the store can perform an action that is subject to plan limits.
+     * Check whether the organization can perform an action that is subject to plan limits.
      *
      * @param  string  $limitKey  e.g. "products", "staff_members", "stores"
      * @return bool True if the action is allowed (still within quota).
      */
-    public function canPerformAction(string $storeId, string $limitKey): bool
+    public function canPerformAction(string $organizationId, string $limitKey): bool
     {
-        $remaining = $this->getRemainingQuota($storeId, $limitKey);
+        $remaining = $this->getRemainingQuota($organizationId, $limitKey);
 
         if ($remaining === null) {
             // No limit configured: unlimited
@@ -54,28 +54,28 @@ class PlanEnforcementService
      *
      * @return int|null Remaining count, or null if unlimited.
      */
-    public function getRemainingQuota(string $storeId, string $limitKey): ?int
+    public function getRemainingQuota(string $organizationId, string $limitKey): ?int
     {
-        $effectiveLimit = $this->getEffectiveLimit($storeId, $limitKey);
+        $effectiveLimit = $this->getEffectiveLimit($organizationId, $limitKey);
 
         if ($effectiveLimit === null) {
             return null; // unlimited
         }
 
-        $currentUsage = $this->getCurrentUsage($storeId, $limitKey);
+        $currentUsage = $this->getCurrentUsage($organizationId, $limitKey);
 
         return max(0, $effectiveLimit - $currentUsage);
     }
 
     /**
-     * Get the effective limit for a store, considering plan limits and overrides.
+     * Get the effective limit for an organization, considering plan limits and overrides.
      *
      * @return int|null The effective limit value, or null if unlimited/no limit configured.
      */
-    public function getEffectiveLimit(string $storeId, string $limitKey): ?int
+    public function getEffectiveLimit(string $organizationId, string $limitKey): ?int
     {
         // 1. Check for admin override (takes precedence)
-        $override = ProviderLimitOverride::where('store_id', $storeId)
+        $override = ProviderLimitOverride::where('organization_id', $organizationId)
             ->where('limit_key', $limitKey)
             ->where(function ($q) {
                 $q->whereNull('expires_at')
@@ -88,7 +88,7 @@ class PlanEnforcementService
         }
 
         // 2. Get plan limit
-        $subscription = $this->getActiveSubscription($storeId);
+        $subscription = $this->getActiveSubscription($organizationId);
 
         if (! $subscription) {
             return 0; // No subscription = no quota
@@ -108,9 +108,9 @@ class PlanEnforcementService
     /**
      * Get current usage count for a resource.
      */
-    public function getCurrentUsage(string $storeId, string $limitKey): int
+    public function getCurrentUsage(string $organizationId, string $limitKey): int
     {
-        $snapshot = SubscriptionUsageSnapshot::where('store_id', $storeId)
+        $snapshot = SubscriptionUsageSnapshot::where('organization_id', $organizationId)
             ->where('resource_type', $limitKey)
             ->where('snapshot_date', today())
             ->first();
@@ -121,17 +121,17 @@ class PlanEnforcementService
     /**
      * Record or update usage for a resource.
      */
-    public function trackUsage(string $storeId, string $limitKey, int $count): SubscriptionUsageSnapshot
+    public function trackUsage(string $organizationId, string $limitKey, int $count): SubscriptionUsageSnapshot
     {
         return SubscriptionUsageSnapshot::updateOrCreate(
             [
-                'store_id' => $storeId,
+                'organization_id' => $organizationId,
                 'resource_type' => $limitKey,
                 'snapshot_date' => today(),
             ],
             [
                 'current_count' => $count,
-                'plan_limit' => $this->getEffectiveLimit($storeId, $limitKey) ?? 0,
+                'plan_limit' => $this->getEffectiveLimit($organizationId, $limitKey) ?? 0,
             ]
         );
     }
@@ -139,11 +139,11 @@ class PlanEnforcementService
     /**
      * Increment usage for a resource by a given amount.
      */
-    public function incrementUsage(string $storeId, string $limitKey, int $increment = 1): SubscriptionUsageSnapshot
+    public function incrementUsage(string $organizationId, string $limitKey, int $increment = 1): SubscriptionUsageSnapshot
     {
-        $current = $this->getCurrentUsage($storeId, $limitKey);
+        $current = $this->getCurrentUsage($organizationId, $limitKey);
 
-        return $this->trackUsage($storeId, $limitKey, $current + $increment);
+        return $this->trackUsage($organizationId, $limitKey, $current + $increment);
     }
 
     /**
@@ -151,9 +151,9 @@ class PlanEnforcementService
      *
      * @return array Array of { limit_key, current, limit, remaining, percentage }
      */
-    public function getUsageSummary(string $storeId): array
+    public function getUsageSummary(string $organizationId): array
     {
-        $subscription = $this->getActiveSubscription($storeId);
+        $subscription = $this->getActiveSubscription($organizationId);
 
         if (! $subscription) {
             return [];
@@ -163,8 +163,8 @@ class PlanEnforcementService
         $summary = [];
 
         foreach ($limits as $limit) {
-            $effective = $this->getEffectiveLimit($storeId, $limit->limit_key);
-            $current = $this->getCurrentUsage($storeId, $limit->limit_key);
+            $effective = $this->getEffectiveLimit($organizationId, $limit->limit_key);
+            $current = $this->getCurrentUsage($organizationId, $limit->limit_key);
 
             $summary[] = [
                 'limit_key' => $limit->limit_key,
@@ -180,11 +180,11 @@ class PlanEnforcementService
     }
 
     /**
-     * Get the active subscription for a store (cached within request).
+     * Get the active subscription for an organization (cached within request).
      */
-    private function getActiveSubscription(string $storeId): ?StoreSubscription
+    private function getActiveSubscription(string $organizationId): ?StoreSubscription
     {
-        return StoreSubscription::where('store_id', $storeId)
+        return StoreSubscription::where('organization_id', $organizationId)
             ->whereIn('status', [
                 SubscriptionStatus::Active->value,
                 SubscriptionStatus::Trial->value,

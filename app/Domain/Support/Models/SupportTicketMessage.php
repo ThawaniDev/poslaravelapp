@@ -2,6 +2,8 @@
 
 namespace App\Domain\Support\Models;
 
+use App\Domain\AdminPanel\Models\AdminUser;
+use App\Domain\Auth\Models\User;
 use App\Domain\Support\Enums\TicketSenderType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -33,8 +35,38 @@ class SupportTicketMessage extends Model
         'sent_at' => 'datetime',
     ];
 
+    // ─── Relationships ───────────────────────────────────────
+
     public function supportTicket(): BelongsTo
     {
         return $this->belongsTo(SupportTicket::class);
+    }
+
+    public function sender(): BelongsTo
+    {
+        return $this->sender_type === TicketSenderType::Admin
+            ? $this->belongsTo(AdminUser::class, 'sender_id')
+            : $this->belongsTo(User::class, 'sender_id');
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────
+
+    public function isAdminMessage(): bool
+    {
+        return $this->sender_type === TicketSenderType::Admin;
+    }
+
+    public function isInternalNote(): bool
+    {
+        return (bool) $this->is_internal_note;
+    }
+
+    public function getSenderNameAttribute(): string
+    {
+        if ($this->sender_type === TicketSenderType::Admin) {
+            return AdminUser::find($this->sender_id)?->name ?? __('support.sender_admin');
+        }
+
+        return User::find($this->sender_id)?->name ?? __('support.sender_provider');
     }
 }

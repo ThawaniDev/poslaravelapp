@@ -62,15 +62,15 @@ class SyncApiTest extends TestCase
 
         $org = Organization::create([
             'name' => 'Sync Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $org->id,
             'name' => 'Sync Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -610,14 +610,14 @@ class SyncApiTest extends TestCase
         // Create second store/user
         $org2 = Organization::create([
             'name' => 'Other Sync Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
         $store2 = Store::create([
             'organization_id' => $org2->id,
             'name' => 'Other Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -656,14 +656,14 @@ class SyncApiTest extends TestCase
 
         $org2 = Organization::create([
             'name' => 'Isolation Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
         $store2 = Store::create([
             'organization_id' => $org2->id,
             'name' => 'Isolation Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);

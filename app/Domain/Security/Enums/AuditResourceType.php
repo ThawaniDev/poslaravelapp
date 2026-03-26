@@ -8,4 +8,24 @@ enum AuditResourceType: string
     case Product = 'product';
     case StaffUser = 'staff_user';
     case Settings = 'settings';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Order => __('security.resource_order'),
+            self::Product => __('security.resource_product'),
+            self::StaffUser => __('security.resource_staff_user'),
+            self::Settings => __('security.resource_settings'),
+        };
+    }
+
+    public function color(): string
+    {
+        return match ($this) {
+            self::Order => 'primary',
+            self::Product => 'success',
+            self::StaffUser => 'warning',
+            self::Settings => 'info',
+        };
+    }
 }

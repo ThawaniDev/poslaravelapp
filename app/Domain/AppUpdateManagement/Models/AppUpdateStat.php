@@ -15,16 +15,19 @@ class AppUpdateStat extends Model
     public $incrementing = false;
     protected $keyType = 'string';
     public $timestamps = false;
+    const CREATED_AT = null;
 
     protected $fillable = [
         'store_id',
         'app_release_id',
         'status',
         'error_message',
+        'updated_at',
     ];
 
     protected $casts = [
         'status' => AppUpdateStatus::class,
+        'updated_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

@@ -12,6 +12,13 @@ class ListStores extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [Actions\CreateAction::make()];
+        return [
+            Actions\Action::make('map_view')
+                ->label('Map View')
+                ->icon('heroicon-o-map')
+                ->color('gray')
+                ->url(StoreResource::getUrl('map')),
+            Actions\CreateAction::make(),
+        ];
     }
 }

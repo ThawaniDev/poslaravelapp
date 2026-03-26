@@ -78,7 +78,7 @@ class UserFactory extends Factory
                 'name' => $org->name . ' Main',
                 'name_ar' => $org->name_ar,
                 'slug' => Str::slug($org->name) . '-main-' . Str::random(4),
-                'currency' => 'OMR',
+                'currency' => 'SAR',
                 'locale' => 'ar',
                 'timezone' => 'Asia/Muscat',
                 'is_active' => true,

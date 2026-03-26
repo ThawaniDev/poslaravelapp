@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources;
 
+use App\Domain\AccountingIntegration\Enums\AccountingProvider;
+use App\Domain\AdminPanel\Models\AdminActivityLog;
 use App\Domain\SystemConfig\Models\AccountingIntegrationConfig;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -17,24 +19,65 @@ class AccountingIntegrationConfigResource extends Resource
 
     protected static ?string $navigationGroup = 'Settings';
 
-    protected static ?string $navigationLabel = 'Accounting Configs';
+    protected static ?string $navigationLabel = null;
 
     protected static ?int $navigationSort = 8;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('settings.accounting_configs');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('settings.accounting_config');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('settings.accounting_configs');
+    }
 
     public static function canAccess(): bool
     {
         $user = auth('admin')->user();
-
         return $user && $user->hasAnyPermission(['settings.credentials']);
     }
 
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Accounting Configs')->schema([
-                Forms\Components\TextInput::make('provider')->required()->maxLength(255),
-                Forms\Components\Toggle::make('is_active')->default(true),
-            ])->columns(2),
+            Forms\Components\Section::make(__('settings.provider_info'))
+                ->schema([
+                    Forms\Components\Select::make('provider_name')
+                        ->label(__('settings.provider'))
+                        ->options(collect(AccountingProvider::cases())->mapWithKeys(fn ($c) => [$c->value => ucfirst($c->value)]))
+                        ->required()
+                        ->native(false),
+                    Forms\Components\Toggle::make('is_active')
+                        ->label(__('settings.is_active'))
+                        ->default(true),
+                ])->columns(2),
+
+            Forms\Components\Section::make(__('settings.credentials'))
+                ->schema([
+                    Forms\Components\TextInput::make('client_id_encrypted')
+                        ->label(__('settings.client_id'))
+                        ->password()
+                        ->revealable()
+                        ->maxLength(500),
+                    Forms\Components\TextInput::make('client_secret_encrypted')
+                        ->label(__('settings.client_secret'))
+                        ->password()
+                        ->revealable()
+                        ->maxLength(500),
+                    Forms\Components\TextInput::make('redirect_url')
+                        ->label(__('settings.redirect_url'))
+                        ->url()
+                        ->maxLength(500)
+                        ->columnSpanFull(),
+                ])->columns(2)
+                ->description(__('settings.credentials_warning')),
         ]);
     }
 
@@ -42,13 +85,62 @@ class AccountingIntegrationConfigResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('provider')->searchable(),
-                Tables\Columns\IconColumn::make('is_active')->boolean(),
-                Tables\Columns\TextColumn::make('updated_at')->dateTime()->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('provider_name')
+                    ->label(__('settings.provider'))
+                    ->formatStateUsing(fn ($state) => ucfirst($state->value))
+                    ->badge()
+                    ->color(fn ($state) => match ($state) {
+                        AccountingProvider::Quickbooks => 'success',
+                        AccountingProvider::Xero => 'info',
+                        AccountingProvider::Qoyod => 'warning',
+                    })
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label(__('settings.is_active'))
+                    ->boolean(),
+                Tables\Columns\TextColumn::make('redirect_url')
+                    ->label(__('settings.redirect_url'))
+                    ->limit(40)
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('settings.updated_at'))
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                Tables\Filters\TernaryFilter::make('is_active')
+                    ->label(__('settings.is_active')),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('test_connection')
+                    ->label(__('settings.test_connection'))
+                    ->icon('heroicon-o-signal')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->action(function ($record, Tables\Actions\Action $action) {
+                        AdminActivityLog::record(
+                            adminUserId: auth('admin')->id(),
+                            action: 'test_accounting_connection',
+                            entityType: 'accounting_config',
+                            entityId: $record->id,
+                            details: ['provider' => $record->provider_name->value],
+                        );
+                        $action->success();
+                    })
+                    ->successNotificationTitle(__('settings.connection_test_sent')),
+                Tables\Actions\DeleteAction::make()
+                    ->before(function ($record) {
+                        AdminActivityLog::record(
+                            adminUserId: auth('admin')->id(),
+                            action: 'delete_accounting_config',
+                            entityType: 'accounting_config',
+                            entityId: $record->id,
+                            details: ['provider' => $record->provider_name->value],
+                        );
+                    }),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

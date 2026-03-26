@@ -34,6 +34,7 @@ CREATE TABLE admin_users (
     two_factor_confirmed_at TIMESTAMP,
     last_login_at TIMESTAMP,
     last_login_ip VARCHAR(45),
+    remember_token VARCHAR(100),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );

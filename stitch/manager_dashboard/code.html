@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="ar"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#fd8208",
+              "background-light": "#f8f7f5",
+              "background-dark": "#23190f",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.75rem", "lg": "0.75rem", "xl": "1rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-size: 24px; vertical-align: middle; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 flex-shrink-0 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full">
+<div class="p-6 flex items-center gap-3">
+<div class="bg-primary size-10 rounded-lg flex items-center justify-center text-white shadow-lg">
+<span class="material-symbols-outlined">point_of_sale</span>
+</div>
+<div>
+<h1 class="text-slate-900 dark:text-white font-bold text-lg leading-tight">ثواني POS</h1>
+<p class="text-slate-500 dark:text-slate-400 text-xs">لوحة مدير النظام</p>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-2 mt-4">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-semibold" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>لوحة القيادة</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">storefront</span>
+<span>الفروع</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span>الموظفون</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span>التقارير</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>الإعدادات</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-100 dark:border-slate-800">
+<button class="flex w-full items-center justify-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 py-3 rounded-lg font-medium transition-all">
+<span class="material-symbols-outlined text-sm">logout</span>
+<span>تسجيل الخروج</span>
+</button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto p-8 space-y-8">
+<!-- Header -->
+<header class="flex justify-between items-end">
+<div>
+<h2 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">مقارنة الفروع</h2>
+<p class="text-slate-500 mt-1">نظرة عامة على أداء الفروع الحالية والعمليات الحية</p>
+</div>
+<div class="flex gap-3">
+<div class="bg-white dark:bg-slate-800 shadow-sm border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">calendar_today</span>
+<span class="text-sm font-medium">اليوم: 24 مايو 2024</span>
+</div>
+</div>
+</header>
+<!-- Branch Comparison Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex gap-6">
+<div class="flex-1 space-y-4">
+<div>
+<span class="text-xs font-bold text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded">نشط الآن</span>
+<h3 class="text-xl font-bold mt-2">فرع الرياض الرئيسي</h3>
+<p class="text-slate-500 text-sm">مبيعات اليوم: <span class="text-slate-900 dark:text-white font-bold">15,420 ريال</span></p>
+</div>
+<div class="flex gap-2">
+<button class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md shadow-primary/20">عرض التفاصيل</button>
+<button class="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-4 py-2 rounded-lg text-sm font-medium">الخريطة</button>
+</div>
+</div>
+<div class="w-32 h-32 rounded-lg overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="Modern restaurant interior Riyadh branch" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRawBoM_Eg-GB4wiUduSWnrnc-8SSHSZJTyc0CPi7C80S69fto7KbIQl5v_G-xFOmQNaxFlAkUElmFt9j-sL3761wJvm76vg9i5IJoyGytpRcu8xTLWx5MzBNiBCoGFtroVkX7KZnL7HXQtyBDM2iuB0ReFT4Pot6LvPEg1EI68pRK3A-Aq3UAMB55ac4DCSVuGDdw9GZz0oMgFopJ0VituvmEfwmspq-A4Xgsl32kfLmVCUzhQop3wfAj0h7cAbVTNFQiyMqra7Cg"/>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 flex gap-6">
+<div class="flex-1 space-y-4">
+<div>
+<span class="text-xs font-bold text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-1 rounded">نشط الآن</span>
+<h3 class="text-xl font-bold mt-2">فرع مدينة جدة</h3>
+<p class="text-slate-500 text-sm">مبيعات اليوم: <span class="text-slate-900 dark:text-white font-bold">12,300 ريال</span></p>
+</div>
+<div class="flex gap-2">
+<button class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold shadow-md shadow-primary/20">عرض التفاصيل</button>
+<button class="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-4 py-2 rounded-lg text-sm font-medium">الخريطة</button>
+</div>
+</div>
+<div class="w-32 h-32 rounded-lg overflow-hidden shrink-0">
+<img class="w-full h-full object-cover" data-alt="Modern cafe interior Jeddah branch" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC94TaVjQOxjUmZUHZaJ9uAdHRgJnc9RYnMfexOFZq6oU9wMyMNMtMflYDutcqtstl4vMIT8pwSSr08_payagv1IjhkKwp0I1V4lURycA1PvOw8LHi7QzR4JoA_HPXFieQSRMfi1yr-rLDUianzwFMpJqfqZrfnJzUXqrejK8_YqjhrRBZ1q_saEVWg3A2lskQDm38yprbRLDbfId5MYfhbT4aonPXnpHw5ww2jiHnhw12cZf9FBJ_3c6BLrvFs_4jjqa6xPJ94X-kq"/>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Daily Targets vs Actuals -->
+<div class="lg:col-span-2 space-y-6">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+<h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">insights</span>
+                        الأهداف اليومية مقابل الفعلي
+                    </h3>
+<div class="space-y-6">
+<div class="space-y-2">
+<div class="flex justify-between text-sm">
+<span class="font-medium">مبيعات الأغذية</span>
+<span class="text-slate-500 font-bold">85% (12,000 / 15,000 ريال)</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[85%] rounded-full"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-sm">
+<span class="font-medium">المشروبات</span>
+<span class="text-slate-500 font-bold">60% (4,200 / 7,000 ريال)</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[60%] rounded-full"></div>
+</div>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-sm">
+<span class="font-medium">الحلويات</span>
+<span class="text-slate-500 font-bold">92% (3,680 / 4,000 ريال)</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden">
+<div class="bg-green-500 h-full w-[92%] rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Approval Queue -->
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">priority_high</span>
+                            طلبات في انتظار الموافقة
+                        </h3>
+<span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs font-bold">3 طلبات معلقة</span>
+</div>
+<div class="divide-y divide-slate-100 dark:divide-slate-800">
+<div class="py-4 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center text-orange-600">
+<span class="material-symbols-outlined">sell</span>
+</div>
+<div>
+<p class="font-bold text-sm">تجاوز سعر (تخفيض 20%)</p>
+<p class="text-xs text-slate-500">بواسطة: أحمد علي • طاولة 12 • فرع الرياض</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 hover:bg-green-50 dark:hover:bg-green-900/30 text-green-600 rounded-lg transition-colors border border-green-100 dark:border-green-900/50">
+<span class="material-symbols-outlined">check</span>
+</button>
+<button class="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 rounded-lg transition-colors border border-red-100 dark:border-red-900/50">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</div>
+<div class="py-4 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600">
+<span class="material-symbols-outlined">keyboard_return</span>
+</div>
+<div>
+<p class="font-bold text-sm">طلب استرجاع مبلغ (240 ريال)</p>
+<p class="text-xs text-slate-500">بواسطة: سارة خالد • فاتورة #4521 • فرع جدة</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 hover:bg-green-50 dark:hover:bg-green-900/30 text-green-600 rounded-lg transition-colors border border-green-100 dark:border-green-900/50">
+<span class="material-symbols-outlined">check</span>
+</button>
+<button class="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 rounded-lg transition-colors border border-red-100 dark:border-red-900/50">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</div>
+<div class="py-4 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-purple-600">
+<span class="material-symbols-outlined">delete</span>
+</div>
+<div>
+<p class="font-bold text-sm">إلغاء فاتورة نشطة</p>
+<p class="text-xs text-slate-500">بواسطة: محمد فهد • فاتورة #4533 • فرع الرياض</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 hover:bg-green-50 dark:hover:bg-green-900/30 text-green-600 rounded-lg transition-colors border border-green-100 dark:border-green-900/50">
+<span class="material-symbols-outlined">check</span>
+</button>
+<button class="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 rounded-lg transition-colors border border-red-100 dark:border-red-900/50">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Staff On-Duty -->
+<div class="space-y-6">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+<h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">badge</span>
+                        الموظفون المناوبون
+                    </h3>
+<div class="space-y-5">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img class="size-12 rounded-full object-cover" data-alt="Staff avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvNWLvEn37sH8xakQef4rvAY6GVjBZdiDZ7yHDyk0aGklwpsBnEQr0JLqJITDiO6YqOEwvGaQSNtgvSIyRmrEoWUpcSfD0uWynmtuEj3yN8KBvlTkNviXmWnKKRzOjRTYFNMOQApyrQwevUhSEP79O4wmVMh05zHX1DEQFOQW3g0PTflgginakT5GIDHgmnAXt4bot8QLSePU5dsl0DNypilW7K3sA0iMJlAD75eqkVas5g6PPH8f2H0RNAVpj1CCeo9lBxt-xfP--"/>
+<div class="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900"></div>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold">سامي الشمري</p>
+<p class="text-xs text-slate-500">مشرف • فرع الرياض</p>
+</div>
+<div class="text-left">
+<p class="text-[10px] text-slate-400 font-medium">منذ 4 ساعات</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="relative">
+<img class="size-12 rounded-full object-cover" data-alt="Staff avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxzCvJJVsaIHnOWl7g1fz-h8NFwKhqd4ARFsNxNFLtKE_z6F5lZbiBQN7HZKfd2xU4grNXFYOtAVxBj1iwmjxdNHYz8DS8Oh9fF8vymz-W_ZTmwNMF_agyK_W47N05H2f0SYNeCPkz-A6UbnINdCVFsFuHGAQu-TFV74WKSD5eaWCzEgQaSVdwg0lqoePISE1KR_IwQmMprpay0bdrvmd3xIkYyEmhyIfEGv7SwSN6t5IoRhup3Wrifjweuch7w3hg0B8PDnsBL_NB"/>
+<div class="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900"></div>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold">نورة العتيبي</p>
+<p class="text-xs text-slate-500">كاشير • فرع الرياض</p>
+</div>
+<div class="text-left">
+<p class="text-[10px] text-slate-400 font-medium">منذ 2 ساعة</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="relative">
+<img class="size-12 rounded-full object-cover" data-alt="Staff avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuVpiGrxTSbAJ9MXHY9NIZnxsrZCy6ZvhpgRCSKdHiPNXcdrgmLYe00rqwmOp_wPoyXO9Fz1JJW6PjNngZqQctef8i23YBKmCvx95UCblADTy6ejLFN5P36__ibs-j28Au176YFdV8_MRpI53hDCUfTGNHpljFtsVvUectSGvzsbctoMHbEk9QclXQlmvgst21pxRIx6Cl5_7ae_9nRT27oYXNOGstGrdnsNXthidPgx8BNV4GYS2DY-H4ljbO0L--Ez27fMnjNXZp"/>
+<div class="absolute bottom-0 right-0 size-3 bg-green-500 rounded-full border-2 border-white dark:border-slate-900"></div>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold">بندر السعيد</p>
+<p class="text-xs text-slate-500">كاشير • فرع جدة</p>
+</div>
+<div class="text-left">
+<p class="text-[10px] text-slate-400 font-medium">منذ 6 ساعات</p>
+</div>
+</div>
+<div class="flex items-center gap-3 opacity-60">
+<div class="relative">
+<img class="size-12 rounded-full object-cover" data-alt="Staff avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBrhmj6Un6IgtKWezaeqNk4c31q-47za88yBTSi1wHQP1H_QDrMkTwswjL-H0NSsAvzEVsX3I3V6LQHm1sIP19jj8wgea3dwmpaCqL0LNW_ZwH0dNbrXsUmSoC9uBOeV4_uvb8ImpQ_ZrU7fyeTZYW4f0oQGIBs7swSgIqeA4Z9KGXyz4LxD5YZ3Yw8nYArZEvM-2gorccwwTIEQCTgodbzNffaQxFzrBGTfodRrZCYHqWUhnSPEDhcCAmaoky6YOD_xMCPD8xRKIBk"/>
+<div class="absolute bottom-0 right-0 size-3 bg-slate-300 rounded-full border-2 border-white dark:border-slate-900"></div>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold">عمر الدوسري</p>
+<p class="text-xs text-slate-500">كاشير • فرع جدة</p>
+</div>
+<div class="text-left">
+<p class="text-[10px] text-slate-400 font-medium font-bold text-red-400">نهاية الوردية</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 py-2 text-primary font-bold text-sm border border-primary/20 rounded-lg hover:bg-primary/5 transition-colors">عرض جميع الموظفين</button>
+</div>
+<!-- Quick Stats -->
+<div class="bg-primary p-6 rounded-xl shadow-lg shadow-primary/20 text-white">
+<h3 class="text-sm font-bold opacity-80 mb-4">متوسط سرعة الخدمة</h3>
+<div class="flex items-end gap-2">
+<span class="text-4xl font-black">4.2</span>
+<span class="text-lg font-medium mb-1">دقائق</span>
+</div>
+<p class="text-xs mt-4 opacity-80">أسرع بـ 12% من متوسط الأسبوع الماضي</p>
+<div class="mt-4 flex gap-1 h-8 items-end">
+<div class="w-full bg-white/20 h-1/2 rounded-t-sm"></div>
+<div class="w-full bg-white/30 h-3/4 rounded-t-sm"></div>
+<div class="w-full bg-white/40 h-2/3 rounded-t-sm"></div>
+<div class="w-full bg-white/60 h-full rounded-t-sm"></div>
+<div class="w-full bg-white/80 h-4/5 rounded-t-sm"></div>
+<div class="w-full bg-white h-5/6 rounded-t-sm"></div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

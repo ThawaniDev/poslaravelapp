@@ -11,7 +11,7 @@ class LimitOverrideResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'store_id' => $this->store_id,
+            'organization_id' => $this->organization_id,
             'limit_key' => $this->limit_key,
             'override_value' => $this->override_value,
             'reason' => $this->reason,

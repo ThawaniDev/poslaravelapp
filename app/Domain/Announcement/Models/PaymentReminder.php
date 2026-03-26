@@ -4,6 +4,7 @@ namespace App\Domain\Announcement\Models;
 
 use App\Domain\Announcement\Enums\ReminderChannel;
 use App\Domain\Announcement\Enums\ReminderType;
+use App\Domain\ProviderSubscription\Models\StoreSubscription;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

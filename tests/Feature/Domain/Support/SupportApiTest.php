@@ -3,9 +3,11 @@
 namespace Tests\Feature\Domain\Support;
 
 use App\Domain\Auth\Models\User;
+use App\Domain\ContentOnboarding\Models\KnowledgeBaseArticle;
 use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
 use App\Domain\Support\Models\SupportTicket;
+use App\Domain\Support\Models\SupportTicketMessage;
 use App\Domain\Support\Enums\TicketStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -24,15 +26,15 @@ class SupportApiTest extends TestCase
 
         $org = Organization::create([
             'name'          => 'Test Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country'       => 'OM',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $org->id,
             'name'            => 'Test Store',
-            'business_type'   => 'retail',
-            'currency'        => 'OMR',
+            'business_type'   => 'grocery',
+            'currency'        => 'SAR',
         ]);
 
         $this->owner = User::create([
@@ -246,15 +248,15 @@ class SupportApiTest extends TestCase
     {
         $otherOrg = Organization::create([
             'name'          => 'Other Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country'       => 'OM',
         ]);
 
         $otherStore = Store::create([
             'organization_id' => $otherOrg->id,
             'name'            => 'Other Store',
-            'business_type'   => 'retail',
-            'currency'        => 'OMR',
+            'business_type'   => 'grocery',
+            'currency'        => 'SAR',
         ]);
 
         $otherUser = User::create([
@@ -369,5 +371,246 @@ class SupportApiTest extends TestCase
             ->putJson("/api/v2/support/tickets/{$fakeId}/close");
 
         $response->assertNotFound();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  HARDWARE CATEGORY
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_can_create_ticket_with_hardware_category(): void
+    {
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/support/tickets', [
+                'category'    => 'hardware',
+                'subject'     => 'POS terminal not working',
+                'description' => 'Screen is unresponsive.',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseHas('support_tickets', [
+            'category' => 'hardware',
+            'subject'  => 'POS terminal not working',
+        ]);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  INTERNAL NOTES EXCLUSION
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_show_ticket_excludes_internal_notes(): void
+    {
+        $ticket = SupportTicket::create([
+            'ticket_number'   => 'TKT-INTR0001',
+            'user_id'         => $this->owner->id,
+            'store_id'        => $this->store->id,
+            'organization_id' => $this->store->organization_id,
+            'category'        => 'general',
+            'priority'        => 'medium',
+            'status'          => TicketStatus::Open,
+            'subject'         => 'Test internal notes',
+            'description'     => 'Desc',
+        ]);
+
+        // Provider message (visible)
+        SupportTicketMessage::forceCreate([
+            'support_ticket_id' => $ticket->id,
+            'sender_type'       => 'provider',
+            'sender_id'         => $this->owner->id,
+            'message_text'      => 'Hello, I need help',
+            'is_internal_note'  => false,
+            'sent_at'           => now(),
+        ]);
+
+        // Admin internal note (should be hidden)
+        SupportTicketMessage::forceCreate([
+            'support_ticket_id' => $ticket->id,
+            'sender_type'       => 'admin',
+            'sender_id'         => '00000000-0000-0000-0000-000000000001',
+            'message_text'      => 'Internal: escalate to engineering',
+            'is_internal_note'  => true,
+            'sent_at'           => now(),
+        ]);
+
+        // Admin public reply (visible)
+        SupportTicketMessage::forceCreate([
+            'support_ticket_id' => $ticket->id,
+            'sender_type'       => 'admin',
+            'sender_id'         => '00000000-0000-0000-0000-000000000001',
+            'message_text'      => 'We are looking into this',
+            'is_internal_note'  => false,
+            'sent_at'           => now(),
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/support/tickets/{$ticket->id}");
+
+        $response->assertOk();
+        $messages = $response->json('data.messages');
+        $this->assertNotNull($messages, 'Messages key should exist in response');
+        $this->assertCount(2, $messages);
+
+        $messageTexts = array_column($messages, 'message_text');
+        $this->assertContains('Hello, I need help', $messageTexts);
+        $this->assertContains('We are looking into this', $messageTexts);
+        $this->assertNotContains('Internal: escalate to engineering', $messageTexts);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  KNOWLEDGE BASE (Provider-facing)
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_can_list_published_kb_articles(): void
+    {
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'Published Guide', 'title_ar' => 'دليل منشور',
+            'slug' => 'published-guide', 'body' => 'Content',
+            'body_ar' => 'محتوى', 'category' => 'getting_started',
+            'is_published' => true, 'sort_order' => 1,
+        ]);
+
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'Draft Article', 'title_ar' => 'مسودة',
+            'slug' => 'draft-article', 'body' => 'Draft content',
+            'body_ar' => 'مسودة', 'category' => 'billing',
+            'is_published' => false, 'sort_order' => 2,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/support/kb');
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data'));
+        $this->assertEquals('Published Guide', $response->json('data.0.title'));
+    }
+
+    public function test_can_filter_kb_articles_by_category(): void
+    {
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'POS Guide', 'title_ar' => 'دليل',
+            'slug' => 'pos-guide', 'body' => 'B', 'body_ar' => 'ب',
+            'category' => 'pos_usage', 'is_published' => true, 'sort_order' => 0,
+        ]);
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'Billing FAQ', 'title_ar' => 'أسئلة',
+            'slug' => 'billing-faq', 'body' => 'B', 'body_ar' => 'ب',
+            'category' => 'billing', 'is_published' => true, 'sort_order' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/support/kb?category=pos_usage');
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data'));
+    }
+
+    public function test_can_search_kb_articles(): void
+    {
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'How to set up delivery', 'title_ar' => 'التوصيل',
+            'slug' => 'delivery-setup', 'body' => 'Configure Talabat...',
+            'body_ar' => 'إعداد طلبات', 'category' => 'delivery',
+            'is_published' => true, 'sort_order' => 0,
+        ]);
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'Inventory tips', 'title_ar' => 'نصائح المخزون',
+            'slug' => 'inventory-tips', 'body' => 'Stock management...',
+            'body_ar' => 'إدارة المخزون', 'category' => 'inventory',
+            'is_published' => true, 'sort_order' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/support/kb?search=delivery');
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data'));
+    }
+
+    public function test_can_show_kb_article_by_slug(): void
+    {
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'Getting Started', 'title_ar' => 'البدء',
+            'slug' => 'getting-started', 'body' => 'Welcome!',
+            'body_ar' => 'مرحبا!', 'category' => 'getting_started',
+            'is_published' => true, 'sort_order' => 0,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/support/kb/getting-started');
+
+        $response->assertOk()
+            ->assertJsonPath('data.title', 'Getting Started')
+            ->assertJsonPath('data.body', 'Welcome!');
+    }
+
+    public function test_kb_show_returns_404_for_unpublished(): void
+    {
+        KnowledgeBaseArticle::forceCreate([
+            'title' => 'Draft', 'title_ar' => 'مسودة',
+            'slug' => 'draft-only', 'body' => 'B', 'body_ar' => 'ب',
+            'category' => 'billing', 'is_published' => false, 'sort_order' => 0,
+        ]);
+
+        $this->withToken($this->token)
+            ->getJson('/api/v2/support/kb/draft-only')
+            ->assertNotFound();
+    }
+
+    public function test_kb_show_returns_404_for_nonexistent(): void
+    {
+        $this->withToken($this->token)
+            ->getJson('/api/v2/support/kb/nonexistent-slug')
+            ->assertNotFound();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  SLA AUTO-CALCULATION
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_create_ticket_auto_sets_sla_deadline(): void
+    {
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/support/tickets', [
+                'category'    => 'technical',
+                'priority'    => 'critical',
+                'subject'     => 'System down',
+                'description' => 'Everything is broken',
+            ]);
+
+        $response->assertCreated();
+
+        $ticket = SupportTicket::where('subject', 'System down')->first();
+        $this->assertNotNull($ticket);
+        $this->assertNotNull($ticket->sla_deadline_at);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  AUTO-REOPEN ON MESSAGE
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_adding_message_to_resolved_ticket_reopens_it(): void
+    {
+        $ticket = SupportTicket::create([
+            'ticket_number'   => 'TKT-REOPEN01',
+            'user_id'         => $this->owner->id,
+            'store_id'        => $this->store->id,
+            'organization_id' => $this->store->organization_id,
+            'category'        => 'general',
+            'priority'        => 'medium',
+            'status'          => TicketStatus::Resolved,
+            'subject'         => 'Resolved ticket',
+            'description'     => 'Was resolved',
+            'resolved_at'     => now(),
+        ]);
+
+        $this->withToken($this->token)
+            ->postJson("/api/v2/support/tickets/{$ticket->id}/messages", [
+                'message' => 'Actually the issue is back',
+            ])
+            ->assertCreated();
+
+        $ticket->refresh();
+        $this->assertEquals('open', $ticket->status->value);
     }
 }

@@ -30,7 +30,7 @@ class LocalizationApiTest extends TestCase
             Schema::create('organizations', function ($t) {
                 $t->uuid('id')->primary();
                 $t->string('name');
-                $t->string('business_type')->default('retail');
+                $t->string('business_type')->default('grocery');
                 $t->string('country')->default('SA');
                 $t->timestamps();
             });
@@ -53,7 +53,7 @@ class LocalizationApiTest extends TestCase
                 $t->string('timezone')->default('Asia/Riyadh');
                 $t->string('currency')->default('SAR');
                 $t->string('locale')->default('ar');
-                $t->string('business_type')->default('retail');
+                $t->string('business_type')->default('grocery');
                 $t->boolean('is_active')->default(true);
                 $t->boolean('is_main_branch')->default(false);
                 $t->decimal('storage_used_mb', 10, 2)->default(0);
@@ -143,14 +143,14 @@ class LocalizationApiTest extends TestCase
         // Seed test data
         $org = Organization::create([
             'name' => 'Localization Test Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'SA',
         ]);
 
         $store = Store::create([
             'organization_id' => $org->id,
             'name' => 'Localization Test Store',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,

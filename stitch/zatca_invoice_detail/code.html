@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ZATCA Tax Invoice - Thawani POS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .zatca-dotted-border { border-style: dashed; border-width: 1px; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen">
+<div class="max-w-[1024px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl shadow-sm px-6 py-4 mb-6 border border-primary/10">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+<div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight">Invoice Details</h2>
+<p class="text-xs text-slate-500 dark:text-slate-400">Reference: INV-2023-0042</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="flex items-center justify-center rounded-lg h-10 px-4 bg-primary/10 text-primary hover:bg-primary/20 transition-colors gap-2 text-sm font-bold">
+<span class="material-symbols-outlined text-[20px]">download</span>
+<span>PDF</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-10 px-4 bg-primary text-white hover:bg-primary/90 transition-colors gap-2 text-sm font-bold">
+<span class="material-symbols-outlined text-[20px]">code</span>
+<span>Download XML</span>
+</button>
+</div>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Main Invoice Content -->
+<div class="lg:col-span-2 space-y-6">
+<div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm overflow-hidden border border-primary/5">
+<!-- Invoice Header -->
+<div class="p-8 border-b border-slate-100 dark:border-slate-800 text-center">
+<h1 class="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Tax Invoice</h1>
+<h2 class="text-xl font-bold text-primary mt-1">فاتورة ضريبية</h2>
+<div class="mt-4 flex flex-col items-center gap-1">
+<span class="text-xs font-mono bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-slate-600 dark:text-slate-400">UUID: 550e8400-e29b-41d4-a716-446655440000</span>
+<span class="text-[10px] font-mono text-slate-400 break-all max-w-md">PIH: b64..f52a8a481c7e23190f8208fd8209...</span>
+</div>
+</div>
+<!-- Info Grid -->
+<div class="grid grid-cols-2 border-b border-slate-100 dark:border-slate-800">
+<!-- Seller -->
+<div class="p-6 border-r border-slate-100 dark:border-slate-800">
+<h3 class="text-xs font-bold text-primary uppercase mb-3 flex justify-between">
+<span>Seller Details</span>
+<span>تفاصيل البائع</span>
+</h3>
+<p class="font-bold text-slate-900 dark:text-white">Thawani POS Solutions</p>
+<p class="text-sm text-slate-600 dark:text-slate-400 mt-1">King Fahad Branch Rd, Al Rahmaniyah</p>
+<p class="text-sm text-slate-600 dark:text-slate-400">Riyadh 12341, Saudi Arabia</p>
+<div class="mt-3 pt-3 border-t border-slate-50 dark:border-slate-800/50">
+<p class="text-xs text-slate-500">VAT Number / الرقم الضريبي</p>
+<p class="text-sm font-mono font-bold text-slate-800 dark:text-slate-200">310123456700003</p>
+</div>
+</div>
+<!-- Buyer -->
+<div class="p-6">
+<h3 class="text-xs font-bold text-primary uppercase mb-3 flex justify-between">
+<span>Buyer Details</span>
+<span>تفاصيل المشتري</span>
+</h3>
+<p class="font-bold text-slate-900 dark:text-white">Retail Excellence Corp</p>
+<p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Olaya Street, Business District</p>
+<p class="text-sm text-slate-600 dark:text-slate-400">Riyadh 11564, Saudi Arabia</p>
+<div class="mt-3 pt-3 border-t border-slate-50 dark:border-slate-800/50">
+<p class="text-xs text-slate-500">VAT Number / الرقم الضريبي</p>
+<p class="text-sm font-mono font-bold text-slate-800 dark:text-slate-200">300012345600003</p>
+</div>
+</div>
+</div>
+<!-- Items Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
+<th class="p-4 text-xs font-bold text-slate-500 uppercase">Nature of goods or services<br/><span class="text-[10px] text-primary">وصف السلعة أو الخدمة</span></th>
+<th class="p-4 text-xs font-bold text-slate-500 uppercase text-center">Qty<br/><span class="text-[10px] text-primary">الكمية</span></th>
+<th class="p-4 text-xs font-bold text-slate-500 uppercase text-right">Unit Price<br/><span class="text-[10px] text-primary">سعر الوحدة</span></th>
+<th class="p-4 text-xs font-bold text-slate-500 uppercase text-right">VAT Rate<br/><span class="text-[10px] text-primary">نسبة الضريبة</span></th>
+<th class="p-4 text-xs font-bold text-slate-500 uppercase text-right">Total (Incl. VAT)<br/><span class="text-[10px] text-primary">المجموع شامل الضريبة</span></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-50 dark:divide-slate-800">
+<tr>
+<td class="p-4">
+<p class="font-medium text-slate-900 dark:text-slate-100">Smart POS Terminal T2</p>
+<p class="text-xs text-slate-500 italic">Hardware Terminal with Dual Screen</p>
+</td>
+<td class="p-4 text-center text-slate-700 dark:text-slate-300">2.00</td>
+<td class="p-4 text-right text-slate-700 dark:text-slate-300">1,200.00 SAR</td>
+<td class="p-4 text-right text-slate-700 dark:text-slate-300">15%</td>
+<td class="p-4 text-right font-bold text-slate-900 dark:text-slate-100">2,760.00 SAR</td>
+</tr>
+<tr>
+<td class="p-4">
+<p class="font-medium text-slate-900 dark:text-slate-100">Cloud ERP Integration</p>
+<p class="text-xs text-slate-500 italic">Annual Subscription Fee</p>
+</td>
+<td class="p-4 text-center text-slate-700 dark:text-slate-300">1.00</td>
+<td class="p-4 text-right text-slate-700 dark:text-slate-300">500.00 SAR</td>
+<td class="p-4 text-right text-slate-700 dark:text-slate-300">15%</td>
+<td class="p-4 text-right font-bold text-slate-900 dark:text-slate-100">575.00 SAR</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Summary -->
+<div class="p-8 bg-slate-50/50 dark:bg-slate-800/20">
+<div class="flex flex-col items-end gap-2">
+<div class="flex justify-between w-full max-w-xs">
+<span class="text-sm text-slate-500">Total Taxable Amount (Excl. VAT)</span>
+<span class="font-medium">2,900.00 SAR</span>
+</div>
+<div class="flex justify-between w-full max-w-xs">
+<span class="text-sm text-slate-500">Total VAT (15%)</span>
+<span class="font-medium">435.00 SAR</span>
+</div>
+<div class="flex justify-between w-full max-w-xs mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+<span class="text-base font-bold text-slate-900 dark:text-white uppercase">Total Amount Due</span>
+<span class="text-xl font-black text-primary">3,335.00 SAR</span>
+</div>
+<div class="w-full max-w-xs text-right mt-1">
+<span class="text-xs text-primary font-bold">إجمالي المبلغ المستحق</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar (QR & Metadata) -->
+<div class="space-y-6">
+<!-- QR Code Card -->
+<div class="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-sm border border-primary/10 flex flex-col items-center">
+<h3 class="text-sm font-bold text-slate-900 dark:text-white mb-4 uppercase tracking-wider">ZATCA QR Code</h3>
+<div class="bg-white p-3 rounded-lg border border-slate-200">
+<div class="w-48 h-48 bg-slate-100 relative overflow-hidden rounded flex items-center justify-center">
+<!-- Simulated QR Code Pattern -->
+<div class="absolute inset-0 grid grid-cols-12 grid-rows-12 opacity-80">
+<div class="bg-black col-span-3 row-span-3"></div>
+<div class="bg-black col-start-10 col-span-3 row-span-3"></div>
+<div class="bg-black col-span-3 row-start-10 row-span-3"></div>
+<div class="bg-black col-start-5 col-span-2 row-start-5 row-span-2"></div>
+<div class="bg-slate-300 col-span-12 row-span-12 mix-blend-multiply" style="background-image: radial-gradient(circle, #000 1px, transparent 1px); background-size: 4px 4px;"></div>
+</div>
+<span class="relative z-10 text-[10px] font-mono text-center px-4 leading-tight bg-white/90 py-1">TLV Encoded Data<br/>E-Invoice Ready</span>
+</div>
+</div>
+<p class="text-[10px] text-slate-400 mt-4 text-center leading-relaxed italic">Scan using ZATCA E-Invoice app to verify compliance and security hash integrity.</p>
+</div>
+<!-- Compliance Metadata -->
+<div class="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-primary/10 overflow-hidden">
+<div class="p-4 bg-primary/5 border-b border-primary/10">
+<h3 class="text-xs font-bold text-primary uppercase">System Metadata</h3>
+</div>
+<div class="p-4 space-y-4">
+<div>
+<p class="text-[10px] text-slate-500 uppercase font-bold">Hash Value (SHA-256)</p>
+<p class="text-xs font-mono text-slate-700 dark:text-slate-300 break-all leading-tight mt-1">
+                            e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+                        </p>
+</div>
+<div>
+<p class="text-[10px] text-slate-500 uppercase font-bold">Issue Date &amp; Time</p>
+<p class="text-sm text-slate-700 dark:text-slate-300 mt-0.5">2023-11-24 14:30:01 AST</p>
+</div>
+<div>
+<p class="text-[10px] text-slate-500 uppercase font-bold">ICV (Invoice Counter Value)</p>
+<p class="text-sm text-slate-700 dark:text-slate-300 mt-0.5">4,129</p>
+</div>
+<div class="pt-4 border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-2 text-emerald-500">
+<span class="material-symbols-outlined text-sm">verified</span>
+<span class="text-[10px] font-bold uppercase">ZATCA Cryptographic Stamp Valid</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Card -->
+<div class="bg-primary rounded-xl p-6 text-white shadow-lg shadow-primary/20">
+<h4 class="font-bold text-lg mb-2">Need help?</h4>
+<p class="text-xs text-white/80 mb-4">Contact Thawani POS support for any inquiries regarding this invoice or your account.</p>
+<button class="w-full py-2 bg-white text-primary font-bold rounded-lg text-sm hover:bg-slate-50 transition-colors">
+                    Contact Support
+                </button>
+</div>
+</div>
+</div>
+<!-- Footer Disclaimer -->
+<footer class="mt-12 text-center pb-8 border-t border-slate-200 dark:border-slate-800 pt-6">
+<p class="text-xs text-slate-400">This is an electronically generated document. No signature is required.</p>
+<p class="text-xs text-slate-400 mt-1">Powerd by Thawani POS Solutions | Licensed by Saudi Central Bank (SAMA)</p>
+</footer>
+</div>
+</body></html>

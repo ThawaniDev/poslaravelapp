@@ -14,7 +14,7 @@ class StoreSubscriptionResource extends JsonResource
 
         return [
             'id' => $this->id,
-            'store_id' => $this->store_id,
+            'organization_id' => $this->organization_id,
             'subscription_plan_id' => $this->subscription_plan_id,
             'status' => $status instanceof \BackedEnum ? $status->value : $status,
             'billing_cycle' => $billingCycle instanceof \BackedEnum ? $billingCycle->value : $billingCycle,

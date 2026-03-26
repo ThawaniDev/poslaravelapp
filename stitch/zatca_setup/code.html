@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ZATCA Setup Wizard - Thawani POS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/10 px-6 py-4 lg:px-40 bg-white dark:bg-background-dark/50 backdrop-blur-md sticky top-0 z-50">
+<div class="flex items-center gap-4 text-slate-900 dark:text-slate-100">
+<div class="size-8 flex items-center justify-center bg-primary rounded-lg text-white">
+<span class="material-symbols-outlined">account_balance</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">ZATCA Setup Wizard</h2>
+</div>
+<div class="flex items-center gap-2">
+<div class="hidden md:flex flex-col items-end mr-4">
+<span class="text-xs font-semibold text-primary uppercase tracking-wider">Thawani POS</span>
+<span class="text-[10px] text-slate-500">v2.4.0-compliant</span>
+</div>
+<button class="flex cursor-pointer items-center justify-center rounded-lg h-10 bg-primary/10 hover:bg-primary/20 text-primary transition-colors px-3">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</header>
+<main class="flex flex-1 justify-center py-8 px-4 lg:px-40">
+<div class="layout-content-container flex flex-col max-w-[800px] flex-1 gap-8">
+<div class="bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-primary/10 shadow-sm">
+<div class="flex flex-col gap-3">
+<div class="flex gap-6 justify-between items-center">
+<p class="text-slate-900 dark:text-slate-100 text-base font-semibold leading-normal">Device Registration Progress</p>
+<p class="text-primary text-sm font-bold leading-normal">25%</p>
+</div>
+<div class="rounded-full bg-primary/10 h-2.5 w-full overflow-hidden">
+<div class="h-full bg-primary rounded-full transition-all duration-500" style="width: 25%;"></div>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium uppercase tracking-wide">Step 1 of 4: Authentication</p>
+<div class="flex gap-1">
+<div class="size-1.5 rounded-full bg-primary"></div>
+<div class="size-1.5 rounded-full bg-primary/20"></div>
+<div class="size-1.5 rounded-full bg-primary/20"></div>
+<div class="size-1.5 rounded-full bg-primary/20"></div>
+</div>
+</div>
+</div>
+</div>
+<section class="flex flex-col gap-6">
+<div class="flex flex-col gap-2">
+<h1 class="text-slate-900 dark:text-slate-100 text-3xl font-extrabold tracking-tight">Register Your Device</h1>
+<p class="text-slate-600 dark:text-slate-400 text-base">Initialize your Thawani POS terminal with ZATCA's Fatoora portal to begin e-invoicing.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-4 p-6 bg-white dark:bg-slate-900/50 rounded-xl border border-primary/10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">key</span>
+<h3 class="text-slate-900 dark:text-slate-100 font-bold">ZATCA Authentication</h3>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-slate-700 dark:text-slate-300">ZATCA OTP</label>
+<input class="form-input block w-full rounded-lg border-primary/20 bg-background-light dark:bg-background-dark/50 text-slate-900 dark:text-white focus:border-primary focus:ring-primary h-12 text-center text-xl tracking-[0.5em] font-mono" maxlength="6" placeholder="000000" type="text"/>
+<p class="text-xs text-slate-500">Enter the 6-digit OTP generated from your ZATCA Fatoora Portal.</p>
+</div>
+</div>
+<div class="flex flex-col gap-4 p-6 bg-white dark:bg-slate-900/50 rounded-xl border border-primary/10">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">settings_ethernet</span>
+<h3 class="text-slate-900 dark:text-slate-100 font-bold">Compliance Mode</h3>
+</div>
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/10">
+<span class="text-sm font-medium text-slate-700 dark:text-slate-300">Environment</span>
+<div class="flex bg-slate-200 dark:bg-slate-800 p-1 rounded-md">
+<button class="px-3 py-1 text-xs font-bold rounded bg-white dark:bg-slate-700 shadow-sm text-primary">Simulation</button>
+<button class="px-3 py-1 text-xs font-bold text-slate-500">Production</button>
+</div>
+</div>
+<p class="text-xs text-slate-500">Simulation mode is recommended for initial testing before going live.</p>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900/50 rounded-xl border border-primary/10 overflow-hidden">
+<div class="p-6 border-b border-primary/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">verified_user</span>
+<h3 class="text-slate-900 dark:text-slate-100 font-bold text-lg">Certificate Status</h3>
+</div>
+<div class="flex items-center gap-2 px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-bold uppercase tracking-wider border border-green-200 dark:border-green-800">
+<span class="size-2 bg-green-500 rounded-full"></span>
+                                    Valid
+                                </div>
+</div>
+<div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="flex flex-col gap-1">
+<span class="text-xs text-slate-500 uppercase font-semibold">Issued Date</span>
+<span class="text-slate-900 dark:text-slate-100 font-medium">Oct 24, 2023</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs text-slate-500 uppercase font-semibold">Expiry Date</span>
+<span class="text-slate-900 dark:text-slate-100 font-medium text-primary">Oct 24, 2025</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="text-xs text-slate-500 uppercase font-semibold">Serial Number</span>
+<span class="text-slate-900 dark:text-slate-100 font-mono text-sm truncate">THW-8829-ZAT-991</span>
+</div>
+</div>
+<div class="p-6 bg-slate-50 dark:bg-background-dark/20 flex flex-col gap-4">
+<div class="flex items-center gap-4">
+<button class="flex-1 bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">data_object</span>
+                                        Generate CSR
+                                    </button>
+<button class="p-3 border border-primary/20 text-primary hover:bg-primary/5 rounded-lg transition-colors">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+<p class="text-[11px] text-slate-500 text-center italic">Generating a new CSR (Certificate Signing Request) will invalidate current certificates.</p>
+</div>
+</div>
+<div class="flex justify-between items-center mt-4">
+<button class="text-slate-500 font-semibold hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-2">
+<span class="material-symbols-outlined">arrow_back</span>
+                                Back
+                            </button>
+<button class="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-8 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity">
+                                Continue to Step 2
+                            </button>
+</div>
+</section>
+</div>
+</main>
+<footer class="px-6 lg:px-40 py-8 border-t border-primary/10 mt-12 bg-white dark:bg-background-dark/50">
+<div class="flex flex-col md:flex-row justify-between items-center gap-4">
+<div class="flex items-center gap-4">
+<div class="bg-primary/10 p-2 rounded">
+<span class="material-symbols-outlined text-primary text-sm">security</span>
+</div>
+<p class="text-slate-500 text-xs">Secure ZATCA integration powered by Thawani Pay API. All data is encrypted during transmission.</p>
+</div>
+<div class="flex gap-6">
+<a class="text-xs text-slate-400 hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="text-xs text-slate-400 hover:text-primary transition-colors" href="#">Technical Docs</a>
+<a class="text-xs text-slate-400 hover:text-primary transition-colors" href="#">Support</a>
+</div>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

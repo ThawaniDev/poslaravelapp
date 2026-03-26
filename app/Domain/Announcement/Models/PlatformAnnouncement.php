@@ -2,6 +2,7 @@
 
 namespace App\Domain\Announcement\Models;
 
+use App\Domain\AdminPanel\Models\AdminUser;
 use App\Domain\Announcement\Enums\AnnouncementType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

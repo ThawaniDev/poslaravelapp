@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>POS Terminal - Barcode Scanning Mode</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .scanning-pulse {
+            box-shadow: 0 0 0 0 rgba(253, 130, 8, 0.7);
+            animation: pulse-orange 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse-orange {
+            0% { box-shadow: 0 0 0 0 rgba(253, 130, 8, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(253, 130, 8, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(253, 130, 8, 0); }
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Header / Top Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/10 px-6 py-3 bg-white dark:bg-background-dark/50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-primary">
+<div class="size-6 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl">point_of_sale</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em]">QuickPOS Pro</h2>
+</div>
+<!-- Pulsing Barcode Scanner Input -->
+<div class="relative">
+<label class="flex flex-col min-w-80 h-10 max-w-lg">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full border-2 border-primary scanning-pulse overflow-hidden bg-primary/5">
+<div class="text-primary flex items-center justify-center pl-4 pr-2">
+<span class="material-symbols-outlined">barcode_scanner</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-slate-900 dark:text-slate-100 focus:outline-0 focus:ring-0 border-none bg-transparent h-full placeholder:text-primary/60 px-2 text-base font-medium leading-normal" placeholder="Scanning barcode..." readonly="" value="8472910031..."/>
+<div class="flex items-center pr-4">
+<span class="material-symbols-outlined text-primary text-sm">sync</span>
+</div>
+</div>
+</label>
+<!-- Tooltip Overlay -->
+<div class="absolute -bottom-10 left-1/2 -translate-x-1/2 bg-primary text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">sensors</span>
+                        SCANNING ACTIVE
+                    </div>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex cursor-pointer items-center justify-center rounded-lg h-10 bg-primary/10 hover:bg-primary/20 text-slate-900 dark:text-slate-100 px-3 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="flex cursor-pointer items-center justify-center rounded-lg h-10 bg-primary/10 hover:bg-primary/20 text-slate-900 dark:text-slate-100 px-3 transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<div class="flex flex-1 flex-row overflow-hidden">
+<!-- Sidebar Navigation -->
+<aside class="w-64 border-r border-primary/10 bg-white dark:bg-background-dark/30 p-4 flex flex-col justify-between">
+<div class="flex flex-col gap-6">
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-slate-100 text-base font-bold leading-normal">Terminal 01</h1>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-normal">Alex Johnson (Manager)</p>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-white font-semibold" href="#">
+<span class="material-symbols-outlined">storefront</span>
+<span>Register</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-all font-medium" href="#">
+<span class="material-symbols-outlined">receipt_long</span>
+<span>Orders</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-all font-medium" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span>Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-all font-medium" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Reports</span>
+</a>
+</nav>
+</div>
+<div class="bg-primary/5 p-4 rounded-xl border border-primary/20">
+<div class="flex justify-between items-center mb-2">
+<span class="text-xs font-bold text-primary uppercase tracking-wider">Session Info</span>
+<div class="size-2 rounded-full bg-green-500"></div>
+</div>
+<p class="text-xs text-slate-600 dark:text-slate-400">Duration: 04:22:15</p>
+<p class="text-xs text-slate-600 dark:text-slate-400">Total Sales: $1,240.50</p>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col bg-background-light dark:bg-background-dark/50">
+<!-- Categories Bar -->
+<div class="bg-white dark:bg-background-dark/20 px-6 border-b border-primary/5">
+<div class="flex gap-8">
+<a class="flex flex-col items-center justify-center border-b-[3px] border-primary text-primary pb-3 pt-4 font-bold text-sm tracking-wide" href="#">
+                            All Items
+                        </a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 pb-3 pt-4 hover:text-primary transition-all font-bold text-sm tracking-wide" href="#">
+                            Beverages
+                        </a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 pb-3 pt-4 hover:text-primary transition-all font-bold text-sm tracking-wide" href="#">
+                            Food
+                        </a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-slate-500 pb-3 pt-4 hover:text-primary transition-all font-bold text-sm tracking-wide" href="#">
+                            Merchandise
+                        </a>
+</div>
+</div>
+<!-- Product Grid -->
+<div class="p-6 overflow-y-auto">
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+<!-- Product Card -->
+<div class="group bg-white dark:bg-background-dark/80 p-3 rounded-xl border border-primary/5 hover:border-primary/40 shadow-sm transition-all cursor-pointer">
+<div class="w-full aspect-square rounded-lg mb-3 bg-primary/5 flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" data-alt="Close up of a freshly made espresso coffee" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAQKgaJMALa-JOrnfaNfxfw3sB94Uw8DJTpg6MOGnSE8XE0t2hOOZhEFt1cCjuoFOaZnvjZ8iQTMekB9Wyh_wBNgz69bQT7ApZysPYpq23g-fV-jwDeUm346sQeBAdOCCx4K9vdsVcB4DTFevqfjH7ofMLfzAY6uCI5b5GxfYe7suxpKq6BPjea2iJ7wJN3yEeEsRSvVkHrUAthQSOBWpxkC1PGVhhvT95DOHFM3Ac85Zfl1iYTTNVlDTCbT1sBr0pt3JIp9_-AfGVI"/>
+</div>
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Double Espresso</h3>
+<div class="flex justify-between items-center mt-1">
+<span class="text-primary font-bold">$3.50</span>
+<span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500 uppercase">SKU: ESP-01</span>
+</div>
+</div>
+<div class="group bg-white dark:bg-background-dark/80 p-3 rounded-xl border border-primary/5 hover:border-primary/40 shadow-sm transition-all cursor-pointer">
+<div class="w-full aspect-square rounded-lg mb-3 bg-primary/5 flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" data-alt="Caffe latte with beautiful latte art" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOD_nQzil87F5Ylu3zmzjfsuEziooIfTK7k_W8n6e4w5vnIM57rfyF1G1z68BHhYYa6CX9B5od1dxEQdYreuqqMvzjwGZdC1Gvw_gQ3TE1P9Ds9LZ6fqjgLv2Kt8jE2Kl1tHYq2YWAAEEd3AJas3gMePlFwXwt02Xen9aI1_c43S0FsbT8Awl99ty5Q5jF4e6TJ5HdkVBXnd8Ax4D2pxVG4dBAaP2YeHZEcMEZzaa8mUX5n6irOh5P3c38AnM4hqAH--js6TdGDYrI"/>
+</div>
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Caramel Latte</h3>
+<div class="flex justify-between items-center mt-1">
+<span class="text-primary font-bold">$4.95</span>
+<span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500 uppercase">SKU: LAT-05</span>
+</div>
+</div>
+<div class="group bg-white dark:bg-background-dark/80 p-3 rounded-xl border border-primary/5 hover:border-primary/40 shadow-sm transition-all cursor-pointer">
+<div class="w-full aspect-square rounded-lg mb-3 bg-primary/5 flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" data-alt="Fresh golden brown croissant on a plate" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtvBnfvEIbDKu_zxVV3nUuciXJZ4aI6vuDwIY_ARo2ncVSVHGv4WbR3SNTpGvD5FnIGL64OGtw3H4efNIOob3iN773r4g3kKEEZhI7uKTuGS83sk53OOeckhPOUy_1zhkXvgaVcu5WgL31pLGpTH0EAEGoEVvlfqw6ze6g_hsDb900b_mTSTWficImXbAQc3YLQhaj6k299wCQWezQW_XLKnoQfObr5HpGyHeBarOHP8dHY1027KyIeu6xifA07nyTsiWm1tjYsXJO"/>
+</div>
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Butter Croissant</h3>
+<div class="flex justify-between items-center mt-1">
+<span class="text-primary font-bold">$3.25</span>
+<span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500 uppercase">SKU: BAK-22</span>
+</div>
+</div>
+<div class="group bg-white dark:bg-background-dark/80 p-3 rounded-xl border border-primary/5 hover:border-primary/40 shadow-sm transition-all cursor-pointer">
+<div class="w-full aspect-square rounded-lg mb-3 bg-primary/5 flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" data-alt="Chocolate chip muffin on a wooden surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrlmYM33pPXtTePb01zgNotuxqqm7CR_PcBtUtoCoNMm1Ji5i_GmM-F2AKnqQKAOsBuyIVKBoqlP7dgK1Wi9Fa2mq98ANpnISqzpa9RaRVkACgoEn6zipoYj33kVpSO7ikUOE_0dOkyf2E8z8rDdC6dPbB9hHNnE6_fm3TzlYGQvr5oc-Alz-UY3sarI4IjMhTEKtfv-XZtpm5RmFyvtiKYSLQnufAZAZtbfdtOP55J3sjsbjPLSFRoZcBkyGTnwMJzhK___7C52Z1"/>
+</div>
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Choco Muffin</h3>
+<div class="flex justify-between items-center mt-1">
+<span class="text-primary font-bold">$2.80</span>
+<span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500 uppercase">SKU: BAK-12</span>
+</div>
+</div>
+<div class="group bg-white dark:bg-background-dark/80 p-3 rounded-xl border border-primary/5 hover:border-primary/40 shadow-sm transition-all cursor-pointer">
+<div class="w-full aspect-square rounded-lg mb-3 bg-primary/5 flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" data-alt="Hot herbal tea in a transparent cup" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMjYUBd_LbrEyaMcZU3OVnYtTaqtOaFY3qS0F7AWzY9hzoyJ3w7_gd8kk5kCRqgCw5NDwpym_adiVJswDmkCJOKbkwKm1Z5Jfj4JK7ealGpU-ZNhM7KNHI_t3rndtGn5oYWaBX80_MazHj5kB2i8xCLRg3U6o_RXN8gJySdE6V5zNBvf0gV_Af6M1JqcFkGDxINBufAXaDbKfPQUAlggCOTuAx1fFEQbZQeeaUXk8YrXI44TrRuCc7dIt84cVwg6u3glm-wbCHRa2T"/>
+</div>
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Earl Grey Tea</h3>
+<div class="flex justify-between items-center mt-1">
+<span class="text-primary font-bold">$3.00</span>
+<span class="text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-500 uppercase">SKU: TEA-02</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Order Summary Sidebar (Cart) -->
+<aside class="w-96 border-l border-primary/10 bg-white dark:bg-background-dark/30 flex flex-col">
+<div class="p-6 border-b border-primary/5">
+<div class="flex justify-between items-center">
+<h2 class="text-xl font-bold">Current Order</h2>
+<button class="text-slate-400 hover:text-red-500">
+<span class="material-symbols-outlined">delete_sweep</span>
+</button>
+</div>
+<div class="mt-2 flex items-center gap-2 text-xs font-medium text-slate-500 uppercase">
+<span>Order #2941</span>
+<span class="w-1 h-1 rounded-full bg-slate-300"></span>
+<span>Walk-in Customer</span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+<!-- Cart Item -->
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-lg bg-primary/10 overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Mini espresso cup" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiVUQ92zWaP7AjSk4Mt-1SxxhEfFhCbNQ3AbBEMjiEJXpL41ve3YtgBmGEKBDUECSLeCI9Tu4hu7tggiiHzVyfGuaIC_cvNO-JUI6B92Oilk5kbV6NN264EFXtjTxswRDuYdrP4kzQLu7neoDPe1iO4vsR2vH4y8Atyf9DqwwOEXCSCTDC8tX7NPlEEfnPuJZvyGOU86YIKULyVxvKgO2MSJQuSopNnPaCLHuv_4KqVQVTLXdUTChbubI4_Gpi7-tv-mQFHa3xlgJf"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="font-bold text-sm">Double Espresso</h4>
+<span class="font-bold text-sm">$3.50</span>
+</div>
+<div class="flex justify-between items-center mt-1">
+<div class="flex items-center gap-2">
+<button class="size-6 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-800 text-xs">-</button>
+<span class="text-sm font-bold">1</span>
+<button class="size-6 flex items-center justify-center rounded bg-slate-100 dark:bg-slate-800 text-xs">+</button>
+</div>
+<span class="text-xs text-slate-400">Regular Roast</span>
+</div>
+</div>
+</div>
+<!-- Scanned Item (Highlighted) -->
+<div class="flex items-center gap-3 bg-primary/5 border border-primary/30 p-2 rounded-lg relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<div class="w-12 h-12 rounded-lg bg-primary/10 overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Mini latte cup" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnty2LUpDBTrVf6DcQ-LI7UnBtTikjxFncfZdhAKLfOLP05AknQZj53fBslc_2_luouh72TGdg95O2EN7XCnRcMv4ruGVS31J5bqP4l6F2TNtcWg3LPJDDdD5-4RP5e_NzKgA-DESDR3BKELVGPXJP-S1Z7mEKR4z97Tk6n037Z2mk25-Q3yasLKN6V7_ODpNxmhaLzBQS2M0cNOCBHST96cL7kGXZHMBocx0Wj9eeqpngBe6WKOzFQYjdJaGTzUvpn9wODxIk0ArC"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between">
+<h4 class="font-bold text-sm text-primary">Caramel Latte</h4>
+<span class="font-bold text-sm">$4.95</span>
+</div>
+<div class="flex justify-between items-center mt-1">
+<span class="text-xs font-bold text-primary italic">Scanned!</span>
+<div class="flex items-center gap-2">
+<button class="size-6 flex items-center justify-center rounded bg-primary/20 text-primary text-xs">-</button>
+<span class="text-sm font-bold">1</span>
+<button class="size-6 flex items-center justify-center rounded bg-primary/20 text-primary text-xs">+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-6 bg-slate-50 dark:bg-background-dark/40 border-t border-primary/5">
+<div class="flex flex-col gap-2 mb-6">
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">Subtotal</span>
+<span class="font-medium">$8.45</span>
+</div>
+<div class="flex justify-between text-sm">
+<span class="text-slate-500">Tax (8%)</span>
+<span class="font-medium">$0.68</span>
+</div>
+<div class="flex justify-between text-xl font-bold mt-2">
+<span>Total</span>
+<span class="text-primary">$9.13</span>
+</div>
+</div>
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2 transition-transform active:scale-95">
+<span class="material-symbols-outlined">payments</span>
+                        Pay Now
+                    </button>
+</div>
+</aside>
+</div>
+</div>
+</div>
+</body></html>

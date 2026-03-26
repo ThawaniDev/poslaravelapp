@@ -8,4 +8,5 @@ enum AnnouncementType: string
     case Warning = 'warning';
     case Maintenance = 'maintenance';
     case Update = 'update';
+    case Feature = 'feature';
 }

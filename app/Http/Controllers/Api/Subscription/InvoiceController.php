@@ -19,14 +19,14 @@ class InvoiceController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $organizationId = $request->user()->organization_id;
 
-        if (! $storeId) {
-            return $this->error('No store assigned to this user.', 404);
+        if (! $organizationId) {
+            return $this->error('No organization assigned to this user.', 404);
         }
 
         $perPage = $request->integer('per_page', 20);
-        $invoices = $this->billingService->getInvoices($storeId, $perPage);
+        $invoices = $this->billingService->getInvoices($organizationId, $perPage);
 
         return $this->success([
             'data' => InvoiceResource::collection($invoices->items()),

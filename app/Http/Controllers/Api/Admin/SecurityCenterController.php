@@ -2,282 +2,338 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Domain\AdminPanel\Models\AdminUser;
-use App\Domain\Security\Models\AdminIpAllowlist;
-use App\Domain\Security\Models\AdminIpBlocklist;
-use App\Domain\Security\Models\AdminSession;
-use App\Domain\Security\Models\AdminTrustedDevice;
-use App\Domain\Security\Models\DeviceRegistration;
-use App\Domain\Security\Models\LoginAttempt;
-use App\Domain\Security\Models\SecurityAlert;
-use App\Domain\Security\Models\SecurityAuditLog;
-use App\Domain\Security\Models\SecurityPolicy;
+use App\Domain\AdminPanel\Models\AdminActivityLog;
+use App\Domain\Security\Services\AdminSecurityService;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SecurityCenterController extends BaseApiController
 {
+    public function __construct(private AdminSecurityService $service) {}
+
     // ── Overview ─────────────────────────────────────────────
     public function overview(): JsonResponse
     {
-        return $this->success([
-            'security_alerts' => [
-                'total'       => SecurityAlert::count(),
-                'new'         => SecurityAlert::where('status', 'new')->count(),
-                'investigating' => SecurityAlert::where('status', 'investigating')->count(),
-                'resolved'    => SecurityAlert::where('status', 'resolved')->count(),
-            ],
-            'sessions' => [
-                'total'  => AdminSession::count(),
-                'active' => AdminSession::whereNull('revoked_at')->count(),
-            ],
-            'devices' => [
-                'total'  => DeviceRegistration::count(),
-                'active' => DeviceRegistration::where('is_active', true)->count(),
-            ],
-            'login_attempts' => [
-                'total'      => LoginAttempt::count(),
-                'successful' => LoginAttempt::where('is_successful', true)->count(),
-                'failed'     => LoginAttempt::where('is_successful', false)->count(),
-            ],
-            'ip_management' => [
-                'allowlist_count' => AdminIpAllowlist::count(),
-                'blocklist_count' => AdminIpBlocklist::count(),
-            ],
-        ], 'Security overview');
+        return $this->success(
+            $this->service->getOverview(),
+            __('security.overview_fetched'),
+        );
     }
 
     // ── Security Alerts ──────────────────────────────────────
     public function listAlerts(Request $request): JsonResponse
     {
-        $query = SecurityAlert::query()->orderByDesc('created_at');
-
-        if ($request->filled('status'))     $query->where('status', $request->status);
-        if ($request->filled('severity'))   $query->where('severity', $request->severity);
-        if ($request->filled('alert_type')) $query->where('alert_type', $request->alert_type);
-        if ($request->filled('search'))     $query->where('resolution_notes', 'like', '%'.$request->search.'%');
-
-        return $this->success($query->paginate($request->input('per_page', 15)));
+        return $this->success(
+            $this->service->listAlerts(
+                status: $request->input('status'),
+                severity: $request->input('severity'),
+                alertType: $request->input('alert_type'),
+                search: $request->input('search'),
+                perPage: (int) $request->input('per_page', 15),
+            ),
+            __('security.alerts_fetched'),
+        );
     }
 
     public function showAlert(string $id): JsonResponse
     {
-        $alert = SecurityAlert::find($id);
-        if (!$alert) return $this->notFound('Security alert not found');
-        return $this->success($alert);
+        try {
+            return $this->success(
+                $this->service->showAlert($id),
+                __('security.alert_fetched'),
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.alert_not_found'));
+        }
     }
 
     public function resolveAlert(Request $request, string $id): JsonResponse
     {
-        $alert = SecurityAlert::find($id);
-        if (!$alert) return $this->notFound('Security alert not found');
+        $request->validate(['resolution_notes' => 'nullable|string|max:2000']);
 
-        $request->validate(['resolution_notes' => 'nullable|string']);
+        try {
+            $alert = $this->service->resolveAlert(
+                id: $id,
+                resolvedById: $request->user('admin-api')->id,
+                notes: $request->input('resolution_notes'),
+            );
 
-        $alert->forceFill([
-            'status'           => 'resolved',
-            'resolved_by'      => $request->user('admin-api')?->id,
-            'resolved_at'      => now(),
-            'resolution_notes' => $request->input('resolution_notes', ''),
-        ])->save();
-
-        return $this->success($alert->fresh(), 'Alert resolved');
+            return $this->success($alert, __('security.alert_resolved'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.alert_not_found'));
+        }
     }
 
     // ── Admin Sessions ───────────────────────────────────────
     public function listSessions(Request $request): JsonResponse
     {
-        $query = AdminSession::query()->orderByDesc('last_activity_at');
-
-        if ($request->filled('admin_user_id')) $query->where('admin_user_id', $request->admin_user_id);
-        if ($request->boolean('active_only'))  $query->whereNull('ended_at');
-
-        return $this->success($query->paginate($request->input('per_page', 15)));
+        return $this->success(
+            $this->service->listSessions(
+                adminUserId: $request->input('admin_user_id'),
+                activeOnly: $request->boolean('active_only', false) ?: null,
+                perPage: (int) $request->input('per_page', 15),
+            ),
+            __('security.sessions_fetched'),
+        );
     }
 
     public function showSession(string $id): JsonResponse
     {
-        $session = AdminSession::find($id);
-        if (!$session) return $this->notFound('Session not found');
-        return $this->success($session);
+        try {
+            return $this->success(
+                $this->service->showSession($id),
+                __('security.session_fetched'),
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.session_not_found'));
+        }
     }
 
     public function revokeSession(string $id): JsonResponse
     {
-        $session = AdminSession::find($id);
-        if (!$session) return $this->notFound('Session not found');
+        try {
+            $session = $this->service->revokeSession(
+                id: $id,
+                revokedById: request()->user('admin-api')->id,
+            );
 
-        $session->forceFill(['ended_at' => now(), 'status' => 'closed'])->save();
-        return $this->success($session->fresh(), 'Session revoked');
+            return $this->success($session, __('security.session_revoked'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.session_not_found'));
+        }
     }
 
     // ── Device Registrations ─────────────────────────────────
     public function listDevices(Request $request): JsonResponse
     {
-        $query = DeviceRegistration::query()->orderByDesc('registered_at');
-
-        if ($request->filled('store_id'))  $query->where('store_id', $request->store_id);
-        if ($request->has('is_active'))    $query->where('is_active', $request->boolean('is_active'));
-
-        return $this->success($query->paginate($request->input('per_page', 15)));
+        return $this->success(
+            $this->service->listDevices(
+                storeId: $request->input('store_id'),
+                isActive: $request->has('is_active') ? $request->boolean('is_active') : null,
+                search: $request->input('search'),
+                perPage: (int) $request->input('per_page', 15),
+            ),
+            __('security.devices_fetched'),
+        );
     }
 
     public function showDevice(string $id): JsonResponse
     {
-        $device = DeviceRegistration::find($id);
-        if (!$device) return $this->notFound('Device not found');
-        return $this->success($device);
+        try {
+            return $this->success(
+                $this->service->showDevice($id),
+                __('security.device_fetched'),
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.device_not_found'));
+        }
     }
 
     public function wipeDevice(string $id): JsonResponse
     {
-        $device = DeviceRegistration::find($id);
-        if (!$device) return $this->notFound('Device not found');
+        try {
+            $device = $this->service->wipeDevice(
+                id: $id,
+                adminUserId: request()->user('admin-api')->id,
+            );
 
-        $device->forceFill(['remote_wipe_requested' => true])->save();
-        return $this->success($device->fresh(), 'Remote wipe requested');
+            return $this->success($device, __('security.remote_wipe_requested'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.device_not_found'));
+        }
     }
 
     // ── Login Attempts ───────────────────────────────────────
     public function listLoginAttempts(Request $request): JsonResponse
     {
-        $query = LoginAttempt::query()->orderByDesc('attempted_at');
-
-        if ($request->filled('store_id'))       $query->where('store_id', $request->store_id);
-        if ($request->filled('attempt_type'))    $query->where('attempt_type', $request->attempt_type);
-        if ($request->has('is_successful'))      $query->where('is_successful', $request->boolean('is_successful'));
-        if ($request->filled('user_identifier')) $query->where('user_identifier', 'like', '%'.$request->user_identifier.'%');
-
-        return $this->success($query->paginate($request->input('per_page', 15)));
+        return $this->success(
+            $this->service->listLoginAttempts(
+                storeId: $request->input('store_id'),
+                attemptType: $request->input('attempt_type'),
+                isSuccessful: $request->has('is_successful') ? $request->boolean('is_successful') : null,
+                userIdentifier: $request->input('user_identifier'),
+                perPage: (int) $request->input('per_page', 15),
+            ),
+            __('security.login_attempts_fetched'),
+        );
     }
 
     public function showLoginAttempt(string $id): JsonResponse
     {
-        $attempt = LoginAttempt::find($id);
-        if (!$attempt) return $this->notFound('Login attempt not found');
-        return $this->success($attempt);
+        try {
+            return $this->success(
+                $this->service->showLoginAttempt($id),
+                __('security.login_attempt_fetched'),
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.login_attempt_not_found'));
+        }
     }
 
     // ── Security Audit Log ───────────────────────────────────
     public function listAuditLogs(Request $request): JsonResponse
     {
-        $query = SecurityAuditLog::query()->orderByDesc('created_at');
-
-        if ($request->filled('store_id'))      $query->where('store_id', $request->store_id);
-        if ($request->filled('action'))        $query->where('action', $request->action);
-        if ($request->filled('severity'))      $query->where('severity', $request->severity);
-        if ($request->filled('resource_type')) $query->where('resource_type', $request->resource_type);
-
-        return $this->success($query->paginate($request->input('per_page', 15)));
+        return $this->success(
+            $this->service->listAuditLogs(
+                storeId: $request->input('store_id'),
+                action: $request->input('action'),
+                severity: $request->input('severity'),
+                resourceType: $request->input('resource_type'),
+                perPage: (int) $request->input('per_page', 15),
+            ),
+            __('security.audit_logs_fetched'),
+        );
     }
 
     public function showAuditLog(string $id): JsonResponse
     {
-        $log = SecurityAuditLog::find($id);
-        if (!$log) return $this->notFound('Audit log not found');
-        return $this->success($log);
+        try {
+            return $this->success(
+                $this->service->showAuditLog($id),
+                __('security.audit_log_fetched'),
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.audit_log_not_found'));
+        }
     }
 
     // ── Security Policies ────────────────────────────────────
     public function listPolicies(Request $request): JsonResponse
     {
-        $query = SecurityPolicy::query()->orderByDesc('created_at');
-        if ($request->filled('store_id')) $query->where('store_id', $request->store_id);
-        return $this->success($query->paginate($request->input('per_page', 15)));
+        return $this->success(
+            $this->service->listPolicies(
+                storeId: $request->input('store_id'),
+                perPage: (int) $request->input('per_page', 15),
+            ),
+            __('security.policies_fetched'),
+        );
     }
 
     public function showPolicy(string $id): JsonResponse
     {
-        $policy = SecurityPolicy::find($id);
-        if (!$policy) return $this->notFound('Security policy not found');
-        return $this->success($policy);
+        try {
+            return $this->success(
+                $this->service->showPolicy($id),
+                __('security.policy_fetched'),
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.policy_not_found'));
+        }
     }
 
     public function updatePolicy(Request $request, string $id): JsonResponse
     {
-        $policy = SecurityPolicy::find($id);
-        if (!$policy) return $this->notFound('Security policy not found');
-
         $validated = $request->validate([
-            'pin_min_length'                => 'sometimes|integer|min:4|max:12',
-            'pin_max_length'                => 'sometimes|integer|min:4|max:12',
-            'auto_lock_seconds'             => 'sometimes|integer|min:30',
-            'max_failed_attempts'           => 'sometimes|integer|min:1',
-            'lockout_duration_minutes'      => 'sometimes|integer|min:1',
-            'require_2fa_owner'             => 'sometimes|boolean',
-            'session_max_hours'             => 'sometimes|integer|min:1',
-            'require_pin_override_void'     => 'sometimes|boolean',
-            'require_pin_override_return'   => 'sometimes|boolean',
+            'pin_min_length' => 'sometimes|integer|min:4|max:12',
+            'pin_max_length' => 'sometimes|integer|min:4|max:12',
+            'auto_lock_seconds' => 'sometimes|integer|min:30',
+            'max_failed_attempts' => 'sometimes|integer|min:1',
+            'lockout_duration_minutes' => 'sometimes|integer|min:1',
+            'require_2fa_owner' => 'sometimes|boolean',
+            'session_max_hours' => 'sometimes|integer|min:1',
+            'require_pin_override_void' => 'sometimes|boolean',
+            'require_pin_override_return' => 'sometimes|boolean',
             'require_pin_override_discount' => 'sometimes|boolean',
-            'discount_override_threshold'   => 'sometimes|numeric|min:0',
+            'discount_override_threshold' => 'sometimes|numeric|min:0',
         ]);
 
-        $policy->forceFill($validated)->save();
-        return $this->success($policy->fresh(), 'Policy updated');
+        try {
+            $policy = $this->service->updatePolicy(
+                id: $id,
+                data: $validated,
+                adminUserId: $request->user('admin-api')->id,
+            );
+
+            return $this->success($policy, __('security.policy_updated'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.policy_not_found'));
+        }
     }
 
-    // ── IP Management: Allowlist ─────────────────────────────
+    // ── IP Allowlist ─────────────────────────────────────────
     public function listAllowlist(Request $request): JsonResponse
     {
-        $query = AdminIpAllowlist::query()->orderByDesc('created_at');
-        if ($request->filled('search')) $query->where('ip_address', 'like', '%'.$request->search.'%');
-        return $this->success($query->paginate($request->input('per_page', 15)));
+        return $this->success(
+            $this->service->listAllowlist(
+                search: $request->input('search'),
+                perPage: (int) $request->input('per_page', 15),
+            ),
+            __('security.allowlist_fetched'),
+        );
     }
 
     public function createAllowlistEntry(Request $request): JsonResponse
     {
         $request->validate([
-            'ip_address' => 'required|string|max:45',
-            'label'      => 'nullable|string|max:255',
+            'ip_address' => 'required|ip|max:45',
+            'label' => 'nullable|string|max:255',
         ]);
 
-        $entry = AdminIpAllowlist::forceCreate([
-            'ip_address' => $request->ip_address,
-            'label'      => $request->input('label', ''),
-            'added_by'   => $request->user('admin-api')?->id,
-        ]);
+        $entry = $this->service->createAllowlistEntry(
+            ipAddress: $request->input('ip_address'),
+            label: $request->input('label'),
+            addedById: $request->user('admin-api')->id,
+        );
 
-        return $this->created($entry, 'IP added to allowlist');
+        return $this->created($entry, __('security.allowlist_entry_created'));
     }
 
     public function deleteAllowlistEntry(string $id): JsonResponse
     {
-        $entry = AdminIpAllowlist::find($id);
-        if (!$entry) return $this->notFound('Entry not found');
-        $entry->delete();
-        return $this->success(null, 'IP removed from allowlist');
+        try {
+            $this->service->deleteAllowlistEntry(
+                id: $id,
+                deletedById: request()->user('admin-api')->id,
+            );
+
+            return $this->success(null, __('security.allowlist_entry_deleted'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.entry_not_found'));
+        }
     }
 
-    // ── IP Management: Blocklist ─────────────────────────────
+    // ── IP Blocklist ─────────────────────────────────────────
     public function listBlocklist(Request $request): JsonResponse
     {
-        $query = AdminIpBlocklist::query()->orderByDesc('created_at');
-        if ($request->filled('search')) $query->where('ip_address', 'like', '%'.$request->search.'%');
-        return $this->success($query->paginate($request->input('per_page', 15)));
+        return $this->success(
+            $this->service->listBlocklist(
+                search: $request->input('search'),
+                perPage: (int) $request->input('per_page', 15),
+            ),
+            __('security.blocklist_fetched'),
+        );
     }
 
     public function createBlocklistEntry(Request $request): JsonResponse
     {
         $request->validate([
-            'ip_address' => 'required|string|max:45',
-            'reason'     => 'nullable|string|max:500',
+            'ip_address' => 'required|ip|max:45',
+            'reason' => 'nullable|string|max:500',
+            'expires_at' => 'nullable|date|after:now',
         ]);
 
-        $entry = AdminIpBlocklist::forceCreate([
-            'ip_address' => $request->ip_address,
-            'reason'     => $request->input('reason', ''),
-            'blocked_by' => $request->user('admin-api')?->id,
-        ]);
+        $entry = $this->service->createBlocklistEntry(
+            ipAddress: $request->input('ip_address'),
+            reason: $request->input('reason'),
+            blockedById: $request->user('admin-api')->id,
+            expiresAt: $request->input('expires_at') ? new \DateTime($request->input('expires_at')) : null,
+        );
 
-        return $this->created($entry, 'IP added to blocklist');
+        return $this->created($entry, __('security.blocklist_entry_created'));
     }
 
     public function deleteBlocklistEntry(string $id): JsonResponse
     {
-        $entry = AdminIpBlocklist::find($id);
-        if (!$entry) return $this->notFound('Entry not found');
-        $entry->delete();
-        return $this->success(null, 'IP removed from blocklist');
+        try {
+            $this->service->deleteBlocklistEntry(
+                id: $id,
+                deletedById: request()->user('admin-api')->id,
+            );
+
+            return $this->success(null, __('security.blocklist_entry_deleted'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.entry_not_found'));
+        }
     }
 }

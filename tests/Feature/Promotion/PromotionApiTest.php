@@ -35,15 +35,15 @@ class PromotionApiTest extends TestCase
 
         $this->org = Organization::create([
             'name' => 'Promo Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $this->org->id,
             'name' => 'Main Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -62,14 +62,14 @@ class PromotionApiTest extends TestCase
         // Second org
         $this->otherOrg = Organization::create([
             'name' => 'Other Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
         $otherStore = Store::create([
             'organization_id' => $this->otherOrg->id,
             'name' => 'Other Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);

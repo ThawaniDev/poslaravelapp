@@ -27,15 +27,15 @@ class StoreOnboardingEdgeCasesApiTest extends TestCase
 
         $this->org = Organization::create([
             'name' => 'Test Organization',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $this->org->id,
             'name' => 'Main Branch',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -136,7 +136,7 @@ class StoreOnboardingEdgeCasesApiTest extends TestCase
         StoreSettings::create([
             'store_id' => $this->store->id,
             'tax_rate' => 15.00,
-            'currency_code' => 'OMR',
+            'currency_code' => 'SAR',
         ]);
 
         $response = $this->withToken($this->token)
@@ -145,7 +145,7 @@ class StoreOnboardingEdgeCasesApiTest extends TestCase
         $response->assertOk();
         $data = $response->json('data');
         $this->assertEquals(15.00, (float) $data['tax_rate']);
-        $this->assertEquals('OMR', $data['currency_code']);
+        $this->assertEquals('SAR', $data['currency_code']);
     }
 
     public function test_settings_tax_rate_zero_is_valid(): void
@@ -153,7 +153,7 @@ class StoreOnboardingEdgeCasesApiTest extends TestCase
         StoreSettings::create([
             'store_id' => $this->store->id,
             'tax_rate' => 15.00,
-            'currency_code' => 'OMR',
+            'currency_code' => 'SAR',
         ]);
 
         $response = $this->withToken($this->token)
@@ -173,7 +173,7 @@ class StoreOnboardingEdgeCasesApiTest extends TestCase
         StoreSettings::create([
             'store_id' => $this->store->id,
             'tax_rate' => 15.00,
-            'currency_code' => 'OMR',
+            'currency_code' => 'SAR',
         ]);
 
         $response = $this->withToken($this->token)
@@ -188,7 +188,7 @@ class StoreOnboardingEdgeCasesApiTest extends TestCase
     {
         StoreSettings::create([
             'store_id' => $this->store->id,
-            'currency_code' => 'OMR',
+            'currency_code' => 'SAR',
             'allow_negative_stock' => false,
             'auto_print_receipt' => false,
             'enable_tips' => false,
@@ -296,7 +296,7 @@ class StoreOnboardingEdgeCasesApiTest extends TestCase
         StoreSettings::create([
             'store_id' => $this->store->id,
             'tax_rate' => 5.00,
-            'currency_code' => 'OMR',
+            'currency_code' => 'SAR',
         ]);
 
         $response = $this->withToken($this->token)

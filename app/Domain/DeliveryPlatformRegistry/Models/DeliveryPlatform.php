@@ -33,10 +33,22 @@ class DeliveryPlatform extends Model
     {
         return $this->hasMany(DeliveryPlatformField::class);
     }
+
+    public function fields(): HasMany
+    {
+        return $this->deliveryPlatformFields();
+    }
+
     public function deliveryPlatformEndpoints(): HasMany
     {
         return $this->hasMany(DeliveryPlatformEndpoint::class);
     }
+
+    public function endpoints(): HasMany
+    {
+        return $this->deliveryPlatformEndpoints();
+    }
+
     public function deliveryPlatformWebhookTemplates(): HasMany
     {
         return $this->hasMany(DeliveryPlatformWebhookTemplate::class);

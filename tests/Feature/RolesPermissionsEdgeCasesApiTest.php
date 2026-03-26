@@ -29,15 +29,15 @@ class RolesPermissionsEdgeCasesApiTest extends TestCase
 
         $org = Organization::create([
             'name' => 'Test Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $org->id,
             'name' => 'Test Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
         ]);
 
         $this->owner = User::create([
@@ -113,8 +113,8 @@ class RolesPermissionsEdgeCasesApiTest extends TestCase
         $store2 = Store::create([
             'organization_id' => $this->store->organization_id,
             'name' => 'Branch 2',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
         ]);
 
         Role::create([

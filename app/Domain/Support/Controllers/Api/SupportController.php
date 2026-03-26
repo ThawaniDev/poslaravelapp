@@ -2,6 +2,7 @@
 
 namespace App\Domain\Support\Controllers\Api;
 
+use App\Domain\ContentOnboarding\Models\KnowledgeBaseArticle;
 use App\Domain\Support\Services\SupportService;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
@@ -20,7 +21,7 @@ class SupportController extends BaseApiController
     {
         $request->validate([
             'status' => 'nullable|string|in:open,in_progress,resolved,closed',
-            'category' => 'nullable|string|in:billing,technical,zatca,feature_request,general',
+            'category' => 'nullable|string|in:billing,technical,zatca,feature_request,general,hardware',
             'priority' => 'nullable|string|in:low,medium,high,critical',
             'per_page' => 'nullable|integer|min:1|max:50',
         ]);
@@ -58,7 +59,7 @@ class SupportController extends BaseApiController
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'category' => 'required|string|in:billing,technical,zatca,feature_request,general',
+            'category' => 'required|string|in:billing,technical,zatca,feature_request,general,hardware',
             'priority' => 'nullable|string|in:low,medium,high,critical',
             'subject' => 'required|string|max:255',
             'description' => 'required|string|max:5000',
@@ -127,5 +128,58 @@ class SupportController extends BaseApiController
         );
 
         return $this->success($stats, __('support.stats_retrieved'));
+    }
+
+    // ─── Knowledge Base (provider-facing, public) ────────────
+
+    /**
+     * GET /api/v2/support/kb
+     */
+    public function kbIndex(Request $request): JsonResponse
+    {
+        $request->validate([
+            'category' => 'nullable|string|in:getting_started,pos_usage,inventory,delivery,billing,troubleshooting',
+            'search'   => 'nullable|string|max:200',
+        ]);
+
+        $query = KnowledgeBaseArticle::query()
+            ->where('is_published', true)
+            ->orderBy('sort_order');
+
+        if ($request->filled('category')) {
+            $query->where('category', $request->category);
+        }
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function ($q) use ($s) {
+                $q->where('title', 'like', "%{$s}%")
+                  ->orWhere('title_ar', 'like', "%{$s}%")
+                  ->orWhere('body', 'like', "%{$s}%")
+                  ->orWhere('body_ar', 'like', "%{$s}%");
+            });
+        }
+
+        $articles = $query->get([
+            'id', 'title', 'title_ar', 'slug', 'category', 'sort_order', 'updated_at',
+        ]);
+
+        return $this->success($articles, __('support.kb_articles_retrieved'));
+    }
+
+    /**
+     * GET /api/v2/support/kb/{slug}
+     */
+    public function kbShow(string $slug): JsonResponse
+    {
+        $article = KnowledgeBaseArticle::where('slug', $slug)
+            ->where('is_published', true)
+            ->first();
+
+        if (!$article) {
+            return $this->notFound(__('support.kb_article_not_found'));
+        }
+
+        return $this->success($article, __('support.kb_article_retrieved'));
     }
 }

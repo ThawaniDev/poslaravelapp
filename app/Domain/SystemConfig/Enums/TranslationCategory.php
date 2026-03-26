@@ -8,4 +8,6 @@ enum TranslationCategory: string
     case Receipt = 'receipt';
     case Notification = 'notification';
     case Report = 'report';
+    case Common = 'common';
+    case Pos = 'pos';
 }

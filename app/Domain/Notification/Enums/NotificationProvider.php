@@ -10,4 +10,6 @@ enum NotificationProvider: string
     case Mailgun = 'mailgun';
     case Ses = 'ses';
     case Smtp = 'smtp';
+    case Firebase = 'firebase';
+    case SendGrid = 'sendgrid';
 }

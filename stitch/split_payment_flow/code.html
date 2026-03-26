@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Split Payment - Thawani POS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Header -->
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-6 py-4 sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<div class="flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">splitscreen</span>
+</div>
+<h2 class="text-xl font-bold leading-tight tracking-tight">Split Payment</h2>
+</div>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</header>
+<main class="flex flex-1 justify-center py-6 px-4 md:px-0">
+<div class="layout-content-container flex flex-col max-w-[540px] flex-1 gap-6">
+<!-- Stepper -->
+<div class="flex items-center justify-center px-4 py-2 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-2">
+<span class="text-xs font-semibold px-2 py-1 rounded bg-primary/10 text-primary uppercase">Step 2 of 3</span>
+<div class="flex items-center gap-1">
+<div class="h-1.5 w-8 rounded-full bg-primary/20"></div>
+<div class="h-1.5 w-12 rounded-full bg-primary"></div>
+<div class="h-1.5 w-8 rounded-full bg-primary/20"></div>
+</div>
+</div>
+</div>
+<!-- Summary Card -->
+<div class="bg-primary p-6 rounded-2xl text-white shadow-lg shadow-primary/20">
+<div class="flex justify-between items-start mb-4">
+<div>
+<p class="text-white/80 text-sm font-medium">Grand Total</p>
+<p class="text-3xl font-bold tracking-tight">OMR 145.000</p>
+</div>
+<div class="bg-white/20 p-2 rounded-lg backdrop-blur-md">
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+</div>
+<div class="pt-4 border-t border-white/20 flex justify-between items-center">
+<div>
+<p class="text-white/80 text-xs uppercase tracking-wider">Remaining Balance</p>
+<p class="text-xl font-bold">OMR 45.000</p>
+</div>
+<div class="animate-pulse flex items-center gap-1 bg-white/10 px-3 py-1 rounded-full border border-white/20">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+</span>
+<span class="text-[10px] font-bold uppercase">Pending</span>
+</div>
+</div>
+</div>
+<!-- Payment Methods List -->
+<div class="flex flex-col gap-4">
+<h3 class="text-lg font-bold px-1">Payment Breakdown</h3>
+<!-- Row 1: Cash -->
+<div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 p-2 rounded-xl">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div>
+<p class="font-bold">Cash Payment</p>
+<p class="text-xs text-slate-500">Method 01</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="size-8 flex items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+<div class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-sm font-mono font-bold">
+                                    OMR
+                                </div>
+<button class="size-8 flex items-center justify-center rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+</div>
+<div class="relative">
+<input class="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl py-4 px-4 text-2xl font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary/50 text-right pr-12" placeholder="0.000" type="text" value="60.000"/>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+<span class="material-symbols-outlined">edit</span>
+</div>
+</div>
+</div>
+<!-- Row 2: Card -->
+<div class="bg-white dark:bg-slate-900 p-5 rounded-2xl border-2 border-primary/30 shadow-md flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="bg-blue-50 dark:bg-blue-500/10 text-blue-600 p-2 rounded-xl">
+<span class="material-symbols-outlined">credit_card</span>
+</div>
+<div>
+<p class="font-bold">Card Payment</p>
+<p class="text-xs text-slate-500">Method 02</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full uppercase">Active</span>
+</div>
+</div>
+<div class="relative">
+<input class="w-full bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl py-4 px-4 text-2xl font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary text-right pr-12" placeholder="0.000" type="text" value="40.000"/>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 text-primary">
+<span class="material-symbols-outlined">keyboard</span>
+</div>
+</div>
+</div>
+<!-- Add Method Trigger -->
+<button class="flex items-center justify-center gap-2 py-4 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl text-slate-500 hover:text-primary hover:border-primary/50 hover:bg-primary/5 transition-all">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="font-semibold text-sm">Add another payment method</span>
+</button>
+</div>
+<!-- Action Footer -->
+<div class="flex flex-col gap-3 mt-auto pb-10">
+<div class="flex items-center justify-between px-2 mb-2 text-sm">
+<span class="text-slate-500">Total Applied:</span>
+<span class="font-bold text-slate-900 dark:text-white">OMR 100.000</span>
+</div>
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-5 rounded-2xl shadow-lg shadow-primary/25 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+<span>Process Payment</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<button class="w-full bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold py-3 rounded-xl transition-colors text-sm uppercase tracking-widest">
+                        Reset Allocation
+                    </button>
+</div>
+</div>
+</main>
+<!-- Navigation Placeholder (Bottom Mobile) -->
+<nav class="fixed bottom-0 left-0 right-0 bg-white/80 dark:bg-background-dark/80 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 px-6 py-2 flex justify-around items-center md:hidden">
+<div class="flex flex-col items-center text-primary">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium">Home</span>
+</div>
+<div class="flex flex-col items-center text-slate-400">
+<span class="material-symbols-outlined">history</span>
+<span class="text-[10px] font-medium">History</span>
+</div>
+<div class="flex flex-col items-center text-slate-400">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium">Settings</span>
+</div>
+</nav>
+</div>
+</div>
+</body></html>

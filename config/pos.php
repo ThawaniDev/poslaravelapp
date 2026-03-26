@@ -2,7 +2,7 @@
 
 return [
     // Default currency
-    'currency' => 'OMR',
+    'currency' => 'SAR',
     'currency_symbol' => 'ر.ع.',
     'decimal_places' => 3,
 

@@ -11,13 +11,32 @@ class DeliveryPermissionSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
+            // Config management
             'delivery_config_view',
             'delivery_config_create',
             'delivery_config_update',
             'delivery_config_delete',
+            'delivery_config_test_connection',
+
+            // Order management
             'delivery_order_view',
             'delivery_order_update',
+            'delivery_order_view_detail',
+
+            // Menu sync
             'delivery_menu_sync',
+
+            // Dashboard & platforms
+            'delivery_stats_view',
+            'delivery_platforms_view',
+
+            // Filament admin aliases
+            'delivery_view',
+            'delivery_create',
+            'delivery_update',
+            'delivery_delete',
+            'integrations.view',
+            'integrations.manage',
         ];
 
         foreach ($permissions as $permission) {
@@ -41,6 +60,8 @@ class DeliveryPermissionSeeder extends Seeder
             $cashier->givePermissionTo([
                 'delivery_order_view',
                 'delivery_order_update',
+                'delivery_order_view_detail',
+                'delivery_stats_view',
             ]);
         }
     }

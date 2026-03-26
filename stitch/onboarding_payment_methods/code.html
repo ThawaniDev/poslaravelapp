@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden font-display">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between border-b border-primary/10 px-6 py-4 bg-white dark:bg-background-dark/50 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="text-primary">
+<svg class="size-8" fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M24 45.8096C19.6865 45.8096 15.4698 44.5305 11.8832 42.134C8.29667 39.7376 5.50128 36.3314 3.85056 32.3462C2.19985 28.361 1.76794 23.9758 2.60947 19.7452C3.451 15.5145 5.52816 11.6284 8.57829 8.5783C11.6284 5.52817 15.5145 3.45101 19.7452 2.60948C23.9758 1.76795 28.361 2.19986 32.3462 3.85057C36.3314 5.50129 39.7376 8.29668 42.134 11.8833C44.5305 15.4698 45.8096 19.6865 45.8096 24L24 24L24 45.8096Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-xl font-bold tracking-tight">Thawani POS</h2>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-primary/10 text-primary">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</header>
+<main class="flex-1 flex flex-col max-w-3xl mx-auto w-full px-6 py-8 pb-32">
+<!-- Stepper Progress -->
+<div class="mb-10">
+<div class="flex items-center justify-between mb-4">
+<span class="text-primary font-bold text-sm px-3 py-1 bg-primary/10 rounded-full">Step 6 of 10</span>
+<span class="text-slate-500 text-sm font-medium">60% Complete</span>
+</div>
+<div class="flex gap-1.5 h-2 w-full">
+<!-- Steps 1-5 (Completed) -->
+<div class="flex-1 bg-primary rounded-full"></div>
+<div class="flex-1 bg-primary rounded-full"></div>
+<div class="flex-1 bg-primary rounded-full"></div>
+<div class="flex-1 bg-primary rounded-full"></div>
+<div class="flex-1 bg-primary rounded-full"></div>
+<!-- Step 6 (Active) -->
+<div class="flex-1 bg-primary rounded-full ring-2 ring-primary ring-offset-2 ring-offset-background-light dark:ring-offset-background-dark"></div>
+<!-- Steps 7-10 (Pending) -->
+<div class="flex-1 bg-slate-200 dark:bg-slate-800 rounded-full"></div>
+<div class="flex-1 bg-slate-200 dark:bg-slate-800 rounded-full"></div>
+<div class="flex-1 bg-slate-200 dark:bg-slate-800 rounded-full"></div>
+<div class="flex-1 bg-slate-200 dark:bg-slate-800 rounded-full"></div>
+</div>
+</div>
+<!-- Header Section -->
+<div class="mb-8">
+<h1 class="text-3xl font-bold text-slate-900 dark:text-slate-100 mb-2">Set Up Payment Methods</h1>
+<p class="text-slate-500 dark:text-slate-400">Configure how your customers can pay at the point of sale. Select the methods you wish to support.</p>
+</div>
+<!-- Toggle Cards List -->
+<div class="space-y-4">
+<!-- Cash (Always ON) -->
+<div class="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between opacity-80 shadow-sm">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-green-50 dark:bg-green-900/20 flex items-center justify-center text-green-600">
+<span class="material-symbols-outlined text-3xl">payments</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Cash Payment</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">Always enabled by default</p>
+</div>
+</div>
+<div class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-bold rounded uppercase tracking-wider">Active</div>
+</div>
+<!-- Card Payment (Expanded) -->
+<div class="p-0 bg-white dark:bg-slate-900 border-2 border-primary rounded-xl overflow-hidden shadow-md">
+<div class="p-5 flex items-center justify-between border-b border-slate-100 dark:border-slate-800 bg-primary/5">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">credit_card</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Card Payment (Terminal)</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">Support Mada, Visa, Mastercard via external terminal</p>
+</div>
+</div>
+<label class="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-primary p-1">
+<div class="ml-auto h-5 w-5 rounded-full bg-white shadow-sm"></div>
+<input checked="" class="hidden" type="checkbox"/>
+</label>
+</div>
+<div class="p-6 bg-slate-50/50 dark:bg-slate-900/50 space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500 uppercase tracking-tight">Terminal ID</label>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-primary focus:border-primary" type="text" value="98234410"/>
+</div>
+<div class="space-y-2">
+<label class="text-xs font-bold text-slate-500 uppercase tracking-tight">Merchant ID</label>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm focus:ring-primary focus:border-primary" type="text" value="MID-00921"/>
+</div>
+</div>
+<div class="space-y-3">
+<p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Integration Partners</p>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1.5 rounded-lg border border-primary bg-primary/10 text-primary text-xs font-bold flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span> Geidea
+                                    </span>
+<span class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium">NearPay</span>
+<span class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium">HyperPay</span>
+</div>
+</div>
+<div class="space-y-3">
+<p class="text-xs font-bold text-slate-500 uppercase tracking-tight">Supported Schemes</p>
+<div class="flex gap-3 grayscale opacity-70">
+<div class="h-8 w-12 bg-slate-200 dark:bg-slate-800 rounded flex items-center justify-center font-bold text-[10px] text-slate-500">MADA</div>
+<div class="h-8 w-12 bg-slate-200 dark:bg-slate-800 rounded flex items-center justify-center font-bold text-[10px] text-slate-500">VISA</div>
+<div class="h-8 w-12 bg-slate-200 dark:bg-slate-800 rounded flex items-center justify-center font-bold text-[10px] text-slate-500">MC</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Apple Pay -->
+<div class="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-black flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-2xl">ios</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Apple Pay</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">Fast NFC checkout via terminal</p>
+</div>
+</div>
+<label class="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-slate-200 dark:bg-slate-700 p-1">
+<div class="h-5 w-5 rounded-full bg-white shadow-sm"></div>
+<input class="hidden" type="checkbox"/>
+</label>
+</div>
+<!-- STC Pay -->
+<div class="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-[#4f2d7f] flex items-center justify-center text-white font-bold text-xs">
+                                stc
+                            </div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-slate-100">STC Pay</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">QR-code based digital wallet</p>
+</div>
+</div>
+<label class="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-primary p-1">
+<div class="ml-auto h-5 w-5 rounded-full bg-white shadow-sm"></div>
+<input checked="" class="hidden" type="checkbox"/>
+</label>
+</div>
+<!-- Store Credit -->
+<div class="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+<span class="material-symbols-outlined text-3xl">loyalty</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Store Credit</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">Allow customers to pay using credit</p>
+</div>
+</div>
+<label class="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-slate-200 dark:bg-slate-700 p-1">
+<div class="h-5 w-5 rounded-full bg-white shadow-sm"></div>
+<input class="hidden" type="checkbox"/>
+</label>
+</div>
+<!-- Split Payment (Recommended) -->
+<div class="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between shadow-sm relative">
+<div class="absolute -top-3 right-4 px-3 py-1 bg-primary text-white text-[10px] font-bold rounded-full uppercase tracking-widest shadow-lg">Recommended</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">call_split</span>
+</div>
+<div>
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Split Payment</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">Allow multiple payment methods per bill</p>
+</div>
+</div>
+<label class="relative flex h-7 w-12 cursor-pointer items-center rounded-full bg-primary p-1">
+<div class="ml-auto h-5 w-5 rounded-full bg-white shadow-sm"></div>
+<input checked="" class="hidden" type="checkbox"/>
+</label>
+</div>
+</div>
+<!-- Rounding Settings Section -->
+<div class="mt-12 p-6 bg-slate-100 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-slate-400">calculate</span>
+<h3 class="text-lg font-bold text-slate-900 dark:text-slate-100">Rounding Settings</h3>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400 mb-6">Automatically round grand totals to the nearest decimal point for cash transactions.</p>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+<button class="py-3 px-4 rounded-lg bg-primary text-white font-bold text-sm shadow-sm ring-2 ring-primary ring-offset-2 ring-offset-slate-100 dark:ring-offset-slate-800">
+                            0.01 SAR
+                        </button>
+<button class="py-3 px-4 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium text-sm hover:border-primary/50 transition-colors">
+                            0.05 SAR
+                        </button>
+<button class="py-3 px-4 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium text-sm hover:border-primary/50 transition-colors">
+                            0.50 SAR
+                        </button>
+<button class="py-3 px-4 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-medium text-sm hover:border-primary/50 transition-colors">
+                            1.00 SAR
+                        </button>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<footer class="fixed bottom-0 left-0 right-0 border-t border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-background-dark/90 backdrop-blur-md px-6 py-4 z-50">
+<div class="max-w-3xl mx-auto flex items-center justify-between">
+<button class="flex items-center gap-2 px-6 py-3 rounded-lg font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+                        Back
+                    </button>
+<div class="hidden sm:flex flex-col items-center">
+<span class="text-xs font-bold text-primary uppercase tracking-widest">Progress</span>
+<span class="text-sm font-bold text-slate-900 dark:text-slate-100">Step 6 of 10</span>
+</div>
+<button class="flex items-center gap-2 px-8 py-3 rounded-lg font-bold bg-primary text-white hover:opacity-90 transition-opacity shadow-lg shadow-primary/20">
+                        Continue
+                        <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

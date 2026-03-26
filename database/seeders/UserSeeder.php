@@ -37,7 +37,7 @@ class UserSeeder extends Seeder
                 'name_ar' => 'الفرع الرئيسي - ثواني التجريبي',
                 'slug' => 'thawani-demo-main',
                 'timezone' => 'Asia/Muscat',
-                'currency' => 'OMR',
+                'currency' => 'SAR',
                 'locale' => 'ar',
                 'business_type' => 'retail',
                 'is_active' => true,

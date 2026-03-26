@@ -45,7 +45,7 @@ class SubscriptionServiceTest extends TestCase
             'organization_id' => $org->id,
             'name' => 'Test Store',
             'slug' => 'test-' . Str::random(4),
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);

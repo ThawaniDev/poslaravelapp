@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "secondary": "#FFBF0D",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Thawani POS - Order Details &amp; Refund</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="max-w-md mx-auto bg-white dark:bg-slate-900 min-h-screen shadow-xl flex flex-col">
+<!-- Top Navigation -->
+<header class="sticky top-0 z-10 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-primary/10 px-4 py-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<button class="p-2 hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">arrow_back</span>
+</button>
+<h1 class="text-xl font-bold tracking-tight">Order #TH-99281</h1>
+</div>
+<div class="flex gap-1">
+<button class="p-2 hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">print</span>
+</button>
+<button class="p-2 hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined text-slate-900 dark:text-slate-100">more_vert</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto">
+<!-- Order Status Banner -->
+<div class="bg-primary/5 px-6 py-4 border-b border-primary/10">
+<div class="flex items-center justify-between mb-1">
+<span class="text-xs font-bold uppercase tracking-wider text-primary">Status</span>
+<span class="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-bold dark:bg-green-900/30 dark:text-green-400">DELIVERED</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1">check_circle</span>
+<p class="text-sm font-medium">Completed on Oct 24, 2:30 PM</p>
+</div>
+</div>
+<!-- Map Location Section -->
+<div class="px-4 py-4">
+<div class="relative w-full h-32 rounded-xl overflow-hidden mb-3 border border-slate-200 dark:border-slate-800">
+<div class="absolute inset-0 bg-slate-200 flex items-center justify-center bg-cover bg-center" data-alt="Map showing delivery location in Muscat" data-location="Muscat, Oman" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD3sg0xas0yrtoqZ75aS3nE8WFfjMtX6OrvaF53sjjfyXOftjW4cVOMV6A7xUQReu3vxaFkBEYswTe0bPXJUEMD2jTyRpxWRGI230kMyPDzJMzHwHBB4Z0DfUo7zxOH_xdPTgGb5IovngGiSrksYROMt0iWy2imhKZCOsFfI-PHsN8nuBbNvR6W7yKBXqRf3Nv9Qd8GPbOg6Iqek8AlFyWvIyPn0BrbaiBqbFmrc6W1rF3n3C0W-FA23GOvq3rPoSJPojDxu4tryW2O')">
+<div class="relative">
+<span class="material-symbols-outlined text-primary text-4xl" style="font-variation-settings: 'FILL' 1">location_on</span>
+<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-black/20 blur-sm rounded-full"></div>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-1 px-1">
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Delivery Address</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">Way 2831, House 14, Al Khuwayr South, Muscat, Oman</p>
+<div class="flex items-center gap-2 mt-2">
+<span class="material-symbols-outlined text-primary text-sm">sticky_note_2</span>
+<p class="text-xs italic text-slate-500">"Leave at the front gate, please ring bell."</p>
+</div>
+</div>
+</div>
+<div class="h-2 bg-background-light dark:bg-background-dark"></div>
+<!-- Items List / Refund Selection -->
+<section class="px-4 py-6">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-bold text-lg">Order Items</h3>
+<button class="text-sm font-semibold text-primary px-3 py-1 rounded-full border border-primary/20 hover:bg-primary/5 transition-colors">
+                        Issue Refund
+                    </button>
+</div>
+<!-- Refund Selection Mode UI -->
+<div class="space-y-4">
+<!-- Item Card 1 -->
+<div class="flex gap-4 p-3 rounded-xl border border-primary bg-primary/5">
+<div class="flex items-center">
+<input checked="" class="w-5 h-5 rounded text-primary border-primary/30 focus:ring-primary" type="checkbox"/>
+</div>
+<div class="size-16 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden">
+<img alt="Item image" class="w-full h-full object-cover" data-alt="Classic beef burger with lettuce and tomato" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC86tgQCmodFeUNvfh-jfQnaW80mOnPRzhVA2VmvHB84LPVZ7fQoeavqsB6q6FriPUlQwjvVdaCBvDFnhFPtRHIrXvmb0xLzNBQBKXv1OazIbTCT0sL8qej8vQeewPFnhvaPQOu83YBb0Sp3ySkwE6TSmrJyd3in-UrKCdFcjztStZKiA7EtBiYL3dzrZiwH72YVp-aN9Wx407yQ0oxQjjuFsyC7FmdB6eVGrYTz_G3e94JI0D54RwtloY5YyTwVRL8l31qbI-cGnmc"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h4 class="font-semibold text-sm">Classic Beef Burger</h4>
+<span class="font-bold text-sm">2.500 OMR</span>
+</div>
+<p class="text-xs text-slate-500 mb-2">Extra Cheese, No Onions</p>
+<div class="flex items-center gap-2">
+<span class="text-xs font-medium px-2 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300">Qty: 1</span>
+</div>
+</div>
+</div>
+<!-- Item Card 2 -->
+<div class="flex gap-4 p-3 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center">
+<input class="w-5 h-5 rounded text-primary border-slate-300 dark:border-slate-600 focus:ring-primary" type="checkbox"/>
+</div>
+<div class="size-16 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden">
+<img alt="Item image" class="w-full h-full object-cover" data-alt="Crispy french fries in a container" src="https://lh3.googleusercontent.com/aida-public/AB6AXuApRtKUpD_WC8tYx7YzwGJ_X67cFUap_oFBU-Q6KKcZ2T6Di4uSMa6eRdS5FIn4yrQbST9lcw7rpcFa9TJRHzQslUqjDDMmqqBIIRFOpCyKHlxIEnd2nAjWuFJPxRKp7wxy6Dhc9Ilok0w0iIwWR9eu6dY1zPyfLcKp9umkIuzEoS2S1PtWhiZzTjDxED8FQcjMd0JYm0p2S406OHTyIrtpi5E9eOF7_gT9IVD0NNd4IJHkf-oKeb0CRs6v91BTRazlYPAt-Jof0vyo"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h4 class="font-semibold text-sm">Crispy French Fries (L)</h4>
+<span class="font-bold text-sm">1.200 OMR</span>
+</div>
+<p class="text-xs text-slate-500 mb-2">Salted, Ketchup on side</p>
+<div class="flex items-center gap-2">
+<span class="text-xs font-medium px-2 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300">Qty: 1</span>
+</div>
+</div>
+</div>
+<!-- Item Card 3 -->
+<div class="flex gap-4 p-3 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center">
+<input class="w-5 h-5 rounded text-primary border-slate-300 dark:border-slate-600 focus:ring-primary" type="checkbox"/>
+</div>
+<div class="size-16 rounded-lg bg-slate-100 flex-shrink-0 overflow-hidden">
+<img alt="Item image" class="w-full h-full object-cover" data-alt="Refreshing cold cola soft drink" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCg7DAa5DQvazm0dpbDQ-wrssNA-b8NFf3U3dW2P8JPzkHk4Cn0DIV-cpNhkdg9NH_CkEdCMRMqH_SxYo8oLqDct7dLDhOnb2Z9ieFwSoQ_4HNRdU8qqMvMRfnIqHFjdTCXF_2qqwmk4LD5jz2v9S_is_aG6kYt_IGJRRPrDG2MQ1AUJhHqw8wms0n8nx4enw4uudITeEvmxu4vdhXpmblKe8Pk93hP2OqGeNEazRlrCKQq-19KGIUC326j_gGRIkLpIdJcmpS6LJ5-"/>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h4 class="font-semibold text-sm">Cola Soft Drink</h4>
+<span class="font-bold text-sm">0.500 OMR</span>
+</div>
+<p class="text-xs text-slate-500 mb-2">Regular size</p>
+<div class="flex items-center gap-2">
+<span class="text-xs font-medium px-2 py-0.5 bg-slate-200 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-300">Qty: 2</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<div class="h-2 bg-background-light dark:bg-background-dark"></div>
+<!-- Refund Reason Selection -->
+<section class="px-4 py-6">
+<h3 class="font-bold text-lg mb-4">Refund Details</h3>
+<div class="space-y-4">
+<div>
+<label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1.5">Reason for Refund</label>
+<div class="relative">
+<select class="w-full appearance-none bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary">
+<option>Select a reason...</option>
+<option selected="">Incorrect Item Delivered</option>
+<option>Damaged or Spilled</option>
+<option>Poor Food Quality</option>
+<option>Missing Item</option>
+<option>Other</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">expand_more</span>
+</div>
+</div>
+<div>
+<label class="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1.5">Additional Notes (Optional)</label>
+<textarea class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary placeholder:text-slate-400" placeholder="Describe the issue in detail..." rows="3"></textarea>
+</div>
+<div class="p-4 bg-secondary/10 rounded-xl border border-secondary/20">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1">info</span>
+<p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                                Refund will be processed back to the customer's <span class="font-bold">Thawani Wallet</span> or original payment method. Estimated time: 1-3 business days.
+                            </p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Fixed Footer Actions -->
+<footer class="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
+<div class="flex flex-col gap-3">
+<div class="flex justify-between items-center text-sm mb-1 px-1">
+<span class="text-slate-500">Refund Amount (1 Item)</span>
+<span class="font-bold text-primary text-lg">2.500 OMR</span>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<button class="py-3 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        Cancel
+                    </button>
+<button class="py-3 px-4 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/25 hover:bg-primary/90 transition-colors">
+                        Confirm Refund
+                    </button>
+</div>
+</div>
+</footer>
+</div>
+</body></html>

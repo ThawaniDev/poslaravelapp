@@ -1,6 +1,7 @@
 <?php
 
 return [
+    // ─── API Messages ────────────────────────────────────────
     'list_retrieved' => 'Notifications retrieved.',
     'marked_read' => 'Notification marked as read.',
     'marked_all_read' => 'All notifications marked as read.',
@@ -14,4 +15,73 @@ return [
     'sent_successfully' => 'Notification sent successfully.',
     'delivery_logs_retrieved' => 'Delivery logs retrieved.',
     'provider_status_retrieved' => 'Provider status retrieved.',
+    'invalid_channel' => 'Invalid notification channel.',
+    'event_not_found' => 'Event not found in catalog.',
+    'dispatch_queued' => 'Notification queued for delivery.',
+
+    // ─── Template Resource ───────────────────────────────────
+    'template_details' => 'Template Details',
+    'event_key' => 'Event Key',
+    'channel' => 'Channel',
+    'is_active' => 'Active',
+    'english_content' => 'English Content',
+    'arabic_content' => 'Arabic Content',
+    'title_en' => 'Title (English)',
+    'title_ar' => 'Title (Arabic)',
+    'body_en' => 'Body (English)',
+    'body_ar' => 'Body (Arabic)',
+    'available_variables' => 'Available Variables',
+    'available_variables_hint' => 'Variables that can be used as {{variable}} in title and body.',
+    'add_variable' => 'Add variable...',
+    'variable_hint' => 'Use {{variable_name}} for dynamic content.',
+    'updated_at' => 'Updated At',
+
+    // ─── Channels ────────────────────────────────────────────
+    'channel_in_app' => 'In-App',
+    'channel_push' => 'Push',
+    'channel_sms' => 'SMS',
+    'channel_email' => 'Email',
+    'channel_whatsapp' => 'WhatsApp',
+    'channel_sound' => 'Sound',
+
+    // ─── Template Actions ────────────────────────────────────
+    'preview' => 'Preview',
+    'preview_template' => 'Template Preview',
+    'preview_english' => 'English Preview',
+    'preview_arabic' => 'Arabic Preview',
+    'sample_data_used' => 'Sample Data Used',
+    'close' => 'Close',
+    'activate' => 'Activate',
+    'deactivate' => 'Deactivate',
+    'template_activated' => 'Template activated.',
+    'template_deactivated' => 'Template deactivated.',
+
+    // ─── Event Catalog ───────────────────────────────────────
+    'event_catalog' => 'Event Catalog',
+    'event_catalog_title' => 'Notification Event Catalog',
+    'critical' => 'Critical',
+    'default_recipients' => 'Default Recipients',
+
+    // ─── Provider Status ─────────────────────────────────────
+    'provider_status' => 'Provider Status',
+    'provider_status_title' => 'Notification Provider Status',
+    'provider_status_description' => 'Manage notification delivery providers. Enable/disable providers, adjust priority order, and monitor health metrics. Providers are tried in priority order; if one fails, the next is attempted automatically.',
+    'provider' => 'Provider',
+    'priority' => 'Priority',
+    'enabled' => 'Enabled',
+    'healthy' => 'Healthy',
+    'success_24h' => 'Success (24h)',
+    'failure_24h' => 'Failures (24h)',
+    'avg_latency' => 'Avg Latency',
+    'last_success' => 'Last Success',
+    'last_failure' => 'Last Failure',
+    'disabled_reason' => 'Disabled Reason',
+    'enable' => 'Enable',
+    'disable' => 'Disable',
+    'provider_enabled' => 'Provider enabled.',
+    'provider_disabled' => 'Provider disabled.',
+    'update_priority' => 'Update Priority',
+    'priority_updated' => 'Priority updated.',
+    'reset_health' => 'Reset Health',
+    'health_reset' => 'Health metrics reset.',
 ];

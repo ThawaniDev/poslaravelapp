@@ -74,7 +74,7 @@ final class DesignTokens
     public const BREAKPOINT_WIDE    = 1280;
 
     // ─── Currency ──────────────────────────────────────────
-    public const CURRENCY_CODE    = 'OMR';
+    public const CURRENCY_CODE    = 'SAR';
     public const CURRENCY_SYMBOL  = 'ر.ع.';
     public const CURRENCY_DECIMAL = 3;
 

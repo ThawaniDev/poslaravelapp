@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+
+<html dir="ltr" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Thawani POS - Cashier Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Hide spin buttons for numeric inputs */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<div class="relative flex h-full min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 px-6 py-4 lg:px-10">
+<div class="flex items-center gap-3 text-primary">
+<div class="size-8 flex items-center justify-center bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-primary">point_of_sale</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-xl font-bold leading-tight tracking-tight">Thawani POS</h2>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center justify-center rounded-full h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-primary/10 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">language</span>
+</button>
+<button class="flex items-center justify-center rounded-full h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+</div>
+</header>
+<main class="flex-1 flex flex-col items-center justify-center max-w-[480px] mx-auto w-full px-6 py-8">
+<!-- User Profile Section -->
+<div class="flex flex-col items-center gap-4 mb-10 w-full">
+<div class="relative">
+<div class="size-24 rounded-full border-4 border-white dark:border-slate-800 shadow-xl overflow-hidden bg-slate-200 dark:bg-slate-700">
+<img alt="Ahmed Mohamed Profile" class="w-full h-full object-cover" data-alt="Professional portrait of a male cashier smiling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBPbD5MuRsOB7b4dZc1fuhmanDmFwCCJ8n04A8Xbk4ct0kzb0X1y2UHsTYuUNMsQDqL-_I2jxKvhslPRfGVSBS9JiWYdPXyrmlQxG34pprhW1LNfToNAQHBVI-fpLSCf0lB6B3QpW9OZVFP8UFhIVZcscilUMPZ2MFg2RNZDhTOBF1W55mwUDThueRDUpbdOh4N3digVrz_N4Wtt2cuZLeAGtvkikdsBo6oBlqHgI8itBTs0b3gfTMukMGGSbipdvBcjTGeEb2ykmDl"/>
+</div>
+<div class="absolute bottom-0 right-0 size-6 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full"></div>
+</div>
+<div class="text-center">
+<h1 class="text-2xl font-bold text-slate-900 dark:text-slate-100">Ahmed Mohamed</h1>
+<p class="text-slate-500 dark:text-slate-400 font-medium mt-1">Cashier ID: #4492</p>
+</div>
+</div>
+<!-- PIN Display Section -->
+<div class="w-full text-center mb-8">
+<h3 class="text-lg font-semibold text-slate-700 dark:text-slate-300 mb-6">Enter Your 6-Digit PIN</h3>
+<div class="flex justify-center gap-3 md:gap-4">
+<!-- Representing the 6 digits as empty circles that fill up -->
+<div class="size-4 rounded-full border-2 border-primary/40 bg-primary shadow-[0_0_8px_rgba(253,130,9,0.4)]"></div>
+<div class="size-4 rounded-full border-2 border-primary/40 bg-primary shadow-[0_0_8px_rgba(253,130,9,0.4)]"></div>
+<div class="size-4 rounded-full border-2 border-primary/40 bg-primary shadow-[0_0_8px_rgba(253,130,9,0.4)]"></div>
+<div class="size-4 rounded-full border-2 border-slate-300 dark:border-slate-600"></div>
+<div class="size-4 rounded-full border-2 border-slate-300 dark:border-slate-600"></div>
+<div class="size-4 rounded-full border-2 border-slate-300 dark:border-slate-600"></div>
+</div>
+</div>
+<!-- Numeric Keypad -->
+<div class="grid grid-cols-3 gap-4 w-full">
+<!-- Row 1 -->
+<button class="flex items-center justify-center h-16 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-2xl font-bold shadow-sm hover:border-primary hover:bg-primary/5 active:scale-95 transition-all">1</button>
+<button class="flex items-center justify-center h-16 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-2xl font-bold shadow-sm hover:border-primary hover:bg-primary/5 active:scale-95 transition-all">2</button>
+<button class="flex items-center justify-center h-16 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-2xl font-bold shadow-sm hover:border-primary hover:bg-primary/5 active:scale-95 transition-all">3</button>
+<!-- Row 2 -->
+<button class="flex items-center justify-center h-16 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-2xl font-bold shadow-sm hover:border-primary hover:bg-primary/5 active:scale-95 transition-all">4</button>
+<button class="flex items-center justify-center h-16 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-2xl font-bold shadow-sm hover:border-primary hover:bg-primary/5 active:scale-95 transition-all">5</button>
+<button class="flex items-center justify-center h-16 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-2xl font-bold shadow-sm hover:border-primary hover:bg-primary/5 active:scale-95 transition-all">6</button>
+<!-- Row 3 -->
+<button class="flex items-center justify-center h-16 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-2xl font-bold shadow-sm hover:border-primary hover:bg-primary/5 active:scale-95 transition-all">7</button>
+<button class="flex items-center justify-center h-16 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-2xl font-bold shadow-sm hover:border-primary hover:bg-primary/5 active:scale-95 transition-all">8</button>
+<button class="flex items-center justify-center h-16 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-2xl font-bold shadow-sm hover:border-primary hover:bg-primary/5 active:scale-95 transition-all">9</button>
+<!-- Row 4 -->
+<button class="flex items-center justify-center h-16 rounded-xl bg-slate-100 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 hover:text-red-500 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-3xl">backspace</span>
+</button>
+<button class="flex items-center justify-center h-16 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-2xl font-bold shadow-sm hover:border-primary hover:bg-primary/5 active:scale-95 transition-all">0</button>
+<button class="flex items-center justify-center h-16 rounded-xl bg-primary text-white shadow-lg shadow-primary/20 hover:bg-primary/90 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-3xl">login</span>
+</button>
+</div>
+<!-- Footer Actions -->
+<div class="mt-10 w-full flex flex-col gap-3">
+<button class="text-primary font-semibold text-sm hover:underline decoration-2 underline-offset-4">
+                        Forgot your PIN? Contact Manager
+                    </button>
+<button class="text-slate-500 dark:text-slate-400 font-medium text-sm mt-4">
+                        Not Ahmed Mohamed? <span class="text-primary hover:underline cursor-pointer">Switch User</span>
+</button>
+</div>
+</main>
+<!-- Bottom status bar decoration -->
+<footer class="mt-auto px-6 py-4 flex justify-between items-center bg-slate-50 dark:bg-slate-800/30 text-[12px] text-slate-400 uppercase tracking-widest border-t border-slate-100 dark:border-slate-800">
+<div class="flex items-center gap-2">
+<span class="size-2 bg-green-500 rounded-full"></span>
+                    Terminal ID: THW-8821
+                </div>
+<div>v4.2.0-stable</div>
+</footer>
+</div>
+</div>
+</body></html>

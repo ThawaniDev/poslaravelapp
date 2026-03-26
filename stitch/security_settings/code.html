@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Security Settings - Thawani POS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        input[type="range"] {
+            accent-color: #fd8208;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Navigation Bar -->
+<header class="flex items-center justify-between border-b border-primary/10 bg-white dark:bg-slate-900 px-6 py-3 lg:px-20">
+<div class="flex items-center gap-4">
+<div class="text-primary">
+<span class="material-symbols-outlined text-3xl">shield_person</span>
+</div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">Security Settings</h2>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="h-8 w-[1px] bg-primary/10 mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold">JD</div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 flex-col lg:flex-row lg:px-20 py-8 gap-8">
+<!-- Sidebar Navigation -->
+<aside class="w-full lg:w-64 flex flex-col gap-2 px-6 lg:px-0">
+<div class="flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 text-primary">
+<span class="material-symbols-outlined">security</span>
+<span class="font-semibold">Security Overview</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-slate-500">key</span>
+<span>API Access</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-slate-500">devices</span>
+<span>Session Logs</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-primary/5 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-slate-500">settings</span>
+<span>Global Policy</span>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col gap-8 px-6 lg:px-0 pb-20">
+<!-- Authentication Section -->
+<section class="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 p-6 shadow-sm">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">vibration</span>
+<h3 class="text-xl font-bold">Authentication</h3>
+</div>
+<div class="flex flex-col gap-6">
+<div class="flex items-center justify-between p-4 rounded-lg bg-background-light dark:bg-slate-800/50">
+<div class="flex flex-col gap-1">
+<p class="font-bold">Two-Factor Authentication (2FA)</p>
+<p class="text-sm text-slate-500">Protect your account with an extra verification layer.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="p-4 border border-primary/10 rounded-lg">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-primary text-sm">mail</span>
+<span class="font-medium">Email Verification</span>
+</div>
+<p class="text-xs text-slate-500 mb-4">Codes sent to admin@thawani-pos.com</p>
+<button class="text-sm font-bold text-primary">Configure</button>
+</div>
+<div class="p-4 border border-primary/10 rounded-lg">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-primary text-sm">smartphone</span>
+<span class="font-medium">SMS Verification</span>
+</div>
+<p class="text-xs text-slate-500 mb-4">Enabled for +968 **** 5432</p>
+<button class="text-sm font-bold text-primary">Change Number</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Active Sessions -->
+<section class="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 p-6 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">devices</span>
+<h3 class="text-xl font-bold">Active Sessions</h3>
+</div>
+<button class="text-sm font-bold text-primary hover:underline">Revoke All</button>
+</div>
+<div class="flex flex-col divide-y divide-primary/5">
+<div class="py-4 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">laptop</span>
+</div>
+<div>
+<p class="font-semibold text-sm">MacBook Pro - Chrome (macOS)</p>
+<p class="text-xs text-slate-500">Muscat, Oman • 192.168.1.1 • Current Session</p>
+</div>
+</div>
+<span class="text-xs font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded">Active</span>
+</div>
+<div class="py-4 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">tablet_android</span>
+</div>
+<div>
+<p class="font-semibold text-sm">POS Terminal X2 - Thawani App</p>
+<p class="text-xs text-slate-500">Salalah, Oman • 172.16.0.45 • 2 hours ago</p>
+</div>
+</div>
+<button class="px-4 py-1.5 border border-primary/20 text-primary text-xs font-bold rounded-lg hover:bg-primary/5">Revoke</button>
+</div>
+<div class="py-4 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="size-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+<span class="material-symbols-outlined text-slate-500">smartphone</span>
+</div>
+<div>
+<p class="font-semibold text-sm">iPhone 15 - Safari</p>
+<p class="text-xs text-slate-500">Muscat, Oman • 92.10.34.112 • Yesterday</p>
+</div>
+</div>
+<button class="px-4 py-1.5 border border-primary/20 text-primary text-xs font-bold rounded-lg hover:bg-primary/5">Revoke</button>
+</div>
+</div>
+</section>
+<!-- Password Policy Section -->
+<section class="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 p-6 shadow-sm">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">policy</span>
+<h3 class="text-xl font-bold">Password Policy &amp; Control</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+<div class="space-y-4">
+<p class="text-sm font-bold text-slate-700 dark:text-slate-300">Complexity Requirements</p>
+<div class="space-y-3">
+<label class="flex items-center gap-3 cursor-pointer">
+<input checked="" class="rounded border-primary/30 text-primary focus:ring-primary h-5 w-5" type="checkbox"/>
+<span class="text-sm">Uppercase &amp; Lowercase letters</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer">
+<input checked="" class="rounded border-primary/30 text-primary focus:ring-primary h-5 w-5" type="checkbox"/>
+<span class="text-sm">At least one number (0-9)</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer">
+<input class="rounded border-primary/30 text-primary focus:ring-primary h-5 w-5" type="checkbox"/>
+<span class="text-sm">Special characters (!@#$%^*)</span>
+</label>
+</div>
+<div class="pt-4">
+<p class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Password Expiry (Days)</p>
+<select class="w-full bg-background-light dark:bg-slate-800 border-none rounded-lg text-sm py-3 px-4 focus:ring-2 focus:ring-primary">
+<option>Never</option>
+<option>30 Days</option>
+<option selected="">90 Days</option>
+<option>180 Days</option>
+</select>
+</div>
+</div>
+<div class="flex flex-col gap-6 p-5 bg-background-light dark:bg-slate-800/50 rounded-xl">
+<div>
+<div class="flex justify-between items-center mb-4">
+<p class="text-sm font-bold">Auto-Lock Timeout</p>
+<span class="text-primary font-bold">15 Minutes</span>
+</div>
+<input class="w-full h-2 bg-primary/20 rounded-lg appearance-none cursor-pointer" max="60" min="1" type="range" value="15"/>
+<div class="flex justify-between mt-2">
+<span class="text-[10px] text-slate-400">1m</span>
+<span class="text-[10px] text-slate-400">30m</span>
+<span class="text-[10px] text-slate-400">60m</span>
+</div>
+<p class="text-xs text-slate-500 mt-4 leading-relaxed">System will automatically logout users after this period of inactivity.</p>
+</div>
+<hr class="border-primary/5"/>
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-sm font-bold">Require PIN on Unlock</span>
+<span class="text-xs text-slate-500">Must enter terminal PIN to resume</span>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- API Key Management -->
+<section class="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 p-6 shadow-sm">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">api</span>
+<h3 class="text-xl font-bold">API Key Management</h3>
+</div>
+<button class="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-6 rounded-lg text-sm transition-colors">
+                            Generate New Key
+                        </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="text-slate-500 text-xs uppercase tracking-wider">
+<th class="pb-3 border-b border-primary/5">Name</th>
+<th class="pb-3 border-b border-primary/5">API Key Preview</th>
+<th class="pb-3 border-b border-primary/5">Created</th>
+<th class="pb-3 border-b border-primary/5">Last Used</th>
+<th class="pb-3 border-b border-primary/5 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="text-sm">
+<tr class="group">
+<td class="py-4 font-medium">Main Store POS</td>
+<td class="py-4"><code class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">th_live_********8f92</code></td>
+<td class="py-4 text-slate-500">Oct 12, 2023</td>
+<td class="py-4 text-slate-500">2 mins ago</td>
+<td class="py-4 text-right">
+<button class="text-slate-400 hover:text-red-500">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</td>
+</tr>
+<tr class="group">
+<td class="py-4 font-medium">Inventory System</td>
+<td class="py-4"><code class="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">th_live_********3a21</code></td>
+<td class="py-4 text-slate-500">Aug 05, 2023</td>
+<td class="py-4 text-slate-500">15 days ago</td>
+<td class="py-4 text-right">
+<button class="text-slate-400 hover:text-red-500">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<div class="flex justify-end gap-4 mt-4">
+<button class="px-6 py-2.5 rounded-lg font-bold border border-primary/20 text-slate-600 dark:text-slate-300 hover:bg-primary/5">Discard Changes</button>
+<button class="px-8 py-2.5 rounded-lg font-bold bg-primary text-white shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all">Save All Settings</button>
+</div>
+</main>
+</div>
+</div>
+</div>
+</body></html>

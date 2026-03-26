@@ -2,6 +2,7 @@
 
 namespace App\Domain\Support\Models;
 
+use App\Domain\AdminPanel\Models\AdminUser;
 use App\Domain\Support\Enums\TicketCategory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -24,11 +25,13 @@ class CannedResponse extends Model
         'category',
         'is_active',
         'created_by',
+        'created_at',
     ];
 
     protected $casts = [
         'category' => TicketCategory::class,
         'is_active' => 'boolean',
+        'created_at' => 'datetime',
     ];
 
     public function createdBy(): BelongsTo

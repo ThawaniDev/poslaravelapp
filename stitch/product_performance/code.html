@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>Thawani POS - Product Performance</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-primary/10 bg-white dark:bg-slate-900 px-4 md:px-10 py-3 sticky top-0 z-50">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-primary">
+<div class="size-8 flex items-center justify-center">
+<span class="material-symbols-outlined text-3xl font-bold">donut_large</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em]">Thawani POS</h2>
+</div>
+<nav class="hidden md:flex items-center gap-9">
+<a class="text-slate-600 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Dashboard</a>
+<a class="text-slate-600 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Inventory</a>
+<a class="text-slate-600 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors" href="#">Sales</a>
+<a class="text-primary text-sm font-bold border-b-2 border-primary py-1" href="#">Reports</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-4 md:gap-8 items-center">
+<label class="hidden lg:flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full border border-primary/20 bg-primary/5">
+<div class="text-primary flex items-center justify-center pl-4 rounded-l-lg" data-icon="search">
+<span class="material-symbols-outlined text-xl">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 border-none bg-transparent focus:ring-0 h-full placeholder:text-slate-400 text-base font-normal px-2" placeholder="Search products..."/>
+</div>
+</label>
+<button class="flex items-center justify-center rounded-full size-10 bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-xl">notifications</span>
+</button>
+<div class="bg-primary/20 bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-primary" data-alt="User avatar profile picture" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBpVVClAyyYu6S8N0XpMWAyBRpHgIwxC_PyW7-YZOMtq7UBZV1rjs7DtZ_7EWoh7eTpn_KrRA35UoeHesIzXD6V8MhKJVvW4nz7Qt_gJiMcVxHDapaPhBK3SxZsitjZIsQvGq6rCbRbSugMPFiNYaj0TbadyYoCo4vahNU-Rm4CjxOJXbnJHmbKwvLqiIPixWsR8x_kPFOTj5_3sDfwJLm_DBpcNnqRt4UDBUtrLoAEWmRKlxEsRvneS31UiEbJqZx26JtzTOpf7ZE8");'></div>
+</div>
+</header>
+<main class="flex-1 flex flex-col max-w-[1280px] w-full mx-auto px-4 py-8 gap-8">
+<!-- Page Title & Actions -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-slate-100 text-3xl font-black leading-tight tracking-tight">Product Performance Report</h1>
+<p class="text-slate-500 dark:text-slate-400 text-base">In-depth analytics of your store's sales and profitability metrics.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 rounded-lg h-10 px-4 border border-primary/30 text-primary font-bold hover:bg-primary/5 transition-colors">
+<span class="material-symbols-outlined text-sm">download</span>
+<span>Export CSV</span>
+</button>
+<button class="flex items-center gap-2 rounded-lg h-10 px-4 bg-primary text-white font-bold shadow-lg shadow-primary/20 hover:brightness-110 transition-all">
+<span class="material-symbols-outlined text-sm">print</span>
+<span>Print Report</span>
+</button>
+</div>
+</div>
+<!-- Filters Bar -->
+<div class="flex flex-wrap items-center gap-3 bg-white dark:bg-slate-900 p-4 rounded-xl border border-primary/10 shadow-sm">
+<div class="relative group">
+<button class="flex h-10 items-center justify-between gap-x-4 rounded-lg bg-primary/5 px-4 min-w-[160px] border border-transparent hover:border-primary/30">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">category</span>
+<span class="text-slate-700 dark:text-slate-200 text-sm font-medium">All Categories</span>
+</div>
+<span class="material-symbols-outlined text-slate-400">expand_more</span>
+</button>
+</div>
+<div class="relative group">
+<button class="flex h-10 items-center justify-between gap-x-4 rounded-lg bg-primary/5 px-4 min-w-[200px] border border-transparent hover:border-primary/30">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">calendar_today</span>
+<span class="text-slate-700 dark:text-slate-200 text-sm font-medium">Last 30 Days</span>
+</div>
+<span class="material-symbols-outlined text-slate-400">expand_more</span>
+</button>
+</div>
+<div class="relative group">
+<button class="flex h-10 items-center justify-between gap-x-4 rounded-lg bg-primary/5 px-4 min-w-[160px] border border-transparent hover:border-primary/30">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">storefront</span>
+<span class="text-slate-700 dark:text-slate-200 text-sm font-medium">All Branches</span>
+</div>
+<span class="material-symbols-outlined text-slate-400">expand_more</span>
+</button>
+</div>
+<div class="ml-auto flex items-center gap-2 text-slate-400 text-xs">
+<span class="material-symbols-outlined text-sm">history</span>
+<span>Last updated: 5 mins ago</span>
+</div>
+</div>
+<!-- Summary Stats -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="bg-white dark:bg-slate-900 rounded-xl p-6 border border-primary/10 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-primary/10 rounded-lg text-primary">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<span class="text-green-600 text-sm font-bold flex items-center">+12.5% <span class="material-symbols-outlined text-xs">trending_up</span></span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Total Revenue</p>
+<p class="text-slate-900 dark:text-slate-100 text-2xl font-black mt-1">OMR 12,450.00</p>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-xl p-6 border border-primary/10 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-blue-500/10 rounded-lg text-blue-500">
+<span class="material-symbols-outlined">shopping_bag</span>
+</div>
+<span class="text-green-600 text-sm font-bold flex items-center">+8.2% <span class="material-symbols-outlined text-xs">trending_up</span></span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Units Sold</p>
+<p class="text-slate-900 dark:text-slate-100 text-2xl font-black mt-1">3,820</p>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-xl p-6 border border-primary/10 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-green-500/10 rounded-lg text-green-500">
+<span class="material-symbols-outlined">savings</span>
+</div>
+<span class="text-green-600 text-sm font-bold flex items-center">+15.3% <span class="material-symbols-outlined text-xs">trending_up</span></span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Net Profit</p>
+<p class="text-slate-900 dark:text-slate-100 text-2xl font-black mt-1">OMR 4,120.00</p>
+</div>
+<div class="bg-white dark:bg-slate-900 rounded-xl p-6 border border-primary/10 shadow-sm">
+<div class="flex justify-between items-start mb-4">
+<div class="p-2 bg-orange-500/10 rounded-lg text-orange-500">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<span class="text-red-600 text-sm font-bold flex items-center">-1.2% <span class="material-symbols-outlined text-xs">trending_down</span></span>
+</div>
+<p class="text-slate-500 dark:text-slate-400 text-sm font-medium">Avg Margin</p>
+<p class="text-slate-900 dark:text-slate-100 text-2xl font-black mt-1">33.1%</p>
+</div>
+</div>
+<!-- Main Data Table -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-primary/10 shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-primary/5 border-b border-primary/10 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-bold">
+<th class="px-6 py-4">Product</th>
+<th class="px-6 py-4">Units Sold</th>
+<th class="px-6 py-4">Revenue</th>
+<th class="px-6 py-4">Profit</th>
+<th class="px-6 py-4">Margin %</th>
+<th class="px-6 py-4 text-center">Trend (7d)</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-primary/5">
+<!-- Row 1 -->
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20">
+<img class="object-cover size-full" data-alt="Red sports running shoe" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIDVkGJu1nfJhXQpkxdxhP2Fw7wldYynjkm3aCJOtFJquETYDAlzlV-gTBNc19jbWiItFw7Vl5GgvS7HRiTkRTS7nrwdcZ_AYI36wb4_qcgKDHW9cv-sWEv_GqgpYLN4wI2oWqtw16mvDWMVQZc04_ISD0eT5NBo1rOQXEH73PmnZ2Wnf8u7yPQ2MC70Lq3EoPSooZvbu-Ny8FIccV_w-2WaBhmlgSF8As-jFPGvhT4Ca2OUUv7JqDk3FGEnc8t8pnGCpFIEj8BMlX"/>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 dark:text-slate-100">SpeedRunner Z-200</span>
+<span class="text-xs text-slate-400">SKU: FTW-0092</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-medium">842</td>
+<td class="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">OMR 4,210.00</td>
+<td class="px-6 py-4 text-green-600 font-bold">OMR 1,515.60</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 36%"></div>
+</div>
+<span class="text-sm font-semibold">36.0%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center h-8 w-24 mx-auto">
+<div class="flex items-end gap-1 w-full h-full">
+<div class="flex-1 bg-primary/40 rounded-t h-[40%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[60%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[50%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[80%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[70%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[90%]"></div>
+<div class="flex-1 bg-primary rounded-t h-[100%]"></div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20">
+<img class="object-cover size-full" data-alt="Sleek silver analog wristwatch" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDeVWkvj0zMVQaSJs1awgYy1T3M8aOhQloYdNE7QBl5TuI9Sqzx7zKAX6oNxOQpZ6Q028250Tb0cCMusvy8TJt0qUkUu6ZaH13OQN-E3SnBDLWIsO7TnLWKM8HblkIDrrAK-tHQyDoaHBvx-eNVmGYt8O-u5rTkIbBxYs383m6_cupBDOgnm2E-tGHn7zEx_4U6TsORl-qzfZuJ0d3OqsyVboXCMGKoSWvVQasrHeVLsd-LK9OITA9I9gvuMTi7mNjWjKjXAfEQqiD4"/>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 dark:text-slate-100">Classic Chronograph</span>
+<span class="text-xs text-slate-400">SKU: ACC-1142</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-medium">415</td>
+<td class="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">OMR 2,860.50</td>
+<td class="px-6 py-4 text-green-600 font-bold">OMR 1,144.20</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 40%"></div>
+</div>
+<span class="text-sm font-semibold">40.0%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center h-8 w-24 mx-auto">
+<div class="flex items-end gap-1 w-full h-full">
+<div class="flex-1 bg-primary/40 rounded-t h-[80%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[70%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[60%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[50%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[40%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[30%]"></div>
+<div class="flex-1 bg-primary rounded-t h-[20%]"></div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20">
+<img class="object-cover size-full" data-alt="High-end wireless headphones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeGgKSKU_zViob5T2NKIobq2yaUnd71QWeFgoJVxijAB81ZrrZQti6fVIOccP-JkjaM5GkuZ0vqBYTqfNC7zxrdHyTjMSvh3iu73r3xjIvC_VxuwNl1q95kvEDQhx1znHWYmgsNcWYTA3jmo3IeFd9wVYiIGY4a6uuG9pRwNmoxPA4KhiIctRxUHm-iLX2rE-iJgebljTlwfi24kUIU2qwHlVzm05otnl0roVh3Oe3ia08jTbCt-4VHNcL0QQWavy_LfsQjw3Gr7JW"/>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 dark:text-slate-100">AudioPro ANC Max</span>
+<span class="text-xs text-slate-400">SKU: ELX-2201</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-medium">312</td>
+<td class="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">OMR 1,560.00</td>
+<td class="px-6 py-4 text-green-600 font-bold">OMR 436.80</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 28%"></div>
+</div>
+<span class="text-sm font-semibold">28.0%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center h-8 w-24 mx-auto">
+<div class="flex items-end gap-1 w-full h-full">
+<div class="flex-1 bg-primary/40 rounded-t h-[30%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[40%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[35%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[45%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[55%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[50%]"></div>
+<div class="flex-1 bg-primary rounded-t h-[60%]"></div>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20">
+<img class="object-cover size-full" data-alt="High fidelity vintage camera lens" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBApkwbKBwGumq7DWVIukHqp2NaTLKEZAr_-Ltwbcrk_5IDuj9ipTtiQI5m4AB2AeLfJ8xurmozHByJDml9ffbJRgrDHIlCReGymrZ82vcsu5frc5ZvIBsPEV3t8ntJjSrxAxxkdMgdno_DCy0eOu1Qeu2g6PhwzZCAr4k15h_szk5cu-9aKR9s93orNgksiTJpPb0VdznGOF2Sqo0TIkuIj_M-aa38tNdo4eR1fWVNARp33LTZYRdlvRP2InpHf8QvT0EvrLt2ctgA"/>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-slate-900 dark:text-slate-100">Optics prime 50mm</span>
+<span class="text-xs text-slate-400">SKU: CAM-050M</span>
+</div>
+</div>
+</td>
+<td class="px-6 py-4 font-medium">128</td>
+<td class="px-6 py-4 font-bold text-slate-900 dark:text-slate-100">OMR 3,200.00</td>
+<td class="px-6 py-4 text-green-600 font-bold">OMR 1,440.00</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<div class="w-16 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 45%"></div>
+</div>
+<span class="text-sm font-semibold">45.0%</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<div class="flex justify-center h-8 w-24 mx-auto">
+<div class="flex items-end gap-1 w-full h-full">
+<div class="flex-1 bg-primary/40 rounded-t h-[20%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[20%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[20%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[20%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[20%]"></div>
+<div class="flex-1 bg-primary/40 rounded-t h-[20%]"></div>
+<div class="flex-1 bg-primary rounded-t h-[20%]"></div>
+</div>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="bg-white dark:bg-slate-900 px-6 py-4 border-t border-primary/10 flex items-center justify-between">
+<p class="text-sm text-slate-500">Showing <span class="font-bold">1</span> to <span class="font-bold">4</span> of <span class="font-bold">128</span> products</p>
+<div class="flex gap-2">
+<button class="size-8 flex items-center justify-center rounded border border-primary/20 text-slate-400 hover:text-primary hover:border-primary">
+<span class="material-symbols-outlined text-base">chevron_left</span>
+</button>
+<button class="size-8 flex items-center justify-center rounded bg-primary text-white">1</button>
+<button class="size-8 flex items-center justify-center rounded border border-primary/20 text-slate-600 dark:text-slate-300 hover:text-primary hover:border-primary">2</button>
+<button class="size-8 flex items-center justify-center rounded border border-primary/20 text-slate-600 dark:text-slate-300 hover:text-primary hover:border-primary">3</button>
+<button class="size-8 flex items-center justify-center rounded border border-primary/20 text-slate-400 hover:text-primary hover:border-primary">
+<span class="material-symbols-outlined text-base">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Comparison Sidebar/Bottom section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-primary/10">
+<h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">analytics</span>
+                        Category Distribution
+                    </h3>
+<div class="space-y-4">
+<div class="space-y-1">
+<div class="flex justify-between text-sm font-medium">
+<span>Electronics</span>
+<span>45%</span>
+</div>
+<div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+<div class="bg-primary h-full rounded-full" style="width: 45%"></div>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between text-sm font-medium">
+<span>Footwear</span>
+<span>30%</span>
+</div>
+<div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+<div class="bg-primary/60 h-full rounded-full" style="width: 30%"></div>
+</div>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between text-sm font-medium">
+<span>Accessories</span>
+<span>25%</span>
+</div>
+<div class="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full">
+<div class="bg-primary/30 h-full rounded-full" style="width: 25%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-primary text-white p-6 rounded-xl shadow-xl shadow-primary/20 flex flex-col justify-between">
+<div>
+<h3 class="text-lg font-bold mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined">auto_awesome</span>
+                            AI Insights
+                        </h3>
+<p class="text-white/80 text-sm leading-relaxed">
+                            "SpeedRunner Z-200" is your top performing product by volume. We recommend increasing stock in the Al Mouj branch as sales have increased by 24% week-over-week.
+                        </p>
+</div>
+<button class="mt-6 self-start px-4 py-2 bg-white text-primary rounded-lg font-bold text-sm hover:bg-slate-50 transition-colors">
+                        View Detailed Forecast
+                    </button>
+</div>
+</div>
+</main>
+<footer class="mt-auto border-t border-primary/10 bg-white dark:bg-slate-900 py-6">
+<div class="max-w-[1280px] mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-4">
+<div class="flex items-center gap-2 text-primary font-bold">
+<span class="material-symbols-outlined">donut_large</span>
+<span>Thawani POS Portal</span>
+</div>
+<div class="text-slate-500 text-sm">
+                    © 2024 Thawani Technologies. All rights reserved.
+                </div>
+<div class="flex gap-6">
+<a class="text-slate-500 hover:text-primary text-sm" href="#">Help Center</a>
+<a class="text-slate-500 hover:text-primary text-sm" href="#">Privacy Policy</a>
+<a class="text-slate-500 hover:text-primary text-sm" href="#">Terms of Service</a>
+</div>
+</div>
+</footer>
+</div>
+</div>
+</body></html>

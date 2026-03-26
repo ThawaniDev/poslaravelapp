@@ -39,15 +39,15 @@ class ProviderManagementApiTest extends TestCase
 
         $this->org = Organization::create([
             'name' => 'Test Org',
-            'business_type' => 'retail',
+            'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $this->org->id,
             'name' => 'Test Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -80,7 +80,7 @@ class ProviderManagementApiTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'Coffee Shop',
             'business_type' => 'restaurant',
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => false,
         ]);
@@ -98,8 +98,8 @@ class ProviderManagementApiTest extends TestCase
         Store::create([
             'organization_id' => $this->org->id,
             'name' => 'Inactive Store',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => false,
             'is_main_branch' => false,
         ]);
@@ -185,7 +185,7 @@ class ProviderManagementApiTest extends TestCase
         ]);
 
         StoreSubscription::create([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'subscription_plan_id' => $plan->id,
             'status' => 'active',
             'billing_cycle' => 'monthly',
@@ -331,7 +331,7 @@ class ProviderManagementApiTest extends TestCase
             ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.store.currency', 'OMR');
+            ->assertJsonPath('data.store.currency', 'SAR');
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -360,15 +360,15 @@ class ProviderManagementApiTest extends TestCase
         Store::create([
             'organization_id' => $this->org->id,
             'name' => 'Inactive Export',
-            'business_type' => 'retail',
-            'currency' => 'OMR',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
             'is_active' => false,
             'is_main_branch' => false,
         ]);
 
         $response = $this
             ->postJson('/api/v2/admin/providers/stores/export', [
-                'business_type' => 'retail',
+                'business_type' => 'grocery',
             ]);
 
         $response->assertOk();
@@ -636,12 +636,12 @@ class ProviderManagementApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.store_id', $this->store->id)
+            ->assertJsonPath('data.organization_id', $this->org->id)
             ->assertJsonPath('data.limit_key', 'max_products')
             ->assertJsonPath('data.override_value', 500);
 
         $this->assertDatabaseHas('provider_limit_overrides', [
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'limit_key' => 'max_products',
             'override_value' => 500,
         ]);
@@ -650,7 +650,7 @@ class ProviderManagementApiTest extends TestCase
     public function test_update_existing_limit_override(): void
     {
         ProviderLimitOverride::forceCreate([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'limit_key' => 'max_cashiers',
             'override_value' => 10,
             'set_by' => $this->admin->id,
@@ -672,13 +672,13 @@ class ProviderManagementApiTest extends TestCase
     public function test_list_limit_overrides(): void
     {
         ProviderLimitOverride::forceCreate([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'limit_key' => 'max_products',
             'override_value' => 500,
             'set_by' => $this->admin->id,
         ]);
         ProviderLimitOverride::forceCreate([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'limit_key' => 'max_cashiers',
             'override_value' => 10,
             'set_by' => $this->admin->id,
@@ -697,7 +697,7 @@ class ProviderManagementApiTest extends TestCase
     public function test_remove_limit_override(): void
     {
         ProviderLimitOverride::forceCreate([
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'limit_key' => 'max_products',
             'override_value' => 500,
             'set_by' => $this->admin->id,
@@ -711,7 +711,7 @@ class ProviderManagementApiTest extends TestCase
             ->assertJsonPath('message', 'Limit override removed');
 
         $this->assertDatabaseMissing('provider_limit_overrides', [
-            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
             'limit_key' => 'max_products',
         ]);
     }

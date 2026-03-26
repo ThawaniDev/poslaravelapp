@@ -14,7 +14,7 @@ readonly class RegisterUserDTO
         public ?string $storeName = null,
         public ?string $storeNameAr = null,
         public string $country = 'OM',
-        public string $currency = 'OMR',
+        public string $currency = 'SAR',
         public string $locale = 'ar',
         public ?string $businessType = null,
     ) {}
@@ -31,7 +31,7 @@ readonly class RegisterUserDTO
             storeName: $data['store_name'] ?? null,
             storeNameAr: $data['store_name_ar'] ?? null,
             country: $data['country'] ?? 'OM',
-            currency: $data['currency'] ?? 'OMR',
+            currency: $data['currency'] ?? 'SAR',
             locale: $data['locale'] ?? 'ar',
             businessType: $data['business_type'] ?? null,
         );

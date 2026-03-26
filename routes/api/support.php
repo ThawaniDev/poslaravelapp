@@ -20,4 +20,8 @@ Route::prefix('support')->middleware('auth:sanctum')->group(function () {
     Route::get('tickets/{id}', [SupportController::class, 'show']);
     Route::post('tickets/{id}/messages', [SupportController::class, 'addMessage']);
     Route::put('tickets/{id}/close', [SupportController::class, 'close']);
+
+    // Knowledge Base (published articles only)
+    Route::get('kb', [SupportController::class, 'kbIndex']);
+    Route::get('kb/{slug}', [SupportController::class, 'kbShow']);
 });

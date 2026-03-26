@@ -3,6 +3,7 @@
 namespace App\Domain\Security\Models;
 
 use App\Domain\Core\Models\Store;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,6 +32,12 @@ class SecurityPolicy extends Model
     ];
 
     protected $casts = [
+        'pin_min_length' => 'integer',
+        'pin_max_length' => 'integer',
+        'auto_lock_seconds' => 'integer',
+        'max_failed_attempts' => 'integer',
+        'lockout_duration_minutes' => 'integer',
+        'session_max_hours' => 'integer',
         'require_2fa_owner' => 'boolean',
         'require_pin_override_void' => 'boolean',
         'require_pin_override_return' => 'boolean',
@@ -38,8 +45,46 @@ class SecurityPolicy extends Model
         'discount_override_threshold' => 'decimal:2',
     ];
 
+    public static array $defaults = [
+        'pin_min_length' => 4,
+        'pin_max_length' => 6,
+        'auto_lock_seconds' => 300,
+        'max_failed_attempts' => 5,
+        'lockout_duration_minutes' => 15,
+        'require_2fa_owner' => false,
+        'session_max_hours' => 12,
+        'require_pin_override_void' => true,
+        'require_pin_override_return' => true,
+        'require_pin_override_discount' => false,
+        'discount_override_threshold' => 20.00,
+    ];
+
+    // ─── Relationships ───────────────────────────────────────
+
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    // ─── Scopes ──────────────────────────────────────────────
+
+    public function scopeForStore(Builder $query, string $storeId): Builder
+    {
+        return $query->where('store_id', $storeId);
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────
+
+    public static function getOrCreateForStore(string $storeId): static
+    {
+        return static::firstOrCreate(
+            ['store_id' => $storeId],
+            static::$defaults,
+        );
+    }
+
+    public function isLockoutActive(int $recentFailedAttempts): bool
+    {
+        return $recentFailedAttempts >= $this->max_failed_attempts;
     }
 }

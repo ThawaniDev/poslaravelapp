@@ -46,7 +46,7 @@ class BackupApiTest extends TestCase
                 $t->string('phone')->nullable();
                 $t->string('email')->nullable();
                 $t->string('timezone')->default('UTC');
-                $t->string('currency')->default('OMR');
+                $t->string('currency')->default('SAR');
                 $t->string('locale')->default('en');
                 $t->string('business_type')->nullable();
                 $t->boolean('is_active')->default(true);

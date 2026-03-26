@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Printer Settings - Thawani POS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="min-h-screen flex flex-col">
+<!-- Navigation Bar -->
+<header class="sticky top-0 z-50 bg-white dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 px-6 py-4">
+<div class="max-w-7xl mx-auto flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="bg-primary p-2 rounded-lg text-white">
+<span class="material-symbols-outlined block">print</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight">Printer Settings</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">Thawani POS • Terminal #01</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden md:flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+<span class="material-symbols-outlined text-lg">help</span>
+                        Support
+                    </button>
+<button class="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-lg">sync</span>
+                        Refresh Status
+                    </button>
+</div>
+</div>
+</header>
+<main class="flex-1 max-w-7xl mx-auto w-full p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Left Column: Add/Edit Form -->
+<div class="lg:col-span-5 flex flex-col gap-6">
+<div class="bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<div class="mb-6">
+<h2 class="text-lg font-bold">Configure New Printer</h2>
+<p class="text-sm text-slate-500">Connect and setup hardware for your outlet</p>
+</div>
+<form class="space-y-5">
+<div class="space-y-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Printer Name</label>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary" placeholder="e.g. Main Kitchen Thermal" type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Printer Type</label>
+<select class="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary">
+<option>Thermal Receipt</option>
+<option>Kitchen Display</option>
+<option>Label Printer</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Connection</label>
+<select class="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary">
+<option>Network (LAN/Wi-Fi)</option>
+<option>Bluetooth</option>
+<option>USB</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-4">
+<div class="col-span-2 space-y-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">IP Address</label>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary" placeholder="192.168.1.100" type="text"/>
+</div>
+<div class="space-y-2">
+<label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Port</label>
+<input class="w-full rounded-lg border-slate-200 dark:border-slate-700 dark:bg-slate-800 focus:ring-primary focus:border-primary" placeholder="9100" type="text"/>
+</div>
+</div>
+<div class="pt-4 flex flex-col gap-3">
+<button class="w-full border border-primary text-primary font-bold py-2.5 rounded-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors" type="button">
+<span class="material-symbols-outlined">receipt_long</span>
+                                Test Print
+                            </button>
+<button class="w-full bg-primary text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:opacity-95 transition-all" type="submit">
+<span class="material-symbols-outlined">add_circle</span>
+                                Save Printer
+                            </button>
+</div>
+</form>
+</div>
+<!-- Quick Stats Info -->
+<div class="bg-primary/5 border border-primary/20 p-4 rounded-xl flex items-start gap-3">
+<span class="material-symbols-outlined text-primary">info</span>
+<div>
+<h4 class="text-sm font-bold text-primary">Pro Tip</h4>
+<p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">Ensure the printer and POS tablet are on the same network subnet for stable connectivity.</p>
+</div>
+</div>
+</div>
+<!-- Right Column: List of Printers -->
+<div class="lg:col-span-7 flex flex-col gap-6">
+<div class="bg-white dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+<div class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+<h2 class="font-bold">Configured Printers</h2>
+<span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs px-2.5 py-1 rounded-full font-medium">3 Total</span>
+</div>
+<div class="divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Printer Item 1 -->
+<div class="p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-500">
+<span class="material-symbols-outlined text-2xl">print</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Main Counter Receipt</h3>
+<span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+<span class="text-[10px] uppercase tracking-wider font-bold text-green-600">Online</span>
+</div>
+<p class="text-xs text-slate-500">Thermal • IP: 192.168.1.101 • Port: 9100</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Printer Item 2 -->
+<div class="p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-500">
+<span class="material-symbols-outlined text-2xl">restaurant</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Kitchen Hot Station</h3>
+<span class="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+<span class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Offline</span>
+</div>
+<p class="text-xs text-slate-500">Impact Kitchen • IP: 192.168.1.105 • Port: 9100</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+<!-- Printer Item 3 -->
+<div class="p-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-500">
+<span class="material-symbols-outlined text-2xl">label</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h3 class="font-bold text-slate-900 dark:text-slate-100">Barista Labeler</h3>
+<span class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></span>
+<span class="text-[10px] uppercase tracking-wider font-bold text-green-600">Online</span>
+</div>
+<p class="text-xs text-slate-500">Label • Bluetooth: BT_LABEL_04</p>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800/30 p-4 border-t border-slate-200 dark:border-slate-800 text-center">
+<button class="text-sm font-bold text-primary hover:underline">
+                            View Hardware Logs
+                        </button>
+</div>
+</div>
+<!-- Global Settings -->
+<div class="bg-white dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+<h3 class="font-bold mb-4">Print Behavior</h3>
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-sm font-medium">Automatic Receipt Printing</span>
+<span class="text-xs text-slate-500">Print receipt immediately after payment</span>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<div class="w-11 h-6 bg-primary rounded-full"></div>
+<div class="absolute left-6 top-1 bg-white w-4 h-4 rounded-full transition-all"></div>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex flex-col">
+<span class="text-sm font-medium">Kitchen Order Grouping</span>
+<span class="text-xs text-slate-500">Combine same items into a single line</span>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<div class="w-11 h-6 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+<div class="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-all"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="mt-auto py-8 text-center text-slate-400 text-xs">
+<p>© 2024 Thawani POS. Powered by Orange Technologies.</p>
+</footer>
+</div>
+</body></html>

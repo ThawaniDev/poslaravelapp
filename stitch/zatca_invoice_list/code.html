@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#fd8208",
+                        "background-light": "#f8f7f5",
+                        "background-dark": "#23190f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>ZATCA Invoices - Thawani POS</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<!-- Top Navigation Bar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-10 py-3">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-primary">
+<div class="size-8 flex items-center justify-center bg-primary text-white rounded-lg">
+<span class="material-symbols-outlined">receipt_long</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em]">Thawani POS</h2>
+</div>
+<nav class="hidden md:flex items-center gap-9">
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-primary text-sm font-bold leading-normal border-b-2 border-primary py-1" href="#">Invoices</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Customers</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Reports</a>
+</nav>
+</div>
+<div class="flex flex-1 justify-end gap-4">
+<label class="hidden sm:flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full">
+<div class="text-slate-500 flex border-none bg-slate-100 dark:bg-slate-800 items-center justify-center pl-4 rounded-l-lg" data-icon="MagnifyingGlass">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-slate-900 dark:text-slate-100 focus:outline-0 focus:ring-0 border-none bg-slate-100 dark:bg-slate-800 h-full placeholder:text-slate-500 px-4 rounded-l-none pl-2 text-base font-normal" placeholder="Search invoices..." value=""/>
+</div>
+</label>
+<div class="flex gap-2">
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-primary/20" data-alt="User profile avatar placeholder" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBXf8B7jODTv9I1n3X7_Yz3nMhWtcXIuJDU70qI3XFxQr53PiNSt0O4HDcYVPdUOpIBEh-Wra2VO33k6jd3_-yREVqC9qa5BsWQmwctZRW87R-5bSJgvSJa-MCwnpAyDVN8BZ14HI9FA-r9ZYaUQi3-QuQizZNdnXyUR3iftoHy5VDK5LM9RzV0tZRQlzjmjFSdRGd7KWFt08FrTjIDhPyIibPHk1cRvCjxpM7gxMUq_g9caao3hTYvtYMY9iDPYXUQp3p0th8k5Mha");'></div>
+</div>
+</header>
+<main class="flex flex-col flex-1 px-4 md:px-10 lg:px-20 py-8">
+<!-- Page Header -->
+<div class="flex flex-wrap justify-between items-end gap-4 mb-8">
+<div class="flex flex-col gap-1">
+<h1 class="text-slate-900 dark:text-slate-100 text-4xl font-black leading-tight tracking-[-0.033em]">ZATCA Invoices</h1>
+<p class="text-slate-500 dark:text-slate-400 text-base font-normal">Manage Phase 2 e-invoice compliance and reporting</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary font-bold rounded-lg hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-sm">download</span>
+                            Export CSV
+                        </button>
+<button class="flex items-center gap-2 px-6 py-2 bg-primary text-white font-bold rounded-lg hover:opacity-90 transition-opacity shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-sm">add</span>
+                            New Invoice
+                        </button>
+</div>
+</div>
+<!-- Filters Section -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 items-start">
+<!-- Status Filter -->
+<div class="lg:col-span-8 flex flex-col gap-3">
+<span class="text-sm font-bold text-slate-700 dark:text-slate-300">Quick Filter by Status</span>
+<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+<button class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-primary text-white px-5 font-medium">
+                                All Invoices
+                            </button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-5 text-slate-600 dark:text-slate-400 font-medium hover:border-primary transition-colors">
+<span class="size-2 rounded-full bg-yellow-500"></span>
+                                Pending
+                            </button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-5 text-slate-600 dark:text-slate-400 font-medium hover:border-primary transition-colors">
+<span class="size-2 rounded-full bg-green-500"></span>
+                                Cleared
+                            </button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-5 text-slate-600 dark:text-slate-400 font-medium hover:border-primary transition-colors">
+<span class="size-2 rounded-full bg-blue-500"></span>
+                                Reported
+                            </button>
+<button class="flex h-10 shrink-0 items-center justify-center gap-x-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-5 text-slate-600 dark:text-slate-400 font-medium hover:border-primary transition-colors">
+<span class="size-2 rounded-full bg-red-500"></span>
+                                Rejected
+                            </button>
+</div>
+</div>
+<!-- Date Range Filter -->
+<div class="lg:col-span-4 flex flex-col gap-3">
+<span class="text-sm font-bold text-slate-700 dark:text-slate-300">Date Range</span>
+<div class="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2">
+<span class="material-symbols-outlined text-slate-400">calendar_month</span>
+<span class="text-sm text-slate-600 dark:text-slate-300">Oct 01, 2023 - Oct 31, 2023</span>
+<span class="material-symbols-outlined text-slate-400 ml-auto cursor-pointer">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Table Content -->
+<div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Invoice #</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Date</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Customer</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">VAT (SAR)</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Total (SAR)</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Type</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Status</th>
+<th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-slate-500">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Row 1: Cleared -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-5 font-medium text-slate-900 dark:text-white">INV-2023-001</td>
+<td class="px-6 py-5 text-slate-600 dark:text-slate-400">24 Oct, 2023</td>
+<td class="px-6 py-5">
+<div class="flex flex-col">
+<span class="font-medium text-slate-800 dark:text-slate-200">Global Tech Corp</span>
+<span class="text-xs text-slate-500">VAT: 310122345600003</span>
+</div>
+</td>
+<td class="px-6 py-5 text-right font-medium">150.00</td>
+<td class="px-6 py-5 text-right font-bold text-slate-900 dark:text-white">1,150.00</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">Standard</span>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1 text-green-600 dark:text-green-400 font-bold text-sm">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+                                            Cleared
+                                        </span>
+</td>
+<td class="px-6 py-5">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2: Rejected -->
+<tr class="bg-red-50/50 dark:bg-red-900/10 border-l-4 border-l-red-500 transition-colors">
+<td class="px-6 py-5 font-medium text-slate-900 dark:text-white">INV-2023-002</td>
+<td class="px-6 py-5 text-slate-600 dark:text-slate-400">23 Oct, 2023</td>
+<td class="px-6 py-5 text-slate-800 dark:text-slate-200 font-medium">Walk-in Customer</td>
+<td class="px-6 py-5 text-right font-medium">30.00</td>
+<td class="px-6 py-5 text-right font-bold text-slate-900 dark:text-white">230.00</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">Simplified</span>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-bold text-sm">
+<span class="material-symbols-outlined text-[18px]">error</span>
+                                            Rejected
+                                        </span>
+</td>
+<td class="px-6 py-5">
+<button class="text-slate-400 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">expand_more</span>
+</button>
+</td>
+</tr>
+<!-- Expandable Error Message for Row 2 -->
+<tr class="bg-red-50/30 dark:bg-red-900/5">
+<td class="px-6 py-3" colspan="8">
+<div class="flex items-start gap-3 p-4 bg-white dark:bg-slate-800 border border-red-100 dark:border-red-900/30 rounded-lg shadow-sm">
+<span class="material-symbols-outlined text-red-500 text-[20px] mt-0.5">warning</span>
+<div class="flex flex-col gap-1">
+<span class="text-sm font-bold text-red-700 dark:text-red-400">ZATCA Error: KSA-3</span>
+<p class="text-sm text-slate-600 dark:text-slate-300">The invoice hash does not match the computed hash of the provided XML. Please re-sign the invoice and submit again.</p>
+<button class="mt-2 text-xs font-bold text-primary hover:underline flex items-center gap-1 uppercase tracking-wider">
+                                                    Retry Submission
+                                                    <span class="material-symbols-outlined text-[14px]">refresh</span>
+</button>
+</div>
+</div>
+</td>
+</tr>
+<!-- Row 3: Reported -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-5 font-medium text-slate-900 dark:text-white">INV-2023-003</td>
+<td class="px-6 py-5 text-slate-600 dark:text-slate-400">22 Oct, 2023</td>
+<td class="px-6 py-5 font-medium text-slate-800 dark:text-slate-200">Saudi Retail Co.</td>
+<td class="px-6 py-5 text-right font-medium">12.75</td>
+<td class="px-6 py-5 text-right font-bold text-slate-900 dark:text-white">97.75</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">Simplified</span>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-bold text-sm">
+<span class="material-symbols-outlined text-[18px]">info</span>
+                                            Reported
+                                        </span>
+</td>
+<td class="px-6 py-5">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4: Pending -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-5 font-medium text-slate-900 dark:text-white">INV-2023-004</td>
+<td class="px-6 py-5 text-slate-600 dark:text-slate-400">22 Oct, 2023</td>
+<td class="px-6 py-5 font-medium text-slate-800 dark:text-slate-200">Digital Solutions LLC</td>
+<td class="px-6 py-5 text-right font-medium">300.00</td>
+<td class="px-6 py-5 text-right font-bold text-slate-900 dark:text-white">2,300.00</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">Standard</span>
+</td>
+<td class="px-6 py-5">
+<span class="inline-flex items-center gap-1 text-yellow-600 dark:text-yellow-400 font-bold text-sm">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+                                            Pending
+                                        </span>
+</td>
+<td class="px-6 py-5">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="flex items-center justify-between px-6 py-4 border-t border-slate-200 dark:border-slate-800">
+<span class="text-sm text-slate-500">Showing 4 of 1,280 invoices</span>
+<div class="flex items-center gap-2">
+<button class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 disabled:opacity-30" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded bg-primary text-white text-sm font-bold">1</button>
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-sm">2</button>
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-sm">3</button>
+<span class="px-2 text-slate-400">...</span>
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-sm">128</button>
+<button class="p-2 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Submission Status Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-12 mb-8">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<span class="text-slate-500 font-medium">Compliance Rate</span>
+<span class="material-symbols-outlined text-green-500">verified</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-black">98.4%</span>
+<span class="text-green-500 text-sm font-bold">+1.2%</span>
+</div>
+<div class="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+<div class="bg-green-500 h-full w-[98.4%]"></div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<span class="text-slate-500 font-medium">Total VAT Collected</span>
+<span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+</div>
+<div class="flex flex-col">
+<span class="text-3xl font-black">42,500.50</span>
+<span class="text-slate-400 text-xs font-medium uppercase tracking-tighter">SAR • October</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<span class="text-slate-500 font-medium">Pending Submission</span>
+<span class="material-symbols-outlined text-yellow-500">sync</span>
+</div>
+<div class="flex flex-col">
+<span class="text-3xl font-black">12</span>
+<span class="text-slate-400 text-xs font-medium uppercase tracking-tighter">Requires Action</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<span class="text-slate-500 font-medium">Rejected (24h)</span>
+<span class="material-symbols-outlined text-red-500">report</span>
+</div>
+<div class="flex flex-col">
+<span class="text-3xl font-black text-red-500">3</span>
+<span class="text-slate-400 text-xs font-medium uppercase tracking-tighter">Critical Errors</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer Section -->
+<footer class="mt-auto px-4 md:px-10 lg:px-20 py-8 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+<div class="flex flex-wrap justify-between items-center gap-4">
+<div class="flex items-center gap-2">
+<div class="size-6 bg-primary rounded flex items-center justify-center text-white text-[10px] font-black">T</div>
+<span class="text-sm font-bold text-slate-800 dark:text-slate-200">Thawani POS v2.4.0</span>
+</div>
+<div class="flex gap-6 text-sm text-slate-500 font-medium">
+<a class="hover:text-primary transition-colors" href="#">Help Center</a>
+<a class="hover:text-primary transition-colors" href="#">ZATCA FAQ</a>
+<a class="hover:text-primary transition-colors" href="#">API Status</a>
+<a class="hover:text-primary transition-colors" href="#">Privacy</a>
+</div>
+<div class="flex items-center gap-2 text-xs font-medium text-slate-400">
+<span class="inline-block size-2 rounded-full bg-green-500"></span>
+                        ZATCA Server Connected
+                    </div>
+</div>
+</footer>
+</div>
+</div>
+</body></html>
