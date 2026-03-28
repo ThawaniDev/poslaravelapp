@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         Schema::create('marketplace_purchase_invoices', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('template_purchase_id');
@@ -69,6 +73,10 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         Schema::table('template_purchases', function (Blueprint $table) {
             $table->dropColumn('invoice_id');
         });

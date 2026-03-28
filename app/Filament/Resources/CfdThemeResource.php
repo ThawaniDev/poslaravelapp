@@ -20,7 +20,12 @@ class CfdThemeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-tv';
 
-    protected static ?string $navigationGroup = 'UI Management';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_ui_management');
+    }
 
     protected static ?string $navigationLabel = null;
 
@@ -174,6 +179,11 @@ class CfdThemeResource extends Resource
                     ->options(collect(CfdIdleLayout::cases())->mapWithKeys(fn ($c) => [$c->value => __('ui.cfd_idle_' . $c->value)])),
             ])
             ->actions([
+                Tables\Actions\Action::make('preview')
+                    ->label(__('ui.preview'))
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn (CfdTheme $record) => static::getUrl('preview', ['record' => $record])),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('toggle_active')
                     ->label(fn (CfdTheme $r) => $r->is_active ? __('ui.deactivate') : __('ui.activate'))
@@ -190,6 +200,11 @@ class CfdThemeResource extends Resource
             ->defaultSort('name');
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->with('subscriptionPlans');
+    }
+
     // ─── Pages ───────────────────────────────────────────────
 
     public static function getPages(): array
@@ -198,6 +213,7 @@ class CfdThemeResource extends Resource
             'index' => CfdThemeResource\Pages\ListCfdThemes::route('/'),
             'create' => CfdThemeResource\Pages\CreateCfdTheme::route('/create'),
             'edit' => CfdThemeResource\Pages\EditCfdTheme::route('/{record}/edit'),
+            'preview' => CfdThemeResource\Pages\PreviewCfdTheme::route('/{record}/preview'),
         ];
     }
 }

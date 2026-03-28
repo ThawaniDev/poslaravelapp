@@ -5,6 +5,7 @@ namespace App\Filament\Resources\BusinessTypeResource\RelationManagers;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -12,7 +13,12 @@ class CategoryTemplatesRelationManager extends RelationManager
 {
     protected static string $relationship = 'businessTypeCategoryTemplates';
 
-    protected static ?string $title = 'Category Templates';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Category Templates');
+    }
 
     protected static ?string $icon = 'heroicon-o-tag';
 
@@ -20,11 +26,11 @@ class CategoryTemplatesRelationManager extends RelationManager
     {
         return $form->schema([
             Forms\Components\TextInput::make('category_name')
-                ->label('Category Name (EN)')
+                ->label(__('Category Name (EN)'))
                 ->required()
                 ->maxLength(255),
             Forms\Components\TextInput::make('category_name_ar')
-                ->label('Category Name (AR)')
+                ->label(__('Category Name (AR)'))
                 ->maxLength(255),
             Forms\Components\TextInput::make('sort_order')
                 ->numeric()
@@ -37,13 +43,13 @@ class CategoryTemplatesRelationManager extends RelationManager
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('category_name')
-                    ->label('Name (EN)')
+                    ->label(__('Name (EN)'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('category_name_ar')
-                    ->label('Name (AR)'),
+                    ->label(__('Name (AR)')),
                 Tables\Columns\TextColumn::make('sort_order')
-                    ->label('Sort')
+                    ->label(__('Sort'))
                     ->sortable(),
             ])
             ->defaultSort('sort_order')

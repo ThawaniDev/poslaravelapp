@@ -13,7 +13,12 @@ class SystemHealthCheckResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-heart';
 
-    protected static ?string $navigationGroup = 'Infrastructure';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_infrastructure');
+    }
 
     protected static ?string $navigationLabel = null;
 

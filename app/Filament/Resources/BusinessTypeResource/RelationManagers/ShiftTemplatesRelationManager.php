@@ -5,6 +5,7 @@ namespace App\Filament\Resources\BusinessTypeResource\RelationManagers;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -12,7 +13,12 @@ class ShiftTemplatesRelationManager extends RelationManager
 {
     protected static string $relationship = 'businessTypeShiftTemplates';
 
-    protected static ?string $title = 'Shift Templates';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Shift Templates');
+    }
 
     protected static ?string $icon = 'heroicon-o-clock';
 
@@ -20,11 +26,11 @@ class ShiftTemplatesRelationManager extends RelationManager
     {
         return $form->schema([
             Forms\Components\TextInput::make('name')
-                ->label('Shift Name (EN)')
+                ->label(__('Shift Name (EN)'))
                 ->required()
                 ->maxLength(255),
             Forms\Components\TextInput::make('name_ar')
-                ->label('Shift Name (AR)')
+                ->label(__('Shift Name (AR)'))
                 ->maxLength(255),
             Forms\Components\TimePicker::make('start_time')
                 ->required()
@@ -40,7 +46,7 @@ class ShiftTemplatesRelationManager extends RelationManager
                 ->columns(4)
                 ->columnSpanFull(),
             Forms\Components\TextInput::make('break_duration_minutes')
-                ->label('Break (min)')
+                ->label(__('Break (min)'))
                 ->numeric()
                 ->default(30),
             Forms\Components\Toggle::make('is_default')
@@ -61,9 +67,9 @@ class ShiftTemplatesRelationManager extends RelationManager
                     ->description(fn ($record) => $record->name_ar),
                 Tables\Columns\TextColumn::make('start_time')->time('H:i'),
                 Tables\Columns\TextColumn::make('end_time')->time('H:i'),
-                Tables\Columns\TextColumn::make('break_duration_minutes')->label('Break (min)'),
-                Tables\Columns\IconColumn::make('is_default')->boolean()->label('Default'),
-                Tables\Columns\TextColumn::make('sort_order')->label('Sort')->sortable(),
+                Tables\Columns\TextColumn::make('break_duration_minutes')->label(__('Break (min)')),
+                Tables\Columns\IconColumn::make('is_default')->boolean()->label(__('Default')),
+                Tables\Columns\TextColumn::make('sort_order')->label(__('Sort'))->sortable(),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')

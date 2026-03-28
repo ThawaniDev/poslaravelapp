@@ -11,7 +11,12 @@ class StorePerformanceDashboard extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
 
-    protected static ?string $navigationGroup = 'Analytics';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_analytics');
+    }
 
     protected static ?int $navigationSort = 3;
 

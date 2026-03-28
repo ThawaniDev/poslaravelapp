@@ -5,6 +5,7 @@ namespace App\Filament\Resources\BusinessTypeResource\RelationManagers;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -12,7 +13,12 @@ class WasteReasonTemplatesRelationManager extends RelationManager
 {
     protected static string $relationship = 'businessTypeWasteReasonTemplates';
 
-    protected static ?string $title = 'Waste Reason Templates';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Waste Reason Templates');
+    }
 
     protected static ?string $icon = 'heroicon-o-trash';
 
@@ -23,11 +29,11 @@ class WasteReasonTemplatesRelationManager extends RelationManager
                 ->required()
                 ->maxLength(50),
             Forms\Components\TextInput::make('name')
-                ->label('Name (EN)')
+                ->label(__('Name (EN)'))
                 ->required()
                 ->maxLength(255),
             Forms\Components\TextInput::make('name_ar')
-                ->label('Name (AR)')
+                ->label(__('Name (AR)'))
                 ->maxLength(255),
             Forms\Components\TextInput::make('category')
                 ->maxLength(50),
@@ -54,9 +60,9 @@ class WasteReasonTemplatesRelationManager extends RelationManager
                     ->sortable()
                     ->description(fn ($record) => $record->name_ar),
                 Tables\Columns\TextColumn::make('category'),
-                Tables\Columns\IconColumn::make('requires_approval')->boolean()->label('Approval'),
-                Tables\Columns\IconColumn::make('affects_cost_reporting')->boolean()->label('Cost Report'),
-                Tables\Columns\TextColumn::make('sort_order')->label('Sort')->sortable(),
+                Tables\Columns\IconColumn::make('requires_approval')->boolean()->label(__('Approval')),
+                Tables\Columns\IconColumn::make('affects_cost_reporting')->boolean()->label(__('Cost Report')),
+                Tables\Columns\TextColumn::make('sort_order')->label(__('Sort'))->sortable(),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')

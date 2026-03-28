@@ -14,7 +14,12 @@ class AppUpdateStatResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static ?string $navigationGroup = 'Updates';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_updates');
+    }
 
     protected static ?string $navigationLabel = null;
 
@@ -89,6 +94,11 @@ class AppUpdateStatResource extends Resource
                 Tables\Actions\ViewAction::make(),
             ])
             ->defaultSort('updated_at', 'desc');
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->with('appRelease');
     }
 
     public static function getPages(): array

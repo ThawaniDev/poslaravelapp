@@ -18,7 +18,12 @@ class PlatformUiDefaultsPage extends Page implements HasForms
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-paint-brush';
-    protected static ?string $navigationGroup = 'UI Management';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_ui_management');
+    }
     protected static ?int $navigationSort = 1;
     protected static string $view = 'filament.pages.settings-form';
 

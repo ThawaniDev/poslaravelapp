@@ -5,6 +5,7 @@ namespace App\Filament\Resources\BusinessTypeResource\RelationManagers;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -12,7 +13,12 @@ class GamificationBadgesRelationManager extends RelationManager
 {
     protected static string $relationship = 'businessTypeGamificationBadges';
 
-    protected static ?string $title = 'Gamification Badges';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Gamification Badges');
+    }
 
     protected static ?string $icon = 'heroicon-o-trophy';
 
@@ -20,19 +26,19 @@ class GamificationBadgesRelationManager extends RelationManager
     {
         return $form->schema([
             Forms\Components\TextInput::make('name')
-                ->label('Name (EN)')
+                ->label(__('Name (EN)'))
                 ->required()
                 ->maxLength(255),
             Forms\Components\TextInput::make('name_ar')
-                ->label('Name (AR)')
+                ->label(__('Name (AR)'))
                 ->maxLength(255),
             Forms\Components\Textarea::make('description')
                 ->rows(2),
             Forms\Components\Textarea::make('description_ar')
-                ->label('Description (AR)')
+                ->label(__('Description (AR)'))
                 ->rows(2),
             Forms\Components\TextInput::make('icon_url')
-                ->label('Icon URL')
+                ->label(__('Icon URL'))
                 ->url()
                 ->maxLength(500),
             Forms\Components\TextInput::make('trigger_type')
@@ -61,7 +67,7 @@ class GamificationBadgesRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('trigger_type')->badge()->color('info'),
                 Tables\Columns\TextColumn::make('trigger_threshold'),
                 Tables\Columns\TextColumn::make('points_reward')->badge()->color('success'),
-                Tables\Columns\TextColumn::make('sort_order')->label('Sort')->sortable(),
+                Tables\Columns\TextColumn::make('sort_order')->label(__('Sort'))->sortable(),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')

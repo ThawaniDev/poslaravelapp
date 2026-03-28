@@ -19,7 +19,7 @@ class SubscriptionService
      */
     public function listPlans(bool $activeOnly = true): Collection
     {
-        $query = SubscriptionPlan::with(['planFeatureToggles', 'planLimits'])
+        $query = SubscriptionPlan::with(['planFeatureToggles', 'planLimits', 'pricingPageContent'])
             ->orderBy('sort_order')
             ->orderBy('monthly_price');
 
@@ -35,7 +35,7 @@ class SubscriptionService
      */
     public function getPlan(string $planId): SubscriptionPlan
     {
-        return SubscriptionPlan::with(['planFeatureToggles', 'planLimits'])
+        return SubscriptionPlan::with(['planFeatureToggles', 'planLimits', 'pricingPageContent'])
             ->findOrFail($planId);
     }
 
@@ -44,7 +44,7 @@ class SubscriptionService
      */
     public function getPlanBySlug(string $slug): SubscriptionPlan
     {
-        return SubscriptionPlan::with(['planFeatureToggles', 'planLimits'])
+        return SubscriptionPlan::with(['planFeatureToggles', 'planLimits', 'pricingPageContent'])
             ->where('slug', $slug)
             ->firstOrFail();
     }
@@ -56,7 +56,7 @@ class SubscriptionService
      */
     public function comparePlans(array $planIds = []): array
     {
-        $query = SubscriptionPlan::with(['planFeatureToggles', 'planLimits'])
+        $query = SubscriptionPlan::with(['planFeatureToggles', 'planLimits', 'pricingPageContent'])
             ->where('is_active', true)
             ->orderBy('sort_order');
 

@@ -21,9 +21,19 @@ class SecurityAlertResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-exclamation-triangle';
 
-    protected static ?string $navigationGroup = 'Security';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Security Alerts';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_security');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.security_alerts');
+    }
 
     protected static ?int $navigationSort = 2;
 
@@ -203,6 +213,11 @@ class SecurityAlertResource extends Resource
             ->poll('30s');
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->with(['adminUser', 'resolvedBy']);
+    }
+
     public static function getPages(): array
     {
         return [
@@ -212,17 +227,4 @@ class SecurityAlertResource extends Resource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        $count = SecurityAlert::unresolved()->count();
-
-        return $count > 0 ? (string) $count : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        $critical = SecurityAlert::unresolved()->critical()->count();
-
-        return $critical > 0 ? 'danger' : 'warning';
-    }
 }

@@ -6,6 +6,7 @@ use App\Domain\Core\Enums\BusinessType;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -13,7 +14,12 @@ class StoresRelationManager extends RelationManager
 {
     protected static string $relationship = 'stores';
 
-    protected static ?string $title = 'Stores';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Stores');
+    }
 
     protected static ?string $icon = 'heroicon-o-building-storefront';
 
@@ -21,11 +27,11 @@ class StoresRelationManager extends RelationManager
     {
         return $form->schema([
             Forms\Components\TextInput::make('name')
-                ->label('Store Name (EN)')
+                ->label(__('Store Name (EN)'))
                 ->required()
                 ->maxLength(255),
             Forms\Components\TextInput::make('name_ar')
-                ->label('Store Name (AR)')
+                ->label(__('Store Name (AR)'))
                 ->maxLength(255),
             Forms\Components\TextInput::make('slug')
                 ->required()
@@ -64,10 +70,10 @@ class StoresRelationManager extends RelationManager
                     }),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
-                    ->label('Active'),
+                    ->label(__('Active')),
                 Tables\Columns\IconColumn::make('is_main_branch')
                     ->boolean()
-                    ->label('Main'),
+                    ->label(__('Main')),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('M j, Y')
                     ->sortable(),

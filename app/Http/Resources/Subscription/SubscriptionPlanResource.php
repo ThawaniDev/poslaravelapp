@@ -27,7 +27,9 @@ class SubscriptionPlanResource extends JsonResource
             'features' => $this->whenLoaded('planFeatureToggles', fn () =>
                 $this->planFeatureToggles->map(fn ($t) => [
                     'feature_key' => $t->feature_key,
-                    'is_enabled' => (bool) $t->is_enabled,
+                    'name'        => $t->name,
+                    'name_ar'     => $t->name_ar,
+                    'is_enabled'  => (bool) $t->is_enabled,
                 ])
             ),
 
@@ -37,6 +39,12 @@ class SubscriptionPlanResource extends JsonResource
                     'limit_value' => (int) $l->limit_value,
                     'price_per_extra_unit' => $l->price_per_extra_unit ? (float) $l->price_per_extra_unit : null,
                 ])
+            ),
+
+            'pricing_content' => $this->whenLoaded('pricingPageContent', fn () =>
+                $this->pricingPageContent
+                    ? new \App\Http\Resources\Content\PricingPageContentResource($this->pricingPageContent)
+                    : null
             ),
 
             'created_at' => $this->created_at?->toIso8601String(),

@@ -18,9 +18,19 @@ class NotificationTemplateResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-bell-alert';
 
-    protected static ?string $navigationGroup = 'Notifications';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Templates';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_notifications');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.templates');
+    }
 
     protected static ?int $navigationSort = 1;
 

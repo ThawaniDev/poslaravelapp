@@ -15,7 +15,12 @@ class DatabaseBackupResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-circle-stack';
 
-    protected static ?string $navigationGroup = 'Infrastructure';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_infrastructure');
+    }
 
     protected static ?string $navigationLabel = null;
 

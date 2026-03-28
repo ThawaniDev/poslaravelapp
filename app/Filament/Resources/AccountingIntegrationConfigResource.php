@@ -17,7 +17,12 @@ class AccountingIntegrationConfigResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calculator';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_settings');
+    }
 
     protected static ?string $navigationLabel = null;
 

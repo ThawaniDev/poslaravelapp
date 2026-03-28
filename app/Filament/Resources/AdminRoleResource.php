@@ -19,9 +19,19 @@ class AdminRoleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
 
-    protected static ?string $navigationGroup = 'People';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Admin Roles';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_people');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.admin_roles');
+    }
 
     protected static ?int $navigationSort = 2;
 

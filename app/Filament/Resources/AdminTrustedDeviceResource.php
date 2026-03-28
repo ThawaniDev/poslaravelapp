@@ -19,9 +19,19 @@ class AdminTrustedDeviceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-device-phone-mobile';
 
-    protected static ?string $navigationGroup = 'Security';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Trusted Devices';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_security');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.trusted_devices');
+    }
 
     protected static ?int $navigationSort = 6;
 

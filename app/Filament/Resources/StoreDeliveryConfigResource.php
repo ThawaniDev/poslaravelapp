@@ -17,9 +17,19 @@ class StoreDeliveryConfigResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
 
-    protected static ?string $navigationGroup = 'Integrations';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Store Delivery Configs';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_integrations');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.store_delivery_configs');
+    }
 
     protected static ?int $navigationSort = 2;
 
@@ -188,13 +198,4 @@ class StoreDeliveryConfigResource extends Resource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        return (string) static::getModel()::where('is_enabled', true)->count();
-    }
-
-    public static function getNavigationBadgeColor(): string|array|null
-    {
-        return 'success';
-    }
 }

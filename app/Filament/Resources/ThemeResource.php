@@ -19,7 +19,12 @@ class ThemeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-swatch';
 
-    protected static ?string $navigationGroup = 'UI Management';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_ui_management');
+    }
 
     protected static ?string $navigationLabel = null;
 
@@ -145,6 +150,11 @@ class ThemeResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_system')->label(__('ui.is_system')),
             ])
             ->actions([
+                Tables\Actions\Action::make('preview')
+                    ->label(__('ui.preview'))
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn (Theme $record) => static::getUrl('preview', ['record' => $record])),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('toggle_active')
                     ->label(fn (Theme $r) => $r->is_active ? __('ui.deactivate') : __('ui.activate'))
@@ -164,6 +174,11 @@ class ThemeResource extends Resource
             ->defaultSort('name');
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with('subscriptionPlans');
+    }
+
     // ─── Pages ───────────────────────────────────────────────
 
     public static function getPages(): array
@@ -172,6 +187,7 @@ class ThemeResource extends Resource
             'index' => ThemeResource\Pages\ListThemes::route('/'),
             'create' => ThemeResource\Pages\CreateTheme::route('/create'),
             'edit' => ThemeResource\Pages\EditTheme::route('/{record}/edit'),
+            'preview' => ThemeResource\Pages\PreviewTheme::route('/{record}/preview'),
         ];
     }
 }

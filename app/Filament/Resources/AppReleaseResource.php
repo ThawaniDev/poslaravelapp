@@ -19,7 +19,12 @@ class AppReleaseResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-up-circle';
 
-    protected static ?string $navigationGroup = 'Updates';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_updates');
+    }
 
     protected static ?string $navigationLabel = null;
 

@@ -8,12 +8,18 @@ use App\Domain\Core\Models\FailedJob;
 use App\Domain\AdminPanel\Models\SystemHealthCheck;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class SystemHealthDashboard extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-cpu-chip';
 
-    protected static ?string $navigationGroup = 'Analytics';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_analytics');
+    }
 
     protected static ?int $navigationSort = 6;
 
@@ -40,7 +46,7 @@ class SystemHealthDashboard extends Page
     public function getViewData(): array
     {
         // Queue depth (pending jobs)
-        $queueDepth = DB::table('jobs')->count();
+        $queueDepth = Schema::hasTable('jobs') ? DB::table('jobs')->count() : 0;
 
         // Failed jobs count
         $failedJobs = FailedJob::count();

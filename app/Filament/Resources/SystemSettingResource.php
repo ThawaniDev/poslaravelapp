@@ -17,7 +17,12 @@ class SystemSettingResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_settings');
+    }
 
     protected static ?string $navigationLabel = null;
 
@@ -129,6 +134,11 @@ class SystemSettingResource extends Resource
                     }),
             ])
             ->defaultSort('key', 'asc');
+    }
+
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->with('updatedBy');
     }
 
     public static function getPages(): array

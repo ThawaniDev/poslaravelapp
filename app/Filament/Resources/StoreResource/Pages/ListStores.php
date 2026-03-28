@@ -14,7 +14,7 @@ class ListStores extends ListRecords
     {
         return [
             Actions\Action::make('map_view')
-                ->label('Map View')
+                ->label(__('Map View'))
                 ->icon('heroicon-o-map')
                 ->color('gray')
                 ->url(StoreResource::getUrl('map')),

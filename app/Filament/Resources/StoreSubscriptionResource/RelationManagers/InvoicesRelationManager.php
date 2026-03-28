@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\StoreSubscriptionResource\RelationManagers;
 
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -10,7 +11,12 @@ class InvoicesRelationManager extends RelationManager
 {
     protected static string $relationship = 'invoices';
 
-    protected static ?string $title = 'Invoices';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Invoices');
+    }
 
     protected static ?string $recordTitleAttribute = 'invoice_number';
 
@@ -48,16 +54,16 @@ class InvoicesRelationManager extends RelationManager
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'paid' => 'Paid',
-                        'pending' => 'Pending',
-                        'failed' => 'Failed',
-                        'refunded' => 'Refunded',
-                        'draft' => 'Draft',
+                        'paid' => __('Paid'),
+                        'pending' => __('Pending'),
+                        'failed' => __('Failed'),
+                        'refunded' => __('Refunded'),
+                        'draft' => __('Draft'),
                     ]),
             ])
             ->actions([
                 Tables\Actions\Action::make('mark_paid')
-                    ->label('Mark Paid')
+                    ->label(__('Mark Paid'))
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
                     ->visible(fn ($record) => $record->status === 'pending')
@@ -67,7 +73,7 @@ class InvoicesRelationManager extends RelationManager
                         'paid_at' => now(),
                     ])),
                 Tables\Actions\Action::make('view_pdf')
-                    ->label('PDF')
+                    ->label(__('PDF'))
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('gray')
                     ->visible(fn ($record) => $record->pdf_url !== null)

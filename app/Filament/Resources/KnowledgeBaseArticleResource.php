@@ -19,7 +19,12 @@ class KnowledgeBaseArticleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-book-open';
 
-    protected static ?string $navigationGroup = 'Support';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_support');
+    }
 
     protected static ?string $navigationLabel = null;
 
@@ -40,23 +45,6 @@ class KnowledgeBaseArticleResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('support.kb_articles');
-    }
-
-    public static function getNavigationBadge(): ?string
-    {
-        $draft = static::getModel()::where('is_published', false)->count();
-
-        return $draft > 0 ? (string) $draft : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'warning';
-    }
-
-    public static function getNavigationBadgeTooltip(): ?string
-    {
-        return __('support.draft_articles');
     }
 
     public static function canAccess(): bool

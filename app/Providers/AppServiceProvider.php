@@ -17,6 +17,8 @@ use App\Domain\ProviderSubscription\Services\BillingService;
 use App\Domain\Security\Services\PinOverrideService;
 use App\Domain\StaffManagement\Services\PermissionService;
 use App\Domain\StaffManagement\Services\RoleService;
+use App\Http\Responses\AdminLogoutResponse;
+use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -48,6 +50,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Billing service
         $this->app->singleton(BillingService::class);
+
+        // Custom Filament logout response — marks admin session as ended
+        $this->app->bind(LogoutResponseContract::class, AdminLogoutResponse::class);
     }
 
     public function boot(): void

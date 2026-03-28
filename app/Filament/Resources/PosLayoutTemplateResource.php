@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 class PosLayoutTemplateResource extends Resource
@@ -17,7 +18,12 @@ class PosLayoutTemplateResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
-    protected static ?string $navigationGroup = 'UI Management';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_ui_management');
+    }
 
     protected static ?string $navigationLabel = null;
 
@@ -237,6 +243,11 @@ class PosLayoutTemplateResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_default')->label(__('ui.is_default')),
             ])
             ->actions([
+                Tables\Actions\Action::make('preview')
+                    ->label(__('ui.preview'))
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn (PosLayoutTemplate $record) => static::getUrl('preview', ['record' => $record])),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('set_default')
                     ->label(__('ui.set_as_default'))
@@ -264,6 +275,11 @@ class PosLayoutTemplateResource extends Resource
             ->defaultSort('sort_order');
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['businessType', 'subscriptionPlans']);
+    }
+
     // ─── Pages ───────────────────────────────────────────────
 
     public static function getPages(): array
@@ -272,6 +288,7 @@ class PosLayoutTemplateResource extends Resource
             'index' => PosLayoutTemplateResource\Pages\ListPosLayoutTemplates::route('/'),
             'create' => PosLayoutTemplateResource\Pages\CreatePosLayoutTemplate::route('/create'),
             'edit' => PosLayoutTemplateResource\Pages\EditPosLayoutTemplate::route('/{record}/edit'),
+            'preview' => PosLayoutTemplateResource\Pages\PreviewPosLayoutTemplate::route('/{record}/preview'),
         ];
     }
 }

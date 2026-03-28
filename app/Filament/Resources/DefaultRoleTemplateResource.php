@@ -19,9 +19,19 @@ class DefaultRoleTemplateResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-duplicate';
 
-    protected static ?string $navigationGroup = 'People';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Role Templates';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_people');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.role_templates');
+    }
 
     protected static ?int $navigationSort = 4;
 

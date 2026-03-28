@@ -22,9 +22,19 @@ class HardwareSaleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-computer-desktop';
 
-    protected static ?string $navigationGroup = 'Subscription & Billing';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Hardware Sales';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_subscription_billing');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.hardware_sales');
+    }
 
     protected static ?int $navigationSort = 7;
 
@@ -38,17 +48,17 @@ class HardwareSaleResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Sale Details')
+            Forms\Components\Section::make(__('Sale Details'))
                 ->schema([
                     Forms\Components\Select::make('store_id')
-                        ->label('Store')
+                        ->label(__('Store'))
                         ->relationship('store', 'name')
                         ->searchable()
                         ->preload()
                         ->required(),
 
                     Forms\Components\Select::make('sold_by')
-                        ->label('Sold By')
+                        ->label(__('Sold By'))
                         ->options(fn () => AdminUser::query()->pluck('name', 'id'))
                         ->searchable()
                         ->preload()
@@ -66,7 +76,7 @@ class HardwareSaleResource extends Resource
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Hardware Info')
+            Forms\Components\Section::make(__('Hardware Info'))
                 ->schema([
                     Forms\Components\TextInput::make('serial_number')
                         ->maxLength(100)
@@ -123,7 +133,7 @@ class HardwareSaleResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('soldByAdmin.name')
-                    ->label('Sold By')
+                    ->label(__('Sold By'))
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('sold_at')
@@ -138,7 +148,7 @@ class HardwareSaleResource extends Resource
                     ->relationship('store', 'name')
                     ->searchable()
                     ->preload()
-                    ->label('Store'),
+                    ->label(__('Store')),
 
                 Tables\Filters\Filter::make('sold_at')
                     ->form([
@@ -157,21 +167,21 @@ class HardwareSaleResource extends Resource
                 Tables\Actions\Action::make('generate_invoice')
                     ->icon('heroicon-m-document-text')
                     ->color('warning')
-                    ->label('Generate Invoice')
+                    ->label(__('Generate Invoice'))
                     ->requiresConfirmation()
-                    ->modalDescription('This will generate a new invoice for this hardware sale.')
+                    ->modalDescription(__('This will generate a new invoice for this hardware sale.'))
                     ->action(function (HardwareSale $record) {
                         $billing = app(BillingService::class);
                         $invoice = $billing->generateHardwareSaleInvoice($record);
 
                         if ($invoice) {
                             Notification::make()
-                                ->title("Invoice {$invoice->invoice_number} generated")
+                                ->title(__('Invoice :number generated', ['number' => $invoice->invoice_number]))
                                 ->success()
                                 ->send();
                         } else {
                             Notification::make()
-                                ->title('No active subscription found for this store')
+                                ->title(__('No active subscription found for this store'))
                                 ->danger()
                                 ->send();
                         }
@@ -188,21 +198,21 @@ class HardwareSaleResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Infolists\Components\Section::make('Sale Details')
+            Infolists\Components\Section::make(__('Sale Details'))
                 ->schema([
                     Infolists\Components\TextEntry::make('store.name'),
-                    Infolists\Components\TextEntry::make('soldByAdmin.name')->label('Sold By'),
+                    Infolists\Components\TextEntry::make('soldByAdmin.name')->label(__('Sold By')),
                     Infolists\Components\TextEntry::make('item_type')->badge(),
                     Infolists\Components\TextEntry::make('item_description'),
                 ])
                 ->columns(4),
 
-            Infolists\Components\Section::make('Hardware & Payment')
+            Infolists\Components\Section::make(__('Hardware & Payment'))
                 ->schema([
-                    Infolists\Components\TextEntry::make('serial_number')->copyable()->placeholder('N/A'),
+                    Infolists\Components\TextEntry::make('serial_number')->copyable()->placeholder(__('N/A')),
                     Infolists\Components\TextEntry::make('amount')->money('SAR'),
                     Infolists\Components\TextEntry::make('sold_at')->dateTime(),
-                    Infolists\Components\TextEntry::make('notes')->placeholder('No notes')->columnSpanFull(),
+                    Infolists\Components\TextEntry::make('notes')->placeholder(__('No notes'))->columnSpanFull(),
                 ])
                 ->columns(3),
         ]);

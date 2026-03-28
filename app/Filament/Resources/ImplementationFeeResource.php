@@ -21,9 +21,19 @@ class ImplementationFeeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
 
-    protected static ?string $navigationGroup = 'Subscription & Billing';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Implementation Fees';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_subscription_billing');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.implementation_fees');
+    }
 
     protected static ?int $navigationSort = 8;
 
@@ -37,10 +47,10 @@ class ImplementationFeeResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Fee Details')
+            Forms\Components\Section::make(__('Fee Details'))
                 ->schema([
                     Forms\Components\Select::make('store_id')
-                        ->label('Store')
+                        ->label(__('Store'))
                         ->relationship('store', 'name')
                         ->searchable()
                         ->preload()
@@ -65,7 +75,7 @@ class ImplementationFeeResource extends Resource
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Additional Info')
+            Forms\Components\Section::make(__('Additional Info'))
                 ->schema([
                     Forms\Components\Textarea::make('notes')
                         ->rows(3)
@@ -118,7 +128,7 @@ class ImplementationFeeResource extends Resource
                     ->relationship('store', 'name')
                     ->searchable()
                     ->preload()
-                    ->label('Store'),
+                    ->label(__('Store')),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -126,23 +136,23 @@ class ImplementationFeeResource extends Resource
                 Tables\Actions\Action::make('mark_paid')
                     ->icon('heroicon-m-check-circle')
                     ->color('success')
-                    ->label('Mark Paid')
+                    ->label(__('Mark Paid'))
                     ->requiresConfirmation()
                     ->visible(fn (ImplementationFee $record) => ($record->status?->value ?? $record->status) === 'invoiced')
                     ->action(function (ImplementationFee $record) {
                         $record->update(['status' => 'paid']);
 
                         Notification::make()
-                            ->title('Fee marked as paid')
+                            ->title(__('Fee marked as paid'))
                             ->success()
                             ->send();
                     }),
                 Tables\Actions\Action::make('generate_invoice')
                     ->icon('heroicon-m-document-text')
                     ->color('warning')
-                    ->label('Generate Invoice')
+                    ->label(__('Generate Invoice'))
                     ->requiresConfirmation()
-                    ->modalDescription('This will generate a new invoice for this implementation fee.')
+                    ->modalDescription(__('This will generate a new invoice for this implementation fee.'))
                     ->visible(fn (ImplementationFee $record) => ($record->status?->value ?? $record->status) !== 'paid')
                     ->action(function (ImplementationFee $record) {
                         $billing = app(BillingService::class);
@@ -151,12 +161,12 @@ class ImplementationFeeResource extends Resource
                         if ($invoice) {
                             $record->update(['status' => 'invoiced']);
                             Notification::make()
-                                ->title("Invoice {$invoice->invoice_number} generated")
+                                ->title(__('Invoice :number generated', ['number' => $invoice->invoice_number]))
                                 ->success()
                                 ->send();
                         } else {
                             Notification::make()
-                                ->title('No active subscription found for this store')
+                                ->title(__('No active subscription found for this store'))
                                 ->danger()
                                 ->send();
                         }
@@ -173,7 +183,7 @@ class ImplementationFeeResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Infolists\Components\Section::make('Fee Details')
+            Infolists\Components\Section::make(__('Fee Details'))
                 ->schema([
                     Infolists\Components\TextEntry::make('store.name'),
                     Infolists\Components\TextEntry::make('fee_type')->badge(),
@@ -182,9 +192,9 @@ class ImplementationFeeResource extends Resource
                 ])
                 ->columns(4),
 
-            Infolists\Components\Section::make('Notes')
+            Infolists\Components\Section::make(__('Notes'))
                 ->schema([
-                    Infolists\Components\TextEntry::make('notes')->placeholder('No notes'),
+                    Infolists\Components\TextEntry::make('notes')->placeholder(__('No notes')),
                     Infolists\Components\TextEntry::make('created_at')->dateTime(),
                 ]),
         ]);

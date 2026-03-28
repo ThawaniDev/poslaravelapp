@@ -17,7 +17,12 @@ class PlatformAnnouncementResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-megaphone';
 
-    protected static ?string $navigationGroup = 'Business';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_business');
+    }
 
     protected static ?string $navigationLabel = null;
 

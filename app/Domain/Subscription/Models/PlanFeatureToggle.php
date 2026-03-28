@@ -18,6 +18,8 @@ class PlanFeatureToggle extends Model
     protected $fillable = [
         'subscription_plan_id',
         'feature_key',
+        'name',
+        'name_ar',
         'is_enabled',
     ];
 

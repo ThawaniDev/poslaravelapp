@@ -19,9 +19,19 @@ class SubscriptionDiscountResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
 
-    protected static ?string $navigationGroup = 'Subscription & Billing';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Discounts';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_subscription_billing');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.discounts');
+    }
 
     protected static ?int $navigationSort = 4;
 
@@ -35,14 +45,14 @@ class SubscriptionDiscountResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Discount Details')
+            Forms\Components\Section::make(__('Discount Details'))
                 ->schema([
                     Forms\Components\TextInput::make('code')
                         ->required()
                         ->maxLength(50)
                         ->unique(ignoreRecord: true)
                         ->prefixIcon('heroicon-m-ticket')
-                        ->helperText('Unique discount code stores will enter'),
+                        ->helperText(__('Unique discount code stores will enter')),
 
                     Forms\Components\Select::make('type')
                         ->options(DiscountType::class)
@@ -62,26 +72,26 @@ class SubscriptionDiscountResource extends Resource
                     Forms\Components\TextInput::make('max_uses')
                         ->numeric()
                         ->minValue(1)
-                        ->helperText('Leave empty for unlimited uses'),
+                        ->helperText(__('Leave empty for unlimited uses')),
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Validity & Scope')
+            Forms\Components\Section::make(__('Validity & Scope'))
                 ->schema([
                     Forms\Components\DateTimePicker::make('valid_from')
-                        ->label('Valid From')
+                        ->label(__('Valid From'))
                         ->native(false),
 
                     Forms\Components\DateTimePicker::make('valid_to')
-                        ->label('Valid Until')
+                        ->label(__('Valid Until'))
                         ->native(false)
                         ->after('valid_from'),
 
                     Forms\Components\Select::make('applicable_plan_ids')
-                        ->label('Applicable Plans')
+                        ->label(__('Applicable Plans'))
                         ->multiple()
                         ->options(fn () => SubscriptionPlan::query()->pluck('name', 'id'))
-                        ->helperText('Leave empty to apply to all plans')
+                        ->helperText(__('Leave empty to apply to all plans'))
                         ->columnSpanFull(),
                 ])
                 ->columns(2),
@@ -112,7 +122,7 @@ class SubscriptionDiscountResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('times_used')
-                    ->label('Usage')
+                    ->label(__('Usage'))
                     ->formatStateUsing(fn ($record) => $record->max_uses
                         ? "{$record->times_used} / {$record->max_uses}"
                         : "{$record->times_used} / ∞"
@@ -137,14 +147,14 @@ class SubscriptionDiscountResource extends Resource
                     ->options(DiscountType::class),
 
                 Tables\Filters\Filter::make('active')
-                    ->label('Currently Active')
+                    ->label(__('Currently Active'))
                     ->query(fn ($query) => $query
                         ->where(fn ($q) => $q->whereNull('valid_to')->orWhere('valid_to', '>', now()))
                         ->where(fn ($q) => $q->whereNull('max_uses')->orWhereColumn('times_used', '<', 'max_uses'))
                     ),
 
                 Tables\Filters\Filter::make('expired')
-                    ->label('Expired')
+                    ->label(__('Expired'))
                     ->query(fn ($query) => $query->where('valid_to', '<', now())),
             ])
             ->actions([
@@ -172,7 +182,7 @@ class SubscriptionDiscountResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Infolists\Components\Section::make('Discount Details')
+            Infolists\Components\Section::make(__('Discount Details'))
                 ->schema([
                     Infolists\Components\TextEntry::make('code')->copyable()->weight('bold'),
                     Infolists\Components\TextEntry::make('type')->badge(),
@@ -182,7 +192,7 @@ class SubscriptionDiscountResource extends Resource
                             : number_format($record->value, 2) . ' SAR'
                         ),
                     Infolists\Components\TextEntry::make('times_used')
-                        ->label('Usage')
+                        ->label(__('Usage'))
                         ->formatStateUsing(fn ($record) => $record->max_uses
                             ? "{$record->times_used} / {$record->max_uses}"
                             : "{$record->times_used} / ∞"
@@ -190,12 +200,12 @@ class SubscriptionDiscountResource extends Resource
                 ])
                 ->columns(4),
 
-            Infolists\Components\Section::make('Validity')
+            Infolists\Components\Section::make(__('Validity'))
                 ->schema([
-                    Infolists\Components\TextEntry::make('valid_from')->dateTime('M j, Y H:i')->placeholder('No start date'),
-                    Infolists\Components\TextEntry::make('valid_to')->dateTime('M j, Y H:i')->placeholder('No expiry'),
+                    Infolists\Components\TextEntry::make('valid_from')->dateTime('M j, Y H:i')->placeholder(__('No start date')),
+                    Infolists\Components\TextEntry::make('valid_to')->dateTime('M j, Y H:i')->placeholder(__('No expiry')),
                     Infolists\Components\TextEntry::make('applicable_plan_ids')
-                        ->label('Applicable Plans')
+                        ->label(__('Applicable Plans'))
                         ->formatStateUsing(function ($record) {
                             if (empty($record->applicable_plan_ids)) {
                                 return 'All plans';

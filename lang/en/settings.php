@@ -160,12 +160,18 @@ return [
     'pmc_digital' => 'Digital',
     'pmc_credit' => 'Credit',
     'pm_cash' => 'Cash',
+    'pm_card' => 'Card',
     'pm_card_mada' => 'Mada Card',
     'pm_card_visa' => 'Visa Card',
     'pm_card_mastercard' => 'Mastercard',
+    'pm_mada' => 'Mada',
+    'pm_apple_pay' => 'Apple Pay',
+    'pm_stc_pay' => 'STC Pay',
     'pm_store_credit' => 'Store Credit',
     'pm_gift_card' => 'Gift Card',
     'pm_mobile_payment' => 'Mobile Payment',
+    'pm_loyalty_points' => 'Loyalty Points',
+    'pm_bank_transfer' => 'Bank Transfer',
 
     // ─── Supported Locales ───────────────────────────────────
     'locale_details' => 'Locale Details',

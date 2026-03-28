@@ -20,9 +20,19 @@ class AdminSessionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-computer-desktop';
 
-    protected static ?string $navigationGroup = 'Security';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Active Sessions';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_security');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.active_sessions');
+    }
 
     protected static ?int $navigationSort = 5;
 
@@ -179,15 +189,4 @@ class AdminSessionResource extends Resource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        $count = AdminSession::active()->count();
-
-        return $count > 0 ? (string) $count : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'success';
-    }
 }

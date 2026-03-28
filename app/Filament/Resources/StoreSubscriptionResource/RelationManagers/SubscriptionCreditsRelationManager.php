@@ -5,6 +5,7 @@ namespace App\Filament\Resources\StoreSubscriptionResource\RelationManagers;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -12,7 +13,12 @@ class SubscriptionCreditsRelationManager extends RelationManager
 {
     protected static string $relationship = 'subscriptionCredits';
 
-    protected static ?string $title = 'Credits';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Credits');
+    }
 
     public function form(Form $form): Form
     {
@@ -45,7 +51,7 @@ class SubscriptionCreditsRelationManager extends RelationManager
                     ->limit(40),
 
                 Tables\Columns\TextColumn::make('granted_by')
-                    ->label('Granted By'),
+                    ->label(__('Granted By')),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('M j, Y H:i')
@@ -53,7 +59,7 @@ class SubscriptionCreditsRelationManager extends RelationManager
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
-                    ->label('Add Credit'),
+                    ->label(__('Add Credit')),
             ])
             ->defaultSort('applied_at', 'desc');
     }

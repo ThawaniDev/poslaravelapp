@@ -17,7 +17,12 @@ class PaymentReminderResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-bell-alert';
 
-    protected static ?string $navigationGroup = 'Business';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_business');
+    }
 
     protected static ?int $navigationSort = 7;
 

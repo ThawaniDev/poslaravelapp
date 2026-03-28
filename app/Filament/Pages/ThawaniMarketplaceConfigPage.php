@@ -18,13 +18,20 @@ class ThawaniMarketplaceConfigPage extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_settings');
+    }
 
     protected static ?int $navigationSort = 10;
 
     protected static string $view = 'filament.pages.thawani-marketplace-config';
 
     public ?array $data = [];
+
+    protected ?ThawaniMarketplaceConfig $cachedConfig = null;
 
     public static function getNavigationLabel(): string
     {
@@ -44,8 +51,13 @@ class ThawaniMarketplaceConfigPage extends Page implements HasForms
 
     public function mount(): void
     {
-        $config = ThawaniMarketplaceConfig::first();
+        $config = $this->getConfig();
         $this->form->fill($config ? $config->toArray() : []);
+    }
+
+    protected function getConfig(): ?ThawaniMarketplaceConfig
+    {
+        return $this->cachedConfig ??= ThawaniMarketplaceConfig::first();
     }
 
     public function form(Form $form): Form
@@ -110,10 +122,10 @@ class ThawaniMarketplaceConfigPage extends Page implements HasForms
                     ->schema([
                         Forms\Components\Placeholder::make('connection_status_display')
                             ->label(__('settings.status'))
-                            ->content(fn () => ThawaniMarketplaceConfig::first()?->connection_status?->value ?? 'unknown'),
+                            ->content(fn () => $this->getConfig()?->connection_status?->value ?? 'unknown'),
                         Forms\Components\Placeholder::make('last_connection_display')
                             ->label(__('settings.last_connection'))
-                            ->content(fn () => ThawaniMarketplaceConfig::first()?->last_connection_at?->diffForHumans() ?? __('settings.never')),
+                            ->content(fn () => $this->getConfig()?->last_connection_at?->diffForHumans() ?? __('settings.never')),
                     ])->columns(2),
             ])
             ->statePath('data');
@@ -123,7 +135,7 @@ class ThawaniMarketplaceConfigPage extends Page implements HasForms
     {
         $data = $this->form->getState();
 
-        $config = ThawaniMarketplaceConfig::first();
+        $config = $this->getConfig();
         if ($config) {
             $config->update($data);
         } else {

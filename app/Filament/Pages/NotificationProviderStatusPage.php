@@ -24,7 +24,12 @@ class NotificationProviderStatusPage extends Page implements HasForms, HasTable
 
     protected static ?string $navigationIcon = 'heroicon-o-signal';
 
-    protected static ?string $navigationGroup = 'Notifications';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_notifications');
+    }
 
     protected static ?int $navigationSort = 4;
 

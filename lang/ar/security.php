@@ -275,4 +275,70 @@ return [
             'permission_revoked' => 'تم سحب صلاحية',
         ],
     ],
+
+    // ── Filament resource flat keys (called as security.key directly) ────────
+    'activity_details'         => 'تفاصيل النشاط',
+    'resolve_alert'            => 'حل التنبيه',
+    'triggered_by'             => 'تشغيل بواسطة',
+    'never'                    => 'أبداً',
+    'two_fa'                   => 'المصادقة الثنائية',
+    'ip_label_placeholder'     => 'مثال: المكتب، VPN',
+    'block_reason_placeholder' => 'مثال: محاولة تخمين كلمة المرور',
+    'expires_at_help'          => 'اتركه فارغاً للحظر الدائم.',
+    'session_details'          => 'تفاصيل الجلسة',
+    'device_details'           => 'تفاصيل الجهاز',
+    'last_activity'            => 'آخر نشاط',
+    'last_used'                => 'آخر استخدام',
+    'expired'                  => 'منتهية الصلاحية',
+
+    // Flat aliases for fields.*
+    'admin_user'               => 'المشرف',
+    'action'                   => 'الإجراء',
+    'entity_type'              => 'نوع الكيان',
+    'entity_id'                => 'معرّف الكيان',
+    'ip_address'               => 'عنوان IP',
+    'user_agent'               => 'وكيل المستخدم',
+    'timestamp'                => 'الطابع الزمني',
+    'alert_type'               => 'نوع التنبيه',
+    'severity'                 => 'الشدة',
+    'status'                   => 'الحالة',
+    'description'              => 'الوصف',
+    'resolved_by'              => 'حُلَّ بواسطة',
+    'resolved_at'              => 'وقت الحل',
+    'resolution_notes'         => 'ملاحظات الحل',
+    'label'                    => 'التسمية',
+    'added_by'                 => 'أضيف بواسطة',
+    'reason'                   => 'السبب',
+    'expires_at'               => 'ينتهي في',
+    'blocked_by'               => 'حُظر بواسطة',
+    'blocked_at'               => 'وقت الحظر',
+    'two_fa_verified'          => 'مصادقة ثنائية مُفعَّلة',
+    'started_at'               => 'بدأت في',
+    'revoked_at'               => 'أُلغيت في',
+    'device_name'              => 'اسم الجهاز',
+    'device_fingerprint'       => 'بصمة الجهاز',
+    'trusted_at'               => 'تاريخ الثقة',
+
+    // Flat aliases for sections.*
+    'additional_details'       => 'تفاصيل إضافية',
+    'alert_details'            => 'تفاصيل التنبيه',
+    'resolution'               => 'الحل',
+
+    // Flat aliases for actions.*
+    'investigate'              => 'تحقيق',
+    'resolve'                  => 'حل',
+    'unblock'                  => 'إلغاء الحظر',
+    'revoke_session'           => 'إلغاء الجلسة',
+    'revoke_trust'             => 'إلغاء الثقة',
+
+    // Flat aliases for notifications.*
+    'alert_investigating'      => 'تم تمييز التنبيه كقيد التحقيق.',
+    'trust_revoked'            => 'تم إلغاء ثقة الجهاز.',
+
+    // Flat aliases for confirm.*
+    'revoke_session_confirm'   => 'هل أنت متأكد أنك تريد إلغاء هذه الجلسة؟',
+    'revoke_trust_confirm'     => 'هل أنت متأكد أنك تريد إلغاء الثقة لهذا الجهاز؟',
+
+    // Flat aliases for filters.*
+    'active_blocks'            => 'عمليات الحظر النشطة',
 ];

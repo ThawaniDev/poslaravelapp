@@ -15,9 +15,19 @@ class DeliveryPlatformResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-truck';
 
-    protected static ?string $navigationGroup = 'Integrations';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Delivery Platforms';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_integrations');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.delivery_platforms');
+    }
 
     protected static ?int $navigationSort = 1;
 
@@ -256,8 +266,4 @@ class DeliveryPlatformResource extends Resource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        return (string) static::getModel()::where('is_active', true)->count();
-    }
 }

@@ -16,7 +16,12 @@ class ReceiptLayoutTemplateResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-receipt-percent';
 
-    protected static ?string $navigationGroup = 'UI Management';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_ui_management');
+    }
 
     protected static ?string $navigationLabel = null;
 
@@ -239,6 +244,11 @@ class ReceiptLayoutTemplateResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_active')->label(__('ui.is_active')),
             ])
             ->actions([
+                Tables\Actions\Action::make('preview')
+                    ->label(__('ui.preview'))
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn (ReceiptLayoutTemplate $record) => static::getUrl('preview', ['record' => $record])),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('toggle_active')
                     ->label(fn (ReceiptLayoutTemplate $r) => $r->is_active ? __('ui.deactivate') : __('ui.activate'))
@@ -255,6 +265,11 @@ class ReceiptLayoutTemplateResource extends Resource
             ->defaultSort('sort_order');
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->with('subscriptionPlans');
+    }
+
     // ─── Pages ───────────────────────────────────────────────
 
     public static function getPages(): array
@@ -263,6 +278,7 @@ class ReceiptLayoutTemplateResource extends Resource
             'index' => ReceiptLayoutTemplateResource\Pages\ListReceiptLayoutTemplates::route('/'),
             'create' => ReceiptLayoutTemplateResource\Pages\CreateReceiptLayoutTemplate::route('/create'),
             'edit' => ReceiptLayoutTemplateResource\Pages\EditReceiptLayoutTemplate::route('/{record}/edit'),
+            'preview' => ReceiptLayoutTemplateResource\Pages\PreviewReceiptLayoutTemplate::route('/{record}/preview'),
         ];
     }
 }

@@ -15,9 +15,19 @@ class ProviderRegistrationResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
 
-    protected static ?string $navigationGroup = 'Core';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Registrations';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_core');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.registrations');
+    }
 
     protected static ?int $navigationSort = 2;
 
@@ -31,7 +41,7 @@ class ProviderRegistrationResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Registration Details')->schema([
+            Forms\Components\Section::make(__('Registration Details'))->schema([
                 Forms\Components\TextInput::make('business_name')->disabled(),
                 Forms\Components\TextInput::make('owner_name')->disabled(),
                 Forms\Components\TextInput::make('email')->disabled(),
@@ -39,9 +49,9 @@ class ProviderRegistrationResource extends Resource
                 Forms\Components\TextInput::make('business_type')->disabled(),
                 Forms\Components\TextInput::make('city')->disabled(),
                 Forms\Components\Select::make('status')->options([
-                    'pending' => 'Pending',
-                    'approved' => 'Approved',
-                    'rejected' => 'Rejected',
+                    'pending' => __('Pending'),
+                    'approved' => __('Approved'),
+                    'rejected' => __('Rejected'),
                 ])->required(),
                 Forms\Components\Textarea::make('admin_notes')->rows(3),
             ])->columns(2),
@@ -66,7 +76,7 @@ class ProviderRegistrationResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options([
-                    'pending' => 'Pending', 'approved' => 'Approved', 'rejected' => 'Rejected',
+                    'pending' => __('Pending'), 'approved' => 'Approved', 'rejected' => 'Rejected',
                 ]),
             ])
             ->actions([Tables\Actions\EditAction::make()])

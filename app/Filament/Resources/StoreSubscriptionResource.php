@@ -21,9 +21,19 @@ class StoreSubscriptionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
 
-    protected static ?string $navigationGroup = 'Subscription & Billing';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Subscriptions';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_subscription_billing');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.subscriptions');
+    }
 
     protected static ?int $navigationSort = 2;
 
@@ -36,21 +46,11 @@ class StoreSubscriptionResource extends Resource
         return $user && $user->hasAnyPermission(['billing.view', 'billing.edit']);
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        return (string) StoreSubscription::whereIn('status', ['active', 'trial'])->count();
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'success';
-    }
-
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Subscription Details')
-                ->description('Manage the store subscription assignment and status')
+            Forms\Components\Section::make(__('Subscription Details'))
+                ->description(__('Manage the store subscription assignment and status'))
                 ->schema([
                     Forms\Components\Grid::make(2)->schema([
                         Forms\Components\Select::make('organization_id')
@@ -68,17 +68,17 @@ class StoreSubscriptionResource extends Resource
                     Forms\Components\Grid::make(3)->schema([
                         Forms\Components\Select::make('status')
                             ->options([
-                                'active' => 'Active',
-                                'trial' => 'Trial',
-                                'grace' => 'Grace Period',
-                                'cancelled' => 'Cancelled',
-                                'expired' => 'Expired',
+                                'active' => __('Active'),
+                                'trial' => __('Trial'),
+                                'grace' => __('Grace Period'),
+                                'cancelled' => __('Cancelled'),
+                                'expired' => __('Expired'),
                             ])
                             ->required(),
                         Forms\Components\Select::make('billing_cycle')
                             ->options([
-                                'monthly' => 'Monthly',
-                                'yearly' => 'Yearly',
+                                'monthly' => __('Monthly'),
+                                'yearly' => __('Yearly'),
                             ])
                             ->required(),
                         Forms\Components\TextInput::make('payment_method')
@@ -103,11 +103,11 @@ class StoreSubscriptionResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('organization.name')
-                    ->label('Organization')
+                    ->label(__('Organization'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('subscriptionPlan.name')
-                    ->label('Plan')
+                    ->label(__('Plan'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
@@ -124,16 +124,16 @@ class StoreSubscriptionResource extends Resource
                     ->badge()
                     ->color('gray'),
                 Tables\Columns\TextColumn::make('current_period_end')
-                    ->label('Renews / Expires')
+                    ->label(__('Renews / Expires'))
                     ->date()
                     ->sortable()
                     ->color(fn (StoreSubscription $record) => $record->current_period_end && $record->current_period_end->isPast() ? 'danger' : null),
                 Tables\Columns\TextColumn::make('invoices_count')
                     ->counts('invoices')
-                    ->label('Invoices')
+                    ->label(__('Invoices'))
                     ->alignCenter(),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Since')
+                    ->label(__('Since'))
                     ->date()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -141,24 +141,24 @@ class StoreSubscriptionResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'active' => 'Active',
-                        'trial' => 'Trial',
-                        'grace' => 'Grace Period',
-                        'cancelled' => 'Cancelled',
-                        'expired' => 'Expired',
+                        'active' => __('Active'),
+                        'trial' => __('Trial'),
+                        'grace' => __('Grace Period'),
+                        'cancelled' => __('Cancelled'),
+                        'expired' => __('Expired'),
                     ])
                     ->multiple(),
                 Tables\Filters\SelectFilter::make('billing_cycle')
                     ->options([
-                        'monthly' => 'Monthly',
-                        'yearly' => 'Yearly',
+                        'monthly' => __('Monthly'),
+                        'yearly' => __('Yearly'),
                     ]),
                 Tables\Filters\SelectFilter::make('subscription_plan_id')
                     ->relationship('subscriptionPlan', 'name')
-                    ->label('Plan')
+                    ->label(__('Plan'))
                     ->preload(),
                 Tables\Filters\Filter::make('expiring_soon')
-                    ->label('Expiring in 7 days')
+                    ->label(__('Expiring in 7 days'))
                     ->query(fn (Builder $query) => $query
                         ->where('current_period_end', '<=', now()->addDays(7))
                         ->where('current_period_end', '>=', now())
@@ -169,29 +169,29 @@ class StoreSubscriptionResource extends Resource
                     Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\Action::make('change_plan')
-                        ->label('Change Plan')
+                        ->label(__('Change Plan'))
                         ->icon('heroicon-o-arrow-path')
                         ->color('primary')
                         ->visible(fn () => auth('admin')->user()?->hasPermission('billing.edit'))
                         ->form([
                             Forms\Components\Select::make('new_plan_id')
-                                ->label('New Plan')
+                                ->label(__('New Plan'))
                                 ->relationship('subscriptionPlan', 'name', fn (Builder $query, StoreSubscription $record) => $query->where('is_active', true)->where('id', '!=', $record->subscription_plan_id))
                                 ->searchable()
                                 ->preload()
                                 ->required(),
                             Forms\Components\Select::make('billing_cycle')
-                                ->options(['monthly' => 'Monthly', 'yearly' => 'Yearly'])
+                                ->options(['monthly' => __('Monthly'), 'yearly' => 'Yearly'])
                                 ->default('monthly')
                                 ->required(),
                         ])
                         ->action(function (StoreSubscription $record, array $data) {
                             $billing = app(BillingService::class);
                             $billing->changePlan($record->organization_id, $data['new_plan_id'], $data['billing_cycle']);
-                            Notification::make()->title('Plan changed successfully')->success()->send();
+                            Notification::make()->title(__('Plan changed successfully'))->success()->send();
                         }),
                     Tables\Actions\Action::make('apply_credit')
-                        ->label('Apply Credit')
+                        ->label(__('Apply Credit'))
                         ->icon('heroicon-o-banknotes')
                         ->color('success')
                         ->visible(fn () => auth('admin')->user()?->hasPermission('billing.edit'))
@@ -213,27 +213,27 @@ class StoreSubscriptionResource extends Resource
                                 $data['reason'],
                                 auth('admin')->id()
                             );
-                            Notification::make()->title('Credit of SAR ' . number_format($data['amount'], 2) . ' applied')->success()->send();
+                            Notification::make()->title(__('Credit of SAR :amount applied', ['amount' => number_format($data['amount'], 2)]))->success()->send();
                         }),
                     Tables\Actions\Action::make('cancel')
-                        ->label('Cancel Subscription')
+                        ->label(__('Cancel Subscription'))
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->visible(fn (StoreSubscription $record) => in_array($record->status?->value ?? $record->status, ['active', 'trial']) && auth('admin')->user()?->hasPermission('billing.edit'))
                         ->requiresConfirmation()
-                        ->modalDescription('The subscription will enter grace period before expiring.')
+                        ->modalDescription(__('The subscription will enter grace period before expiring.'))
                         ->form([
                             Forms\Components\Textarea::make('reason')
-                                ->label('Cancellation Reason')
+                                ->label(__('Cancellation Reason'))
                                 ->maxLength(500),
                         ])
                         ->action(function (StoreSubscription $record, array $data) {
                             $billing = app(BillingService::class);
                             $billing->cancelSubscription($record->organization_id, $data['reason'] ?? null);
-                            Notification::make()->title('Subscription cancelled')->warning()->send();
+                            Notification::make()->title(__('Subscription cancelled'))->warning()->send();
                         }),
                     Tables\Actions\Action::make('resume')
-                        ->label('Resume Subscription')
+                        ->label(__('Resume Subscription'))
                         ->icon('heroicon-o-play')
                         ->color('success')
                         ->visible(fn (StoreSubscription $record) => in_array($record->status?->value ?? $record->status, ['cancelled', 'grace']) && auth('admin')->user()?->hasPermission('billing.edit'))
@@ -241,7 +241,7 @@ class StoreSubscriptionResource extends Resource
                         ->action(function (StoreSubscription $record) {
                             $billing = app(BillingService::class);
                             $billing->resumeSubscription($record->organization_id);
-                            Notification::make()->title('Subscription resumed')->success()->send();
+                            Notification::make()->title(__('Subscription resumed'))->success()->send();
                         }),
                 ]),
             ])
@@ -256,11 +256,11 @@ class StoreSubscriptionResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Infolists\Components\Section::make('Subscription Overview')
+            Infolists\Components\Section::make(__('Subscription Overview'))
                 ->schema([
                     Infolists\Components\Grid::make(3)->schema([
-                        Infolists\Components\TextEntry::make('organization.name')->label('Organization'),
-                        Infolists\Components\TextEntry::make('subscriptionPlan.name')->label('Plan'),
+                        Infolists\Components\TextEntry::make('organization.name')->label(__('Organization')),
+                        Infolists\Components\TextEntry::make('subscriptionPlan.name')->label(__('Plan')),
                         Infolists\Components\TextEntry::make('status')
                             ->badge()
                             ->color(fn ($state): string => match ($state?->value ?? $state) {
@@ -283,20 +283,20 @@ class StoreSubscriptionResource extends Resource
                         Infolists\Components\TextEntry::make('cancelled_at')->date()->placeholder('—'),
                     ]),
                 ]),
-            Infolists\Components\Section::make('Credits Applied')
+            Infolists\Components\Section::make(__('Credits Applied'))
                 ->schema([
                     Infolists\Components\RepeatableEntry::make('subscriptionCredits')
                         ->label('')
                         ->schema([
                             Infolists\Components\TextEntry::make('amount')->money('SAR'),
                             Infolists\Components\TextEntry::make('reason'),
-                            Infolists\Components\TextEntry::make('appliedBy.name')->label('Applied By'),
+                            Infolists\Components\TextEntry::make('appliedBy.name')->label(__('Applied By')),
                             Infolists\Components\TextEntry::make('applied_at')->dateTime(),
                         ])
                         ->columns(4),
                 ])
                 ->collapsible(),
-            Infolists\Components\Section::make('Cancellation History')
+            Infolists\Components\Section::make(__('Cancellation History'))
                 ->schema([
                     Infolists\Components\RepeatableEntry::make('cancellationReasons')
                         ->label('')

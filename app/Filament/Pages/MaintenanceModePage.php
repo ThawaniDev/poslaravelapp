@@ -16,7 +16,12 @@ class MaintenanceModePage extends Page implements HasForms
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-wrench-screwdriver';
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_settings');
+    }
     protected static ?int $navigationSort = 16;
     protected static string $view = 'filament.pages.settings-form';
 

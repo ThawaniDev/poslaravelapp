@@ -17,9 +17,19 @@ class AdminActivityLogResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-magnifying-glass';
 
-    protected static ?string $navigationGroup = 'Security';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Audit Log';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_security');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.audit_log');
+    }
 
     protected static ?int $navigationSort = 1;
 

@@ -19,9 +19,19 @@ class InvoiceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?string $navigationGroup = 'Subscription & Billing';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Invoices';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_subscription_billing');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.invoices');
+    }
 
     protected static ?int $navigationSort = 3;
 
@@ -34,23 +44,11 @@ class InvoiceResource extends Resource
         return $user && $user->hasAnyPermission(['billing.invoices', 'billing.view']);
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        $pending = Invoice::where('status', 'pending')->count();
-
-        return $pending > 0 ? (string) $pending : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'warning';
-    }
-
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Invoice Details')
-                ->description('Invoice header information')
+            Forms\Components\Section::make(__('Invoice Details'))
+                ->description(__('Invoice header information'))
                 ->schema([
                     Forms\Components\Grid::make(2)->schema([
                         Forms\Components\TextInput::make('invoice_number')
@@ -67,19 +65,19 @@ class InvoiceResource extends Resource
                     ]),
                     Forms\Components\Grid::make(3)->schema([
                         Forms\Components\TextInput::make('amount')
-                            ->label('Subtotal (SAR)')
+                            ->label(__('Subtotal (SAR)'))
                             ->numeric()
                             ->prefix('SAR')
                             ->required()
                             ->reactive()
                             ->afterStateUpdated(fn (Forms\Set $set, ?string $state) => $set('total', round(((float) ($state ?? 0)) * 1.15, 2))),
                         Forms\Components\TextInput::make('tax')
-                            ->label('Tax / VAT (SAR)')
+                            ->label(__('Tax / VAT (SAR)'))
                             ->numeric()
                             ->prefix('SAR')
                             ->default(0),
                         Forms\Components\TextInput::make('total')
-                            ->label('Total (SAR)')
+                            ->label(__('Total (SAR)'))
                             ->numeric()
                             ->prefix('SAR')
                             ->required(),
@@ -87,11 +85,11 @@ class InvoiceResource extends Resource
                     Forms\Components\Grid::make(3)->schema([
                         Forms\Components\Select::make('status')
                             ->options([
-                                'draft' => 'Draft',
-                                'pending' => 'Pending',
-                                'paid' => 'Paid',
-                                'failed' => 'Failed',
-                                'refunded' => 'Refunded',
+                                'draft' => __('Draft'),
+                                'pending' => __('Pending'),
+                                'paid' => __('Paid'),
+                                'failed' => __('Failed'),
+                                'refunded' => __('Refunded'),
                             ])
                             ->required()
                             ->default('pending'),
@@ -100,12 +98,12 @@ class InvoiceResource extends Resource
                         Forms\Components\DateTimePicker::make('paid_at'),
                     ]),
                     Forms\Components\TextInput::make('pdf_url')
-                        ->label('PDF URL')
+                        ->label(__('PDF URL'))
                         ->url()
                         ->maxLength(500),
                 ]),
-            Forms\Components\Section::make('Line Items')
-                ->description('Invoice line item breakdown')
+            Forms\Components\Section::make(__('Line Items'))
+                ->description(__('Invoice line item breakdown'))
                 ->schema([
                     Forms\Components\Repeater::make('invoiceLineItems')
                         ->relationship()
@@ -138,7 +136,7 @@ class InvoiceResource extends Resource
                                 ->dehydrated(),
                         ])
                         ->defaultItems(0)
-                        ->addActionLabel('Add Line Item')
+                        ->addActionLabel(__('Add Line Item'))
                         ->collapsible()
                         ->itemLabel(fn (array $state): ?string => $state['description'] ?? 'New Item'),
                 ])->collapsible(),
@@ -154,13 +152,13 @@ class InvoiceResource extends Resource
                     ->sortable()
                     ->copyable(),
                 Tables\Columns\TextColumn::make('storeSubscription.store.name')
-                    ->label('Store')
+                    ->label(__('Store'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('storeSubscription.subscriptionPlan.name')
-                    ->label('Plan')
+                    ->label(__('Plan'))
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('amount')
-                    ->label('Subtotal')
+                    ->label(__('Subtotal'))
                     ->money('SAR')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('tax')
@@ -196,15 +194,15 @@ class InvoiceResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'draft' => 'Draft',
-                        'pending' => 'Pending',
-                        'paid' => 'Paid',
-                        'failed' => 'Failed',
-                        'refunded' => 'Refunded',
+                        'draft' => __('Draft'),
+                        'pending' => __('Pending'),
+                        'paid' => __('Paid'),
+                        'failed' => __('Failed'),
+                        'refunded' => __('Refunded'),
                     ])
                     ->multiple(),
                 Tables\Filters\Filter::make('overdue')
-                    ->label('Overdue')
+                    ->label(__('Overdue'))
                     ->query(fn (Builder $query) => $query
                         ->where('status', 'pending')
                         ->whereNotNull('due_date')
@@ -226,28 +224,28 @@ class InvoiceResource extends Resource
                     Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\Action::make('mark_paid')
-                        ->label('Mark as Paid')
+                        ->label(__('Mark as Paid'))
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->visible(fn (Invoice $record) => ($record->status?->value ?? $record->status) === 'pending' && auth('admin')->user()?->hasPermission('billing.edit'))
                         ->requiresConfirmation()
                         ->action(function (Invoice $record) {
                             $record->update(['status' => 'paid', 'paid_at' => now()]);
-                            Notification::make()->title('Invoice marked as paid')->success()->send();
+                            Notification::make()->title(__('Invoice marked as paid'))->success()->send();
                         }),
                     Tables\Actions\Action::make('refund')
-                        ->label('Process Refund')
+                        ->label(__('Process Refund'))
                         ->icon('heroicon-o-arrow-uturn-left')
                         ->color('warning')
                         ->visible(fn (Invoice $record) => ($record->status?->value ?? $record->status) === 'paid' && auth('admin')->user()?->hasPermission('billing.refund'))
                         ->requiresConfirmation()
-                        ->modalDescription('This will mark the invoice as refunded. This action cannot be undone.')
+                        ->modalDescription(__('This will mark the invoice as refunded. This action cannot be undone.'))
                         ->action(function (Invoice $record) {
                             $record->update(['status' => 'refunded']);
-                            Notification::make()->title('Invoice refunded')->warning()->send();
+                            Notification::make()->title(__('Invoice refunded'))->warning()->send();
                         }),
                     Tables\Actions\Action::make('download_pdf')
-                        ->label('Download PDF')
+                        ->label(__('Download PDF'))
                         ->icon('heroicon-o-document-arrow-down')
                         ->color('gray')
                         ->visible(fn (Invoice $record) => $record->pdf_url !== null)
@@ -265,13 +263,13 @@ class InvoiceResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Infolists\Components\Section::make('Invoice Details')
+            Infolists\Components\Section::make(__('Invoice Details'))
                 ->schema([
                     Infolists\Components\Grid::make(3)->schema([
                         Infolists\Components\TextEntry::make('invoice_number')
                             ->copyable()
                             ->weight('bold'),
-                        Infolists\Components\TextEntry::make('storeSubscription.store.name')->label('Store'),
+                        Infolists\Components\TextEntry::make('storeSubscription.store.name')->label(__('Store')),
                         Infolists\Components\TextEntry::make('status')
                             ->badge()
                             ->color(fn ($state): string => match ($state?->value ?? $state) {
@@ -284,14 +282,14 @@ class InvoiceResource extends Resource
                             }),
                     ]),
                     Infolists\Components\Grid::make(4)->schema([
-                        Infolists\Components\TextEntry::make('amount')->money('SAR')->label('Subtotal'),
-                        Infolists\Components\TextEntry::make('tax')->money('SAR')->label('VAT'),
+                        Infolists\Components\TextEntry::make('amount')->money('SAR')->label(__('Subtotal')),
+                        Infolists\Components\TextEntry::make('tax')->money('SAR')->label(__('VAT')),
                         Infolists\Components\TextEntry::make('total')->money('SAR')->weight('bold'),
                         Infolists\Components\TextEntry::make('due_date')->date(),
                     ]),
-                    Infolists\Components\TextEntry::make('paid_at')->dateTime()->placeholder('Not paid yet'),
+                    Infolists\Components\TextEntry::make('paid_at')->dateTime()->placeholder(__('Not paid yet')),
                 ]),
-            Infolists\Components\Section::make('Line Items')
+            Infolists\Components\Section::make(__('Line Items'))
                 ->schema([
                     Infolists\Components\RepeatableEntry::make('invoiceLineItems')
                         ->label('')

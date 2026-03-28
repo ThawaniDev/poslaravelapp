@@ -6,6 +6,7 @@ use App\Domain\ContentOnboarding\Models\PosLayoutTemplate;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
@@ -14,7 +15,12 @@ class PosLayoutTemplatesRelationManager extends RelationManager
 {
     protected static string $relationship = 'posLayoutTemplates';
 
-    protected static ?string $title = 'POS Layout Templates';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('POS Layout Templates');
+    }
 
     protected static ?string $icon = 'heroicon-o-squares-2x2';
 

@@ -20,9 +20,19 @@ class PaymentGatewayConfigResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-credit-card';
 
-    protected static ?string $navigationGroup = 'Subscription & Billing';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Payment Gateways';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_subscription_billing');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.payment_gateways');
+    }
 
     protected static ?int $navigationSort = 6;
 
@@ -36,7 +46,7 @@ class PaymentGatewayConfigResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Gateway Configuration')
+            Forms\Components\Section::make(__('Gateway Configuration'))
                 ->schema([
                     Forms\Components\Select::make('gateway_name')
                         ->options(GatewayName::class)
@@ -51,29 +61,29 @@ class PaymentGatewayConfigResource extends Resource
 
                     Forms\Components\Toggle::make('is_active')
                         ->default(true)
-                        ->helperText('Only one gateway per environment should be active'),
+                        ->helperText(__('Only one gateway per environment should be active')),
                 ])
                 ->columns(3),
 
-            Forms\Components\Section::make('Credentials')
+            Forms\Components\Section::make(__('Credentials'))
                 ->schema([
                     Forms\Components\KeyValue::make('credentials_encrypted')
-                        ->label('Credentials')
-                        ->keyLabel('Key')
-                        ->valueLabel('Value')
-                        ->addActionLabel('Add credential field')
-                        ->helperText('Stored encrypted at rest. Common keys: api_key, secret_key, merchant_id, publishable_key')
+                        ->label(__('Credentials'))
+                        ->keyLabel(__('Key'))
+                        ->valueLabel(__('Value'))
+                        ->addActionLabel(__('Add credential field'))
+                        ->helperText(__('Stored encrypted at rest. Common keys: api_key, secret_key, merchant_id, publishable_key'))
                         ->columnSpanFull(),
                 ]),
 
-            Forms\Components\Section::make('Webhook')
+            Forms\Components\Section::make(__('Webhook'))
                 ->schema([
                     Forms\Components\TextInput::make('webhook_url')
-                        ->label('Webhook URL')
+                        ->label(__('Webhook URL'))
                         ->url()
                         ->maxLength(500)
                         ->prefixIcon('heroicon-m-link')
-                        ->helperText('The URL the gateway will call for payment notifications')
+                        ->helperText(__('The URL the gateway will call for payment notifications'))
                         ->columnSpanFull(),
                 ]),
         ]);
@@ -103,7 +113,7 @@ class PaymentGatewayConfigResource extends Resource
 
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
-                    ->label('Active'),
+                    ->label(__('Active')),
 
                 Tables\Columns\TextColumn::make('webhook_url')
                     ->limit(40)
@@ -112,7 +122,7 @@ class PaymentGatewayConfigResource extends Resource
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
                     ->sortable()
-                    ->label('Last Updated'),
+                    ->label(__('Last Updated')),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('gateway_name')
@@ -122,7 +132,7 @@ class PaymentGatewayConfigResource extends Resource
                     ->options(GatewayEnvironment::class),
 
                 Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Active Status'),
+                    ->label(__('Active Status')),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -152,16 +162,16 @@ class PaymentGatewayConfigResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Infolists\Components\Section::make('Gateway Details')
+            Infolists\Components\Section::make(__('Gateway Details'))
                 ->schema([
                     Infolists\Components\TextEntry::make('gateway_name')->badge(),
                     Infolists\Components\TextEntry::make('environment')->badge(),
-                    Infolists\Components\IconEntry::make('is_active')->boolean()->label('Active'),
-                    Infolists\Components\TextEntry::make('webhook_url')->copyable()->placeholder('Not configured'),
+                    Infolists\Components\IconEntry::make('is_active')->boolean()->label(__('Active')),
+                    Infolists\Components\TextEntry::make('webhook_url')->copyable()->placeholder(__('Not configured')),
                 ])
                 ->columns(4),
 
-            Infolists\Components\Section::make('Timestamps')
+            Infolists\Components\Section::make(__('Timestamps'))
                 ->schema([
                     Infolists\Components\TextEntry::make('created_at')->dateTime(),
                     Infolists\Components\TextEntry::make('updated_at')->dateTime(),

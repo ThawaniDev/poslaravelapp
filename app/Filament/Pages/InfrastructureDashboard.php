@@ -15,7 +15,12 @@ class InfrastructureDashboard extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-server-stack';
 
-    protected static ?string $navigationGroup = 'Infrastructure';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_infrastructure');
+    }
 
     protected static ?int $navigationSort = 0;
 

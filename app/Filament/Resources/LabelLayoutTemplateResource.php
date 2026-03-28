@@ -19,7 +19,12 @@ class LabelLayoutTemplateResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-tag';
 
-    protected static ?string $navigationGroup = 'UI Management';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_ui_management');
+    }
 
     protected static ?string $navigationLabel = null;
 
@@ -284,6 +289,11 @@ class LabelLayoutTemplateResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_active')->label(__('ui.is_active')),
             ])
             ->actions([
+                Tables\Actions\Action::make('preview')
+                    ->label(__('ui.preview'))
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn (LabelLayoutTemplate $record) => static::getUrl('preview', ['record' => $record])),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('toggle_active')
                     ->label(fn (LabelLayoutTemplate $r) => $r->is_active ? __('ui.deactivate') : __('ui.activate'))
@@ -300,6 +310,11 @@ class LabelLayoutTemplateResource extends Resource
             ->defaultSort('name');
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->with('businessTypes');
+    }
+
     // ─── Pages ───────────────────────────────────────────────
 
     public static function getPages(): array
@@ -308,6 +323,7 @@ class LabelLayoutTemplateResource extends Resource
             'index' => LabelLayoutTemplateResource\Pages\ListLabelLayoutTemplates::route('/'),
             'create' => LabelLayoutTemplateResource\Pages\CreateLabelLayoutTemplate::route('/create'),
             'edit' => LabelLayoutTemplateResource\Pages\EditLabelLayoutTemplate::route('/{record}/edit'),
+            'preview' => LabelLayoutTemplateResource\Pages\PreviewLabelLayoutTemplate::route('/{record}/preview'),
         ];
     }
 }

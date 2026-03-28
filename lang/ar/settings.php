@@ -162,12 +162,18 @@ return [
     'pmc_digital' => 'رقمي',
     'pmc_credit' => 'ائتمان',
     'pm_cash' => 'نقد',
+    'pm_card' => 'بطاقة',
     'pm_card_mada' => 'بطاقة مدى',
     'pm_card_visa' => 'بطاقة Visa',
     'pm_card_mastercard' => 'بطاقة Mastercard',
+    'pm_mada' => 'مدى',
+    'pm_apple_pay' => 'Apple Pay',
+    'pm_stc_pay' => 'STC Pay',
     'pm_store_credit' => 'رصيد المتجر',
     'pm_gift_card' => 'بطاقة هدية',
     'pm_mobile_payment' => 'دفع بالهاتف',
+    'pm_loyalty_points' => 'نقاط الولاء',
+    'pm_bank_transfer' => 'تحويل بنكي',
 
     // ─── Supported Locales ───────────────────────────────────
     'locale_details' => 'تفاصيل اللغة',

@@ -5,6 +5,7 @@ namespace App\Filament\Resources\BusinessTypeResource\RelationManagers;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -12,7 +13,12 @@ class PromotionTemplatesRelationManager extends RelationManager
 {
     protected static string $relationship = 'businessTypePromotionTemplates';
 
-    protected static ?string $title = 'Promotion Templates';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Promotion Templates');
+    }
 
     protected static ?string $icon = 'heroicon-o-gift';
 
@@ -20,11 +26,11 @@ class PromotionTemplatesRelationManager extends RelationManager
     {
         return $form->schema([
             Forms\Components\TextInput::make('name')
-                ->label('Name (EN)')
+                ->label(__('Name (EN)'))
                 ->required()
                 ->maxLength(255),
             Forms\Components\TextInput::make('name_ar')
-                ->label('Name (AR)')
+                ->label(__('Name (AR)'))
                 ->maxLength(255),
             Forms\Components\Textarea::make('description')
                 ->rows(2)
@@ -68,7 +74,7 @@ class PromotionTemplatesRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('discount_value'),
                 Tables\Columns\TextColumn::make('applies_to'),
                 Tables\Columns\TextColumn::make('minimum_order'),
-                Tables\Columns\TextColumn::make('sort_order')->label('Sort')->sortable(),
+                Tables\Columns\TextColumn::make('sort_order')->label(__('Sort'))->sortable(),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')

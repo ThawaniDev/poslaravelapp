@@ -20,37 +20,37 @@ class ListOrganizations extends ListRecords
         return [
             Actions\CreateAction::make(),
             Actions\Action::make('onboard_organization')
-                ->label('Onboard New Organization')
+                ->label(__('Onboard New Organization'))
                 ->icon('heroicon-o-rocket-launch')
                 ->color('success')
                 ->visible(fn () => auth('admin')->user()?->hasPermission('stores.create'))
                 ->steps([
-                    Forms\Components\Wizard\Step::make('Organization')
+                    Forms\Components\Wizard\Step::make(__('Organization'))
                         ->icon('heroicon-o-building-office-2')
                         ->schema([
                             Forms\Components\TextInput::make('org_name')
-                                ->label('Organization Name (EN)')
+                                ->label(__('Organization Name (EN)'))
                                 ->required()
                                 ->maxLength(255),
                             Forms\Components\TextInput::make('org_name_ar')
-                                ->label('Organization Name (AR)')
+                                ->label(__('Organization Name (AR)'))
                                 ->maxLength(255),
                             Forms\Components\TextInput::make('cr_number')
-                                ->label('CR Number')
+                                ->label(__('CR Number'))
                                 ->maxLength(50),
                             Forms\Components\TextInput::make('vat_number')
-                                ->label('VAT Number')
+                                ->label(__('VAT Number'))
                                 ->maxLength(50),
                             Forms\Components\TextInput::make('org_email')
-                                ->label('Email')
+                                ->label(__('Email'))
                                 ->email(),
                             Forms\Components\TextInput::make('org_phone')
-                                ->label('Phone')
+                                ->label(__('Phone'))
                                 ->tel(),
                             Forms\Components\Select::make('country')
                                 ->options([
-                                    'SA' => 'Saudi Arabia', 'OM' => 'Oman', 'AE' => 'UAE',
-                                    'BH' => 'Bahrain', 'KW' => 'Kuwait', 'QA' => 'Qatar',
+                                    'SA' => __('Saudi Arabia'), 'OM' => 'Oman', 'AE' => 'UAE',
+                                    'BH' => __('Bahrain'), 'KW' => 'Kuwait', 'QA' => 'Qatar',
                                 ])
                                 ->default('SA')
                                 ->native(false),
@@ -58,15 +58,15 @@ class ListOrganizations extends ListRecords
                         ])
                         ->columns(2),
 
-                    Forms\Components\Wizard\Step::make('First Store')
+                    Forms\Components\Wizard\Step::make(__('First Store'))
                         ->icon('heroicon-o-building-storefront')
                         ->schema([
                             Forms\Components\TextInput::make('store_name')
-                                ->label('Store Name (EN)')
+                                ->label(__('Store Name (EN)'))
                                 ->required()
                                 ->maxLength(255),
                             Forms\Components\TextInput::make('store_name_ar')
-                                ->label('Store Name (AR)')
+                                ->label(__('Store Name (AR)'))
                                 ->maxLength(255),
                             Forms\Components\Select::make('business_type')
                                 ->options(BusinessType::class)
@@ -74,13 +74,13 @@ class ListOrganizations extends ListRecords
                                 ->native(false)
                                 ->searchable(),
                             Forms\Components\TextInput::make('store_phone')
-                                ->label('Store Phone')
+                                ->label(__('Store Phone'))
                                 ->tel(),
                             Forms\Components\TextInput::make('store_email')
-                                ->label('Store Email')
+                                ->label(__('Store Email'))
                                 ->email(),
                             Forms\Components\TextInput::make('store_city')
-                                ->label('Store City')
+                                ->label(__('Store City'))
                                 ->maxLength(100),
                             Forms\Components\Select::make('timezone')
                                 ->options(collect(timezone_identifiers_list())
@@ -91,8 +91,8 @@ class ListOrganizations extends ListRecords
                                 ->default('Asia/Riyadh'),
                             Forms\Components\Select::make('currency')
                                 ->options([
-                                    'SAR' => 'SAR', 'OMR' => 'OMR', 'AED' => 'AED',
-                                    'BHD' => 'BHD', 'KWD' => 'KWD', 'QAR' => 'QAR',
+                                    'SAR' => __('SAR'), 'OMR' => 'OMR', 'AED' => 'AED',
+                                    'BHD' => __('BHD'), 'KWD' => 'KWD', 'QAR' => 'QAR',
                                 ])
                                 ->default('SAR')
                                 ->native(false),

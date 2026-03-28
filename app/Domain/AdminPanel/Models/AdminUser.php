@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -41,24 +42,37 @@ class AdminUser extends Authenticatable implements FilamentUser
     public function isSuperAdmin(): bool
     {
         if ($this->cachedIsSuperAdmin === null) {
-            $this->cachedIsSuperAdmin = $this->roles()->where('slug', 'super_admin')->exists();
+            $this->cachedIsSuperAdmin = Cache::remember(
+                "admin_user:{$this->id}:is_super_admin",
+                300, // 5 minutes
+                fn () => $this->roles()->where('slug', 'super_admin')->exists(),
+            );
         }
 
         return $this->cachedIsSuperAdmin;
     }
 
     /**
-     * Load all permission names for this user (once per request).
+     * Load all permission names for this user (cached 5 minutes).
      */
     protected function loadPermissions(): \Illuminate\Support\Collection
     {
         if ($this->cachedPermissions === null) {
-            $roleIds = $this->roles()->pluck('admin_roles.id');
+            $permissions = Cache::remember(
+                "admin_user:{$this->id}:permissions",
+                300, // 5 minutes
+                function () {
+                    $roleIds = $this->roles()->pluck('admin_roles.id');
 
-            $this->cachedPermissions = DB::table('admin_role_permissions')
-                ->join('admin_permissions', 'admin_role_permissions.admin_permission_id', '=', 'admin_permissions.id')
-                ->whereIn('admin_role_permissions.admin_role_id', $roleIds)
-                ->pluck('admin_permissions.name');
+                    return DB::table('admin_role_permissions')
+                        ->join('admin_permissions', 'admin_role_permissions.admin_permission_id', '=', 'admin_permissions.id')
+                        ->whereIn('admin_role_permissions.admin_role_id', $roleIds)
+                        ->pluck('admin_permissions.name')
+                        ->all();
+                },
+            );
+
+            $this->cachedPermissions = collect($permissions);
         }
 
         return $this->cachedPermissions;

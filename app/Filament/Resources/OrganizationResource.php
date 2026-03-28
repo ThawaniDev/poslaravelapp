@@ -23,9 +23,19 @@ class OrganizationResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-office-2';
 
-    protected static ?string $navigationGroup = 'Core';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Organizations';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_core');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.organizations');
+    }
 
     protected static ?int $navigationSort = 1;
 
@@ -36,18 +46,6 @@ class OrganizationResource extends Resource
         $user = auth('admin')->user();
 
         return $user && $user->hasAnyPermission(['stores.view', 'stores.edit', 'stores.create']);
-    }
-
-    public static function getNavigationBadge(): ?string
-    {
-        $count = Organization::where('is_active', true)->count();
-
-        return $count > 0 ? (string) $count : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'primary';
     }
 
     public static function getGloballySearchableAttributes(): array
@@ -62,19 +60,19 @@ class OrganizationResource extends Resource
         return $form->schema([
             Forms\Components\Tabs::make('OrganizationTabs')
                 ->tabs([
-                    Forms\Components\Tabs\Tab::make('Basic Info')
+                    Forms\Components\Tabs\Tab::make(__('Basic Info'))
                         ->icon('heroicon-o-building-office-2')
                         ->schema([
-                            Forms\Components\Section::make('Organization Identity')
+                            Forms\Components\Section::make(__('Organization Identity'))
                                 ->schema([
                                     Forms\Components\TextInput::make('name')
-                                        ->label('Name (EN)')
+                                        ->label(__('Name (EN)'))
                                         ->required()
                                         ->maxLength(255)
                                         ->live(onBlur: true)
                                         ->afterStateUpdated(fn (Forms\Set $set, ?string $state) => $set('slug', Str::slug($state))),
                                     Forms\Components\TextInput::make('name_ar')
-                                        ->label('Name (AR)')
+                                        ->label(__('Name (AR)'))
                                         ->maxLength(255),
                                     Forms\Components\TextInput::make('slug')
                                         ->required()
@@ -85,48 +83,48 @@ class OrganizationResource extends Resource
                                         ->native(false)
                                         ->searchable(),
                                     Forms\Components\TextInput::make('logo_url')
-                                        ->label('Logo URL')
+                                        ->label(__('Logo URL'))
                                         ->url()
                                         ->maxLength(500),
                                 ])
                                 ->columns(2),
 
-                            Forms\Components\Section::make('Legal Information')
+                            Forms\Components\Section::make(__('Legal Information'))
                                 ->schema([
                                     Forms\Components\TextInput::make('cr_number')
-                                        ->label('CR Number')
+                                        ->label(__('CR Number'))
                                         ->maxLength(50)
-                                        ->helperText('Commercial Registration number'),
+                                        ->helperText(__('Commercial Registration number')),
                                     Forms\Components\TextInput::make('vat_number')
-                                        ->label('VAT Number')
+                                        ->label(__('VAT Number'))
                                         ->maxLength(50)
-                                        ->helperText('Tax identification number'),
+                                        ->helperText(__('Tax identification number')),
                                 ])
                                 ->columns(2),
                         ]),
 
-                    Forms\Components\Tabs\Tab::make('Contact & Location')
+                    Forms\Components\Tabs\Tab::make(__('Contact & Location'))
                         ->icon('heroicon-o-map-pin')
                         ->schema([
-                            Forms\Components\Section::make('Contact')
+                            Forms\Components\Section::make(__('Contact'))
                                 ->schema([
                                     Forms\Components\TextInput::make('phone')->tel()->maxLength(20),
                                     Forms\Components\TextInput::make('email')->email()->maxLength(255),
                                 ])
                                 ->columns(2),
 
-                            Forms\Components\Section::make('Address')
+                            Forms\Components\Section::make(__('Address'))
                                 ->schema([
                                     Forms\Components\TextInput::make('address')->maxLength(500)->columnSpanFull(),
                                     Forms\Components\TextInput::make('city')->maxLength(100),
                                     Forms\Components\Select::make('country')
                                         ->options([
-                                            'SA' => 'Saudi Arabia',
-                                            'OM' => 'Oman',
-                                            'AE' => 'UAE',
-                                            'BH' => 'Bahrain',
-                                            'KW' => 'Kuwait',
-                                            'QA' => 'Qatar',
+                                            'SA' => __('Saudi Arabia'),
+                                            'OM' => __('Oman'),
+                                            'AE' => __('UAE'),
+                                            'BH' => __('Bahrain'),
+                                            'KW' => __('Kuwait'),
+                                            'QA' => __('Qatar'),
                                         ])
                                         ->default('SA')
                                         ->native(false),
@@ -134,15 +132,15 @@ class OrganizationResource extends Resource
                                 ->columns(2),
                         ]),
 
-                    Forms\Components\Tabs\Tab::make('Status')
+                    Forms\Components\Tabs\Tab::make(__('Status'))
                         ->icon('heroicon-o-cog-6-tooth')
                         ->schema([
-                            Forms\Components\Section::make('Activation')
+                            Forms\Components\Section::make(__('Activation'))
                                 ->schema([
                                     Forms\Components\Toggle::make('is_active')
-                                        ->label('Active')
+                                        ->label(__('Active'))
                                         ->default(true)
-                                        ->helperText('Inactive organizations and all their stores will be suspended'),
+                                        ->helperText(__('Inactive organizations and all their stores will be suspended')),
                                 ]),
                         ]),
                 ])
@@ -163,11 +161,11 @@ class OrganizationResource extends Resource
                     ->description(fn (Organization $record) => $record->name_ar)
                     ->wrap(),
                 Tables\Columns\TextColumn::make('cr_number')
-                    ->label('CR Number')
+                    ->label(__('CR Number'))
                     ->searchable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('vat_number')
-                    ->label('VAT')
+                    ->label(__('VAT'))
                     ->searchable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('business_type')
@@ -191,11 +189,11 @@ class OrganizationResource extends Resource
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('subscription.subscriptionPlan.name')
-                    ->label('Plan')
-                    ->placeholder('No plan')
+                    ->label(__('Plan'))
+                    ->placeholder(__('No plan'))
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('subscription.status')
-                    ->label('Sub. Status')
+                    ->label(__('Sub. Status'))
                     ->badge()
                     ->color(fn ($state) => match ($state?->value ?? $state) {
                         'active' => 'success',
@@ -208,13 +206,13 @@ class OrganizationResource extends Resource
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('stores_count')
                     ->counts('stores')
-                    ->label('Stores')
+                    ->label(__('Stores'))
                     ->sortable()
                     ->badge()
                     ->color('info'),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
-                    ->label('Active')
+                    ->label(__('Active'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('phone')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -226,30 +224,30 @@ class OrganizationResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
+                Tables\Filters\TernaryFilter::make('is_active')->label(__('Active')),
                 Tables\Filters\SelectFilter::make('business_type')
                     ->options(BusinessType::class)
                     ->multiple(),
                 Tables\Filters\SelectFilter::make('country')
                     ->options([
-                        'SA' => 'Saudi Arabia',
-                        'OM' => 'Oman',
-                        'AE' => 'UAE',
-                        'BH' => 'Bahrain',
-                        'KW' => 'Kuwait',
-                        'QA' => 'Qatar',
+                        'SA' => __('Saudi Arabia'),
+                        'OM' => __('Oman'),
+                        'AE' => __('UAE'),
+                        'BH' => __('Bahrain'),
+                        'KW' => __('Kuwait'),
+                        'QA' => __('Qatar'),
                     ]),
                 Tables\Filters\Filter::make('has_stores')
-                    ->label('Has Stores')
+                    ->label(__('Has Stores'))
                     ->query(fn (Builder $query) => $query->has('stores')),
                 Tables\Filters\Filter::make('no_stores')
-                    ->label('No Stores')
+                    ->label(__('No Stores'))
                     ->query(fn (Builder $query) => $query->doesntHave('stores')),
                 Tables\Filters\Filter::make('has_subscription')
-                    ->label('Has Subscription')
+                    ->label(__('Has Subscription'))
                     ->query(fn (Builder $query) => $query->whereHas('subscription')),
                 Tables\Filters\Filter::make('no_subscription')
-                    ->label('No Subscription')
+                    ->label(__('No Subscription'))
                     ->query(fn (Builder $query) => $query->whereDoesntHave('subscription')),
             ])
             ->actions([
@@ -257,17 +255,17 @@ class OrganizationResource extends Resource
                     Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\Action::make('onboard_store')
-                        ->label('Onboard New Store')
+                        ->label(__('Onboard New Store'))
                         ->icon('heroicon-o-plus-circle')
                         ->color('success')
                         ->visible(fn () => auth('admin')->user()?->hasPermission('stores.create'))
                         ->form([
                             Forms\Components\TextInput::make('store_name')
-                                ->label('Store Name (EN)')
+                                ->label(__('Store Name (EN)'))
                                 ->required()
                                 ->maxLength(255),
                             Forms\Components\TextInput::make('store_name_ar')
-                                ->label('Store Name (AR)')
+                                ->label(__('Store Name (AR)'))
                                 ->maxLength(255),
                             Forms\Components\Select::make('business_type')
                                 ->options(BusinessType::class)
@@ -277,7 +275,7 @@ class OrganizationResource extends Resource
                             Forms\Components\TextInput::make('email')->email(),
                             Forms\Components\TextInput::make('city')->maxLength(100),
                             Forms\Components\Toggle::make('is_main_branch')
-                                ->label('Main Branch')
+                                ->label(__('Main Branch'))
                                 ->default(false),
                         ])
                         ->action(function (Organization $record, array $data) {
@@ -295,24 +293,24 @@ class OrganizationResource extends Resource
                             ]);
 
                             Notification::make()
-                                ->title('Store created and onboarding started')
+                                ->title(__('Store created and onboarding started'))
                                 ->success()
                                 ->send();
                         }),
                     Tables\Actions\Action::make('suspend')
-                        ->label('Suspend')
+                        ->label(__('Suspend'))
                         ->icon('heroicon-o-no-symbol')
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->modalDescription('This will deactivate the organization and all its stores.')
+                        ->modalDescription(__('This will deactivate the organization and all its stores.'))
                         ->visible(fn (Organization $record) => $record->is_active && auth('admin')->user()?->hasPermission('stores.suspend'))
                         ->action(function (Organization $record) {
                             $record->update(['is_active' => false]);
                             $record->stores()->update(['is_active' => false]);
-                            Notification::make()->title('Organization suspended')->warning()->send();
+                            Notification::make()->title(__('Organization suspended'))->warning()->send();
                         }),
                     Tables\Actions\Action::make('activate')
-                        ->label('Activate')
+                        ->label(__('Activate'))
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
@@ -320,14 +318,14 @@ class OrganizationResource extends Resource
                         ->action(function (Organization $record) {
                             $record->update(['is_active' => true]);
                             $record->stores()->update(['is_active' => true]);
-                            Notification::make()->title('Organization activated')->success()->send();
+                            Notification::make()->title(__('Organization activated'))->success()->send();
                         }),
                 ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\BulkAction::make('bulk_suspend')
-                        ->label('Suspend Selected')
+                        ->label(__('Suspend Selected'))
                         ->icon('heroicon-o-no-symbol')
                         ->color('danger')
                         ->requiresConfirmation()
@@ -340,7 +338,7 @@ class OrganizationResource extends Resource
                             });
                         }),
                     Tables\Actions\BulkAction::make('bulk_activate')
-                        ->label('Activate Selected')
+                        ->label(__('Activate Selected'))
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
@@ -364,13 +362,13 @@ class OrganizationResource extends Resource
         return $infolist->schema([
             Infolists\Components\Tabs::make('OrgTabs')
                 ->tabs([
-                    Infolists\Components\Tabs\Tab::make('Overview')
+                    Infolists\Components\Tabs\Tab::make(__('Overview'))
                         ->icon('heroicon-o-building-office-2')
                         ->schema([
-                            Infolists\Components\Section::make('Organization Identity')
+                            Infolists\Components\Section::make(__('Organization Identity'))
                                 ->schema([
                                     Infolists\Components\TextEntry::make('name')->weight('bold'),
-                                    Infolists\Components\TextEntry::make('name_ar')->label('Name (AR)'),
+                                    Infolists\Components\TextEntry::make('name_ar')->label(__('Name (AR)')),
                                     Infolists\Components\TextEntry::make('slug')->copyable(),
                                     Infolists\Components\TextEntry::make('business_type')
                                         ->badge()
@@ -382,35 +380,35 @@ class OrganizationResource extends Resource
                                             default => 'gray',
                                         }),
                                     Infolists\Components\TextEntry::make('logo_url')
-                                        ->label('Logo URL')
-                                        ->placeholder('N/A')
+                                        ->label(__('Logo URL'))
+                                        ->placeholder(__('N/A'))
                                         ->url(fn ($state) => $state)
                                         ->openUrlInNewTab(),
                                 ])
                                 ->columns(3),
 
-                            Infolists\Components\Section::make('Legal Information')
+                            Infolists\Components\Section::make(__('Legal Information'))
                                 ->schema([
-                                    Infolists\Components\TextEntry::make('cr_number')->label('CR Number')->placeholder('N/A')->copyable(),
-                                    Infolists\Components\TextEntry::make('vat_number')->label('VAT Number')->placeholder('N/A')->copyable(),
+                                    Infolists\Components\TextEntry::make('cr_number')->label(__('CR Number'))->placeholder(__('N/A'))->copyable(),
+                                    Infolists\Components\TextEntry::make('vat_number')->label(__('VAT Number'))->placeholder(__('N/A'))->copyable(),
                                 ])
                                 ->columns(2),
 
-                            Infolists\Components\Section::make('Contact & Location')
+                            Infolists\Components\Section::make(__('Contact & Location'))
                                 ->schema([
-                                    Infolists\Components\TextEntry::make('phone')->copyable()->placeholder('N/A'),
-                                    Infolists\Components\TextEntry::make('email')->copyable()->placeholder('N/A'),
-                                    Infolists\Components\TextEntry::make('address')->placeholder('N/A')->columnSpanFull(),
-                                    Infolists\Components\TextEntry::make('city')->placeholder('N/A'),
-                                    Infolists\Components\TextEntry::make('country')->placeholder('N/A'),
+                                    Infolists\Components\TextEntry::make('phone')->copyable()->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('email')->copyable()->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('address')->placeholder(__('N/A'))->columnSpanFull(),
+                                    Infolists\Components\TextEntry::make('city')->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('country')->placeholder(__('N/A')),
                                 ])
                                 ->columns(3),
 
-                            Infolists\Components\Section::make('Status')
+                            Infolists\Components\Section::make(__('Status'))
                                 ->schema([
-                                    Infolists\Components\IconEntry::make('is_active')->boolean()->label('Active'),
+                                    Infolists\Components\IconEntry::make('is_active')->boolean()->label(__('Active')),
                                     Infolists\Components\TextEntry::make('stores_count')
-                                        ->label('Total Stores')
+                                        ->label(__('Total Stores'))
                                         ->state(fn (Organization $record) => $record->stores()->count())
                                         ->badge()
                                         ->color('info'),
@@ -420,17 +418,17 @@ class OrganizationResource extends Resource
                                 ->columns(4),
                         ]),
 
-                    Infolists\Components\Tabs\Tab::make('Subscription')
+                    Infolists\Components\Tabs\Tab::make(__('Subscription'))
                         ->icon('heroicon-o-credit-card')
                         ->schema([
-                            Infolists\Components\Section::make('Current Subscription')
+                            Infolists\Components\Section::make(__('Current Subscription'))
                                 ->schema([
                                     Infolists\Components\TextEntry::make('subscription.subscriptionPlan.name')
-                                        ->label('Plan')
-                                        ->placeholder('No subscription')
+                                        ->label(__('Plan'))
+                                        ->placeholder(__('No subscription'))
                                         ->weight('bold'),
                                     Infolists\Components\TextEntry::make('subscription.status')
-                                        ->label('Status')
+                                        ->label(__('Status'))
                                         ->badge()
                                         ->color(fn ($state) => match ($state?->value ?? $state) {
                                             'active' => 'success', 'trial' => 'info',
@@ -438,27 +436,27 @@ class OrganizationResource extends Resource
                                             default => 'gray',
                                         }),
                                     Infolists\Components\TextEntry::make('subscription.billing_cycle')
-                                        ->label('Billing Cycle')
-                                        ->placeholder('N/A'),
+                                        ->label(__('Billing Cycle'))
+                                        ->placeholder(__('N/A')),
                                     Infolists\Components\TextEntry::make('subscription.payment_method')
-                                        ->label('Payment Method')
-                                        ->placeholder('N/A'),
+                                        ->label(__('Payment Method'))
+                                        ->placeholder(__('N/A')),
                                     Infolists\Components\TextEntry::make('subscription.current_period_start')
-                                        ->label('Period Start')
+                                        ->label(__('Period Start'))
                                         ->dateTime()
-                                        ->placeholder('N/A'),
+                                        ->placeholder(__('N/A')),
                                     Infolists\Components\TextEntry::make('subscription.current_period_end')
-                                        ->label('Period End')
+                                        ->label(__('Period End'))
                                         ->dateTime()
-                                        ->placeholder('N/A'),
+                                        ->placeholder(__('N/A')),
                                     Infolists\Components\TextEntry::make('subscription.trial_ends_at')
-                                        ->label('Trial Ends')
+                                        ->label(__('Trial Ends'))
                                         ->dateTime()
-                                        ->placeholder('No trial'),
+                                        ->placeholder(__('No trial')),
                                     Infolists\Components\TextEntry::make('subscription.cancelled_at')
-                                        ->label('Cancelled At')
+                                        ->label(__('Cancelled At'))
                                         ->dateTime()
-                                        ->placeholder('N/A'),
+                                        ->placeholder(__('N/A')),
                                 ])
                                 ->columns(4),
                         ]),

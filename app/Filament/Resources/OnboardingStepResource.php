@@ -17,9 +17,19 @@ class OnboardingStepResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
-    protected static ?string $navigationGroup = 'Content';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Onboarding Steps';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_content');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.onboarding_steps');
+    }
 
     protected static ?int $navigationSort = 2;
 
@@ -32,35 +42,23 @@ class OnboardingStepResource extends Resource
         return $user && $user->hasAnyPermission(['content.manage']);
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        $count = OnboardingStep::where('is_required', true)->count();
-
-        return $count > 0 ? (string) $count : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'warning';
-    }
-
     // ─── Form ────────────────────────────────────────────────────
 
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Step Content')
-                ->description('Define the onboarding step content in both languages')
+            Forms\Components\Section::make(__('Step Content'))
+                ->description(__('Define the onboarding step content in both languages'))
                 ->schema([
                     Forms\Components\TextInput::make('title')
-                        ->label('Title (EN)')
+                        ->label(__('Title (EN)'))
                         ->required()
                         ->maxLength(255),
                     Forms\Components\TextInput::make('title_ar')
-                        ->label('Title (AR)')
+                        ->label(__('Title (AR)'))
                         ->maxLength(255),
                     Forms\Components\RichEditor::make('description')
-                        ->label('Description (EN)')
+                        ->label(__('Description (EN)'))
                         ->columnSpanFull()
                         ->toolbarButtons([
                             'bold', 'italic', 'underline', 'strike',
@@ -68,7 +66,7 @@ class OnboardingStepResource extends Resource
                             'link', 'redo', 'undo',
                         ]),
                     Forms\Components\RichEditor::make('description_ar')
-                        ->label('Description (AR)')
+                        ->label(__('Description (AR)'))
                         ->columnSpanFull()
                         ->toolbarButtons([
                             'bold', 'italic', 'underline', 'strike',
@@ -78,22 +76,22 @@ class OnboardingStepResource extends Resource
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Step Configuration')
-                ->description('Control step ordering and behavior')
+            Forms\Components\Section::make(__('Step Configuration'))
+                ->description(__('Control step ordering and behavior'))
                 ->schema([
                     Forms\Components\TextInput::make('step_number')
                         ->required()
                         ->numeric()
                         ->minValue(1)
-                        ->helperText('Determines the order in which steps appear'),
+                        ->helperText(__('Determines the order in which steps appear')),
                     Forms\Components\TextInput::make('sort_order')
                         ->numeric()
                         ->default(0)
-                        ->helperText('Fine-tune display ordering within same step number'),
+                        ->helperText(__('Fine-tune display ordering within same step number')),
                     Forms\Components\Toggle::make('is_required')
-                        ->label('Required')
+                        ->label(__('Required'))
                         ->default(true)
-                        ->helperText('Required steps must be completed before finishing onboarding'),
+                        ->helperText(__('Required steps must be completed before finishing onboarding')),
                 ])
                 ->columns(3),
         ]);
@@ -121,10 +119,10 @@ class OnboardingStepResource extends Resource
                     ->toggleable(),
                 Tables\Columns\IconColumn::make('is_required')
                     ->boolean()
-                    ->label('Required')
+                    ->label(__('Required'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('sort_order')
-                    ->label('Sort')
+                    ->label(__('Sort'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
@@ -133,7 +131,7 @@ class OnboardingStepResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_required')->label('Required'),
+                Tables\Filters\TernaryFilter::make('is_required')->label(__('Required')),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -156,20 +154,20 @@ class OnboardingStepResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Infolists\Components\Section::make('Step Content')
+            Infolists\Components\Section::make(__('Step Content'))
                 ->schema([
-                    Infolists\Components\TextEntry::make('title')->label('Title (EN)')->weight('bold'),
-                    Infolists\Components\TextEntry::make('title_ar')->label('Title (AR)'),
-                    Infolists\Components\TextEntry::make('description')->label('Description (EN)')->html()->columnSpanFull(),
-                    Infolists\Components\TextEntry::make('description_ar')->label('Description (AR)')->html()->columnSpanFull(),
+                    Infolists\Components\TextEntry::make('title')->label(__('Title (EN)'))->weight('bold'),
+                    Infolists\Components\TextEntry::make('title_ar')->label(__('Title (AR)')),
+                    Infolists\Components\TextEntry::make('description')->label(__('Description (EN)'))->html()->columnSpanFull(),
+                    Infolists\Components\TextEntry::make('description_ar')->label(__('Description (AR)'))->html()->columnSpanFull(),
                 ])
                 ->columns(2),
 
-            Infolists\Components\Section::make('Configuration')
+            Infolists\Components\Section::make(__('Configuration'))
                 ->schema([
                     Infolists\Components\TextEntry::make('step_number')->badge()->color('info'),
                     Infolists\Components\TextEntry::make('sort_order'),
-                    Infolists\Components\IconEntry::make('is_required')->boolean()->label('Required'),
+                    Infolists\Components\IconEntry::make('is_required')->boolean()->label(__('Required')),
                     Infolists\Components\TextEntry::make('created_at')->dateTime(),
                     Infolists\Components\TextEntry::make('updated_at')->dateTime(),
                 ])

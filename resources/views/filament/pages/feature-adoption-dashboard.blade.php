@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 label: '{{ __('analytics.adoption_rate') }} %',
                 data: @json($features->pluck('adoption_rate')),
-                backgroundColor: @json($features->map(fn($f) => $f['adoption_rate'] >= 50 ? 'rgba(16,185,129,0.7)' : ($f['adoption_rate'] >= 20 ? 'rgba(245,158,11,0.7)' : 'rgba(239,68,68,0.7)'))->values()),
+                backgroundColor: {!! json_encode($features->map(fn($f) => $f['adoption_rate'] >= 50 ? 'rgba(16,185,129,0.7)' : ($f['adoption_rate'] >= 20 ? 'rgba(245,158,11,0.7)' : 'rgba(239,68,68,0.7)'))->values()) !!},
                 borderRadius: 4,
             }]
         },

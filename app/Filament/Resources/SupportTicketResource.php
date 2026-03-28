@@ -26,7 +26,12 @@ class SupportTicketResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-ticket';
 
-    protected static ?string $navigationGroup = 'Support';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_support');
+    }
 
     protected static ?string $navigationLabel = null;
 
@@ -47,18 +52,6 @@ class SupportTicketResource extends Resource
     public static function getPluralModelLabel(): string
     {
         return __('support.tickets');
-    }
-
-    public static function getNavigationBadge(): ?string
-    {
-        return (string) SupportTicket::unresolved()->count() ?: null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        $count = SupportTicket::unresolved()->count();
-
-        return $count > 10 ? 'danger' : ($count > 0 ? 'warning' : 'success');
     }
 
     public static function canAccess(): bool

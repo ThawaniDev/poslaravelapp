@@ -22,9 +22,19 @@ class StoreResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';
 
-    protected static ?string $navigationGroup = 'Core';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Stores';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_core');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.stores');
+    }
 
     protected static ?int $navigationSort = 2;
 
@@ -35,18 +45,6 @@ class StoreResource extends Resource
         $user = auth('admin')->user();
 
         return $user && $user->hasAnyPermission(['stores.view', 'stores.edit', 'stores.create']);
-    }
-
-    public static function getNavigationBadge(): ?string
-    {
-        $count = Store::where('is_active', true)->count();
-
-        return $count > 0 ? (string) $count : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return 'success';
     }
 
     public static function getGloballySearchableAttributes(): array
@@ -62,44 +60,44 @@ class StoreResource extends Resource
             Forms\Components\Tabs::make('StoreTabs')
                 ->tabs([
                     // ── Tab 1: Basic Info ─────────────────────────
-                    Forms\Components\Tabs\Tab::make('Basic Info')
+                    Forms\Components\Tabs\Tab::make(__('Basic Info'))
                         ->icon('heroicon-o-building-storefront')
                         ->schema([
-                            Forms\Components\Section::make('Store Identity')
-                                ->description('Core store information visible to customers')
+                            Forms\Components\Section::make(__('Store Identity'))
+                                ->description(__('Core store information visible to customers'))
                                 ->schema([
                                     Forms\Components\Select::make('organization_id')
-                                        ->label('Organization')
+                                        ->label(__('Organization'))
                                         ->relationship('organization', 'name')
                                         ->searchable()
                                         ->preload()
                                         ->required()
                                         ->createOptionForm([
                                             Forms\Components\TextInput::make('name')->required()->maxLength(255),
-                                            Forms\Components\TextInput::make('name_ar')->label('Name (Arabic)'),
+                                            Forms\Components\TextInput::make('name_ar')->label(__('Name (Arabic)')),
                                             Forms\Components\TextInput::make('email')->email(),
                                             Forms\Components\TextInput::make('phone')->tel(),
                                             Forms\Components\Select::make('country')
-                                                ->options(['SA' => 'Saudi Arabia', 'OM' => 'Oman', 'AE' => 'UAE', 'BH' => 'Bahrain', 'KW' => 'Kuwait', 'QA' => 'Qatar'])
+                                                ->options(['SA' => __('Saudi Arabia'), 'OM' => 'Oman', 'AE' => 'UAE', 'BH' => 'Bahrain', 'KW' => 'Kuwait', 'QA' => 'Qatar'])
                                                 ->default('SA'),
                                         ]),
                                     Forms\Components\TextInput::make('name')
-                                        ->label('Store Name (EN)')
+                                        ->label(__('Store Name (EN)'))
                                         ->required()
                                         ->maxLength(255)
                                         ->live(onBlur: true)
                                         ->afterStateUpdated(fn (Forms\Set $set, ?string $state) => $set('slug', Str::slug($state))),
                                     Forms\Components\TextInput::make('name_ar')
-                                        ->label('Store Name (AR)')
+                                        ->label(__('Store Name (AR)'))
                                         ->maxLength(255),
                                     Forms\Components\TextInput::make('slug')
                                         ->required()
                                         ->maxLength(255)
                                         ->unique(ignoreRecord: true)
-                                        ->helperText('Auto-generated from name'),
+                                        ->helperText(__('Auto-generated from name')),
                                     Forms\Components\TextInput::make('branch_code')
                                         ->maxLength(50)
-                                        ->helperText('Unique branch identifier e.g. BR-001'),
+                                        ->helperText(__('Unique branch identifier e.g. BR-001')),
                                     Forms\Components\Select::make('business_type')
                                         ->options(BusinessType::class)
                                         ->required()
@@ -110,17 +108,17 @@ class StoreResource extends Resource
                         ]),
 
                     // ── Tab 2: Contact & Location ─────────────────
-                    Forms\Components\Tabs\Tab::make('Contact & Location')
+                    Forms\Components\Tabs\Tab::make(__('Contact & Location'))
                         ->icon('heroicon-o-map-pin')
                         ->schema([
-                            Forms\Components\Section::make('Contact Details')
+                            Forms\Components\Section::make(__('Contact Details'))
                                 ->schema([
                                     Forms\Components\TextInput::make('phone')->tel()->maxLength(20),
                                     Forms\Components\TextInput::make('email')->email()->maxLength(255),
                                 ])
                                 ->columns(2),
 
-                            Forms\Components\Section::make('Address')
+                            Forms\Components\Section::make(__('Address'))
                                 ->schema([
                                     Forms\Components\TextInput::make('address')->maxLength(500)->columnSpanFull(),
                                     Forms\Components\TextInput::make('city')->maxLength(100),
@@ -131,10 +129,10 @@ class StoreResource extends Resource
                         ]),
 
                     // ── Tab 3: Settings & Preferences ─────────────
-                    Forms\Components\Tabs\Tab::make('Settings')
+                    Forms\Components\Tabs\Tab::make(__('Settings'))
                         ->icon('heroicon-o-cog-6-tooth')
                         ->schema([
-                            Forms\Components\Section::make('Regional Settings')
+                            Forms\Components\Section::make(__('Regional Settings'))
                                 ->schema([
                                     Forms\Components\Select::make('timezone')
                                         ->options(collect(timezone_identifiers_list())
@@ -145,13 +143,13 @@ class StoreResource extends Resource
                                         ->default('Asia/Riyadh'),
                                     Forms\Components\Select::make('currency')
                                         ->options([
-                                            'SAR' => 'SAR — Saudi Riyal',
-                                            'OMR' => 'OMR — Omani Rial',
-                                            'AED' => 'AED — UAE Dirham',
-                                            'BHD' => 'BHD — Bahraini Dinar',
-                                            'KWD' => 'KWD — Kuwaiti Dinar',
-                                            'QAR' => 'QAR — Qatari Riyal',
-                                            'USD' => 'USD — US Dollar',
+                                            'SAR' => __('SAR — Saudi Riyal'),
+                                            'OMR' => __('OMR — Omani Rial'),
+                                            'AED' => __('AED — UAE Dirham'),
+                                            'BHD' => __('BHD — Bahraini Dinar'),
+                                            'KWD' => __('KWD — Kuwaiti Dinar'),
+                                            'QAR' => __('QAR — Qatari Riyal'),
+                                            'USD' => __('USD — US Dollar'),
                                         ])
                                         ->default('SAR')
                                         ->native(false),
@@ -162,18 +160,18 @@ class StoreResource extends Resource
                                 ])
                                 ->columns(3),
 
-                            Forms\Components\Section::make('Status & Flags')
+                            Forms\Components\Section::make(__('Status & Flags'))
                                 ->schema([
                                     Forms\Components\Toggle::make('is_active')
-                                        ->label('Active')
+                                        ->label(__('Active'))
                                         ->default(true)
-                                        ->helperText('Inactive stores cannot process orders'),
+                                        ->helperText(__('Inactive stores cannot process orders')),
                                     Forms\Components\Toggle::make('is_main_branch')
-                                        ->label('Main Branch')
+                                        ->label(__('Main Branch'))
                                         ->default(false)
-                                        ->helperText('Only one store per organization should be the main branch'),
+                                        ->helperText(__('Only one store per organization should be the main branch')),
                                     Forms\Components\TextInput::make('storage_used_mb')
-                                        ->label('Storage Used (MB)')
+                                        ->label(__('Storage Used (MB)'))
                                         ->numeric()
                                         ->disabled()
                                         ->default(0),
@@ -198,12 +196,12 @@ class StoreResource extends Resource
                     ->description(fn (Store $record) => $record->name_ar)
                     ->wrap(),
                 Tables\Columns\TextColumn::make('organization.name')
-                    ->label('Organization')
+                    ->label(__('Organization'))
                     ->sortable()
                     ->searchable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('branch_code')
-                    ->label('Branch')
+                    ->label(__('Branch'))
                     ->badge()
                     ->color('gray')
                     ->searchable()
@@ -226,11 +224,11 @@ class StoreResource extends Resource
                     })
                     ->sortable(),
                 Tables\Columns\TextColumn::make('organization.subscription.subscriptionPlan.name')
-                    ->label('Plan')
-                    ->placeholder('No plan')
+                    ->label(__('Plan'))
+                    ->placeholder(__('No plan'))
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('organization.subscription.status')
-                    ->label('Sub. Status')
+                    ->label(__('Sub. Status'))
                     ->badge()
                     ->color(fn ($state) => match ($state?->value ?? $state) {
                         'active' => 'success',
@@ -243,18 +241,18 @@ class StoreResource extends Resource
                     ->toggleable(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
-                    ->label('Active')
+                    ->label(__('Active'))
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_main_branch')
                     ->boolean()
-                    ->label('Main')
+                    ->label(__('Main'))
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('phone')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('email')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('onboardingProgress.is_wizard_completed')
-                    ->label('Onboarded')
+                    ->label(__('Onboarded'))
                     ->formatStateUsing(fn ($state) => $state ? '✅ Yes' : '⏳ In progress')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
@@ -263,7 +261,7 @@ class StoreResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
+                Tables\Filters\TernaryFilter::make('is_active')->label(__('Active')),
                 Tables\Filters\SelectFilter::make('business_type')
                     ->options(BusinessType::class)
                     ->multiple(),
@@ -271,16 +269,16 @@ class StoreResource extends Resource
                     ->relationship('organization', 'name')
                     ->searchable()
                     ->preload()
-                    ->label('Organization'),
-                Tables\Filters\TernaryFilter::make('is_main_branch')->label('Main Branch'),
+                    ->label(__('Organization')),
+                Tables\Filters\TernaryFilter::make('is_main_branch')->label(__('Main Branch')),
                 Tables\Filters\Filter::make('has_subscription')
-                    ->label('Has Subscription')
+                    ->label(__('Has Subscription'))
                     ->query(fn (Builder $query) => $query->whereHas('organization.subscription')),
                 Tables\Filters\Filter::make('no_subscription')
-                    ->label('No Subscription')
+                    ->label(__('No Subscription'))
                     ->query(fn (Builder $query) => $query->whereDoesntHave('organization.subscription')),
                 Tables\Filters\Filter::make('onboarding_incomplete')
-                    ->label('Onboarding Incomplete')
+                    ->label(__('Onboarding Incomplete'))
                     ->query(fn (Builder $query) => $query->whereHas('onboardingProgress', fn ($q) => $q->where('is_wizard_completed', false))),
                 Tables\Filters\Filter::make('created_at')
                     ->form([
@@ -298,43 +296,43 @@ class StoreResource extends Resource
                     Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\Action::make('suspend')
-                        ->label('Suspend')
+                        ->label(__('Suspend'))
                         ->icon('heroicon-o-no-symbol')
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->modalDescription('This will deactivate the store. All operations will be paused.')
+                        ->modalDescription(__('This will deactivate the store. All operations will be paused.'))
                         ->visible(fn (Store $record) => $record->is_active && auth('admin')->user()?->hasPermission('stores.suspend'))
                         ->action(function (Store $record) {
                             $record->update(['is_active' => false]);
-                            Notification::make()->title('Store suspended')->warning()->send();
+                            Notification::make()->title(__('Store suspended'))->warning()->send();
                         }),
                     Tables\Actions\Action::make('activate')
-                        ->label('Activate')
+                        ->label(__('Activate'))
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
                         ->visible(fn (Store $record) => ! $record->is_active && auth('admin')->user()?->hasPermission('stores.suspend'))
                         ->action(function (Store $record) {
                             $record->update(['is_active' => true]);
-                            Notification::make()->title('Store activated')->success()->send();
+                            Notification::make()->title(__('Store activated'))->success()->send();
                         }),
                     Tables\Actions\Action::make('reset_onboarding')
-                        ->label('Reset Onboarding')
+                        ->label(__('Reset Onboarding'))
                         ->icon('heroicon-o-arrow-path')
                         ->color('warning')
                         ->requiresConfirmation()
-                        ->modalDescription('This will reset the onboarding wizard so the store can go through setup again.')
+                        ->modalDescription(__('This will reset the onboarding wizard so the store can go through setup again.'))
                         ->visible(fn () => auth('admin')->user()?->hasPermission('stores.edit'))
                         ->action(function (Store $record) {
                             app(OnboardingService::class)->resetOnboarding($record->id);
-                            Notification::make()->title('Onboarding reset')->success()->send();
+                            Notification::make()->title(__('Onboarding reset'))->success()->send();
                         }),
                 ]),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\BulkAction::make('bulk_suspend')
-                        ->label('Suspend Selected')
+                        ->label(__('Suspend Selected'))
                         ->icon('heroicon-o-no-symbol')
                         ->color('danger')
                         ->requiresConfirmation()
@@ -342,7 +340,7 @@ class StoreResource extends Resource
                         ->visible(fn () => auth('admin')->user()?->hasPermission('stores.suspend'))
                         ->action(fn ($records) => $records->each(fn ($r) => $r->update(['is_active' => false]))),
                     Tables\Actions\BulkAction::make('bulk_activate')
-                        ->label('Activate Selected')
+                        ->label(__('Activate Selected'))
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
@@ -361,16 +359,16 @@ class StoreResource extends Resource
         return $infolist->schema([
             Infolists\Components\Tabs::make('StoreTabs')
                 ->tabs([
-                    Infolists\Components\Tabs\Tab::make('Overview')
+                    Infolists\Components\Tabs\Tab::make(__('Overview'))
                         ->icon('heroicon-o-building-storefront')
                         ->schema([
-                            Infolists\Components\Section::make('Store Identity')
+                            Infolists\Components\Section::make(__('Store Identity'))
                                 ->schema([
                                     Infolists\Components\TextEntry::make('name')->weight('bold'),
-                                    Infolists\Components\TextEntry::make('name_ar')->label('Name (AR)'),
+                                    Infolists\Components\TextEntry::make('name_ar')->label(__('Name (AR)')),
                                     Infolists\Components\TextEntry::make('slug')->copyable(),
-                                    Infolists\Components\TextEntry::make('branch_code')->placeholder('N/A'),
-                                    Infolists\Components\TextEntry::make('organization.name')->label('Organization'),
+                                    Infolists\Components\TextEntry::make('branch_code')->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('organization.name')->label(__('Organization')),
                                     Infolists\Components\TextEntry::make('business_type')
                                         ->badge()
                                         ->color(fn ($state) => match ($state?->value ?? $state) {
@@ -383,21 +381,21 @@ class StoreResource extends Resource
                                 ])
                                 ->columns(3),
 
-                            Infolists\Components\Section::make('Contact & Location')
+                            Infolists\Components\Section::make(__('Contact & Location'))
                                 ->schema([
-                                    Infolists\Components\TextEntry::make('phone')->copyable()->placeholder('N/A'),
-                                    Infolists\Components\TextEntry::make('email')->copyable()->placeholder('N/A'),
-                                    Infolists\Components\TextEntry::make('address')->placeholder('N/A')->columnSpanFull(),
-                                    Infolists\Components\TextEntry::make('city')->placeholder('N/A'),
-                                    Infolists\Components\TextEntry::make('latitude')->placeholder('N/A'),
-                                    Infolists\Components\TextEntry::make('longitude')->placeholder('N/A'),
+                                    Infolists\Components\TextEntry::make('phone')->copyable()->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('email')->copyable()->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('address')->placeholder(__('N/A'))->columnSpanFull(),
+                                    Infolists\Components\TextEntry::make('city')->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('latitude')->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('longitude')->placeholder(__('N/A')),
                                 ])
                                 ->columns(3),
 
-                            Infolists\Components\Section::make('Status')
+                            Infolists\Components\Section::make(__('Status'))
                                 ->schema([
-                                    Infolists\Components\IconEntry::make('is_active')->boolean()->label('Active'),
-                                    Infolists\Components\IconEntry::make('is_main_branch')->boolean()->label('Main Branch'),
+                                    Infolists\Components\IconEntry::make('is_active')->boolean()->label(__('Active')),
+                                    Infolists\Components\IconEntry::make('is_main_branch')->boolean()->label(__('Main Branch')),
                                     Infolists\Components\TextEntry::make('timezone'),
                                     Infolists\Components\TextEntry::make('currency'),
                                     Infolists\Components\TextEntry::make('locale'),
@@ -408,17 +406,17 @@ class StoreResource extends Resource
                                 ->columns(4),
                         ]),
 
-                    Infolists\Components\Tabs\Tab::make('Subscription')
+                    Infolists\Components\Tabs\Tab::make(__('Subscription'))
                         ->icon('heroicon-o-credit-card')
                         ->schema([
-                            Infolists\Components\Section::make('Organization Subscription')
+                            Infolists\Components\Section::make(__('Organization Subscription'))
                                 ->schema([
                                     Infolists\Components\TextEntry::make('organization.subscription.subscriptionPlan.name')
-                                        ->label('Plan')
-                                        ->placeholder('No subscription')
+                                        ->label(__('Plan'))
+                                        ->placeholder(__('No subscription'))
                                         ->weight('bold'),
                                     Infolists\Components\TextEntry::make('organization.subscription.status')
-                                        ->label('Status')
+                                        ->label(__('Status'))
                                         ->badge()
                                         ->color(fn ($state) => match ($state?->value ?? $state) {
                                             'active' => 'success', 'trial' => 'info',
@@ -426,50 +424,50 @@ class StoreResource extends Resource
                                             default => 'gray',
                                         }),
                                     Infolists\Components\TextEntry::make('organization.subscription.billing_cycle')
-                                        ->label('Billing Cycle')
-                                        ->placeholder('N/A'),
+                                        ->label(__('Billing Cycle'))
+                                        ->placeholder(__('N/A')),
                                     Infolists\Components\TextEntry::make('organization.subscription.payment_method')
-                                        ->label('Payment Method')
-                                        ->placeholder('N/A'),
+                                        ->label(__('Payment Method'))
+                                        ->placeholder(__('N/A')),
                                     Infolists\Components\TextEntry::make('organization.subscription.current_period_start')
-                                        ->label('Period Start')
+                                        ->label(__('Period Start'))
                                         ->dateTime()
-                                        ->placeholder('N/A'),
+                                        ->placeholder(__('N/A')),
                                     Infolists\Components\TextEntry::make('organization.subscription.current_period_end')
-                                        ->label('Period End')
+                                        ->label(__('Period End'))
                                         ->dateTime()
-                                        ->placeholder('N/A'),
+                                        ->placeholder(__('N/A')),
                                     Infolists\Components\TextEntry::make('organization.subscription.trial_ends_at')
-                                        ->label('Trial Ends')
+                                        ->label(__('Trial Ends'))
                                         ->dateTime()
-                                        ->placeholder('No trial'),
+                                        ->placeholder(__('No trial')),
                                 ])
                                 ->columns(4),
                         ]),
 
-                    Infolists\Components\Tabs\Tab::make('Onboarding')
+                    Infolists\Components\Tabs\Tab::make(__('Onboarding'))
                         ->icon('heroicon-o-academic-cap')
                         ->schema([
-                            Infolists\Components\Section::make('Onboarding Progress')
+                            Infolists\Components\Section::make(__('Onboarding Progress'))
                                 ->schema([
                                     Infolists\Components\TextEntry::make('onboardingProgress.current_step')
-                                        ->label('Current Step')
-                                        ->placeholder('Not started'),
+                                        ->label(__('Current Step'))
+                                        ->placeholder(__('Not started')),
                                     Infolists\Components\IconEntry::make('onboardingProgress.is_wizard_completed')
                                         ->boolean()
-                                        ->label('Wizard Completed'),
+                                        ->label(__('Wizard Completed')),
                                     Infolists\Components\TextEntry::make('onboardingProgress.completed_steps')
-                                        ->label('Completed Steps')
+                                        ->label(__('Completed Steps'))
                                         ->formatStateUsing(fn ($state) => is_array($state) ? implode(', ', $state) : ($state ?? 'None'))
                                         ->columnSpanFull(),
                                     Infolists\Components\TextEntry::make('onboardingProgress.started_at')
-                                        ->label('Started')
+                                        ->label(__('Started'))
                                         ->dateTime()
-                                        ->placeholder('N/A'),
+                                        ->placeholder(__('N/A')),
                                     Infolists\Components\TextEntry::make('onboardingProgress.completed_at')
-                                        ->label('Completed')
+                                        ->label(__('Completed'))
                                         ->dateTime()
-                                        ->placeholder('N/A'),
+                                        ->placeholder(__('N/A')),
                                 ])
                                 ->columns(4),
                         ]),
@@ -488,7 +486,10 @@ class StoreResource extends Resource
             StoreResource\RelationManagers\RegistersRelationManager::class,
         ];
     }
-
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['organization.subscription.subscriptionPlan', 'onboardingProgress']);
+    }
     // ─── Pages ───────────────────────────────────────────────────
 
     public static function getPages(): array

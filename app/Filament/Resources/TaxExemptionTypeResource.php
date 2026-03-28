@@ -16,7 +16,12 @@ class TaxExemptionTypeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-receipt-percent';
 
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_settings');
+    }
 
     protected static ?string $navigationLabel = null;
 

@@ -18,7 +18,12 @@ class SignageTemplateResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-presentation-chart-bar';
 
-    protected static ?string $navigationGroup = 'UI Management';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_ui_management');
+    }
 
     protected static ?string $navigationLabel = null;
 
@@ -229,6 +234,11 @@ class SignageTemplateResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_active')->label(__('ui.is_active')),
             ])
             ->actions([
+                Tables\Actions\Action::make('preview')
+                    ->label(__('ui.preview'))
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn (SignageTemplate $record) => static::getUrl('preview', ['record' => $record])),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('toggle_active')
                     ->label(fn (SignageTemplate $r) => $r->is_active ? __('ui.deactivate') : __('ui.activate'))
@@ -245,6 +255,11 @@ class SignageTemplateResource extends Resource
             ->defaultSort('name');
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->with('businessTypes');
+    }
+
     // ─── Pages ───────────────────────────────────────────────
 
     public static function getPages(): array
@@ -253,6 +268,7 @@ class SignageTemplateResource extends Resource
             'index' => SignageTemplateResource\Pages\ListSignageTemplates::route('/'),
             'create' => SignageTemplateResource\Pages\CreateSignageTemplate::route('/create'),
             'edit' => SignageTemplateResource\Pages\EditSignageTemplate::route('/{record}/edit'),
+            'preview' => SignageTemplateResource\Pages\PreviewSignageTemplate::route('/{record}/preview'),
         ];
     }
 }

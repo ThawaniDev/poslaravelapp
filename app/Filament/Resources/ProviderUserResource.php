@@ -21,9 +21,19 @@ class ProviderUserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationGroup = 'People';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Provider Users';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_people');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.provider_users');
+    }
 
     protected static ?int $navigationSort = 3;
 

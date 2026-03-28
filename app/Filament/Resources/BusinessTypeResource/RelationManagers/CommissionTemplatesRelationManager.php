@@ -5,6 +5,7 @@ namespace App\Filament\Resources\BusinessTypeResource\RelationManagers;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -12,7 +13,12 @@ class CommissionTemplatesRelationManager extends RelationManager
 {
     protected static string $relationship = 'businessTypeCommissionTemplates';
 
-    protected static ?string $title = 'Commission Templates';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Commission Templates');
+    }
 
     protected static ?string $icon = 'heroicon-o-currency-dollar';
 
@@ -20,11 +26,11 @@ class CommissionTemplatesRelationManager extends RelationManager
     {
         return $form->schema([
             Forms\Components\TextInput::make('name')
-                ->label('Name (EN)')
+                ->label(__('Name (EN)'))
                 ->required()
                 ->maxLength(255),
             Forms\Components\TextInput::make('name_ar')
-                ->label('Name (AR)')
+                ->label(__('Name (AR)'))
                 ->maxLength(255),
             Forms\Components\TextInput::make('commission_type')
                 ->required()
@@ -36,7 +42,7 @@ class CommissionTemplatesRelationManager extends RelationManager
             Forms\Components\TextInput::make('applies_to')
                 ->maxLength(50),
             Forms\Components\KeyValue::make('tier_thresholds')
-                ->label('Tier Thresholds')
+                ->label(__('Tier Thresholds'))
                 ->columnSpanFull(),
             Forms\Components\TextInput::make('sort_order')
                 ->numeric()
@@ -55,7 +61,7 @@ class CommissionTemplatesRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('commission_type')->badge()->color('warning'),
                 Tables\Columns\TextColumn::make('value'),
                 Tables\Columns\TextColumn::make('applies_to'),
-                Tables\Columns\TextColumn::make('sort_order')->label('Sort')->sortable(),
+                Tables\Columns\TextColumn::make('sort_order')->label(__('Sort'))->sortable(),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')

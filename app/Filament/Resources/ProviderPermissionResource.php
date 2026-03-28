@@ -17,9 +17,19 @@ class ProviderPermissionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-key';
 
-    protected static ?string $navigationGroup = 'People';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Provider Permissions';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_people');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.provider_permissions');
+    }
 
     protected static ?int $navigationSort = 5;
 

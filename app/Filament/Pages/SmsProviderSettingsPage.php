@@ -16,7 +16,12 @@ class SmsProviderSettingsPage extends Page implements HasForms
     use InteractsWithForms;
 
     protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left';
-    protected static ?string $navigationGroup = 'Settings';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_settings');
+    }
     protected static ?int $navigationSort = 12;
     protected static string $view = 'filament.pages.settings-form';
 

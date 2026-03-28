@@ -6,6 +6,7 @@ use App\Domain\Security\Models\AdminIpAllowlist;
 use App\Domain\Security\Models\AdminIpBlocklist;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckAdminIp
@@ -14,22 +15,22 @@ class CheckAdminIp
     {
         $ip = $request->ip();
 
-        // Check blocklist first — blocked IPs are always rejected
-        $isBlocked = AdminIpBlocklist::where('ip_address', $ip)->exists();
+        // Check blocklist first — blocked IPs are always rejected (cached 60s)
+        $blockedIps = Cache::remember('admin_ip_blocklist', 60, function () {
+            return AdminIpBlocklist::pluck('ip_address')->all();
+        });
 
-        if ($isBlocked) {
+        if (in_array($ip, $blockedIps, true)) {
             abort(403, __('security.ip_blocked'));
         }
 
-        // Check allowlist — if any entries exist, only those IPs are allowed
-        $allowlistCount = AdminIpAllowlist::count();
+        // Check allowlist — if any entries exist, only those IPs are allowed (cached 60s)
+        $allowedIps = Cache::remember('admin_ip_allowlist', 60, function () {
+            return AdminIpAllowlist::pluck('ip_address')->all();
+        });
 
-        if ($allowlistCount > 0) {
-            $isAllowed = AdminIpAllowlist::where('ip_address', $ip)->exists();
-
-            if (! $isAllowed) {
-                abort(403, __('security.ip_not_allowed'));
-            }
+        if (count($allowedIps) > 0 && ! in_array($ip, $allowedIps, true)) {
+            abort(403, __('security.ip_not_allowed'));
         }
 
         return $next($request);

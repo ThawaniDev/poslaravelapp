@@ -277,4 +277,70 @@ return [
             'permission_revoked' => 'Permission Revoked',
         ],
     ],
+
+    // ── Filament resource flat keys (called as security.key directly) ────────
+    'activity_details'         => 'Activity Details',
+    'resolve_alert'            => 'Resolve Alert',
+    'triggered_by'             => 'Triggered By',
+    'never'                    => 'Never',
+    'two_fa'                   => '2FA',
+    'ip_label_placeholder'     => 'e.g. Office, VPN',
+    'block_reason_placeholder' => 'e.g. Brute force attempt',
+    'expires_at_help'          => 'Leave empty for a permanent block.',
+    'session_details'          => 'Session Details',
+    'device_details'           => 'Device Details',
+    'last_activity'            => 'Last Activity',
+    'last_used'                => 'Last Used',
+    'expired'                  => 'Expired',
+
+    // Flat aliases for fields.*
+    'admin_user'               => 'Admin User',
+    'action'                   => 'Action',
+    'entity_type'              => 'Entity Type',
+    'entity_id'                => 'Entity ID',
+    'ip_address'               => 'IP Address',
+    'user_agent'               => 'User Agent',
+    'timestamp'                => 'Timestamp',
+    'alert_type'               => 'Alert Type',
+    'severity'                 => 'Severity',
+    'status'                   => 'Status',
+    'description'              => 'Description',
+    'resolved_by'              => 'Resolved By',
+    'resolved_at'              => 'Resolved At',
+    'resolution_notes'         => 'Resolution Notes',
+    'label'                    => 'Label',
+    'added_by'                 => 'Added By',
+    'reason'                   => 'Reason',
+    'expires_at'               => 'Expires At',
+    'blocked_by'               => 'Blocked By',
+    'blocked_at'               => 'Blocked At',
+    'two_fa_verified'          => '2FA Verified',
+    'started_at'               => 'Started At',
+    'revoked_at'               => 'Revoked At',
+    'device_name'              => 'Device Name',
+    'device_fingerprint'       => 'Device Fingerprint',
+    'trusted_at'               => 'Trusted At',
+
+    // Flat aliases for sections.*
+    'additional_details'       => 'Additional Details',
+    'alert_details'            => 'Alert Details',
+    'resolution'               => 'Resolution',
+
+    // Flat aliases for actions.*
+    'investigate'              => 'Investigate',
+    'resolve'                  => 'Resolve',
+    'unblock'                  => 'Unblock',
+    'revoke_session'           => 'Revoke Session',
+    'revoke_trust'             => 'Revoke Trust',
+
+    // Flat aliases for notifications.*
+    'alert_investigating'      => 'Alert marked as investigating.',
+    'trust_revoked'            => 'Device trust revoked.',
+
+    // Flat aliases for confirm.*
+    'revoke_session_confirm'   => 'Are you sure you want to revoke this session?',
+    'revoke_trust_confirm'     => 'Are you sure you want to revoke trust for this device?',
+
+    // Flat aliases for filters.*
+    'active_blocks'            => 'Active Blocks',
 ];

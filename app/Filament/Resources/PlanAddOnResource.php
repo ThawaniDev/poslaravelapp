@@ -17,9 +17,19 @@ class PlanAddOnResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
 
-    protected static ?string $navigationGroup = 'Subscription & Billing';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Plan Add-Ons';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_subscription_billing');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.plan_add_ons');
+    }
 
     protected static ?int $navigationSort = 5;
 
@@ -33,39 +43,39 @@ class PlanAddOnResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Add-On Details')
+            Forms\Components\Section::make(__('Add-On Details'))
                 ->schema([
                     Forms\Components\TextInput::make('name')
                         ->required()
                         ->maxLength(255),
 
                     Forms\Components\TextInput::make('name_ar')
-                        ->label('Name (Arabic)')
+                        ->label(__('Name (Arabic)'))
                         ->maxLength(255),
 
                     Forms\Components\TextInput::make('slug')
                         ->required()
                         ->maxLength(255)
                         ->unique(ignoreRecord: true)
-                        ->helperText('URL-safe identifier'),
+                        ->helperText(__('URL-safe identifier')),
 
                     Forms\Components\Toggle::make('is_active')
                         ->default(true),
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Pricing')
+            Forms\Components\Section::make(__('Pricing'))
                 ->schema([
                     Forms\Components\TextInput::make('monthly_price')
                         ->required()
                         ->numeric()
                         ->minValue(0)
                         ->prefix('SAR')
-                        ->label('Monthly Price'),
+                        ->label(__('Monthly Price')),
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Description')
+            Forms\Components\Section::make(__('Description'))
                 ->schema([
                     Forms\Components\Textarea::make('description')
                         ->rows(3)
@@ -83,7 +93,7 @@ class PlanAddOnResource extends Resource
                     ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('name_ar')
-                    ->label('Arabic Name')
+                    ->label(__('Arabic Name'))
                     ->toggleable(),
 
                 Tables\Columns\TextColumn::make('slug')
@@ -96,7 +106,7 @@ class PlanAddOnResource extends Resource
 
                 Tables\Columns\TextColumn::make('store_add_ons_count')
                     ->counts('storeAddOns')
-                    ->label('Active Stores')
+                    ->label(__('Active Stores'))
                     ->badge()
                     ->color('info'),
 
@@ -110,7 +120,7 @@ class PlanAddOnResource extends Resource
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_active')
-                    ->label('Active Status'),
+                    ->label(__('Active Status')),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
@@ -133,24 +143,24 @@ class PlanAddOnResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Infolists\Components\Section::make('Add-On Details')
+            Infolists\Components\Section::make(__('Add-On Details'))
                 ->schema([
                     Infolists\Components\TextEntry::make('name')->weight('bold'),
-                    Infolists\Components\TextEntry::make('name_ar')->label('Arabic')->placeholder('—'),
+                    Infolists\Components\TextEntry::make('name_ar')->label(__('Arabic'))->placeholder('—'),
                     Infolists\Components\TextEntry::make('slug')->color('gray'),
                     Infolists\Components\IconEntry::make('is_active')->boolean(),
                 ])
                 ->columns(4),
 
-            Infolists\Components\Section::make('Pricing')
+            Infolists\Components\Section::make(__('Pricing'))
                 ->schema([
                     Infolists\Components\TextEntry::make('monthly_price')->money('SAR'),
                 ])
                 ->columns(2),
 
-            Infolists\Components\Section::make('Description')
+            Infolists\Components\Section::make(__('Description'))
                 ->schema([
-                    Infolists\Components\TextEntry::make('description')->placeholder('No description'),
+                    Infolists\Components\TextEntry::make('description')->placeholder(__('No description')),
                 ]),
         ]);
     }

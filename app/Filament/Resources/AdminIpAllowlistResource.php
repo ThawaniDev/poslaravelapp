@@ -17,9 +17,19 @@ class AdminIpAllowlistResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-check-badge';
 
-    protected static ?string $navigationGroup = 'Security';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'IP Allowlist';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_security');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.ip_allowlist');
+    }
 
     protected static ?int $navigationSort = 3;
 

@@ -14,6 +14,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class TemplateMarketplaceListingResource extends Resource
 {
@@ -21,7 +22,12 @@ class TemplateMarketplaceListingResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
 
-    protected static ?string $navigationGroup = 'UI Management';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_ui_management');
+    }
 
     protected static ?string $navigationLabel = null;
 
@@ -55,7 +61,10 @@ class TemplateMarketplaceListingResource extends Resource
                 ->schema([
                     Forms\Components\Select::make('pos_layout_template_id')
                         ->label(__('ui.layout_template'))
-                        ->options(PosLayoutTemplate::where('is_active', true)->pluck('name', 'id'))
+                        ->options(fn () => PosLayoutTemplate::where('is_active', true)
+                            ->with('businessType')
+                            ->get()
+                            ->mapWithKeys(fn ($t) => [$t->id => $t->name . ' — ' . ($t->businessType?->name ?? 'No Type')]))
                         ->required()
                         ->searchable()
                         ->unique(ignoreRecord: true),
@@ -303,6 +312,11 @@ class TemplateMarketplaceListingResource extends Resource
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with('category');
     }
 
     // ─── Pages ───────────────────────────────────────────────

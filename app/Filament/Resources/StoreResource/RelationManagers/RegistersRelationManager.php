@@ -5,6 +5,7 @@ namespace App\Filament\Resources\StoreResource\RelationManagers;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -12,7 +13,12 @@ class RegistersRelationManager extends RelationManager
 {
     protected static string $relationship = 'registers';
 
-    protected static ?string $title = 'Registers';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Registers');
+    }
 
     protected static ?string $icon = 'heroicon-o-calculator';
 
@@ -41,7 +47,7 @@ class RegistersRelationManager extends RelationManager
                     ->color('gray'),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
-                    ->label('Active'),
+                    ->label(__('Active')),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('M j, Y')
                     ->sortable()

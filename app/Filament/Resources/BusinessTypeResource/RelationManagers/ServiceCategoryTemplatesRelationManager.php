@@ -5,6 +5,7 @@ namespace App\Filament\Resources\BusinessTypeResource\RelationManagers;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -12,7 +13,12 @@ class ServiceCategoryTemplatesRelationManager extends RelationManager
 {
     protected static string $relationship = 'businessTypeServiceCategoryTemplates';
 
-    protected static ?string $title = 'Service Category Templates';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Service Category Templates');
+    }
 
     protected static ?string $icon = 'heroicon-o-wrench-screwdriver';
 
@@ -20,14 +26,14 @@ class ServiceCategoryTemplatesRelationManager extends RelationManager
     {
         return $form->schema([
             Forms\Components\TextInput::make('name')
-                ->label('Name (EN)')
+                ->label(__('Name (EN)'))
                 ->required()
                 ->maxLength(255),
             Forms\Components\TextInput::make('name_ar')
-                ->label('Name (AR)')
+                ->label(__('Name (AR)'))
                 ->maxLength(255),
             Forms\Components\TextInput::make('default_duration_minutes')
-                ->label('Default Duration (min)')
+                ->label(__('Default Duration (min)'))
                 ->numeric()
                 ->default(60),
             Forms\Components\TextInput::make('default_price')
@@ -48,9 +54,9 @@ class ServiceCategoryTemplatesRelationManager extends RelationManager
                     ->searchable()
                     ->sortable()
                     ->description(fn ($record) => $record->name_ar),
-                Tables\Columns\TextColumn::make('default_duration_minutes')->label('Duration (min)'),
+                Tables\Columns\TextColumn::make('default_duration_minutes')->label(__('Duration (min)')),
                 Tables\Columns\TextColumn::make('default_price')->money('SAR'),
-                Tables\Columns\TextColumn::make('sort_order')->label('Sort')->sortable(),
+                Tables\Columns\TextColumn::make('sort_order')->label(__('Sort'))->sortable(),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')

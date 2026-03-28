@@ -17,9 +17,19 @@ class DeliveryOrderResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
 
-    protected static ?string $navigationGroup = 'Integrations';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Delivery Orders';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_integrations');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.delivery_orders');
+    }
 
     protected static ?int $navigationSort = 3;
 
@@ -180,15 +190,4 @@ class DeliveryOrderResource extends Resource
         ];
     }
 
-    public static function getNavigationBadge(): ?string
-    {
-        return (string) static::getModel()::where('delivery_status', 'pending')->count();
-    }
-
-    public static function getNavigationBadgeColor(): string|array|null
-    {
-        $count = static::getModel()::where('delivery_status', 'pending')->count();
-
-        return $count > 0 ? 'warning' : 'gray';
-    }
 }

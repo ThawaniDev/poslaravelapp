@@ -19,7 +19,12 @@ class CannedResponseResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-ellipsis';
 
-    protected static ?string $navigationGroup = 'Support';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_support');
+    }
 
     protected static ?string $navigationLabel = null;
 

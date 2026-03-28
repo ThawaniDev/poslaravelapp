@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\SubscriptionPlanResource\RelationManagers;
 
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -10,7 +11,12 @@ class StoreSubscriptionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'storeSubscriptions';
 
-    protected static ?string $title = 'Subscribers';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Subscribers');
+    }
 
     protected static ?string $recordTitleAttribute = 'id';
 
@@ -19,7 +25,7 @@ class StoreSubscriptionsRelationManager extends RelationManager
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('store.name')
-                    ->label('Store')
+                    ->label(__('Store'))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
@@ -35,11 +41,11 @@ class StoreSubscriptionsRelationManager extends RelationManager
                     ->badge()
                     ->color('gray'),
                 Tables\Columns\TextColumn::make('current_period_end')
-                    ->label('Renews')
+                    ->label(__('Renews'))
                     ->date()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Subscribed')
+                    ->label(__('Subscribed'))
                     ->date()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -47,11 +53,11 @@ class StoreSubscriptionsRelationManager extends RelationManager
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        'active' => 'Active',
-                        'trial' => 'Trial',
-                        'grace' => 'Grace',
-                        'cancelled' => 'Cancelled',
-                        'expired' => 'Expired',
+                        'active' => __('Active'),
+                        'trial' => __('Trial'),
+                        'grace' => __('Grace'),
+                        'cancelled' => __('Cancelled'),
+                        'expired' => __('Expired'),
                     ]),
             ])
             ->defaultSort('created_at', 'desc');

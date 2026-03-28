@@ -11,7 +11,12 @@ class NotificationAnalyticsDashboard extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-bell-alert';
 
-    protected static ?string $navigationGroup = 'Analytics';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_analytics');
+    }
 
     protected static ?int $navigationSort = 7;
 
@@ -83,23 +88,25 @@ class NotificationAnalyticsDashboard extends Page
             })
             ->values();
 
-        // Per-template stats (top 15 by volume)
+        // Per-channel stats (top 15 by volume)
+        // Note: notification_delivery_logs links to the standard Laravel notifications table
+        // which does not have event_key. We join via notifications.type as the event identifier.
         $templateStats = NotificationDeliveryLog::where('notification_delivery_logs.created_at', '>=', $last30d)
-            ->join('notifications', 'notification_delivery_logs.notification_id', '=', 'notifications.id')
+            ->leftJoin('notifications', 'notification_delivery_logs.notification_id', '=', 'notifications.id')
             ->selectRaw("
-                notifications.event_key,
+                COALESCE(notifications.type, 'unknown') as event_key,
                 notification_delivery_logs.channel,
                 COUNT(*) as total,
                 SUM(CASE WHEN notification_delivery_logs.status IN ('delivered','opened') THEN 1 ELSE 0 END) as delivered,
                 SUM(CASE WHEN notification_delivery_logs.status = 'opened' THEN 1 ELSE 0 END) as opened,
                 SUM(CASE WHEN notification_delivery_logs.status = 'failed' THEN 1 ELSE 0 END) as failed
             ")
-            ->groupBy('notifications.event_key', 'notification_delivery_logs.channel')
+            ->groupBy('notifications.type', 'notification_delivery_logs.channel')
             ->orderByDesc('total')
             ->limit(15)
             ->get()
             ->map(fn ($r) => [
-                'event_key' => $r->event_key,
+                'event_key' => class_basename($r->event_key),
                 'channel' => $r->channel instanceof \BackedEnum ? $r->channel->value : $r->channel,
                 'total' => (int) $r->total,
                 'delivered' => (int) $r->delivered,

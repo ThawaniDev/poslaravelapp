@@ -6,6 +6,7 @@ use App\Domain\Core\Models\StoreWorkingHour;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Illuminate\Database\Eloquent\Model;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -13,7 +14,12 @@ class WorkingHoursRelationManager extends RelationManager
 {
     protected static string $relationship = 'workingHours';
 
-    protected static ?string $title = 'Working Hours';
+    protected static ?string $title = null;
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('Working Hours');
+    }
 
     protected static ?string $icon = 'heroicon-o-clock';
 
@@ -25,7 +31,7 @@ class WorkingHoursRelationManager extends RelationManager
                 ->required()
                 ->native(false),
             Forms\Components\Toggle::make('is_open')
-                ->label('Open')
+                ->label(__('Open'))
                 ->default(true)
                 ->live(),
             Forms\Components\TimePicker::make('open_time')
@@ -50,27 +56,27 @@ class WorkingHoursRelationManager extends RelationManager
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('day_of_week')
-                    ->label('Day')
+                    ->label(__('Day'))
                     ->formatStateUsing(fn ($state) => StoreWorkingHour::DAYS[$state] ?? 'Unknown')
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_open')
                     ->boolean()
-                    ->label('Open'),
+                    ->label(__('Open')),
                 Tables\Columns\TextColumn::make('open_time')
-                    ->label('Opens')
+                    ->label(__('Opens'))
                     ->time('H:i')
                     ->placeholder('—'),
                 Tables\Columns\TextColumn::make('close_time')
-                    ->label('Closes')
+                    ->label(__('Closes'))
                     ->time('H:i')
                     ->placeholder('—'),
                 Tables\Columns\TextColumn::make('break_start')
-                    ->label('Break Start')
+                    ->label(__('Break Start'))
                     ->time('H:i')
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('break_end')
-                    ->label('Break End')
+                    ->label(__('Break End'))
                     ->time('H:i')
                     ->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),

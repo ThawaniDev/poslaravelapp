@@ -21,9 +21,19 @@ class AdminUserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-user-circle';
 
-    protected static ?string $navigationGroup = 'People';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Admin Team';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_people');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.admin_team');
+    }
 
     protected static ?int $navigationSort = 1;
 

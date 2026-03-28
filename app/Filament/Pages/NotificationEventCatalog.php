@@ -9,7 +9,12 @@ class NotificationEventCatalog extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-book-open';
 
-    protected static ?string $navigationGroup = 'Notifications';
+    protected static ?string $navigationGroup = null;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_notifications');
+    }
 
     protected static ?int $navigationSort = 3;
 

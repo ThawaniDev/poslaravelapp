@@ -18,9 +18,19 @@ class BusinessTypeResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-briefcase';
 
-    protected static ?string $navigationGroup = 'Content';
+    protected static ?string $navigationGroup = null;
 
-    protected static ?string $navigationLabel = 'Business Types';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('nav.group_content');
+    }
+
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('nav.business_types');
+    }
 
     protected static ?int $navigationSort = 1;
 
@@ -43,17 +53,17 @@ class BusinessTypeResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Business Type Info')
-                ->description('Define the business type for onboarding templates')
+            Forms\Components\Section::make(__('Business Type Info'))
+                ->description(__('Define the business type for onboarding templates'))
                 ->schema([
                     Forms\Components\TextInput::make('name')
-                        ->label('Name (EN)')
+                        ->label(__('Name (EN)'))
                         ->required()
                         ->maxLength(255)
                         ->live(onBlur: true)
                         ->afterStateUpdated(fn (Forms\Set $set, ?string $state) => $set('slug', Str::slug($state))),
                     Forms\Components\TextInput::make('name_ar')
-                        ->label('Name (AR)')
+                        ->label(__('Name (AR)'))
                         ->required()
                         ->maxLength(255),
                     Forms\Components\TextInput::make('slug')
@@ -62,13 +72,13 @@ class BusinessTypeResource extends Resource
                         ->unique(ignoreRecord: true),
                     Forms\Components\TextInput::make('icon')
                         ->maxLength(255)
-                        ->helperText('Heroicon name or emoji for display'),
+                        ->helperText(__('Heroicon name or emoji for display')),
                     Forms\Components\TextInput::make('sort_order')
                         ->numeric()
                         ->default(0),
                     Forms\Components\Toggle::make('is_active')
                         ->default(true)
-                        ->helperText('Inactive business types will not appear in onboarding'),
+                        ->helperText(__('Inactive business types will not appear in onboarding')),
                 ])
                 ->columns(2),
         ]);
@@ -91,22 +101,22 @@ class BusinessTypeResource extends Resource
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('business_type_category_templates_count')
                     ->counts('businessTypeCategoryTemplates')
-                    ->label('Categories')
+                    ->label(__('Categories'))
                     ->badge()
                     ->color('info')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('business_type_shift_templates_count')
                     ->counts('businessTypeShiftTemplates')
-                    ->label('Shifts')
+                    ->label(__('Shifts'))
                     ->badge()
                     ->color('info')
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean()
-                    ->label('Active')
+                    ->label(__('Active'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('sort_order')
-                    ->label('Sort')
+                    ->label(__('Sort'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime('M j, Y')
@@ -114,13 +124,13 @@ class BusinessTypeResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
+                Tables\Filters\TernaryFilter::make('is_active')->label(__('Active')),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\Action::make('duplicate')
-                    ->label('Duplicate')
+                    ->label(__('Duplicate'))
                     ->icon('heroicon-o-document-duplicate')
                     ->color('gray')
                     ->visible(fn () => auth('admin')->user()?->hasPermission('content.manage'))
@@ -159,47 +169,47 @@ class BusinessTypeResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->schema([
-            Infolists\Components\Section::make('Business Type Info')
+            Infolists\Components\Section::make(__('Business Type Info'))
                 ->schema([
                     Infolists\Components\TextEntry::make('name')->weight('bold'),
-                    Infolists\Components\TextEntry::make('name_ar')->label('Name (AR)'),
+                    Infolists\Components\TextEntry::make('name_ar')->label(__('Name (AR)')),
                     Infolists\Components\TextEntry::make('slug')->copyable(),
-                    Infolists\Components\TextEntry::make('icon')->placeholder('N/A'),
+                    Infolists\Components\TextEntry::make('icon')->placeholder(__('N/A')),
                     Infolists\Components\TextEntry::make('sort_order'),
                     Infolists\Components\IconEntry::make('is_active')->boolean(),
                 ])
                 ->columns(3),
 
-            Infolists\Components\Section::make('Template Counts')
+            Infolists\Components\Section::make(__('Template Counts'))
                 ->schema([
                     Infolists\Components\TextEntry::make('categories_count')
-                        ->label('Category Templates')
+                        ->label(__('Category Templates'))
                         ->state(fn (BusinessType $record) => $record->businessTypeCategoryTemplates()->count())
                         ->badge()->color('info'),
                     Infolists\Components\TextEntry::make('shifts_count')
-                        ->label('Shift Templates')
+                        ->label(__('Shift Templates'))
                         ->state(fn (BusinessType $record) => $record->businessTypeShiftTemplates()->count())
                         ->badge()->color('info'),
                     Infolists\Components\TextEntry::make('promotions_count')
-                        ->label('Promotion Templates')
+                        ->label(__('Promotion Templates'))
                         ->state(fn (BusinessType $record) => $record->businessTypePromotionTemplates()->count())
                         ->badge()->color('info'),
                     Infolists\Components\TextEntry::make('commissions_count')
-                        ->label('Commission Templates')
+                        ->label(__('Commission Templates'))
                         ->state(fn (BusinessType $record) => $record->businessTypeCommissionTemplates()->count())
                         ->badge()->color('info'),
                     Infolists\Components\TextEntry::make('waste_reasons_count')
-                        ->label('Waste Reason Templates')
+                        ->label(__('Waste Reason Templates'))
                         ->state(fn (BusinessType $record) => $record->businessTypeWasteReasonTemplates()->count())
                         ->badge()->color('info'),
                     Infolists\Components\TextEntry::make('customer_groups_count')
-                        ->label('Customer Group Templates')
+                        ->label(__('Customer Group Templates'))
                         ->state(fn (BusinessType $record) => $record->businessTypeCustomerGroupTemplates()->count())
                         ->badge()->color('info'),
                 ])
                 ->columns(6),
 
-            Infolists\Components\Section::make('Timestamps')
+            Infolists\Components\Section::make(__('Timestamps'))
                 ->schema([
                     Infolists\Components\TextEntry::make('created_at')->dateTime(),
                     Infolists\Components\TextEntry::make('updated_at')->dateTime(),
