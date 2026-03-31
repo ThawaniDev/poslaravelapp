@@ -41,6 +41,13 @@ Route::prefix('subscription')->group(function () {
         // Invoices
         Route::get('invoices', [InvoiceController::class, 'index']);
         Route::get('invoices/{invoiceId}', [InvoiceController::class, 'show']);
+        Route::get('invoices/{invoiceId}/pdf', [InvoiceController::class, 'downloadPdf']);
+
+        // Sync — offline entitlement cache
+        Route::get('sync/entitlements', [SubscriptionController::class, 'syncEntitlements']);
+
+        // Add-ons for current store
+        Route::get('store-add-ons', [SubscriptionController::class, 'storeAddOns']);
 
         // Admin-only plan management
         Route::post('plans', [PlanController::class, 'store']);

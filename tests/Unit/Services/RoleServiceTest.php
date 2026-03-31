@@ -263,4 +263,76 @@ class RoleServiceTest extends TestCase
         $pinProtected = Permission::where('requires_pin', true)->count();
         $this->assertGreaterThan(0, $pinProtected);
     }
+
+    // ─── syncDefaultTemplates ────────────────────────────────────
+
+    public function test_sync_creates_predefined_roles_from_templates(): void
+    {
+        \App\Domain\StaffManagement\Models\DefaultRoleTemplate::create([
+            'name'        => 'Cashier',
+            'name_ar'     => 'كاشير',
+            'slug'        => 'cashier',
+            'description' => 'Process sales',
+        ]);
+
+        \App\Domain\StaffManagement\Models\DefaultRoleTemplate::create([
+            'name'        => 'Branch Manager',
+            'name_ar'     => 'مدير الفرع',
+            'slug'        => 'branch_manager',
+            'description' => 'Manage store',
+        ]);
+
+        $this->roleService->syncDefaultTemplates($this->store->id);
+
+        $this->assertDatabaseHas('roles', ['store_id' => $this->store->id, 'name' => 'cashier', 'is_predefined' => true]);
+        $this->assertDatabaseHas('roles', ['store_id' => $this->store->id, 'name' => 'branch_manager', 'is_predefined' => true]);
+    }
+
+    public function test_sync_attaches_permissions_by_name(): void
+    {
+        $perm = Permission::where('module', 'pos')->first();
+
+        $template = \App\Domain\StaffManagement\Models\DefaultRoleTemplate::create([
+            'name'        => 'Cashier',
+            'name_ar'     => 'كاشير',
+            'slug'        => 'cashier',
+            'description' => 'Process sales',
+        ]);
+
+        \App\Domain\ProviderRegistration\Models\ProviderPermission::create([
+            'name'        => $perm->name,
+            'group'       => 'pos',
+            'description' => $perm->name,
+            'is_active'   => true,
+        ]);
+
+        // Attach via pivot
+        \DB::table('default_role_template_permissions')->insert([
+            'id'                       => \Illuminate\Support\Str::uuid(),
+            'default_role_template_id' => $template->id,
+            'provider_permission_id'   => \App\Domain\ProviderRegistration\Models\ProviderPermission::where('name', $perm->name)->value('id'),
+        ]);
+
+        $this->roleService->syncDefaultTemplates($this->store->id);
+
+        $role = Role::where('store_id', $this->store->id)->where('name', 'cashier')->firstOrFail();
+        $this->assertGreaterThanOrEqual(1, $role->permissions->count());
+    }
+
+    public function test_sync_does_not_duplicate_existing_predefined_roles(): void
+    {
+        \App\Domain\StaffManagement\Models\DefaultRoleTemplate::create([
+            'name'        => 'Cashier',
+            'name_ar'     => 'كاشير',
+            'slug'        => 'cashier',
+            'description' => 'Process sales',
+        ]);
+
+        $this->roleService->syncDefaultTemplates($this->store->id);
+        $this->roleService->syncDefaultTemplates($this->store->id); // second call
+
+        $this->assertEquals(1, Role::where('store_id', $this->store->id)
+            ->where('name', 'cashier')
+            ->count());
+    }
 }

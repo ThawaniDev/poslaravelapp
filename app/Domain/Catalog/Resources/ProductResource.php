@@ -28,6 +28,11 @@ class ProductResource extends JsonResource
             'is_active' => (bool) $this->is_active,
             'is_combo' => (bool) $this->is_combo,
             'age_restricted' => (bool) $this->age_restricted,
+            'offer_price' => $this->offer_price !== null ? (float) $this->offer_price : null,
+            'offer_start' => $this->offer_start?->toIso8601String(),
+            'offer_end' => $this->offer_end?->toIso8601String(),
+            'min_order_qty' => $this->min_order_qty !== null ? (int) $this->min_order_qty : null,
+            'max_order_qty' => $this->max_order_qty !== null ? (int) $this->max_order_qty : null,
             'image_url' => $this->image_url,
             'sync_version' => $this->sync_version,
 

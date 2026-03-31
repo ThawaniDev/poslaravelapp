@@ -2,7 +2,7 @@
 
 namespace App\Domain\PosTerminal\Models;
 
-use App\Domain\Security\Enums\SessionStatus;
+use App\Domain\Payment\Enums\CashSessionStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -37,7 +37,7 @@ class PosSession extends Model
     ];
 
     protected $casts = [
-        'status' => SessionStatus::class,
+        'status' => CashSessionStatus::class,
         'z_report_printed' => 'boolean',
         'opening_cash' => 'decimal:2',
         'closing_cash' => 'decimal:2',

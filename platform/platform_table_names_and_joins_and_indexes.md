@@ -1,4 +1,4 @@
-# Thawani POS — Platform (Admin) DB Reference (Tables, Joins & Indexes)
+# Wameed POS — Platform (Admin) DB Reference (Tables, Joins & Indexes)
 
 > Quick-reference for table names, join/pivot tables, and recommended indexes.  
 > **No SQL here** — just names and notes for planning.  

@@ -3,7 +3,7 @@
 namespace App\Support;
 
 /**
- * Thawani POS — Design System Constants (Laravel side)
+ * Wameed POS — Design System Constants (Laravel side)
  *
  * Mirror of the Flutter AppColors / AppSpacing / AppSizes tokens.
  * Use in Filament resources, Blade views, and API responses that carry

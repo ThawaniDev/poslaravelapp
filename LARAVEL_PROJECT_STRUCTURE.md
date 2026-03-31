@@ -1,4 +1,4 @@
-# Thawani POS — Laravel Project Structure
+# Wameed POS — Laravel Project Structure
 
 > **Purpose**: Canonical reference for the Laravel backend project folder structure.
 > **Architecture**: Feature-based (domain-driven modules) — NOT the default Laravel flat layout.

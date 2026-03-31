@@ -1,4 +1,4 @@
-# Thawani POS — Provider Features (Short Reference)
+# Wameed POS — Provider Features (Short Reference)
 
 > Features available to store owners, managers, cashiers, and other provider-side roles.  
 > Availability depends on the active subscription package.

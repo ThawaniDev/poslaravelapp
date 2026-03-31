@@ -25,6 +25,9 @@ class UpdateProductRequest extends FormRequest
             'barcode' => ['sometimes', 'nullable', 'string', 'max:50'],
             'sell_price' => ['sometimes', 'numeric', 'min:0'],
             'cost_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'offer_price' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'offer_start' => ['sometimes', 'nullable', 'date'],
+            'offer_end' => ['sometimes', 'nullable', 'date', 'after_or_equal:offer_start'],
             'unit' => ['sometimes', 'nullable', 'string', Rule::in(array_column(ProductUnit::cases(), 'value'))],
             'tax_rate' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
             'is_weighable' => ['sometimes', 'boolean'],
@@ -33,6 +36,8 @@ class UpdateProductRequest extends FormRequest
             'is_combo' => ['sometimes', 'boolean'],
             'age_restricted' => ['sometimes', 'boolean'],
             'image_url' => ['sometimes', 'nullable', 'string', 'max:500'],
+            'min_order_qty' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'max_order_qty' => ['sometimes', 'nullable', 'numeric', 'min:0'],
 
             'barcodes' => ['sometimes', 'array'],
             'barcodes.*.barcode' => ['required_with:barcodes', 'string', 'max:50'],

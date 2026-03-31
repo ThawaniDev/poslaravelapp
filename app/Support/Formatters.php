@@ -5,7 +5,7 @@ namespace App\Support;
 use Carbon\Carbon;
 
 /**
- * Thawani POS — Formatting Helpers
+ * Wameed POS — Formatting Helpers
  *
  * Mirrors Flutter's Formatters class. Use in Blade, API resources,
  * and Filament columns/infolists for consistent display.

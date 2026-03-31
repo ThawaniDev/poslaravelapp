@@ -2,6 +2,8 @@
 
 namespace App\Domain\StaffManagement\Models;
 
+use App\Domain\Auth\Models\User;
+use App\Domain\Core\Models\Store;
 use App\Domain\StaffManagement\Enums\EmploymentType;
 use App\Domain\StaffManagement\Enums\SalaryType;
 use App\Domain\StaffManagement\Enums\StaffStatus;
@@ -22,6 +24,7 @@ class StaffUser extends Model
 
     protected $fillable = [
         'store_id',
+        'user_id',
         'first_name',
         'last_name',
         'email',
@@ -58,6 +61,12 @@ class StaffUser extends Model
     {
         return $this->belongsTo(Store::class);
     }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function staffBranchAssignments(): HasMany
     {
         return $this->hasMany(StaffBranchAssignment::class);

@@ -6,6 +6,7 @@ use App\Domain\ProviderSubscription\Jobs\ExpireSubscriptionsJob;
 use App\Domain\ProviderSubscription\Jobs\GenerateRenewalInvoicesJob;
 use App\Domain\ProviderSubscription\Jobs\RenewPaidSubscriptionsJob;
 use App\Domain\ProviderSubscription\Jobs\RetryFailedPaymentsJob;
+use App\Domain\Report\Jobs\RefreshDailySummariesJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -45,6 +46,14 @@ Schedule::job(new ExpireSubscriptionsJob)
 // Aggregate daily platform statistics (daily at 1 AM)
 Schedule::command('platform:aggregate-daily-stats')
     ->dailyAt('01:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// ─── Report Summary Schedules ────────────────────────────────
+
+// Refresh store-level daily & product sales summaries (daily at 2 AM)
+Schedule::job(new RefreshDailySummariesJob)
+    ->dailyAt('02:00')
     ->withoutOverlapping()
     ->onOneServer();
 

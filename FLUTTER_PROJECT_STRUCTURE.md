@@ -1,4 +1,4 @@
-# Thawani POS — Flutter Project Structure
+# Wameed POS — Flutter Project Structure
 
 > **Purpose**: Canonical reference for the Flutter POS client project folder structure.
 > **Architecture**: Feature-based with clean architecture layers — NOT the default Flutter flat layout.

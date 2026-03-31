@@ -10,6 +10,9 @@ use App\Domain\Catalog\Models\ModifierOption;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBarcode;
 use App\Domain\Catalog\Models\ProductImage;
+use App\Domain\Catalog\Models\ProductSupplier;
+use App\Domain\Catalog\Models\StorePrice;
+use App\Domain\Catalog\Models\Supplier;
 use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -673,5 +676,302 @@ class ProductApiTest extends TestCase
             ->assertJsonPath('data.per_page', 2)
             ->assertJsonPath('data.total', 5)
             ->assertJsonCount(2, 'data.data');
+    }
+
+    // ─── Offer Fields ─────────────────────────────────────────
+
+    public function test_can_create_product_with_offer_fields(): void
+    {
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/catalog/products', [
+                'name' => 'Offer Product',
+                'category_id' => $this->category->id,
+                'sell_price' => 10.00,
+                'offer_price' => 7.50,
+                'offer_start' => '2025-01-01',
+                'offer_end' => '2025-12-31',
+                'min_order_qty' => 1,
+                'max_order_qty' => 10,
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.offer_price', 7.5)
+            ->assertJsonPath('data.min_order_qty', 1)
+            ->assertJsonPath('data.max_order_qty', 10);
+    }
+
+    public function test_can_update_product_offer_fields(): void
+    {
+        $product = Product::create([
+            'organization_id' => $this->org->id,
+            'category_id' => $this->category->id,
+            'name' => 'Test',
+            'sell_price' => 10.00,
+            'sync_version' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->putJson("/api/v2/catalog/products/{$product->id}", [
+                'offer_price' => 8.00,
+                'min_order_qty' => 2,
+                'max_order_qty' => 20,
+            ]);
+
+        $response->assertOk();
+        $this->assertEquals(8.0, $response->json('data.offer_price'));
+        $this->assertEquals(2, $response->json('data.min_order_qty'));
+        $this->assertEquals(20, $response->json('data.max_order_qty'));
+    }
+
+    // ─── Bulk Actions ─────────────────────────────────────────
+
+    public function test_can_bulk_activate_products(): void
+    {
+        $p1 = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'P1',
+            'sell_price' => 1.00,
+            'is_active' => false,
+            'sync_version' => 1,
+        ]);
+        $p2 = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'P2',
+            'sell_price' => 2.00,
+            'is_active' => false,
+            'sync_version' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/catalog/products/bulk-action', [
+                'product_ids' => [$p1->id, $p2->id],
+                'action' => 'activate',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.affected', 2);
+
+        $this->assertTrue((bool) Product::find($p1->id)->is_active);
+        $this->assertTrue((bool) Product::find($p2->id)->is_active);
+    }
+
+    public function test_can_bulk_deactivate_products(): void
+    {
+        $p1 = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'P1',
+            'sell_price' => 1.00,
+            'is_active' => true,
+            'sync_version' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/catalog/products/bulk-action', [
+                'product_ids' => [$p1->id],
+                'action' => 'deactivate',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.affected', 1);
+
+        $this->assertFalse((bool) Product::find($p1->id)->is_active);
+    }
+
+    public function test_can_bulk_change_category(): void
+    {
+        $newCategory = Category::create([
+            'organization_id' => $this->org->id,
+            'name' => 'New Cat',
+            'is_active' => true,
+            'sync_version' => 1,
+        ]);
+
+        $p1 = Product::create([
+            'organization_id' => $this->org->id,
+            'category_id' => $this->category->id,
+            'name' => 'P1',
+            'sell_price' => 1.00,
+            'sync_version' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/catalog/products/bulk-action', [
+                'product_ids' => [$p1->id],
+                'action' => 'change_category',
+                'category_id' => $newCategory->id,
+            ]);
+
+        $response->assertOk();
+        $this->assertEquals($newCategory->id, Product::find($p1->id)->category_id);
+    }
+
+    public function test_bulk_action_validation_requires_product_ids(): void
+    {
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/catalog/products/bulk-action', [
+                'product_ids' => [],
+                'action' => 'activate',
+            ]);
+
+        $response->assertUnprocessable();
+    }
+
+    public function test_bulk_action_validation_invalid_action(): void
+    {
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/catalog/products/bulk-action', [
+                'product_ids' => ['some-uuid'],
+                'action' => 'invalid_action',
+            ]);
+
+        $response->assertUnprocessable();
+    }
+
+    // ─── Duplicate ────────────────────────────────────────────
+
+    public function test_can_duplicate_product(): void
+    {
+        $product = Product::create([
+            'organization_id' => $this->org->id,
+            'category_id' => $this->category->id,
+            'name' => 'Original',
+            'name_ar' => 'أصلي',
+            'sell_price' => 5.00,
+            'is_active' => true,
+            'sync_version' => 3,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson("/api/v2/catalog/products/{$product->id}/duplicate");
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.name', 'Original (Copy)');
+        $this->assertEquals(5.0, $response->json('data.sell_price'));
+
+        $this->assertNull($response->json('data.sku'));
+        $this->assertNotEquals($product->id, $response->json('data.id'));
+        // Sync version resets on copy
+        $this->assertEquals(1, $response->json('data.sync_version'));
+    }
+
+    // ─── Store Prices ─────────────────────────────────────────
+
+    public function test_can_sync_store_prices(): void
+    {
+        $product = Product::create([
+            'organization_id' => $this->org->id,
+            'category_id' => $this->category->id,
+            'name' => 'Multi Price',
+            'sell_price' => 5.00,
+            'sync_version' => 1,
+        ]);
+
+        $store2 = Store::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Branch 2',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
+            'is_active' => true,
+            'is_main_branch' => false,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->putJson("/api/v2/catalog/products/{$product->id}/store-prices", [
+                'prices' => [
+                    ['store_id' => $this->store->id, 'sell_price' => 4.50],
+                    ['store_id' => $store2->id, 'sell_price' => 5.50],
+                ],
+            ]);
+
+        $response->assertOk();
+        $this->assertCount(2, $response->json('data'));
+    }
+
+    public function test_can_get_store_prices(): void
+    {
+        $product = Product::create([
+            'organization_id' => $this->org->id,
+            'category_id' => $this->category->id,
+            'name' => 'Multi Price',
+            'sell_price' => 5.00,
+            'sync_version' => 1,
+        ]);
+
+        StorePrice::create([
+            'product_id' => $product->id,
+            'store_id' => $this->store->id,
+            'sell_price' => 4.99,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/catalog/products/{$product->id}/store-prices");
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data'));
+        $this->assertEquals(4.99, $response->json('data.0.sell_price'));
+    }
+
+    // ─── Product Suppliers ────────────────────────────────────
+
+    public function test_can_sync_product_suppliers(): void
+    {
+        $product = Product::create([
+            'organization_id' => $this->org->id,
+            'category_id' => $this->category->id,
+            'name' => 'Supplied Product',
+            'sell_price' => 10.00,
+            'sync_version' => 1,
+        ]);
+
+        $supplier = Supplier::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Test Supplier',
+            'is_active' => true,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->putJson("/api/v2/catalog/products/{$product->id}/suppliers", [
+                'suppliers' => [
+                    [
+                        'supplier_id' => $supplier->id,
+                        'cost_price' => 7.00,
+                        'lead_time_days' => 3,
+                        'supplier_sku' => 'SUP-001',
+                    ],
+                ],
+            ]);
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data'));
+        $this->assertEquals(7.0, $response->json('data.0.cost_price'));
+    }
+
+    public function test_can_get_product_suppliers(): void
+    {
+        $product = Product::create([
+            'organization_id' => $this->org->id,
+            'category_id' => $this->category->id,
+            'name' => 'Supplied Product',
+            'sell_price' => 10.00,
+            'sync_version' => 1,
+        ]);
+
+        $supplier = Supplier::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Test Supplier',
+            'is_active' => true,
+        ]);
+
+        ProductSupplier::create([
+            'product_id' => $product->id,
+            'supplier_id' => $supplier->id,
+            'cost_price' => 7.00,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/catalog/products/{$product->id}/suppliers");
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data'));
     }
 }

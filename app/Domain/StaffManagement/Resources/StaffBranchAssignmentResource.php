@@ -15,6 +15,8 @@ class StaffBranchAssignmentResource extends JsonResource
             'branch_id'     => $this->branch_id,
             'role_id'       => $this->role_id,
             'is_primary'    => (bool) $this->is_primary,
+            'branch_name'   => $this->whenLoaded('branch', fn () => $this->branch?->name),
+            'role_name'     => $this->whenLoaded('role', fn () => $this->role?->display_name ?? $this->role?->name),
         ];
     }
 }

@@ -7,6 +7,7 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\Supplier;
 use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
+use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockLevel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -189,5 +190,82 @@ class StockApiTest extends TestCase
         foreach ($response->json('data.data') as $movement) {
             $this->assertEquals($this->product->id, $movement['product_id']);
         }
+    }
+
+    public function test_can_get_expiry_alerts(): void
+    {
+        StockBatch::create([
+            'store_id' => $this->store->id,
+            'product_id' => $this->product->id,
+            'batch_number' => 'BATCH-001',
+            'expiry_date' => now()->addDays(5),
+            'quantity' => 20,
+            'unit_cost' => 5.00,
+        ]);
+
+        // Batch already expired should also appear
+        StockBatch::create([
+            'store_id' => $this->store->id,
+            'product_id' => $this->product->id,
+            'batch_number' => 'BATCH-002',
+            'expiry_date' => now()->subDay(),
+            'quantity' => 10,
+            'unit_cost' => 5.00,
+        ]);
+
+        // Batch far in the future should NOT appear
+        StockBatch::create([
+            'store_id' => $this->store->id,
+            'product_id' => $this->product->id,
+            'batch_number' => 'BATCH-003',
+            'expiry_date' => now()->addDays(60),
+            'quantity' => 30,
+            'unit_cost' => 5.00,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/inventory/expiry-alerts?store_id=' . $this->store->id . '&days_ahead=30');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $batches = $response->json('data.data');
+        $this->assertCount(2, $batches);
+    }
+
+    public function test_can_get_low_stock_items(): void
+    {
+        StockLevel::create([
+            'store_id' => $this->store->id,
+            'product_id' => $this->product->id,
+            'quantity' => 3,
+            'reorder_point' => 10,
+            'sync_version' => 1,
+        ]);
+
+        $product2 = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Tea Leaves',
+            'sell_price' => 8.00,
+            'sync_version' => 1,
+        ]);
+
+        StockLevel::create([
+            'store_id' => $this->store->id,
+            'product_id' => $product2->id,
+            'quantity' => 100,
+            'reorder_point' => 10,
+            'sync_version' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/inventory/low-stock?store_id=' . $this->store->id);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $items = $response->json('data');
+        $this->assertCount(1, $items);
+        $this->assertEquals($this->product->id, $items[0]['product_id']);
     }
 }

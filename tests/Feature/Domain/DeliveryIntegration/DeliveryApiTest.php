@@ -8,6 +8,8 @@ use App\Domain\Core\Models\Store;
 use App\Domain\DeliveryIntegration\Enums\DeliveryOrderStatus;
 use App\Domain\DeliveryIntegration\Models\DeliveryOrderMapping;
 use App\Domain\DeliveryIntegration\Models\DeliveryPlatformConfig;
+use App\Domain\DeliveryIntegration\Models\DeliveryStatusPushLog;
+use App\Domain\DeliveryIntegration\Models\DeliveryWebhookLog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -485,5 +487,211 @@ class DeliveryApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonStructure(['success', 'data']);
+    }
+
+    // ─── Webhook Logs ─────────────────────────────────────────────
+
+    public function test_can_list_webhook_logs(): void
+    {
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/delivery/webhook-logs');
+
+        $response->assertOk()
+            ->assertJsonStructure(['success', 'data']);
+    }
+
+    public function test_webhook_logs_returns_stored_entries(): void
+    {
+        DeliveryWebhookLog::create([
+            'platform'          => 'jahez',
+            'store_id'          => $this->store->id,
+            'event_type'        => 'order.created',
+            'external_order_id' => 'J-WHL-001',
+            'payload'           => ['order_id' => 'J-WHL-001'],
+            'signature_valid'   => true,
+            'processed'         => true,
+            'ip_address'        => '10.0.0.1',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/delivery/webhook-logs');
+
+        $response->assertOk();
+        $data = $response->json('data');
+        $items = $data['data'] ?? $data;
+        $this->assertNotEmpty($items);
+    }
+
+    public function test_can_filter_webhook_logs_by_platform(): void
+    {
+        DeliveryWebhookLog::create([
+            'platform'   => 'jahez',
+            'store_id'   => $this->store->id,
+            'event_type' => 'order.created',
+            'payload'    => json_encode(['event' => 'order.created']),
+            'processed'  => true,
+        ]);
+
+        DeliveryWebhookLog::create([
+            'platform'   => 'hungerstation',
+            'store_id'   => $this->store->id,
+            'event_type' => 'order.created',
+            'payload'    => json_encode(['event' => 'order.created']),
+            'processed'  => true,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/delivery/webhook-logs?platform=jahez');
+
+        $response->assertOk();
+    }
+
+    // ─── Status Push Logs ─────────────────────────────────────────
+
+    public function test_can_list_status_push_logs(): void
+    {
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/delivery/status-push-logs');
+
+        $response->assertOk()
+            ->assertJsonStructure(['success', 'data']);
+    }
+
+    public function test_status_push_logs_returns_stored_entries(): void
+    {
+        $order = DeliveryOrderMapping::create([
+            'store_id'          => $this->store->id,
+            'platform'          => 'jahez',
+            'external_order_id' => 'J-SPL-001',
+            'delivery_status'   => 'accepted',
+        ]);
+
+        DeliveryStatusPushLog::create([
+            'delivery_order_mapping_id' => $order->id,
+            'status_pushed'             => 'accepted',
+            'platform'                  => 'jahez',
+            'http_status_code'          => 200,
+            'success'                   => true,
+            'attempt_number'            => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/delivery/status-push-logs');
+
+        $response->assertOk();
+    }
+
+    // ─── Config Detail ────────────────────────────────────────────
+
+    public function test_can_get_config_detail(): void
+    {
+        $config = DeliveryPlatformConfig::create([
+            'store_id'   => $this->store->id,
+            'platform'   => 'jahez',
+            'api_key'    => 'detail-key-123',
+            'is_enabled' => true,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/delivery/configs/{$config->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+    }
+
+    public function test_config_detail_returns_404_for_missing(): void
+    {
+        $fakeId = '00000000-0000-0000-0000-000000000000';
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/delivery/configs/{$fakeId}");
+
+        $response->assertNotFound();
+    }
+
+    public function test_config_detail_returns_404_for_other_store(): void
+    {
+        $otherOrg = Organization::create([
+            'name'          => 'Other Org',
+            'business_type' => 'grocery',
+            'country'       => 'OM',
+        ]);
+
+        $otherStore = Store::create([
+            'organization_id' => $otherOrg->id,
+            'name'            => 'Other Store',
+            'business_type'   => 'grocery',
+            'currency'        => 'SAR',
+        ]);
+
+        $config = DeliveryPlatformConfig::create([
+            'store_id' => $otherStore->id,
+            'platform' => 'jahez',
+            'api_key'  => 'other-key',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/delivery/configs/{$config->id}");
+
+        $response->assertNotFound();
+    }
+
+    // ─── Delete Config ────────────────────────────────────────────
+
+    public function test_can_delete_config(): void
+    {
+        $config = DeliveryPlatformConfig::create([
+            'store_id'   => $this->store->id,
+            'platform'   => 'marsool',
+            'api_key'    => 'delete-key-123',
+            'is_enabled' => true,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->deleteJson("/api/v2/delivery/configs/{$config->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertDatabaseMissing('delivery_platform_configs', [
+            'id' => $config->id,
+        ]);
+    }
+
+    public function test_delete_config_returns_404_for_missing(): void
+    {
+        $fakeId = '00000000-0000-0000-0000-000000000000';
+
+        $response = $this->withToken($this->token)
+            ->deleteJson("/api/v2/delivery/configs/{$fakeId}");
+
+        $response->assertNotFound();
+    }
+
+    public function test_delete_config_returns_404_for_other_store(): void
+    {
+        $otherOrg = Organization::create([
+            'name'          => 'Another Org',
+            'business_type' => 'grocery',
+            'country'       => 'OM',
+        ]);
+
+        $otherStore = Store::create([
+            'organization_id' => $otherOrg->id,
+            'name'            => 'Another Store',
+            'business_type'   => 'grocery',
+            'currency'        => 'SAR',
+        ]);
+
+        $config = DeliveryPlatformConfig::create([
+            'store_id' => $otherStore->id,
+            'platform' => 'keeta',
+            'api_key'  => 'keeta-key',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->deleteJson("/api/v2/delivery/configs/{$config->id}");
+
+        $response->assertNotFound();
     }
 }

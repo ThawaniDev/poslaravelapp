@@ -117,6 +117,11 @@ class User extends Authenticatable
         return $this->belongsTo(\App\Domain\Core\Models\Store::class);
     }
 
+    public function staffUser(): HasOne
+    {
+        return $this->hasOne(\App\Domain\StaffManagement\Models\StaffUser::class);
+    }
+
     public function organization(): BelongsTo
     {
         return $this->belongsTo(\App\Domain\Core\Models\Organization::class);

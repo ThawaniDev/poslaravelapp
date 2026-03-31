@@ -2,6 +2,7 @@
 
 namespace App\Domain\PosTerminal\Resources;
 
+use App\Domain\Payment\Resources\PaymentResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class TransactionResource extends JsonResource
@@ -29,6 +30,7 @@ class TransactionResource extends JsonResource
             'notes' => $this->notes,
             'sync_version' => $this->sync_version,
             'items' => TransactionItemResource::collection($this->whenLoaded('transactionItems')),
+            'payments' => PaymentResource::collection($this->whenLoaded('payments')),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

@@ -20,18 +20,26 @@ Route::prefix('staff')->middleware('auth:sanctum')->group(function () {
     // ─── Staff Members ──────────────────────────────────────
     Route::get('members', [StaffUserController::class, 'index']);
     Route::post('members', [StaffUserController::class, 'store']);
+    Route::get('members/stats', [StaffUserController::class, 'stats']);
+    Route::get('members/linkable-users', [StaffUserController::class, 'linkableUsers']);
     Route::get('members/{id}', [StaffUserController::class, 'show']);
     Route::put('members/{id}', [StaffUserController::class, 'update']);
     Route::delete('members/{id}', [StaffUserController::class, 'destroy']);
     Route::post('members/{id}/pin', [StaffUserController::class, 'setPin']);
     Route::post('members/{id}/nfc', [StaffUserController::class, 'registerNfc']);
+    Route::post('members/{id}/link-user', [StaffUserController::class, 'linkUser']);
+    Route::delete('members/{id}/link-user', [StaffUserController::class, 'unlinkUser']);
     Route::get('members/{id}/commissions', [StaffUserController::class, 'commissions']);
     Route::put('members/{id}/commission-config', [StaffUserController::class, 'setCommissionConfig']);
     Route::get('members/{id}/activity-log', [StaffUserController::class, 'activityLog']);
+    Route::get('members/{id}/branch-assignments', [StaffUserController::class, 'branchAssignments']);
+    Route::post('members/{id}/branch-assignments', [StaffUserController::class, 'assignBranch']);
+    Route::delete('members/{id}/branch-assignments', [StaffUserController::class, 'unassignBranch']);
 
     // ─── Attendance ─────────────────────────────────────────
     Route::get('attendance', [StaffUserController::class, 'attendance']);
     Route::post('attendance/clock', [StaffUserController::class, 'clock']);
+    Route::get('attendance/export', [StaffUserController::class, 'attendanceExport']);
 
     // ─── Shifts ─────────────────────────────────────────────
     Route::get('shifts', [StaffUserController::class, 'shifts']);

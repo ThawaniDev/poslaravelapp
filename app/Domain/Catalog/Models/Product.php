@@ -29,6 +29,9 @@ class Product extends Model
         'barcode',
         'sell_price',
         'cost_price',
+        'offer_price',
+        'offer_start',
+        'offer_end',
         'unit',
         'tax_rate',
         'is_weighable',
@@ -37,6 +40,8 @@ class Product extends Model
         'is_combo',
         'age_restricted',
         'image_url',
+        'min_order_qty',
+        'max_order_qty',
         'sync_version',
     ];
 
@@ -48,8 +53,13 @@ class Product extends Model
         'age_restricted' => 'boolean',
         'sell_price' => 'decimal:2',
         'cost_price' => 'decimal:2',
+        'offer_price' => 'decimal:2',
+        'offer_start' => 'date',
+        'offer_end' => 'date',
         'tax_rate' => 'decimal:2',
         'tare_weight' => 'decimal:2',
+        'min_order_qty' => 'decimal:3',
+        'max_order_qty' => 'decimal:3',
     ];
 
     public function organization(): BelongsTo

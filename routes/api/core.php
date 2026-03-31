@@ -19,15 +19,23 @@ Route::prefix('core')->group(function () {
     // All core routes require authentication
     Route::middleware('auth:sanctum')->group(function () {
 
-        // ─── Store ───────────────────────────────────────────
+        // ─── Store (Branches) ────────────────────────────────
         Route::get('stores/mine', [StoreController::class, 'mine']);
+        Route::get('stores/stats', [StoreController::class, 'stats']);
+        Route::get('stores/managers', [StoreController::class, 'managers']);
+        Route::put('stores/sort-order', [StoreController::class, 'updateSortOrder']);
         Route::get('stores', [StoreController::class, 'index']);
+        Route::post('stores', [StoreController::class, 'store']);
         Route::get('stores/{id}', [StoreController::class, 'show']);
         Route::put('stores/{id}', [StoreController::class, 'update']);
+        Route::delete('stores/{id}', [StoreController::class, 'destroy']);
+        Route::post('stores/{id}/toggle-active', [StoreController::class, 'toggleActive']);
         Route::get('stores/{id}/settings', [StoreController::class, 'settings']);
         Route::put('stores/{id}/settings', [StoreController::class, 'updateSettings']);
+        Route::post('stores/{id}/copy-settings', [StoreController::class, 'copySettings']);
         Route::get('stores/{id}/working-hours', [StoreController::class, 'workingHours']);
         Route::put('stores/{id}/working-hours', [StoreController::class, 'updateWorkingHours']);
+        Route::post('stores/{id}/copy-working-hours', [StoreController::class, 'copyWorkingHours']);
         Route::post('stores/{id}/business-type', [StoreController::class, 'applyBusinessType']);
 
         // ─── Business Types ──────────────────────────────────

@@ -18,13 +18,13 @@ class RoleController extends BaseApiController
     ) {}
 
     /**
-     * GET /api/v2/staff/roles?store_id=xxx
+     * GET /api/v2/staff/roles
      */
     public function index(Request $request)
     {
-        $request->validate(['store_id' => 'required|uuid|exists:stores,id']);
+        $storeId = $request->user()->store_id;
 
-        $roles = $this->roleService->listForStore($request->store_id);
+        $roles = $this->roleService->listForStore($storeId);
 
         return $this->success(RoleResource::collection($roles));
     }

@@ -6,4 +6,5 @@ enum StockAdjustmentType: string
 {
     case Increase = 'increase';
     case Decrease = 'decrease';
+    case Damage = 'damage';
 }

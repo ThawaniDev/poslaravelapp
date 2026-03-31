@@ -12,6 +12,14 @@ Industry-Specific Workflows provides specialized POS functionality for each supp
 
 ### What This Feature Does
 
+### Groceries
+- **Produce management** — track produce items with weight-based pricing; scale integration
+- **Age-restricted products** — require age verification for alcohol, tobacco sales; optional ID
+- **Weighing scale integration** — connect to label printers and scales for produce
+- **Loyalty points** — earn points on grocery purchases; redeemable for discounts
+
+
+
 #### 🏥 Pharmacy
 - **Prescription management** — link sales to prescriptions; track prescription number, doctor, patient
 - **Drug scheduling** — categorize products by drug schedule (OTC, prescription-only, controlled)
@@ -923,4 +931,4 @@ Industry-specific permissions are activated per store based on the selected busi
 ### Restaurant
 16. **Table auto-release** — tables occupied for longer than 4 hours without activity auto-flag for review; configurable timeout
 17. **KDS FIFO** — kitchen tickets are displayed in order received; course-based firing sends courses sequentially when the previous course is marked ready
-18. **Tab limit** — open tabs cannot exceed a configurable maximum amount (default 50 OMR / 200 SAR) without manager authorization
+18. **Tab limit** — open tabs cannot exceed a configurable maximum amount (default 50 SAR / 200 SAR) without manager authorization

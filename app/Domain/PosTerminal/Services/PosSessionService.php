@@ -4,7 +4,7 @@ namespace App\Domain\PosTerminal\Services;
 
 use App\Domain\Auth\Models\User;
 use App\Domain\PosTerminal\Models\PosSession;
-use App\Domain\Security\Enums\SessionStatus;
+use App\Domain\Payment\Enums\CashSessionStatus;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class PosSessionService
@@ -27,7 +27,7 @@ class PosSessionService
         if (!empty($data['register_id'])) {
             $existing = PosSession::where('store_id', $actor->store_id)
                 ->where('register_id', $data['register_id'])
-                ->where('status', SessionStatus::Open)
+                ->where('status', CashSessionStatus::Open)
                 ->first();
 
             if ($existing) {
@@ -39,7 +39,7 @@ class PosSessionService
             'store_id' => $actor->store_id,
             'register_id' => $data['register_id'] ?? null,
             'cashier_id' => $actor->id,
-            'status' => SessionStatus::Open,
+            'status' => CashSessionStatus::Open,
             'opening_cash' => $data['opening_cash'] ?? 0,
             'total_cash_sales' => 0,
             'total_card_sales' => 0,
@@ -54,7 +54,7 @@ class PosSessionService
 
     public function close(PosSession $session, array $data): PosSession
     {
-        if ($session->status !== SessionStatus::Open) {
+        if ($session->status !== CashSessionStatus::Open) {
             throw new \RuntimeException('This session is already closed.');
         }
 
@@ -66,7 +66,7 @@ class PosSessionService
         $difference = $closingCash - $expectedCash;
 
         $session->update([
-            'status' => SessionStatus::Closed,
+            'status' => CashSessionStatus::Closed,
             'closing_cash' => $closingCash,
             'expected_cash' => $expectedCash,
             'cash_difference' => $difference,

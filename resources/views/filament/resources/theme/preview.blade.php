@@ -101,7 +101,7 @@
                 <div class="rounded-lg p-3 flex items-center justify-between" style="background-color: {{ e($primary) }};">
                     <div class="flex items-center gap-3">
                         <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-sm font-bold">T</div>
-                        <span class="text-white font-semibold text-sm">Thawani POS</span>
+                        <span class="text-white font-semibold text-sm">Wameed POS</span>
                     </div>
                     <div class="flex gap-4 text-white/80 text-xs">
                         <span class="text-white font-medium">Products</span>

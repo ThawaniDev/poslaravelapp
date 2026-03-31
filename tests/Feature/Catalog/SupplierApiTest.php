@@ -276,4 +276,44 @@ class SupplierApiTest extends TestCase
             ->assertJsonPath('data.total', 5)
             ->assertJsonCount(2, 'data.data');
     }
+
+    // ─── New Fields ───────────────────────────────────────────
+
+    public function test_can_create_supplier_with_new_fields(): void
+    {
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/catalog/suppliers', [
+                'name' => 'Full Supplier',
+                'phone' => '96812345678',
+                'email' => 'supplier@test.com',
+                'contact_person' => 'John Manager',
+                'tax_number' => 'TAX-12345',
+                'payment_terms' => 'Net 30',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.contact_person', 'John Manager')
+            ->assertJsonPath('data.tax_number', 'TAX-12345')
+            ->assertJsonPath('data.payment_terms', 'Net 30');
+    }
+
+    public function test_can_update_supplier_new_fields(): void
+    {
+        $supplier = Supplier::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Test Supplier',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->putJson("/api/v2/catalog/suppliers/{$supplier->id}", [
+                'contact_person' => 'Jane Updated',
+                'tax_number' => 'TAX-99999',
+                'payment_terms' => 'Net 60',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.contact_person', 'Jane Updated')
+            ->assertJsonPath('data.tax_number', 'TAX-99999')
+            ->assertJsonPath('data.payment_terms', 'Net 60');
+    }
 }

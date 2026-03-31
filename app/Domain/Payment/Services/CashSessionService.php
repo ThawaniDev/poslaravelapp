@@ -7,7 +7,7 @@ use App\Domain\Payment\Enums\CashEventType;
 use App\Domain\Payment\Models\CashEvent;
 use App\Domain\Payment\Models\CashSession;
 use App\Domain\Payment\Models\Expense;
-use App\Domain\Security\Enums\SessionStatus;
+use App\Domain\Payment\Enums\CashSessionStatus;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class CashSessionService
@@ -30,7 +30,7 @@ class CashSessionService
         if (!empty($data['terminal_id'])) {
             $existing = CashSession::where('store_id', $actor->store_id)
                 ->where('terminal_id', $data['terminal_id'])
-                ->where('status', SessionStatus::Open)
+                ->where('status', CashSessionStatus::Open)
                 ->first();
 
             if ($existing) {
@@ -44,14 +44,14 @@ class CashSessionService
             'opened_by' => $actor->id,
             'opening_float' => $data['opening_float'] ?? 0,
             'expected_cash' => $data['opening_float'] ?? 0,
-            'status' => SessionStatus::Open,
+            'status' => CashSessionStatus::Open,
             'opened_at' => now(),
         ]);
     }
 
     public function close(CashSession $session, array $data, User $actor): CashSession
     {
-        if ($session->status !== SessionStatus::Open) {
+        if ($session->status !== CashSessionStatus::Open) {
             throw new \RuntimeException('This cash session is already closed.');
         }
 
@@ -60,7 +60,7 @@ class CashSessionService
         $variance = $actualCash - $expectedCash;
 
         $session->update([
-            'status' => SessionStatus::Closed,
+            'status' => CashSessionStatus::Closed,
             'closed_by' => $actor->id,
             'actual_cash' => $actualCash,
             'variance' => $variance,
@@ -73,7 +73,7 @@ class CashSessionService
 
     public function addCashEvent(CashSession $session, array $data, User $actor): CashEvent
     {
-        if ($session->status !== SessionStatus::Open) {
+        if ($session->status !== CashSessionStatus::Open) {
             throw new \RuntimeException('Cannot add cash events to a closed session.');
         }
 

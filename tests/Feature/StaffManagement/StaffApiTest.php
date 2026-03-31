@@ -121,7 +121,7 @@ class StaffApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true);
 
-        $data = $response->json('data');
+        $data = $response->json('data.data');
         $this->assertCount(2, $data);
     }
 
@@ -144,7 +144,7 @@ class StaffApiTest extends TestCase
             ->getJson('/api/v2/staff/members?search=Ahmed');
 
         $response->assertOk();
-        $this->assertCount(1, $response->json('data'));
+        $this->assertCount(1, $response->json('data.data'));
     }
 
     public function test_list_staff_cross_store_isolation(): void
@@ -163,8 +163,8 @@ class StaffApiTest extends TestCase
         $response = $this->withToken($this->token)
             ->getJson('/api/v2/staff/members');
 
-        $this->assertCount(1, $response->json('data'));
-        $this->assertEquals('InStore', $response->json('data.0.first_name'));
+        $this->assertCount(1, $response->json('data.data'));
+        $this->assertEquals('InStore', $response->json('data.data.0.first_name'));
     }
 
     public function test_create_staff_member(): void
@@ -434,7 +434,7 @@ class StaffApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true);
 
-        $this->assertCount(1, $response->json('data'));
+        $this->assertCount(1, $response->json('data.data'));
     }
 
     public function test_list_attendance_filtered_by_staff(): void
@@ -449,7 +449,7 @@ class StaffApiTest extends TestCase
             ->getJson("/api/v2/staff/attendance?staff_user_id={$staff1->id}");
 
         $response->assertOk();
-        $this->assertCount(1, $response->json('data'));
+        $this->assertCount(1, $response->json('data.data'));
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -543,7 +543,7 @@ class StaffApiTest extends TestCase
             ->getJson('/api/v2/staff/shifts');
 
         $response->assertOk();
-        $this->assertCount(1, $response->json('data'));
+        $this->assertCount(1, $response->json('data.data'));
     }
 
     public function test_update_shift(): void
@@ -760,7 +760,7 @@ class StaffApiTest extends TestCase
             ->getJson("/api/v2/staff/members/{$staff->id}/activity-log");
 
         $response->assertOk();
-        $this->assertCount(1, $response->json('data'));
+        $this->assertCount(1, $response->json('data.data'));
     }
 
     public function test_activity_log_cross_store_404(): void
@@ -773,6 +773,831 @@ class StaffApiTest extends TestCase
 
         $response = $this->withToken($this->token)
             ->getJson("/api/v2/staff/members/{$staff->id}/activity-log");
+
+        $response->assertNotFound();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Staff Stats
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_staff_stats(): void
+    {
+        StaffUser::create(['store_id' => $this->store->id, 'first_name' => 'A', 'last_name' => 'B', 'status' => 'active']);
+        StaffUser::create(['store_id' => $this->store->id, 'first_name' => 'C', 'last_name' => 'D', 'status' => 'active']);
+        StaffUser::create(['store_id' => $this->store->id, 'first_name' => 'E', 'last_name' => 'F', 'status' => 'inactive']);
+        StaffUser::create(['store_id' => $this->store->id, 'first_name' => 'G', 'last_name' => 'H', 'status' => 'on_leave']);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/staff/members/stats');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.total_staff', 4)
+            ->assertJsonPath('data.active', 2)
+            ->assertJsonPath('data.inactive', 1)
+            ->assertJsonPath('data.on_leave', 1);
+    }
+
+    public function test_staff_stats_cross_store_isolation(): void
+    {
+        StaffUser::create(['store_id' => $this->store->id, 'first_name' => 'A', 'last_name' => 'B', 'status' => 'active']);
+        StaffUser::create(['store_id' => $this->otherStore->id, 'first_name' => 'C', 'last_name' => 'D', 'status' => 'active']);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/staff/members/stats');
+
+        $response->assertOk()
+            ->assertJsonPath('data.total_staff', 1)
+            ->assertJsonPath('data.active', 1);
+    }
+
+    public function test_staff_stats_includes_clocked_in_count(): void
+    {
+        $staff = StaffUser::create(['store_id' => $this->store->id, 'first_name' => 'A', 'last_name' => 'B', 'status' => 'active']);
+
+        AttendanceRecord::create([
+            'staff_user_id' => $staff->id,
+            'store_id' => $this->store->id,
+            'clock_in_at' => now()->subHour(),
+        ]);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/staff/members/stats');
+
+        $response->assertOk()
+            ->assertJsonPath('data.currently_clocked_in', 1);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Branch Assignments
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_assign_staff_to_branch(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Branch',
+            'last_name' => 'Worker',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/branch-assignments", [
+                'branch_id' => $this->store->id,
+                'is_primary' => true,
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.branch_id', $this->store->id)
+            ->assertJsonPath('data.is_primary', true);
+    }
+
+    public function test_assign_staff_to_branch_duplicate_error(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Dup',
+            'last_name' => 'Assign',
+        ]);
+
+        \App\Domain\StaffManagement\Models\StaffBranchAssignment::create([
+            'staff_user_id' => $staff->id,
+            'branch_id' => $this->store->id,
+            'is_primary' => false,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/branch-assignments", [
+                'branch_id' => $this->store->id,
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_list_branch_assignments(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'List',
+            'last_name' => 'Branches',
+        ]);
+
+        \App\Domain\StaffManagement\Models\StaffBranchAssignment::create([
+            'staff_user_id' => $staff->id,
+            'branch_id' => $this->store->id,
+            'is_primary' => true,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/members/{$staff->id}/branch-assignments");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true);
+
+        $this->assertCount(1, $response->json('data'));
+    }
+
+    public function test_unassign_staff_from_branch(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Un',
+            'last_name' => 'Assign',
+        ]);
+
+        \App\Domain\StaffManagement\Models\StaffBranchAssignment::create([
+            'staff_user_id' => $staff->id,
+            'branch_id' => $this->store->id,
+            'is_primary' => false,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->deleteJson("/api/v2/staff/members/{$staff->id}/branch-assignments", [
+                'branch_id' => $this->store->id,
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('message', 'Branch assignment removed');
+    }
+
+    public function test_unassign_nonexistent_branch_error(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'No',
+            'last_name' => 'Branch',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->deleteJson("/api/v2/staff/members/{$staff->id}/branch-assignments", [
+                'branch_id' => $this->store->id,
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_branch_assignment_cross_store_404(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->otherStore->id,
+            'first_name' => 'Other',
+            'last_name' => 'Staff',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/members/{$staff->id}/branch-assignments");
+
+        $response->assertNotFound();
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Attendance Export
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_attendance_export(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Export',
+            'last_name' => 'Test',
+        ]);
+
+        AttendanceRecord::create([
+            'staff_user_id' => $staff->id,
+            'store_id' => $this->store->id,
+            'clock_in_at' => now()->subHours(8),
+            'clock_out_at' => now(),
+            'break_minutes' => 30,
+            'overtime_minutes' => 15,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/staff/attendance/export');
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.total', 1);
+
+        $rows = $response->json('data.rows');
+        $this->assertCount(1, $rows);
+        $this->assertEquals('Export Test', $rows[0]['staff_name']);
+        $this->assertEquals(30, $rows[0]['break_minutes']);
+        $this->assertEquals(15, $rows[0]['overtime_minutes']);
+    }
+
+    public function test_attendance_export_with_date_filter(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Filter',
+            'last_name' => 'Export',
+        ]);
+
+        AttendanceRecord::create([
+            'staff_user_id' => $staff->id,
+            'store_id' => $this->store->id,
+            'clock_in_at' => now()->subDays(5),
+            'clock_out_at' => now()->subDays(5)->addHours(8),
+        ]);
+
+        AttendanceRecord::create([
+            'staff_user_id' => $staff->id,
+            'store_id' => $this->store->id,
+            'clock_in_at' => now()->subDays(1),
+            'clock_out_at' => now(),
+        ]);
+
+        $dateFrom = now()->subDays(2)->toDateString();
+        $dateTo = now()->toDateString();
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/attendance/export?date_from={$dateFrom}&date_to={$dateTo}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.total', 1);
+    }
+
+    public function test_attendance_export_has_headers(): void
+    {
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/staff/attendance/export');
+
+        $response->assertOk();
+
+        $headers = $response->json('data.headers');
+        $this->assertCount(6, $headers);
+        $this->assertContains('Staff Name', $headers);
+        $this->assertContains('Clock In', $headers);
+        $this->assertContains('Clock Out', $headers);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Break Tracking Edge Cases
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_start_break(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Break',
+            'last_name' => 'Start',
+        ]);
+
+        $attendance = AttendanceRecord::create([
+            'staff_user_id' => $staff->id,
+            'store_id' => $this->store->id,
+            'clock_in_at' => now()->subHours(2),
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/staff/attendance/clock', [
+                'action' => 'start_break',
+                'attendance_record_id' => $attendance->id,
+                'staff_user_id' => $staff->id,
+                'store_id' => $this->store->id,
+            ]);
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('break_records', [
+            'attendance_record_id' => $attendance->id,
+        ]);
+    }
+
+    public function test_end_break(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Break',
+            'last_name' => 'End',
+        ]);
+
+        $attendance = AttendanceRecord::create([
+            'staff_user_id' => $staff->id,
+            'store_id' => $this->store->id,
+            'clock_in_at' => now()->subHours(2),
+        ]);
+
+        BreakRecord::create([
+            'attendance_record_id' => $attendance->id,
+            'break_start' => now()->subMinutes(30),
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/staff/attendance/clock', [
+                'action' => 'end_break',
+                'attendance_record_id' => $attendance->id,
+                'staff_user_id' => $staff->id,
+                'store_id' => $this->store->id,
+            ]);
+
+        $response->assertOk();
+
+        $break = BreakRecord::where('attendance_record_id', $attendance->id)->first();
+        $this->assertNotNull($break->break_end);
+    }
+
+    public function test_double_break_start_error(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Double',
+            'last_name' => 'Break',
+        ]);
+
+        $attendance = AttendanceRecord::create([
+            'staff_user_id' => $staff->id,
+            'store_id' => $this->store->id,
+            'clock_in_at' => now()->subHours(2),
+        ]);
+
+        BreakRecord::create([
+            'attendance_record_id' => $attendance->id,
+            'break_start' => now()->subMinutes(15),
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/staff/attendance/clock', [
+                'action' => 'start_break',
+                'attendance_record_id' => $attendance->id,
+                'staff_user_id' => $staff->id,
+                'store_id' => $this->store->id,
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_break_on_ended_shift_error(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Ended',
+            'last_name' => 'Shift',
+        ]);
+
+        $attendance = AttendanceRecord::create([
+            'staff_user_id' => $staff->id,
+            'store_id' => $this->store->id,
+            'clock_in_at' => now()->subHours(8),
+            'clock_out_at' => now(),
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/staff/attendance/clock', [
+                'action' => 'start_break',
+                'attendance_record_id' => $attendance->id,
+                'staff_user_id' => $staff->id,
+                'store_id' => $this->store->id,
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Search & Filter Edge Cases
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_search_case_insensitive(): void
+    {
+        StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'MOHAMMED',
+            'last_name' => 'Ali',
+            'status' => 'active',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/staff/members?search=mohammed');
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data.data'));
+    }
+
+    public function test_filter_by_status(): void
+    {
+        StaffUser::create(['store_id' => $this->store->id, 'first_name' => 'A', 'last_name' => 'B', 'status' => 'active']);
+        StaffUser::create(['store_id' => $this->store->id, 'first_name' => 'C', 'last_name' => 'D', 'status' => 'inactive']);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/staff/members?status=active');
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data.data'));
+    }
+
+    public function test_filter_by_employment_type(): void
+    {
+        StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Full',
+            'last_name' => 'Time',
+            'employment_type' => 'full_time',
+        ]);
+        StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Part',
+            'last_name' => 'Time',
+            'employment_type' => 'part_time',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/staff/members?employment_type=part_time');
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data.data'));
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Commission Edge Cases
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_commission_replace_existing_rules(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Replace',
+            'last_name' => 'Rules',
+        ]);
+
+        CommissionRule::create([
+            'store_id' => $this->store->id,
+            'staff_user_id' => $staff->id,
+            'type' => 'flat_percentage',
+            'percentage' => 5.00,
+            'is_active' => true,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->putJson("/api/v2/staff/members/{$staff->id}/commission-config", [
+                'type' => 'flat_percentage',
+                'percentage' => 10.00,
+                'replace_existing' => true,
+            ]);
+
+        $response->assertCreated();
+
+        $rules = CommissionRule::where('staff_user_id', $staff->id)->get();
+        $this->assertEquals(2, $rules->count());
+        $inactiveRules = $rules->where('is_active', false);
+        $this->assertEquals(1, $inactiveRules->count());
+    }
+
+    public function test_commission_summary_empty(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Empty',
+            'last_name' => 'Commission',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/members/{$staff->id}/commissions");
+
+        $response->assertOk()
+            ->assertJsonPath('data.total_earnings', 0)
+            ->assertJsonPath('data.total_orders', 0)
+            ->assertJsonPath('data.avg_per_order', 0);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // Shifts - Date Filtering
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_list_shifts_filtered_by_date_range(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Shift',
+            'last_name' => 'Filter',
+        ]);
+
+        $template = ShiftTemplate::create([
+            'store_id' => $this->store->id,
+            'name' => 'Morning',
+            'start_time' => '08:00',
+            'end_time' => '16:00',
+        ]);
+
+        ShiftSchedule::create([
+            'store_id' => $this->store->id,
+            'staff_user_id' => $staff->id,
+            'shift_template_id' => $template->id,
+            'date' => '2025-01-15',
+        ]);
+
+        ShiftSchedule::create([
+            'store_id' => $this->store->id,
+            'staff_user_id' => $staff->id,
+            'shift_template_id' => $template->id,
+            'date' => '2025-03-15',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/staff/shifts?date_from=2025-03-01&date_to=2025-03-31');
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data.data'));
+    }
+
+    public function test_list_shifts_filtered_by_staff(): void
+    {
+        $staff1 = StaffUser::create(['store_id' => $this->store->id, 'first_name' => 'S1', 'last_name' => 'T']);
+        $staff2 = StaffUser::create(['store_id' => $this->store->id, 'first_name' => 'S2', 'last_name' => 'T']);
+
+        $template = ShiftTemplate::create([
+            'store_id' => $this->store->id,
+            'name' => 'Morning',
+            'start_time' => '08:00',
+            'end_time' => '16:00',
+        ]);
+
+        ShiftSchedule::create([
+            'store_id' => $this->store->id,
+            'staff_user_id' => $staff1->id,
+            'shift_template_id' => $template->id,
+            'date' => '2025-03-01',
+        ]);
+
+        ShiftSchedule::create([
+            'store_id' => $this->store->id,
+            'staff_user_id' => $staff2->id,
+            'shift_template_id' => $template->id,
+            'date' => '2025-03-02',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/shifts?staff_user_id={$staff1->id}");
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data.data'));
+    }
+
+    public function test_attendance_date_range_filter(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Date',
+            'last_name' => 'Range',
+        ]);
+
+        AttendanceRecord::create([
+            'staff_user_id' => $staff->id,
+            'store_id' => $this->store->id,
+            'clock_in_at' => now()->subDays(10),
+            'clock_out_at' => now()->subDays(10)->addHours(8),
+        ]);
+
+        AttendanceRecord::create([
+            'staff_user_id' => $staff->id,
+            'store_id' => $this->store->id,
+            'clock_in_at' => now()->subDays(1),
+            'clock_out_at' => now(),
+        ]);
+
+        $dateFrom = now()->subDays(2)->toDateString();
+        $dateTo = now()->toDateString();
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/attendance?date_from={$dateFrom}&date_to={$dateTo}");
+
+        $response->assertOk();
+        $this->assertCount(1, $response->json('data.data'));
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // User Account Linking
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_link_user_account_to_staff(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Link',
+            'last_name' => 'Test',
+            'status' => 'active',
+        ]);
+
+        $linkableUser = User::create([
+            'name' => 'Linkable User',
+            'email' => 'linkable@test.com',
+            'password_hash' => bcrypt('password'),
+            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
+            'role' => 'cashier',
+            'is_active' => true,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/link-user", [
+                'user_id' => $linkableUser->id,
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.user_id', $linkableUser->id)
+            ->assertJsonPath('data.linked_user.id', $linkableUser->id)
+            ->assertJsonPath('data.linked_user.name', 'Linkable User')
+            ->assertJsonPath('data.linked_user.email', 'linkable@test.com');
+
+        $this->assertDatabaseHas('staff_users', [
+            'id' => $staff->id,
+            'user_id' => $linkableUser->id,
+        ]);
+    }
+
+    public function test_unlink_user_account_from_staff(): void
+    {
+        $linkableUser = User::create([
+            'name' => 'Unlink User',
+            'email' => 'unlink@test.com',
+            'password_hash' => bcrypt('password'),
+            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
+            'role' => 'cashier',
+            'is_active' => true,
+        ]);
+
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Unlink',
+            'last_name' => 'Test',
+            'status' => 'active',
+            'user_id' => $linkableUser->id,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->deleteJson("/api/v2/staff/members/{$staff->id}/link-user");
+
+        $response->assertOk()
+            ->assertJsonPath('data.user_id', null);
+
+        $this->assertDatabaseHas('staff_users', [
+            'id' => $staff->id,
+            'user_id' => null,
+        ]);
+    }
+
+    public function test_cannot_link_user_from_different_store(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Cross',
+            'last_name' => 'Store',
+            'status' => 'active',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/link-user", [
+                'user_id' => $this->otherUser->id,
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_cannot_link_user_already_linked_to_another_staff(): void
+    {
+        $linkableUser = User::create([
+            'name' => 'Already Linked',
+            'email' => 'already@test.com',
+            'password_hash' => bcrypt('password'),
+            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
+            'role' => 'cashier',
+            'is_active' => true,
+        ]);
+
+        StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'First',
+            'last_name' => 'Staff',
+            'status' => 'active',
+            'user_id' => $linkableUser->id,
+        ]);
+
+        $secondStaff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Second',
+            'last_name' => 'Staff',
+            'status' => 'active',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$secondStaff->id}/link-user", [
+                'user_id' => $linkableUser->id,
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_cannot_unlink_staff_without_linked_user(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'No',
+            'last_name' => 'Link',
+            'status' => 'active',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->deleteJson("/api/v2/staff/members/{$staff->id}/link-user");
+
+        $response->assertStatus(422);
+    }
+
+    public function test_linkable_users_returns_unlinked_users_only(): void
+    {
+        $linkedUser = User::create([
+            'name' => 'Already Linked',
+            'email' => 'linked@test.com',
+            'password_hash' => bcrypt('password'),
+            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
+            'role' => 'cashier',
+            'is_active' => true,
+        ]);
+
+        $freeUser = User::create([
+            'name' => 'Free User',
+            'email' => 'free@test.com',
+            'password_hash' => bcrypt('password'),
+            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
+            'role' => 'cashier',
+            'is_active' => true,
+        ]);
+
+        StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Linked',
+            'last_name' => 'Staff',
+            'status' => 'active',
+            'user_id' => $linkedUser->id,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/staff/members/linkable-users');
+
+        $response->assertOk();
+
+        $userIds = collect($response->json('data'))->pluck('id')->toArray();
+        $this->assertContains($freeUser->id, $userIds);
+        $this->assertNotContains($linkedUser->id, $userIds);
+    }
+
+    public function test_staff_show_includes_user_id(): void
+    {
+        $linkableUser = User::create([
+            'name' => 'Show User',
+            'email' => 'show@test.com',
+            'password_hash' => bcrypt('password'),
+            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
+            'role' => 'cashier',
+            'is_active' => true,
+        ]);
+
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Show',
+            'last_name' => 'Staff',
+            'status' => 'active',
+            'user_id' => $linkableUser->id,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/members/{$staff->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.user_id', $linkableUser->id);
+    }
+
+    public function test_link_user_requires_valid_user_id(): void
+    {
+        $staff = StaffUser::create([
+            'store_id' => $this->store->id,
+            'first_name' => 'Validate',
+            'last_name' => 'Test',
+            'status' => 'active',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/link-user", [
+                'user_id' => 'not-a-uuid',
+            ]);
+
+        $response->assertUnprocessable();
+    }
+
+    public function test_link_user_cross_store_isolation(): void
+    {
+        $otherStaff = StaffUser::create([
+            'store_id' => $this->otherStore->id,
+            'first_name' => 'Other',
+            'last_name' => 'Staff',
+            'status' => 'active',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$otherStaff->id}/link-user", [
+                'user_id' => $this->user->id,
+            ]);
 
         $response->assertNotFound();
     }

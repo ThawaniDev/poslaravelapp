@@ -41,6 +41,20 @@ class CreateTransactionRequest extends FormRequest
             'items.*.tax_amount' => ['nullable', 'numeric', 'min:0'],
             'items.*.line_total' => ['required', 'numeric'],
             'items.*.is_return_item' => ['nullable', 'boolean'],
+            // Payments
+            'payments' => ['required', 'array', 'min:1'],
+            'payments.*.method' => ['required', 'string', 'in:cash,card,card_mada,card_visa,card_mastercard,mada,apple_pay,stc_pay,store_credit,gift_card,mobile_payment,loyalty_points,bank_transfer'],
+            'payments.*.amount' => ['required', 'numeric', 'min:0.01'],
+            'payments.*.cash_tendered' => ['nullable', 'numeric', 'min:0'],
+            'payments.*.change_given' => ['nullable', 'numeric', 'min:0'],
+            'payments.*.tip_amount' => ['nullable', 'numeric', 'min:0'],
+            'payments.*.card_brand' => ['nullable', 'string'],
+            'payments.*.card_last_four' => ['nullable', 'string', 'size:4'],
+            'payments.*.card_auth_code' => ['nullable', 'string'],
+            'payments.*.card_reference' => ['nullable', 'string'],
+            'payments.*.gift_card_code' => ['nullable', 'string'],
+            'payments.*.coupon_code' => ['nullable', 'string'],
+            'payments.*.loyalty_points_used' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }

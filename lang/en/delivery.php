@@ -123,4 +123,10 @@ return [
     'awaiting_acceptance' => 'Awaiting acceptance',
     'today_revenue' => 'Today\'s Revenue',
     'delivered_orders_revenue' => 'From delivered orders',
+
+    // New API responses
+    'webhook_logs_retrieved' => 'Webhook logs retrieved.',
+    'status_push_logs_retrieved' => 'Status push logs retrieved.',
+    'config_retrieved' => 'Delivery config retrieved.',
+    'config_deleted' => 'Delivery config deleted.',
 ];

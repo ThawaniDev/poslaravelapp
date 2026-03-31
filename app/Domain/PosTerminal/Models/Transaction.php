@@ -3,6 +3,7 @@
 namespace App\Domain\PosTerminal\Models;
 
 use App\Domain\Order\Enums\ExternalOrderType;
+use App\Domain\Payment\Models\Payment;
 use App\Domain\ThawaniIntegration\Enums\SyncStatus;
 use App\Domain\PosTerminal\Enums\TransactionStatus;
 use App\Domain\PosTerminal\Enums\TransactionType;

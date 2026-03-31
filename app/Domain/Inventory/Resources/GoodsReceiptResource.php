@@ -20,6 +20,11 @@ class GoodsReceiptResource extends JsonResource
             'received_by' => $this->received_by,
             'confirmed_at' => $this->confirmed_at?->toIso8601String(),
 
+            'supplier' => $this->whenLoaded('supplier', fn () => [
+                'id' => $this->supplier->id,
+                'name' => $this->supplier->name,
+            ]),
+
             'items' => GoodsReceiptItemResource::collection($this->whenLoaded('goodsReceiptItems')),
             'batches' => StockBatchResource::collection($this->whenLoaded('stockBatches')),
 

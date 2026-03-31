@@ -8,7 +8,7 @@
 
 ## 1. Feature Overview
 
-App & Update Management controls the lifecycle of the Thawani POS Flutter Desktop application (Windows and macOS) **and the Mobile Companion App (iOS and Android)**. It lets the platform team publish new versions, enforce minimum version requirements, stage rollouts by percentage, push force-update prompts, and monitor adoption across all stores. Auto-rollback logic protects providers from crash-loop releases. For mobile apps, actual deployment goes through App Store / Google Play, but version bookkeeping, force-update flags, and adoption tracking are managed here.
+App & Update Management controls the lifecycle of the Wameed POS Flutter Desktop application (Windows and macOS) **and the Mobile Companion App (iOS and Android)**. It lets the platform team publish new versions, enforce minimum version requirements, stage rollouts by percentage, push force-update prompts, and monitor adoption across all stores. Auto-rollback logic protects providers from crash-loop releases. For mobile apps, actual deployment goes through App Store / Google Play, but version bookkeeping, force-update flags, and adoption tracking are managed here.
 
 ### What This Feature Does
 - Manage Flutter desktop app release versions (Windows, macOS)

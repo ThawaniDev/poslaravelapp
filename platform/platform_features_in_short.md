@@ -1,4 +1,4 @@
-# Thawani POS — Platform (Admin) Features (Short Reference)
+# Wameed POS — Platform (Admin) Features (Short Reference)
 
 > Features available to the Thawani internal team through the Super Admin Panel.  
 > Store owners (providers) have no access to this scope.

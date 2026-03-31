@@ -1,6 +1,6 @@
 # Vertical Feature Slices — Build Methodology
 
-> **Thawani POS System**
+> **Wameed POS System**
 > Last Updated: 9 March 2026
 > Status: Phase 0 (Scaffolding) — In Progress
 
@@ -368,7 +368,7 @@ Both Flutter and Laravel have identical formatter APIs:
 |     | — `widgets.dart` — Barrel export for all widgets               | ✅ Done |
 |     |                                                                 |        |
 |     | **Flutter Formatters** (`lib/core/utils/formatters.dart`):      |        |
-|     | — Currency (OMR 3-decimal, short, compact, raw price)           | ✅ Done |
+|     | — Currency (SAR 2-decimal, short, compact, raw price)           | ✅ Done |
 |     | — Dates (display, ISO, full, medium, short, dateTime)           | ✅ Done |
 |     | — Time (24h, 12h, full), relative time (ago, until)             | ✅ Done |
 |     | — Numbers (comma, decimal, compact, percent, ordinal)           | ✅ Done |

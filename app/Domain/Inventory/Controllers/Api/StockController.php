@@ -3,6 +3,7 @@
 namespace App\Domain\Inventory\Controllers\Api;
 
 use App\Domain\Inventory\Resources\StockLevelResource;
+use App\Domain\Inventory\Resources\StockBatchResource;
 use App\Domain\Inventory\Resources\StockMovementResource;
 use App\Domain\Inventory\Services\StockService;
 use App\Http\Controllers\Api\BaseApiController;
@@ -80,5 +81,42 @@ class StockController extends BaseApiController
         );
 
         return $this->success(new StockLevelResource($level));
+    }
+
+    /**
+     * GET /api/v2/inventory/expiry-alerts
+     */
+    public function expiryAlerts(Request $request): JsonResponse
+    {
+        $request->validate([
+            'store_id' => 'required|uuid',
+            'days_ahead' => 'nullable|integer|min:1|max:365',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $paginator = $this->stockService->expiryAlerts(
+            storeId: $request->input('store_id'),
+            daysAhead: $request->integer('days_ahead', 30),
+            perPage: $request->integer('per_page', 25),
+        );
+
+        $data = $paginator->toArray();
+        $data['data'] = StockBatchResource::collection($paginator->items())->resolve();
+
+        return $this->success($data);
+    }
+
+    /**
+     * GET /api/v2/inventory/low-stock
+     */
+    public function lowStock(Request $request): JsonResponse
+    {
+        $request->validate([
+            'store_id' => 'required|uuid',
+        ]);
+
+        $items = $this->stockService->lowStockItems($request->input('store_id'));
+
+        return $this->success(StockLevelResource::collection($items));
     }
 }

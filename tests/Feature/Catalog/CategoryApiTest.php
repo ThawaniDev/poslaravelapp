@@ -351,4 +351,41 @@ class CategoryApiTest extends TestCase
 
         $this->assertDatabaseHas('categories', ['id' => $parent->id]);
     }
+
+    // ─── Description Fields ───────────────────────────────────
+
+    public function test_can_create_category_with_description(): void
+    {
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/catalog/categories', [
+                'name' => 'Described Category',
+                'name_ar' => 'تصنيف موصوف',
+                'description' => 'This is a test description',
+                'description_ar' => 'هذا وصف تجريبي',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.description', 'This is a test description')
+            ->assertJsonPath('data.description_ar', 'هذا وصف تجريبي');
+    }
+
+    public function test_can_update_category_description(): void
+    {
+        $category = Category::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Test Cat',
+            'is_active' => true,
+            'sync_version' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->putJson("/api/v2/catalog/categories/{$category->id}", [
+                'description' => 'Updated description',
+                'description_ar' => 'وصف محدث',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.description', 'Updated description')
+            ->assertJsonPath('data.description_ar', 'وصف محدث');
+    }
 }

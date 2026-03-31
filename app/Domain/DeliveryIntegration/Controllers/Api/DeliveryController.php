@@ -234,4 +234,69 @@ class DeliveryController extends BaseApiController
 
         return $this->success($platforms, __('delivery.platforms_retrieved'));
     }
+
+    /**
+     * GET /api/v2/delivery/webhook-logs
+     */
+    public function webhookLogs(Request $request): JsonResponse
+    {
+        $request->validate([
+            'platform' => 'nullable|string',
+            'per_page' => 'nullable|integer|min:1|max:50',
+        ]);
+
+        $logs = $this->deliveryService->getWebhookLogs(
+            $request->user()->store_id,
+            $request->only(['platform', 'per_page']),
+        );
+
+        return $this->success($logs, __('delivery.webhook_logs_retrieved'));
+    }
+
+    /**
+     * GET /api/v2/delivery/status-push-logs
+     */
+    public function statusPushLogs(Request $request): JsonResponse
+    {
+        $request->validate([
+            'platform' => 'nullable|string',
+            'order_id' => 'nullable|string',
+            'per_page' => 'nullable|integer|min:1|max:50',
+        ]);
+
+        $logs = $this->deliveryService->getStatusPushLogs(
+            $request->user()->store_id,
+            $request->only(['platform', 'order_id', 'per_page']),
+        );
+
+        return $this->success($logs, __('delivery.status_push_logs_retrieved'));
+    }
+
+    /**
+     * GET /api/v2/delivery/configs/{id}
+     */
+    public function configDetail(Request $request, string $id): JsonResponse
+    {
+        $config = $this->deliveryService->getConfig($id, $request->user()->store_id);
+
+        if (! $config) {
+            return $this->notFound(__('delivery.config_not_found'));
+        }
+
+        return $this->success($config, __('delivery.config_retrieved'));
+    }
+
+    /**
+     * DELETE /api/v2/delivery/configs/{id}
+     */
+    public function deleteConfig(Request $request, string $id): JsonResponse
+    {
+        $deleted = $this->deliveryService->deleteConfig($id, $request->user()->store_id);
+
+        if (! $deleted) {
+            return $this->notFound(__('delivery.config_not_found'));
+        }
+
+        return $this->success(null, __('delivery.config_deleted'));
+    }
 }

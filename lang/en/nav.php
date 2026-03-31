@@ -52,5 +52,6 @@ return [
     'subscription_plans'          => 'Subscription Plans',
     'subscriptions'               => 'Subscriptions',
     'templates'                   => 'Templates',
+    'terminals'                   => 'Terminals',
     'trusted_devices'             => 'Trusted Devices',
 ];

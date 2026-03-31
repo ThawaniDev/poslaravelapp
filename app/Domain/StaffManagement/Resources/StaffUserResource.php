@@ -12,6 +12,7 @@ class StaffUserResource extends JsonResource
         return [
             'id'                  => $this->id,
             'store_id'            => $this->store_id,
+            'user_id'             => $this->user_id,
             'first_name'          => $this->first_name,
             'last_name'           => $this->last_name,
             'email'               => $this->email,
@@ -29,6 +30,11 @@ class StaffUserResource extends JsonResource
             'language_preference' => $this->language_preference,
             'branch_assignments'  => StaffBranchAssignmentResource::collection($this->whenLoaded('staffBranchAssignments')),
             'commission_rules'    => CommissionRuleResource::collection($this->whenLoaded('commissionRules')),
+            'linked_user'         => $this->whenLoaded('user', fn () => $this->user ? [
+                'id'    => $this->user->id,
+                'name'  => $this->user->name,
+                'email' => $this->user->email,
+            ] : null),
             'created_at'          => $this->created_at?->toIso8601String(),
             'updated_at'          => $this->updated_at?->toIso8601String(),
         ];

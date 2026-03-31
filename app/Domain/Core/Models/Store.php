@@ -116,22 +116,52 @@ class Store extends Model
 
     protected $fillable = [
         'organization_id',
+        'manager_id',
         'name',
         'name_ar',
+        'description',
+        'description_ar',
+        'logo_url',
+        'cover_image_url',
         'slug',
         'branch_code',
         'address',
         'city',
+        'region',
+        'postal_code',
+        'country',
+        'google_maps_url',
         'latitude',
         'longitude',
         'phone',
+        'secondary_phone',
         'email',
+        'contact_person',
         'timezone',
         'currency',
         'locale',
         'business_type',
         'is_active',
         'is_main_branch',
+        'is_warehouse',
+        'accepts_online_orders',
+        'accepts_reservations',
+        'has_delivery',
+        'has_pickup',
+        'opening_date',
+        'closing_date',
+        'max_registers',
+        'max_staff',
+        'area_sqm',
+        'seating_capacity',
+        'cr_number',
+        'vat_number',
+        'municipal_license',
+        'license_expiry_date',
+        'social_links',
+        'extra_metadata',
+        'internal_notes',
+        'sort_order',
         'storage_used_mb',
     ];
 
@@ -139,13 +169,33 @@ class Store extends Model
         'business_type' => BusinessType::class,
         'is_active' => 'boolean',
         'is_main_branch' => 'boolean',
-        'latitude' => 'decimal:2',
-        'longitude' => 'decimal:2',
+        'is_warehouse' => 'boolean',
+        'accepts_online_orders' => 'boolean',
+        'accepts_reservations' => 'boolean',
+        'has_delivery' => 'boolean',
+        'has_pickup' => 'boolean',
+        'latitude' => 'decimal:7',
+        'longitude' => 'decimal:7',
+        'area_sqm' => 'decimal:2',
+        'seating_capacity' => 'integer',
+        'max_registers' => 'integer',
+        'max_staff' => 'integer',
+        'sort_order' => 'integer',
+        'storage_used_mb' => 'integer',
+        'opening_date' => 'date',
+        'closing_date' => 'date',
+        'license_expiry_date' => 'date',
+        'social_links' => 'array',
+        'extra_metadata' => 'array',
     ];
 
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'manager_id');
     }
     public function storeSettings(): HasOne
     {

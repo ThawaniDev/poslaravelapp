@@ -76,6 +76,41 @@ return new class extends Migration
             $table->uuid('store_id');
             $table->foreign('store_id')->references('id')->on('stores')->cascadeOnDelete();
             $table->string('name');
+            $table->string('device_id', 100)->nullable();
+            $table->string('app_version', 30)->nullable();
+            $table->string('platform', 20)->default('android');
+            $table->timestamp('last_sync_at')->nullable();
+            $table->boolean('is_online')->default(false);
+            $table->boolean('is_active')->default(true);
+            // SoftPOS
+            $table->boolean('softpos_enabled')->default(false);
+            $table->string('nearpay_tid', 50)->nullable();
+            $table->string('nearpay_mid', 50)->nullable();
+            $table->string('nearpay_auth_key', 255)->nullable();
+            // Acquirer
+            $table->string('acquirer_source', 30)->nullable();
+            $table->string('acquirer_name', 100)->nullable();
+            $table->string('acquirer_reference', 100)->nullable();
+            // Device hardware
+            $table->string('device_model', 100)->nullable();
+            $table->string('os_version', 30)->nullable();
+            $table->boolean('nfc_capable')->default(false);
+            $table->string('serial_number', 100)->nullable();
+            // Fee config
+            $table->string('fee_profile', 30)->default('standard');
+            $table->decimal('fee_mada_percentage', 5, 4)->default(0.0150);
+            $table->decimal('fee_visa_mc_percentage', 5, 4)->default(0.0200);
+            $table->decimal('fee_flat_per_txn', 8, 2)->default(0.00);
+            $table->decimal('wameed_margin_percentage', 5, 4)->default(0.0040);
+            // Settlement
+            $table->string('settlement_cycle', 10)->default('T+1');
+            $table->string('settlement_bank_name', 100)->nullable();
+            $table->string('settlement_iban', 34)->nullable();
+            // Status
+            $table->string('softpos_status', 20)->default('pending');
+            $table->timestamp('softpos_activated_at')->nullable();
+            $table->timestamp('last_transaction_at')->nullable();
+            $table->text('admin_notes')->nullable();
             $table->string('status', 20)->default('active');
             $table->timestamps();
         });
@@ -1613,6 +1648,8 @@ return new class extends Migration
             $table->uuid('parent_id')->nullable();
             $table->string('name');
             $table->string('name_ar')->nullable();
+            $table->text('description')->nullable();
+            $table->text('description_ar')->nullable();
             $table->text('image_url')->nullable();
             $table->integer('sort_order')->default(0);
             $table->boolean('is_active')->default(true);
@@ -1641,6 +1678,11 @@ return new class extends Migration
             $table->boolean('is_combo')->default(false);
             $table->boolean('age_restricted')->default(false);
             $table->text('image_url')->nullable();
+            $table->decimal('offer_price', 12, 2)->nullable();
+            $table->date('offer_start')->nullable();
+            $table->date('offer_end')->nullable();
+            $table->decimal('min_order_qty', 12, 3)->default(1);
+            $table->decimal('max_order_qty', 12, 3)->nullable();
             $table->integer('sync_version')->default(1);
             $table->timestamps();
             $table->softDeletes();
@@ -1754,6 +1796,9 @@ return new class extends Migration
             $table->string('email')->nullable();
             $table->text('address')->nullable();
             $table->text('notes')->nullable();
+            $table->string('contact_person')->nullable();
+            $table->string('tax_number', 50)->nullable();
+            $table->string('payment_terms', 100)->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
@@ -1940,6 +1985,49 @@ return new class extends Migration
             $table->decimal('quantity', 12, 2);
             $table->string('unit', 20)->nullable();
             $table->decimal('waste_percent', 5, 2)->default(0);
+        });
+
+        // ─── Inventory: stocktakes ───────────────────────────
+        Schema::create('stocktakes', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->string('reference_number', 50)->nullable();
+            $table->string('type', 20)->default('full');
+            $table->string('status', 20)->default('in_progress');
+            $table->uuid('category_id')->nullable();
+            $table->text('notes')->nullable();
+            $table->uuid('started_by');
+            $table->uuid('completed_by')->nullable();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('completed_at')->nullable();
+            $table->timestamps();
+        });
+
+        // ─── Inventory: stocktake_items ──────────────────────
+        Schema::create('stocktake_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('stocktake_id');
+            $table->uuid('product_id');
+            $table->decimal('expected_qty', 12, 3)->default(0);
+            $table->decimal('counted_qty', 12, 3)->nullable();
+            $table->decimal('variance', 12, 3)->nullable();
+            $table->decimal('cost_impact', 14, 2)->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamp('counted_at')->nullable();
+        });
+
+        // ─── Inventory: waste_records ────────────────────────
+        Schema::create('waste_records', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->uuid('product_id');
+            $table->decimal('quantity', 12, 3);
+            $table->decimal('unit_cost', 12, 4)->nullable();
+            $table->string('reason', 50);
+            $table->string('batch_number', 100)->nullable();
+            $table->text('notes')->nullable();
+            $table->uuid('recorded_by');
+            $table->timestamp('created_at')->nullable();
         });
 
         // ─── Customer: customer_groups ────────────────────────
@@ -2144,6 +2232,27 @@ return new class extends Migration
             $table->timestamp('held_at')->nullable();
             $table->timestamp('recalled_at')->nullable();
             $table->uuid('recalled_by')->nullable();
+        });
+
+        // ─── POS: exchange_transactions ───────────────────────
+        Schema::create('exchange_transactions', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('return_transaction_id');
+            $table->uuid('sale_transaction_id');
+            $table->decimal('net_amount', 12, 2)->default(0);
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // ─── POS: tax_exemptions ──────────────────────────────
+        Schema::create('tax_exemptions', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('transaction_id');
+            $table->uuid('customer_id')->nullable();
+            $table->string('exemption_type', 30);
+            $table->string('customer_tax_id', 50)->nullable();
+            $table->string('certificate_number', 100)->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamp('created_at')->nullable();
         });
 
         // ─── Order: orders ────────────────────────────────────
@@ -3223,13 +3332,14 @@ return new class extends Migration
             // Order domain
             'return_items', 'returns', 'exchanges', 'order_status_history', 'order_items', 'orders',
             // POS domain
-            'held_carts', 'transaction_items', 'transactions', 'pos_sessions',
+            'tax_exemptions', 'exchange_transactions', 'held_carts', 'transaction_items', 'transactions', 'pos_sessions',
             // Label domain
             'label_print_history', 'label_templates',
             // Customer domain
             'digital_receipt_log', 'store_credit_transactions', 'loyalty_transactions',
             'loyalty_config', 'customers', 'customer_groups',
             // Inventory domain
+            'waste_records', 'stocktake_items', 'stocktakes',
             'recipe_ingredients', 'recipes',
             'stock_batches', 'purchase_order_items', 'purchase_orders',
             'stock_transfer_items', 'stock_transfers',

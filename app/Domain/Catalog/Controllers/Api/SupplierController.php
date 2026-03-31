@@ -59,6 +59,9 @@ class SupplierController extends BaseApiController
             'email' => 'sometimes|nullable|email|max:255',
             'address' => 'sometimes|nullable|string|max:500',
             'notes' => 'sometimes|nullable|string|max:1000',
+            'contact_person' => 'sometimes|nullable|string|max:255',
+            'tax_number' => 'sometimes|nullable|string|max:50',
+            'payment_terms' => 'sometimes|nullable|string|max:100',
             'is_active' => 'sometimes|boolean',
         ]);
 

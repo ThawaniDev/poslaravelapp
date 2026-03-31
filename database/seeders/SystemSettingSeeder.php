@@ -12,7 +12,7 @@ class SystemSettingSeeder extends Seeder
     {
         $settings = [
             // ─── General ─────────────────────────────────────────
-            ['key' => 'general_business_name', 'value' => 'Thawani POS', 'group' => SystemSettingsGroup::General, 'description' => 'Platform business name'],
+            ['key' => 'general_business_name', 'value' => 'Wameed POS', 'group' => SystemSettingsGroup::General, 'description' => 'Platform business name'],
             ['key' => 'general_support_email', 'value' => 'support@thawani.om', 'group' => SystemSettingsGroup::General, 'description' => 'Support email address'],
 
             // ─── Locale ──────────────────────────────────────────
@@ -49,7 +49,7 @@ class SystemSettingSeeder extends Seeder
             ['key' => 'email_username', 'value' => '', 'group' => SystemSettingsGroup::Email, 'description' => 'SMTP username'],
             ['key' => 'email_password', 'value' => '', 'group' => SystemSettingsGroup::Email, 'description' => 'SMTP password'],
             ['key' => 'email_from_address', 'value' => 'noreply@thawani.om', 'group' => SystemSettingsGroup::Email, 'description' => 'From email address'],
-            ['key' => 'email_from_name', 'value' => 'Thawani POS', 'group' => SystemSettingsGroup::Email, 'description' => 'From name'],
+            ['key' => 'email_from_name', 'value' => 'Wameed POS', 'group' => SystemSettingsGroup::Email, 'description' => 'From name'],
 
             // ─── Push ────────────────────────────────────────────
             ['key' => 'push_fcm_server_key', 'value' => '', 'group' => SystemSettingsGroup::Push, 'description' => 'FCM server key'],

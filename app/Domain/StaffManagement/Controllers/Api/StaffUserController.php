@@ -10,6 +10,7 @@ use App\Domain\StaffManagement\Resources\AttendanceRecordResource;
 use App\Domain\StaffManagement\Resources\ShiftScheduleResource;
 use App\Domain\StaffManagement\Resources\ShiftTemplateResource;
 use App\Domain\StaffManagement\Resources\StaffActivityLogResource;
+use App\Domain\StaffManagement\Resources\StaffBranchAssignmentResource;
 use App\Domain\StaffManagement\Resources\StaffUserResource;
 use App\Domain\StaffManagement\Services\StaffService;
 use App\Http\Controllers\Api\BaseApiController;
@@ -31,7 +32,7 @@ class StaffUserController extends BaseApiController
             'search', 'status', 'employment_type', 'per_page',
         ]));
 
-        return $this->success(StaffUserResource::collection($result));
+        return $this->successPaginated(StaffUserResource::collection($result), $result);
     }
 
     public function store(CreateStaffRequest $request)
@@ -121,7 +122,7 @@ class StaffUserController extends BaseApiController
             'staff_user_id', 'date_from', 'date_to', 'per_page',
         ]));
 
-        return $this->success(AttendanceRecordResource::collection($result));
+        return $this->successPaginated(AttendanceRecordResource::collection($result), $result);
     }
 
     public function clock(ClockRequest $request)
@@ -156,7 +157,7 @@ class StaffUserController extends BaseApiController
             'staff_user_id', 'date_from', 'date_to', 'status', 'per_page',
         ]));
 
-        return $this->success(ShiftScheduleResource::collection($result));
+        return $this->successPaginated(ShiftScheduleResource::collection($result), $result);
     }
 
     public function storeShift(CreateShiftRequest $request)
@@ -273,6 +274,136 @@ class StaffUserController extends BaseApiController
 
         $logs = $this->staffService->getActivityLog($id, $request->integer('per_page', 20));
 
-        return $this->success(StaffActivityLogResource::collection($logs));
+        return $this->successPaginated(StaffActivityLogResource::collection($logs), $logs);
+    }
+
+    // ─── Branch Assignments ─────────────────────────────────
+
+    public function branchAssignments(string $id, Request $request)
+    {
+        $staff = $this->staffService->find($id);
+
+        if ($staff->store_id !== $request->user()->store_id) {
+            return $this->notFound('Staff not found');
+        }
+
+        $assignments = $this->staffService->listBranchAssignments($id);
+
+        return $this->success(StaffBranchAssignmentResource::collection($assignments));
+    }
+
+    public function assignBranch(string $id, Request $request)
+    {
+        $staff = $this->staffService->find($id);
+
+        if ($staff->store_id !== $request->user()->store_id) {
+            return $this->notFound('Staff not found');
+        }
+
+        $data = $request->validate([
+            'branch_id'  => 'required|uuid|exists:stores,id',
+            'role_id'    => 'nullable|integer|exists:roles,id',
+            'is_primary' => 'nullable|boolean',
+        ]);
+
+        try {
+            $assignment = $this->staffService->assignBranch($staff, $data);
+            return $this->created(new StaffBranchAssignmentResource($assignment));
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    public function unassignBranch(string $id, Request $request)
+    {
+        $staff = $this->staffService->find($id);
+
+        if ($staff->store_id !== $request->user()->store_id) {
+            return $this->notFound('Staff not found');
+        }
+
+        $data = $request->validate([
+            'branch_id' => 'required|uuid|exists:stores,id',
+        ]);
+
+        try {
+            $this->staffService->unassignBranch($staff, $data['branch_id']);
+            return $this->success(null, 'Branch assignment removed');
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    // ─── Staff Stats ────────────────────────────────────────
+
+    public function stats(Request $request)
+    {
+        $storeId = $request->user()->store_id;
+        $stats = $this->staffService->getStats($storeId);
+        return $this->success($stats);
+    }
+
+    // ─── Attendance Export ───────────────────────────────────
+
+    public function attendanceExport(Request $request)
+    {
+        $storeId = $request->user()->store_id;
+
+        $data = $this->staffService->exportAttendance($storeId, $request->only([
+            'staff_user_id', 'date_from', 'date_to',
+        ]));
+
+        return $this->success($data);
+    }
+
+    // ─── User Account Linking ────────────────────────────────
+
+    public function linkUser(string $id, Request $request)
+    {
+        $staff = $this->staffService->find($id);
+
+        if ($staff->store_id !== $request->user()->store_id) {
+            return $this->notFound('Staff not found');
+        }
+
+        $data = $request->validate([
+            'user_id' => 'required|uuid|exists:users,id',
+        ]);
+
+        try {
+            $linked = $this->staffService->linkUserAccount($staff, $data['user_id']);
+            return $this->success(new StaffUserResource($linked), 'User account linked');
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    public function unlinkUser(string $id, Request $request)
+    {
+        $staff = $this->staffService->find($id);
+
+        if ($staff->store_id !== $request->user()->store_id) {
+            return $this->notFound('Staff not found');
+        }
+
+        try {
+            $unlinked = $this->staffService->unlinkUserAccount($staff);
+            return $this->success(new StaffUserResource($unlinked), 'User account unlinked');
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    public function linkableUsers(Request $request)
+    {
+        $storeId = $request->user()->store_id;
+
+        $users = \App\Domain\Auth\Models\User::where('store_id', $storeId)
+            ->whereDoesntHave('staffUser')
+            ->select('id', 'name', 'email')
+            ->orderBy('name')
+            ->get();
+
+        return $this->success($users);
     }
 }

@@ -12,7 +12,7 @@ Barcode Label Printing enables store staff to design, preview, and print adhesiv
 
 ### What This Feature Does
 - **Label template designer** — visual drag-and-drop editor for positioning: barcode, product name (AR/EN), price, expiry date, weight, store logo, QR code
-- **Predefined templates** — preset layouts for common label sizes (40×30 mm, 58×40 mm, 100×50 mm, shelf-edge strips)
+- **Predefined templates** — preset layouts for common label sizes (40×30 mm, 58×40 mm, 100×50 mm, shelf-edge strips) comes from system (already done); users can create custom templates
 - **Print queue** — select multiple products, set quantity per product, batch-print all labels in one job
 - **Barcode formats** — supports EAN-13, Code128, QR Code, UPC-A, EAN-8
 - **Dynamic field binding** — template fields pull live data from the product catalog (name, price, barcode, expiry, weight)

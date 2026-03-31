@@ -8,7 +8,7 @@
 
 ## 1. Feature Overview
 
-The POS Terminal is the **primary cashier-facing interface** of the Thawani POS system. It is the screen that store employees interact with for the majority of their workday — scanning products, building a cart, accepting payments, printing receipts, and generating ZATCA-compliant e-invoices. Everything runs offline-first: the cashier can complete a full sale, print a signed receipt, and open the cash drawer even with zero internet connectivity.
+The POS Terminal is the **primary cashier-facing interface** of the Wameed POS system. It is the screen that store employees interact with for the majority of their workday — scanning products, building a cart, accepting payments, printing receipts, and generating ZATCA-compliant e-invoices. Everything runs offline-first: the cashier can complete a full sale, print a signed receipt, and open the cash drawer even with zero internet connectivity.
 
 ### What This Feature Does
 - **Product lookup** — barcode scan (USB HID), manual search by name/SKU, and quick-category grid taps

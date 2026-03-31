@@ -1,4 +1,4 @@
-# Thawani POS — Laravel Migration Types Reference
+# Wameed POS — Laravel Migration Types Reference
 
 > Quick-reference for converting `database_schema.sql` into Laravel 11 migrations.
 > All 255 tables · 2,378 columns · PostgreSQL 15+ driver.

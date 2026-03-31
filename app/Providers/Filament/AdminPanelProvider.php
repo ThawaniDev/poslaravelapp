@@ -32,7 +32,7 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->authGuard('admin')
-            ->brandName('Thawani POS')
+            ->brandName('Wameed POS')
             ->colors([
                 // Thawani Brand: Primary Orange (#FD8209)
                 'primary' => Color::hex('#FD8209'),

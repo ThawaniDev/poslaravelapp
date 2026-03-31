@@ -4,7 +4,12 @@ namespace App\Domain\Catalog\Controllers\Api;
 
 use App\Domain\Catalog\Requests\CreateProductRequest;
 use App\Domain\Catalog\Requests\UpdateProductRequest;
+use App\Domain\Catalog\Requests\BulkProductActionRequest;
+use App\Domain\Catalog\Requests\StorePriceRequest;
+use App\Domain\Catalog\Requests\LinkProductSupplierRequest;
 use App\Domain\Catalog\Resources\ProductResource;
+use App\Domain\Catalog\Resources\StorePriceResource;
+use App\Domain\Catalog\Resources\ProductSupplierResource;
 use App\Domain\Catalog\Services\ProductService;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
@@ -124,6 +129,23 @@ class ProductController extends BaseApiController
         return $this->success(['barcode' => $barcode], 'Barcode generated successfully.');
     }
 
+    public function barcodes(Request $request, string $product): JsonResponse
+    {
+        $found = $this->productService->find($product);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Product not found.');
+        }
+
+        return $this->success(
+            $found->productBarcodes->map(fn ($b) => [
+                'id' => $b->id,
+                'barcode' => $b->barcode,
+                'is_primary' => (bool) $b->is_primary,
+            ])
+        );
+    }
+
     public function variants(Request $request, string $product): JsonResponse
     {
         $found = $this->productService->find($product);
@@ -222,5 +244,88 @@ class ProductController extends BaseApiController
         $updated = $this->productService->syncModifiers($found, $request->groups);
 
         return $this->success(new ProductResource($updated));
+    }
+
+    // ─── Bulk Actions ───────────────────────────────────────────
+
+    public function bulkAction(BulkProductActionRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $affected = $this->productService->bulkAction(
+            $request->user()->organization_id,
+            $validated['product_ids'],
+            $validated['action'],
+            $validated['category_id'] ?? null,
+        );
+
+        return $this->success(['affected' => $affected], "Bulk action '{$validated['action']}' applied to {$affected} product(s).");
+    }
+
+    // ─── Duplicate ──────────────────────────────────────────────
+
+    public function duplicate(Request $request, string $product): JsonResponse
+    {
+        $found = $this->productService->find($product);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Product not found.');
+        }
+
+        $copy = $this->productService->duplicate($found);
+
+        return $this->created(new ProductResource($copy));
+    }
+
+    // ─── Store Prices ───────────────────────────────────────────
+
+    public function storePrices(Request $request, string $product): JsonResponse
+    {
+        $found = $this->productService->find($product);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Product not found.');
+        }
+
+        return $this->success(StorePriceResource::collection($found->storePrices));
+    }
+
+    public function syncStorePrices(StorePriceRequest $request, string $product): JsonResponse
+    {
+        $found = $this->productService->find($product);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Product not found.');
+        }
+
+        $updated = $this->productService->syncStorePrices($found, $request->validated()['prices']);
+
+        return $this->success(StorePriceResource::collection($updated->storePrices));
+    }
+
+    // ─── Product Suppliers ──────────────────────────────────────
+
+    public function suppliers(Request $request, string $product): JsonResponse
+    {
+        $found = $this->productService->find($product);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Product not found.');
+        }
+
+        return $this->success(ProductSupplierResource::collection($found->productSuppliers));
+    }
+
+    public function syncSuppliers(LinkProductSupplierRequest $request, string $product): JsonResponse
+    {
+        $found = $this->productService->find($product);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Product not found.');
+        }
+
+        $updated = $this->productService->syncSuppliers($found, $request->validated()['suppliers']);
+
+        return $this->success(ProductSupplierResource::collection($updated->productSuppliers));
     }
 }

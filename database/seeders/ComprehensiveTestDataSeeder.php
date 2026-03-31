@@ -378,7 +378,7 @@ class ComprehensiveTestDataSeeder extends Seeder
 
         // System Settings
         $settings = [
-            ['key' => 'platform_name', 'value' => json_encode('Thawani POS'), 'group' => 'general', 'description' => 'Platform display name'],
+            ['key' => 'platform_name', 'value' => json_encode('Wameed POS'), 'group' => 'general', 'description' => 'Platform display name'],
             ['key' => 'default_currency', 'value' => json_encode('SAR'), 'group' => 'general', 'description' => 'Default currency'],
             ['key' => 'default_locale', 'value' => json_encode('ar'), 'group' => 'general', 'description' => 'Default locale'],
             ['key' => 'maintenance_mode', 'value' => json_encode(false), 'group' => 'system', 'description' => 'Global maintenance mode'],
@@ -559,7 +559,7 @@ class ComprehensiveTestDataSeeder extends Seeder
         // Knowledge Base Articles
         DB::table('knowledge_base_articles')->insertOrIgnore([
             ['title' => 'Getting Started with POS', 'title_ar' => 'البدء مع نقطة البيع', 'slug' => 'getting-started-pos',
-             'body' => 'Welcome to Thawani POS! This guide will help you set up your first sale...',
+             'body' => 'Welcome to Wameed POS! This guide will help you set up your first sale...',
              'body_ar' => 'مرحباً بكم في ثواني! سيساعدك هذا الدليل على إعداد أول عملية بيع...',
              'category' => 'getting_started', 'is_published' => true, 'sort_order' => 1,
              'created_at' => now(), 'updated_at' => now()],
@@ -699,7 +699,7 @@ class ComprehensiveTestDataSeeder extends Seeder
                     ['question_en' => 'What happens when my trial ends?', 'question_ar' => 'ماذا يحدث عند انتهاء فترة التجربة؟', 'answer_en' => 'You have a 7-day grace period before any features are restricted. No data is lost.', 'answer_ar' => 'لديك فترة سماح 7 أيام قبل أي تقييد للميزات. لن تُفقد أي بيانات.'],
                     ['question_en' => 'Is there a setup fee?', 'question_ar' => 'هل توجد رسوم تأسيس؟', 'answer_en' => 'No setup fees. You only pay the monthly or annual subscription price.', 'answer_ar' => 'لا توجد رسوم تأسيس. تدفع فقط سعر الاشتراك الشهري أو السنوي.'],
                     ['question_en' => 'Do you offer a money-back guarantee?', 'question_ar' => 'هل تقدمون ضمان استعادة المال؟', 'answer_en' => 'Yes. We offer a 30-day money-back guarantee on all paid plans, no questions asked.', 'answer_ar' => 'نعم. نقدم ضمان استعادة المال خلال 30 يوماً على جميع الخطط المدفوعة، دون أسئلة.'],
-                    ['question_en' => 'Can I use Thawani POS across multiple devices?', 'question_ar' => 'هل يمكنني استخدام ثواني POS على أجهزة متعددة؟', 'answer_en' => 'Yes. The Pro plan supports unlimited device sessions per branch.', 'answer_ar' => 'نعم. تدعم خطة Pro جلسات أجهزة غير محدودة لكل فرع.'],
+                    ['question_en' => 'Can I use Wameed POS across multiple devices?', 'question_ar' => 'هل يمكنني استخدام ثواني POS على أجهزة متعددة؟', 'answer_en' => 'Yes. The Pro plan supports unlimited device sessions per branch.', 'answer_ar' => 'نعم. تدعم خطة Pro جلسات أجهزة غير محدودة لكل فرع.'],
                 ]),
                 'testimonials' => json_encode([
                     ['name' => 'Ahmed Al-Rashidi', 'company' => 'Al Rashidi Supermarkets', 'role_en' => 'Owner', 'role_ar' => 'مالك', 'text_en' => 'Switching to Thawani Pro transformed how we manage our 3 branches. ZATCA compliance is seamless.', 'text_ar' => 'الانتقال إلى ثواني Pro غيّر طريقة إدارتنا لفروعنا الثلاث. الامتثال لـ ZATCA سلس جداً.', 'rating' => 5, 'avatar_url' => null],
@@ -713,7 +713,7 @@ class ComprehensiveTestDataSeeder extends Seeder
                     ['feature_en' => 'ZATCA Compliance', 'feature_ar' => 'امتثال ZATCA', 'value' => '✓ Phase 2', 'note_en' => null, 'note_ar' => null],
                     ['feature_en' => 'API Access', 'feature_ar' => 'وصول API', 'value' => 'Full', 'note_en' => 'Starter: Read-only', 'note_ar' => 'Starter: قراءة فقط'],
                 ]),
-                'meta_title'          => 'Pro Plan Pricing — Thawani POS',
+                'meta_title'          => 'Pro Plan Pricing — Wameed POS',
                 'meta_title_ar'       => 'أسعار خطة Pro — ثواني POS',
                 'meta_description'    => 'Everything your growing retail business needs — 5,000 products, 5 branches, full API, and ZATCA Phase 2 compliance.',
                 'meta_description_ar' => 'كل ما تحتاجه لتنمية تجارتك — 5,000 منتج، 5 فروع، API كامل، وامتثال ZATCA المرحلة الثانية.',
@@ -1178,7 +1178,7 @@ class ComprehensiveTestDataSeeder extends Seeder
         // Stock Movement
         DB::table('stock_movements')->insert([
             'store_id' => $this->storeId, 'product_id' => $productIds[0],
-            'type' => 'purchase', 'quantity' => 100, 'unit_cost' => 2.50,
+            'type' => 'receipt', 'quantity' => 100, 'unit_cost' => 2.50,
             'reference_type' => 'goods_receipt', 'performed_by' => $this->ownerId,
             'reason' => 'Initial stock', 'created_at' => now(),
         ]);
@@ -1187,7 +1187,7 @@ class ComprehensiveTestDataSeeder extends Seeder
         if ($supplierId) {
             $grId = DB::table('goods_receipts')->insertGetId([
                 'store_id' => $this->storeId, 'supplier_id' => $supplierId,
-                'reference_number' => 'GR-2025-001', 'status' => 'completed',
+                'reference_number' => 'GR-2025-001', 'status' => 'confirmed',
                 'total_cost' => 350.00, 'received_by' => $this->ownerId,
                 'received_at' => now()->subDays(3),
             ]);
@@ -1927,7 +1927,7 @@ class ComprehensiveTestDataSeeder extends Seeder
         $this->command->info('Seeding POS customization...');
 
         DB::table('pos_customization_settings')->insertOrIgnore([
-            'store_id' => $this->storeId, 'theme' => 'default',
+            'store_id' => $this->storeId, 'theme' => 'light',
             'primary_color' => '#1B4D3E', 'secondary_color' => '#F5A623',
             'font_scale' => 1.0, 'handedness' => 'right',
             'grid_columns' => 4, 'show_product_images' => true,

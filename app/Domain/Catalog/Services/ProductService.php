@@ -7,6 +7,8 @@ use App\Domain\Catalog\Models\Category;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBarcode;
 use App\Domain\Catalog\Models\InternalBarcodeSequence;
+use App\Domain\Catalog\Models\ProductSupplier;
+use App\Domain\Catalog\Models\StorePrice;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -268,6 +270,108 @@ class ProductService
             $product->update(['sync_version' => ($product->sync_version ?? 0) + 1]);
 
             return $product->fresh(['modifierGroups.modifierOptions']);
+        });
+    }
+
+    // ─── Bulk Actions ───────────────────────────────────────────
+
+    public function bulkAction(string $organizationId, array $productIds, string $action, ?string $categoryId = null): int
+    {
+        $query = Product::where('organization_id', $organizationId)
+            ->whereIn('id', $productIds);
+
+        return match ($action) {
+            'activate' => $query->update(['is_active' => true, 'sync_version' => DB::raw('COALESCE(sync_version, 0) + 1')]),
+            'deactivate' => $query->update(['is_active' => false, 'sync_version' => DB::raw('COALESCE(sync_version, 0) + 1')]),
+            'delete' => DB::transaction(function () use ($query) {
+                $query->update(['sync_version' => DB::raw('COALESCE(sync_version, 0) + 1')]);
+                return $query->delete(); // soft delete
+            }),
+            'change_category' => $query->update([
+                'category_id' => $categoryId,
+                'sync_version' => DB::raw('COALESCE(sync_version, 0) + 1'),
+            ]),
+            default => 0,
+        };
+    }
+
+    // ─── Duplicate ──────────────────────────────────────────────
+
+    public function duplicate(Product $product): Product
+    {
+        return DB::transaction(function () use ($product) {
+            $newProduct = $product->replicate(['id', 'barcode', 'sku', 'sync_version', 'deleted_at']);
+            $newProduct->name = $product->name . ' (Copy)';
+            $newProduct->name_ar = $product->name_ar ? $product->name_ar . ' (نسخة)' : null;
+            $newProduct->sku = null;
+            $newProduct->barcode = null;
+            $newProduct->sync_version = 1;
+            $newProduct->save();
+
+            // Copy barcodes (not included — they need to be unique)
+            // Copy images
+            foreach ($product->productImages as $image) {
+                $newProduct->productImages()->create([
+                    'image_url' => $image->image_url,
+                    'sort_order' => $image->sort_order,
+                ]);
+            }
+
+            // Copy store prices
+            foreach ($product->storePrices as $price) {
+                $newProduct->storePrices()->create([
+                    'store_id' => $price->store_id,
+                    'sell_price' => $price->sell_price,
+                    'valid_from' => $price->valid_from,
+                    'valid_to' => $price->valid_to,
+                ]);
+            }
+
+            return $newProduct->load(['category', 'productBarcodes', 'productImages', 'storePrices']);
+        });
+    }
+
+    // ─── Store Prices ───────────────────────────────────────────
+
+    public function syncStorePrices(Product $product, array $prices): Product
+    {
+        return DB::transaction(function () use ($product, $prices) {
+            $product->storePrices()->delete();
+
+            foreach ($prices as $price) {
+                StorePrice::create([
+                    'product_id' => $product->id,
+                    'store_id' => $price['store_id'],
+                    'sell_price' => $price['sell_price'],
+                    'valid_from' => $price['valid_from'] ?? null,
+                    'valid_to' => $price['valid_to'] ?? null,
+                ]);
+            }
+
+            $product->update(['sync_version' => ($product->sync_version ?? 0) + 1]);
+
+            return $product->fresh(['storePrices']);
+        });
+    }
+
+    // ─── Product Suppliers ──────────────────────────────────────
+
+    public function syncSuppliers(Product $product, array $suppliers): Product
+    {
+        return DB::transaction(function () use ($product, $suppliers) {
+            $product->productSuppliers()->delete();
+
+            foreach ($suppliers as $supplier) {
+                ProductSupplier::create([
+                    'product_id' => $product->id,
+                    'supplier_id' => $supplier['supplier_id'],
+                    'cost_price' => $supplier['cost_price'] ?? null,
+                    'lead_time_days' => $supplier['lead_time_days'] ?? null,
+                    'supplier_sku' => $supplier['supplier_sku'] ?? null,
+                ]);
+            }
+
+            return $product->fresh(['productSuppliers.supplier']);
         });
     }
 }

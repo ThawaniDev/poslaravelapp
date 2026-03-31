@@ -5,6 +5,7 @@ namespace App\Domain\StaffManagement\Services;
 use App\Domain\Auth\Models\User;
 use App\Domain\Security\Enums\RoleAuditAction;
 use App\Domain\Security\Models\RoleAuditLog;
+use App\Domain\StaffManagement\Models\DefaultRoleTemplate;
 use App\Domain\StaffManagement\Models\Permission;
 use App\Domain\StaffManagement\Models\Role;
 use Illuminate\Support\Facades\DB;
@@ -12,15 +13,56 @@ use Illuminate\Support\Facades\DB;
 class RoleService
 {
     /**
-     * List all roles for a store.
+     * List all roles for a store, auto-syncing any missing default templates first.
      */
     public function listForStore(string $storeId): \Illuminate\Database\Eloquent\Collection
     {
+        $this->syncDefaultTemplates($storeId);
+
         return Role::forStore($storeId)
             ->with('permissions')
             ->orderBy('is_predefined', 'desc')
             ->orderBy('name')
             ->get();
+    }
+
+    /**
+     * Ensure all DefaultRoleTemplates exist as predefined roles for the store.
+     * Only creates missing ones — never overwrites existing roles.
+     */
+    public function syncDefaultTemplates(string $storeId): void
+    {
+        $templates = DefaultRoleTemplate::with('permissions')->get();
+
+        if ($templates->isEmpty()) {
+            return;
+        }
+
+        $existingSlugs = Role::forStore($storeId)
+            ->where('is_predefined', true)
+            ->pluck('name')
+            ->all();
+
+        foreach ($templates as $template) {
+            if (in_array($template->slug, $existingSlugs, true)) {
+                continue;
+            }
+
+            $role = Role::create([
+                'store_id'      => $storeId,
+                'name'          => $template->slug,
+                'display_name'  => $template->name,
+                'guard_name'    => 'staff',
+                'is_predefined' => true,
+                'description'   => $template->description,
+            ]);
+
+            // Map ProviderPermission names → local Permission records (matched by name)
+            if ($template->permissions->isNotEmpty()) {
+                $permIds = Permission::whereIn('name', $template->permissions->pluck('name'))->pluck('id');
+                $role->permissions()->attach($permIds);
+            }
+        }
     }
 
     /**

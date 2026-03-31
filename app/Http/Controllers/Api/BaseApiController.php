@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 abstract class BaseApiController extends Controller
 {
@@ -14,6 +16,21 @@ abstract class BaseApiController extends Controller
             'message' => $message,
             'data' => $data,
         ], $code);
+    }
+
+    protected function successPaginated(AnonymousResourceCollection $collection, LengthAwarePaginator $paginator, string $message = 'Success'): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'data' => [
+                'data'         => $collection,
+                'total'        => $paginator->total(),
+                'current_page' => $paginator->currentPage(),
+                'last_page'    => $paginator->lastPage(),
+                'per_page'     => $paginator->perPage(),
+            ],
+        ]);
     }
 
     protected function created(mixed $data = null, string $message = 'Created'): JsonResponse

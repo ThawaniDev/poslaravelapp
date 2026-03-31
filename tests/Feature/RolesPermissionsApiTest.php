@@ -154,7 +154,7 @@ class RolesPermissionsApiTest extends TestCase
         ]);
 
         $response = $this->withToken($this->token)
-            ->getJson("/api/v2/staff/roles?store_id={$this->store->id}");
+            ->getJson('/api/v2/staff/roles');
 
         $response->assertOk();
 
@@ -398,8 +398,51 @@ class RolesPermissionsApiTest extends TestCase
 
     public function test_unauthenticated_cannot_access_roles(): void
     {
-        $response = $this->getJson("/api/v2/staff/roles?store_id={$this->store->id}");
+        $response = $this->getJson('/api/v2/staff/roles');
 
         $response->assertUnauthorized();
+    }
+
+    // ─── Default Template Sync ───────────────────────────────────
+
+    public function test_list_roles_syncs_default_templates(): void
+    {
+        // Create a default role template
+        \App\Domain\StaffManagement\Models\DefaultRoleTemplate::create([
+            'name'        => 'Cashier',
+            'name_ar'     => 'كاشير',
+            'slug'        => 'cashier',
+            'description' => 'Process sales',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/staff/roles');
+
+        $response->assertOk();
+
+        // The cashier template should now appear as a predefined role
+        $this->assertDatabaseHas('roles', [
+            'store_id'      => $this->store->id,
+            'name'          => 'cashier',
+            'is_predefined' => true,
+        ]);
+    }
+
+    public function test_list_roles_does_not_duplicate_existing_roles(): void
+    {
+        \App\Domain\StaffManagement\Models\DefaultRoleTemplate::create([
+            'name'        => 'Cashier',
+            'name_ar'     => 'كاشير',
+            'slug'        => 'cashier',
+            'description' => 'Process sales',
+        ]);
+
+        // Call twice — should only create one role
+        $this->withToken($this->token)->getJson('/api/v2/staff/roles');
+        $this->withToken($this->token)->getJson('/api/v2/staff/roles');
+
+        $this->assertEquals(1, \App\Domain\StaffManagement\Models\Role::where('store_id', $this->store->id)
+            ->where('name', 'cashier')
+            ->count());
     }
 }

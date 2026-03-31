@@ -1,4 +1,4 @@
-# Thawani POS — Provider DB Reference (Tables, Joins & Indexes)
+# Wameed POS — Provider DB Reference (Tables, Joins & Indexes)
 
 > Quick-reference for table names, join/pivot tables, and recommended indexes.  
 > **No SQL here** — just names and notes for planning.  

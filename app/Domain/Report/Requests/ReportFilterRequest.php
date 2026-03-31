@@ -18,6 +18,7 @@ class ReportFilterRequest extends FormRequest
             'date_to' => ['sometimes', 'date', 'date_format:Y-m-d', 'after_or_equal:date_from'],
             'category_id' => ['sometimes', 'uuid'],
             'limit' => ['sometimes', 'integer', 'min:1', 'max:200'],
+            'compare' => ['sometimes', 'boolean'],
         ];
     }
 }

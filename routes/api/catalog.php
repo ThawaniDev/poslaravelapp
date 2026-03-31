@@ -23,14 +23,21 @@ Route::prefix('catalog')->middleware('auth:sanctum')->group(function () {
         Route::post('/', [ProductController::class, 'store']);
         Route::get('/catalog', [ProductController::class, 'catalog']);
         Route::get('/changes', [ProductController::class, 'changes']);
+        Route::post('/bulk-action', [ProductController::class, 'bulkAction']);
         Route::get('/{product}', [ProductController::class, 'show']);
         Route::put('/{product}', [ProductController::class, 'update']);
         Route::delete('/{product}', [ProductController::class, 'destroy']);
+        Route::post('/{product}/duplicate', [ProductController::class, 'duplicate']);
         Route::post('/{product}/barcode', [ProductController::class, 'generateBarcode']);
+        Route::get('/{product}/barcodes', [ProductController::class, 'barcodes']);
         Route::get('/{product}/variants', [ProductController::class, 'variants']);
         Route::put('/{product}/variants', [ProductController::class, 'syncVariants']);
         Route::get('/{product}/modifiers', [ProductController::class, 'modifiers']);
         Route::put('/{product}/modifiers', [ProductController::class, 'syncModifiers']);
+        Route::get('/{product}/store-prices', [ProductController::class, 'storePrices']);
+        Route::put('/{product}/store-prices', [ProductController::class, 'syncStorePrices']);
+        Route::get('/{product}/suppliers', [ProductController::class, 'suppliers']);
+        Route::put('/{product}/suppliers', [ProductController::class, 'syncSuppliers']);
     });
 
     // ─── Categories ──────────────────────────────────────────

@@ -451,7 +451,7 @@ class InfrastructureApiTest extends TestCase
         $setting = SystemSetting::forceCreate([
             'id'    => Str::uuid(),
             'key'   => 'app.name',
-            'value' => json_encode('Thawani POS'),
+            'value' => json_encode('Wameed POS'),
             'group' => 'locale',
         ]);
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AdminTerminalController;
 use App\Http\Controllers\Api\Admin\AnalyticsReportingController;
 use App\Http\Controllers\Api\Admin\BillingFinanceController;
 use App\Http\Controllers\Api\Admin\ContentManagementController;
@@ -654,5 +655,20 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
             Route::get('{id}/permissions', [ProviderRolePermissionController::class, 'templatePermissions']);
             Route::put('{id}/permissions', [ProviderRolePermissionController::class, 'updateTemplatePermissions']);
         });
+    });
+
+    // ─── POS Terminals (Admin) ───────────────────────────────
+    Route::prefix('terminals')->group(function () {
+        Route::get('stats', [AdminTerminalController::class, 'stats']);
+        Route::get('/', [AdminTerminalController::class, 'index']);
+        Route::post('/', [AdminTerminalController::class, 'store']);
+        Route::get('{register}', [AdminTerminalController::class, 'show']);
+        Route::put('{register}', [AdminTerminalController::class, 'update']);
+        Route::delete('{register}', [AdminTerminalController::class, 'destroy']);
+        Route::post('{register}/toggle-status', [AdminTerminalController::class, 'toggleStatus']);
+        Route::post('{register}/activate-softpos', [AdminTerminalController::class, 'activateSoftpos']);
+        Route::post('{register}/suspend-softpos', [AdminTerminalController::class, 'suspendSoftpos']);
+        Route::post('{register}/deactivate-softpos', [AdminTerminalController::class, 'deactivateSoftpos']);
+        Route::put('{register}/fees', [AdminTerminalController::class, 'updateFees']);
     });
 });

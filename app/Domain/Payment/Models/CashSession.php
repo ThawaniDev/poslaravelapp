@@ -4,7 +4,7 @@ namespace App\Domain\Payment\Models;
 
 use App\Domain\Auth\Models\User;
 use App\Domain\Core\Models\Store;
-use App\Domain\Security\Enums\SessionStatus;
+use App\Domain\Payment\Enums\CashSessionStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -35,7 +35,7 @@ class CashSession extends Model
     ];
 
     protected $casts = [
-        'status' => SessionStatus::class,
+        'status' => CashSessionStatus::class,
         'opening_float' => 'decimal:2',
         'expected_cash' => 'decimal:2',
         'actual_cash' => 'decimal:2',

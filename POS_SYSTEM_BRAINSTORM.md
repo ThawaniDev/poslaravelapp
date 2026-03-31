@@ -1613,7 +1613,7 @@ class WeighableProductDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                '${weight.toStringAsFixed(3)} kg',
+                '${weight.toStringAsFixed(2)} kg',
                 style: TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 16),
@@ -1954,7 +1954,7 @@ ${data.expiryDate != null ? '^FO150,140^FDEXP: ${_formatDate(data.expiryDate!)}^
 ^FO20,10^FD${data.productNameAr} - ${data.productName}^FS
 ^FO20,40^GB350,1,1^FS
 ^CF0,20
-^FO20,50^FDWeight: ${data.weight?.toStringAsFixed(3)} KG^FS
+^FO20,50^FDWeight: ${data.weight?.toStringAsFixed(2)} KG^FS
 ^FO200,50^FDالوزن^FS
 ^FO20,75^FDPrice/KG: SAR ${data.pricePerKg?.toStringAsFixed(2)}^FS
 ^FO200,75^FDسعر/كجم^FS
@@ -6486,7 +6486,7 @@ class RestaurantTableLayout extends StatelessWidget {
 
 ---
 
-*This section enables Thawani POS to serve multiple industries with tailored experiences, increasing market reach and customer satisfaction.*
+*This section enables Wameed POS to serve multiple industries with tailored experiences, increasing market reach and customer satisfaction.*
 
 ---
 
@@ -7324,7 +7324,7 @@ class SupportTicketResource extends Resource
 
 ### Overview
 
-Providers who purchase the Thawani POS system can connect their product catalog and receive orders from major delivery platforms operating in Saudi Arabia. Integration is bidirectional: product changes in the POS are pushed to the third-party platform, and incoming orders from each platform arrive at a standardized Thawani POS webhook endpoint.
+Providers who purchase the Wameed POS system can connect their product catalog and receive orders from major delivery platforms operating in Saudi Arabia. Integration is bidirectional: product changes in the POS are pushed to the third-party platform, and incoming orders from each platform arrive at a standardized Wameed POS webhook endpoint.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -8488,7 +8488,7 @@ AuditLog::create([
 
 ### Security Overview
 
-POS systems are high-value targets for attackers due to payment data, financial transactions, and business intelligence. This section covers comprehensive security measures for the Thawani POS system.
+POS systems are high-value targets for attackers due to payment data, financial transactions, and business intelligence. This section covers comprehensive security measures for the Wameed POS system.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -9738,7 +9738,7 @@ CREATE TABLE trusted_devices (
 
 ---
 
-*This security section ensures Thawani POS meets enterprise security standards, regulatory requirements (ZATCA, PDPL), and industry best practices (PCI DSS guidelines). Regular security audits and penetration testing are recommended.*
+*This security section ensures Wameed POS meets enterprise security standards, regulatory requirements (ZATCA, PDPL), and industry best practices (PCI DSS guidelines). Regular security audits and penetration testing are recommended.*
 
 ---
 
@@ -10790,7 +10790,7 @@ class AppLocalizations {
   
   static const _localizedStrings = {
     'en': {
-      'app_title': 'Thawani POS',
+      'app_title': 'Wameed POS',
       'new_sale': 'New Sale',
       'pay': 'Pay',
       'cash': 'Cash',
@@ -12847,7 +12847,7 @@ Accept card payments **directly on the POS device's NFC chip** (Tap-to-Pay / Sof
 │              CORRECTED PAYMENT ARCHITECTURE                     │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  LAYER 1: YOUR APP (Thawani POS)                               │
+│  LAYER 1: YOUR APP (Wameed POS)                               │
 │  ─────────────────────────────────                             │
 │  • Flutter POS application on Android tablet                   │
 │  • Initiates payment requests                                  │
@@ -12873,7 +12873,7 @@ Accept card payments **directly on the POS device's NFC chip** (Tap-to-Pay / Sof
 │                                                                 │
 │  FLOW:                                                         │
 │                                                                 │
-│  Thawani POS ──► NearPay SDK ──► Acquirer (HALA/Bank) ──►     │
+│  Wameed POS ──► NearPay SDK ──► Acquirer (HALA/Bank) ──►     │
 │    Card Network (mada/Visa/MC) ──► Issuing Bank ──► Approved  │
 │                                                                 │
 │  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   │
@@ -13030,7 +13030,7 @@ Accept card payments **directly on the POS device's NFC chip** (Tap-to-Pay / Sof
 │  • Focus on getting merchants live and volume growing          │
 │  • Use this time to prove the model and gather data            │
 │                                                                 │
-│  Thawani POS ──► NearPay SDK ──► HALA (acquirer) ──► mada     │
+│  Wameed POS ──► NearPay SDK ──► HALA (acquirer) ──► mada     │
 │                                                                 │
 │  PHASE 2: ADD DIRECT BANK (Month 6+)                           │
 │  ────────────────────────────────────                          │
@@ -13040,7 +13040,7 @@ Accept card payments **directly on the POS device's NFC chip** (Tap-to-Pay / Sof
 │  • Keep HALA for small merchants / quick onboarding            │
 │  • Your margin jumps to ~0.6-1.0%                              │
 │                                                                 │
-│  Thawani POS ──► NearPay SDK ──► Bank (acquirer) ──► mada     │
+│  Wameed POS ──► NearPay SDK ──► Bank (acquirer) ──► mada     │
 │                                                                 │
 │  PHASE 3: DUAL ACQUIRING (Month 12+)                           │
 │  ────────────────────────────────────                          │
@@ -13129,7 +13129,7 @@ Accept card payments **directly on the POS device's NFC chip** (Tap-to-Pay / Sof
 │                                                                 │
 │  So the stack is:                                              │
 │  ────────────────                                              │
-│  Your App (Thawani POS)                                        │
+│  Your App (Wameed POS)                                        │
 │       ↓                                                        │
 │  NearPay SDK (SoftPOS technology — handles NFC/EMV)            │
 │       ↓                                                        │
@@ -13605,7 +13605,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 │                                                                 │
 │  STEP 2: MERCHANT ONBOARDING                                   │
 │  ──────────────────────────────                                │
-│  • Merchant signs up for Thawani POS                           │
+│  • Merchant signs up for Wameed POS                           │
 │  • Thawani requests TID from HALA (or bank) for merchant      │
 │  • HALA/Bank runs KYC on merchant                              │
 │  • TID + MID issued                                            │
@@ -13710,7 +13710,7 @@ class _PaymentScreenState extends ConsumerState<PaymentScreen> {
 │                                                                 │
 │  A) KEEP BOTH (Easiest start)                                  │
 │  • Old terminals: continue normal card payments                │
-│  • New SoftPOS: used via Thawani POS app                      │
+│  • New SoftPOS: used via Wameed POS app                      │
 │  • Merchant chooses which to use                               │
 │                                                                 │
 │  B) REPLACE (Cost savings)                                     │

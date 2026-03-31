@@ -32,7 +32,7 @@
 
 ## 1. Feature Overview
 
-Package & Subscription Management is the **commercial engine** of Thawani POS. It defines what each provider gets, for how much, and enforces those limits in real-time across the entire system.
+Package & Subscription Management is the **commercial engine** of Wameed POS. It defines what each provider gets, for how much, and enforces those limits in real-time across the entire system.
 
 ### What This Feature Does
 - Provides a **Package Builder** — admin creates/edits subscription plans with name (AR/EN), pricing, feature toggles, hard limits, and display settings

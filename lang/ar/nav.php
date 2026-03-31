@@ -52,5 +52,6 @@ return [
     'subscription_plans'          => 'خطط الاشتراك',
     'subscriptions'               => 'الاشتراكات',
     'templates'                   => 'القوالب',
+    'terminals'                   => 'الأجهزة الطرفية',
     'trusted_devices'             => 'الأجهزة الموثوقة',
 ];

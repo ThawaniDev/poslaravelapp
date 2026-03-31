@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| API Routes — Thawani POS
+| API Routes — Wameed POS
 |--------------------------------------------------------------------------
 |
 | Each feature has its own route file in routes/api/.

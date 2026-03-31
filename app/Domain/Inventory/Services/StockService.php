@@ -4,6 +4,7 @@ namespace App\Domain\Inventory\Services;
 
 use App\Domain\Inventory\Enums\StockMovementType;
 use App\Domain\Inventory\Enums\StockReferenceType;
+use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockLevel;
 use App\Domain\Inventory\Models\StockMovement;
 use Illuminate\Support\Facades\DB;
@@ -136,5 +137,31 @@ class StockService
         }
         $level->save();
         return $level;
+    }
+
+    /**
+     * Get batches expiring within given days.
+     */
+    public function expiryAlerts(string $storeId, int $daysAhead = 30, int $perPage = 25): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        return StockBatch::where('store_id', $storeId)
+            ->whereNotNull('expiry_date')
+            ->where('expiry_date', '<=', now()->addDays($daysAhead))
+            ->where('quantity', '>', 0)
+            ->with('product')
+            ->orderBy('expiry_date')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Get low-stock items that need reordering.
+     */
+    public function lowStockItems(string $storeId): \Illuminate\Database\Eloquent\Collection
+    {
+        return StockLevel::where('store_id', $storeId)
+            ->whereNotNull('reorder_point')
+            ->whereColumn('quantity', '<=', 'reorder_point')
+            ->with('product')
+            ->get();
     }
 }

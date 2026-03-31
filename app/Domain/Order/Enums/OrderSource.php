@@ -11,4 +11,5 @@ enum OrderSource: string
     case Marsool = 'marsool';
     case Phone = 'phone';
     case Web = 'web';
+    case Delivery = 'delivery';
 }

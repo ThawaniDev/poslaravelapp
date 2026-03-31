@@ -3,6 +3,7 @@
 namespace App\Domain\PosTerminal\Services;
 
 use App\Domain\Auth\Models\User;
+use App\Domain\Payment\Models\Payment;
 use App\Domain\PosTerminal\Enums\TransactionStatus;
 use App\Domain\PosTerminal\Enums\TransactionType;
 use App\Domain\PosTerminal\Models\Transaction;
@@ -37,7 +38,15 @@ class TransactionService
 
     public function find(string $transactionId): Transaction
     {
-        return Transaction::with(['transactionItems'])->findOrFail($transactionId);
+        return Transaction::with(['transactionItems', 'payments'])->findOrFail($transactionId);
+    }
+
+    public function findByNumber(string $storeId, string $number): Transaction
+    {
+        return Transaction::with(['transactionItems', 'payments'])
+            ->where('store_id', $storeId)
+            ->where('transaction_number', $number)
+            ->firstOrFail();
     }
 
     public function create(array $data, User $actor): Transaction
@@ -85,19 +94,66 @@ class TransactionService
                 }
             }
 
+            // Create payment records
+            if (!empty($data['payments'])) {
+                foreach ($data['payments'] as $payment) {
+                    $paymentData = [
+                        'transaction_id' => $transaction->id,
+                        'method' => $payment['method'],
+                        'amount' => $payment['amount'],
+                        'tip_amount' => $payment['tip_amount'] ?? 0,
+                        'loyalty_points_used' => $payment['loyalty_points_used'] ?? 0,
+                    ];
+
+                    // Only set nullable fields if provided
+                    foreach (['cash_tendered', 'change_given', 'card_brand', 'card_last_four', 'card_auth_code', 'card_reference', 'gift_card_code', 'coupon_code'] as $field) {
+                        if (!empty($payment[$field])) {
+                            $paymentData[$field] = $payment[$field];
+                        }
+                    }
+
+                    Payment::create($paymentData);
+                }
+            }
+
             // Update session counters if session exists
             if ($transaction->pos_session_id) {
                 $session = $transaction->posSession;
                 if ($session) {
                     $session->increment('transaction_count');
-                    if ($transaction->type === TransactionType::Sale) {
-                        $session->increment('total_cash_sales', (float) $transaction->total_amount);
+
+                    $type = $transaction->type instanceof TransactionType
+                        ? $transaction->type
+                        : TransactionType::from($transaction->type);
+
+                    if ($type === TransactionType::Sale) {
+                        $this->updateSessionSales($session, $data['payments'] ?? []);
+                    } elseif ($type === TransactionType::Return) {
+                        $session->increment('total_refunds', (float) $transaction->total_amount);
                     }
                 }
             }
 
-            return $transaction->load('transactionItems');
+            return $transaction->load(['transactionItems', 'payments']);
         });
+    }
+
+    public function createReturn(array $data, User $actor): Transaction
+    {
+        $originalTransaction = $this->find($data['return_transaction_id']);
+
+        if ($originalTransaction->status !== TransactionStatus::Completed) {
+            throw new \RuntimeException(__('pos.return_original_not_completed'));
+        }
+
+        if ($originalTransaction->type !== TransactionType::Sale) {
+            throw new \RuntimeException(__('pos.return_only_sales'));
+        }
+
+        $data['type'] = TransactionType::Return->value;
+        $data['return_transaction_id'] = $originalTransaction->id;
+
+        return $this->create($data, $actor);
     }
 
     public function void(Transaction $transaction, User $actor): Transaction
@@ -123,7 +179,23 @@ class TransactionService
             }
         }
 
-        return $transaction->fresh();
+        return $transaction->fresh(['transactionItems', 'payments']);
+    }
+
+    private function updateSessionSales($session, array $payments): void
+    {
+        foreach ($payments as $payment) {
+            $amount = (float) ($payment['amount'] ?? 0);
+            $method = $payment['method'] ?? 'cash';
+
+            if ($method === 'cash') {
+                $session->increment('total_cash_sales', $amount);
+            } elseif (str_starts_with($method, 'card') || $method === 'mada' || $method === 'apple_pay') {
+                $session->increment('total_card_sales', $amount);
+            } else {
+                $session->increment('total_other_sales', $amount);
+            }
+        }
     }
 
     private function generateNumber(string $storeId): string

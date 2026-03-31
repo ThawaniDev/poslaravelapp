@@ -219,7 +219,7 @@ For a daily sales summary export, the system generates a journal entry like:
 
 ```
 Date: 2026-03-07
-Memo: Thawani POS Daily Sales - Store "Al Manar Coffee"
+Memo: Wameed POS Daily Sales - Store "Al Manar Coffee"
 
   Debit:  Cash Received           SAR 3,500.00
   Debit:  Card Received           SAR 8,200.00

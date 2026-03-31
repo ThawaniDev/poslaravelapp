@@ -22,6 +22,9 @@ class Supplier extends Model
         'email',
         'address',
         'notes',
+        'contact_person',
+        'tax_number',
+        'payment_terms',
         'is_active',
     ];
 

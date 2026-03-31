@@ -35,4 +35,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('gift-cards', [PaymentController::class, 'issueGiftCard']);
     Route::get('gift-cards/{code}/balance', [PaymentController::class, 'checkGiftCardBalance']);
     Route::post('gift-cards/{code}/redeem', [PaymentController::class, 'redeemGiftCard']);
+
+    // Financial Summary
+    Route::get('finance/daily-summary', [PaymentController::class, 'dailySummary']);
+    Route::get('finance/reconciliation', [PaymentController::class, 'reconciliation']);
 });

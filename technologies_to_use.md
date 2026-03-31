@@ -1,6 +1,6 @@
-# Thawani POS — Technologies & Technical Decisions
+# Wameed POS — Technologies & Technical Decisions
 
-> Comprehensive technical reference covering every technology choice, package, service, infrastructure component, and tooling decision for the Thawani POS ecosystem.
+> Comprehensive technical reference covering every technology choice, package, service, infrastructure component, and tooling decision for the Wameed POS ecosystem.
 
 ---
 

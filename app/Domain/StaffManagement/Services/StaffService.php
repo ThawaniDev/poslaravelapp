@@ -2,6 +2,7 @@
 
 namespace App\Domain\StaffManagement\Services;
 
+use App\Domain\Auth\Models\User;
 use App\Domain\StaffManagement\Models\StaffUser;
 use App\Domain\StaffManagement\Models\AttendanceRecord;
 use App\Domain\StaffManagement\Models\BreakRecord;
@@ -10,6 +11,7 @@ use App\Domain\StaffManagement\Models\ShiftTemplate;
 use App\Domain\StaffManagement\Models\CommissionRule;
 use App\Domain\StaffManagement\Models\CommissionEarning;
 use App\Domain\StaffManagement\Models\StaffActivityLog;
+use App\Domain\StaffManagement\Models\StaffBranchAssignment;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -22,12 +24,12 @@ class StaffService
         $query = StaffUser::where('store_id', $storeId);
 
         if (!empty($filters['search'])) {
-            $s = $filters['search'];
+            $s = mb_strtolower($filters['search']);
             $query->where(function ($q) use ($s) {
-                $q->where('first_name', 'like', "%{$s}%")
-                  ->orWhere('last_name', 'like', "%{$s}%")
-                  ->orWhere('email', 'like', "%{$s}%")
-                  ->orWhere('phone', 'like', "%{$s}%");
+                $q->whereRaw('lower(first_name) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(last_name) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(email) like ?', ["%{$s}%"])
+                  ->orWhereRaw('lower(phone) like ?', ["%{$s}%"]);
             });
         }
 
@@ -365,5 +367,160 @@ class StaffService
         }
 
         return $start->diffInMinutes($end);
+    }
+
+    // ─── Branch Assignments ─────────────────────────────────
+
+    public function assignBranch(StaffUser $staff, array $data): StaffBranchAssignment
+    {
+        // Don't allow duplicate assignment to same branch
+        $existing = StaffBranchAssignment::where('staff_user_id', $staff->id)
+            ->where('branch_id', $data['branch_id'])
+            ->first();
+
+        if ($existing) {
+            throw new \InvalidArgumentException('Staff is already assigned to this branch.');
+        }
+
+        // If this is set as primary, unset other primaries
+        if (!empty($data['is_primary'])) {
+            StaffBranchAssignment::where('staff_user_id', $staff->id)
+                ->update(['is_primary' => false]);
+        }
+
+        return StaffBranchAssignment::create([
+            'staff_user_id' => $staff->id,
+            'branch_id'     => $data['branch_id'],
+            'role_id'       => $data['role_id'] ?? null,
+            'is_primary'    => $data['is_primary'] ?? false,
+        ]);
+    }
+
+    public function unassignBranch(StaffUser $staff, string $branchId): bool
+    {
+        $assignment = StaffBranchAssignment::where('staff_user_id', $staff->id)
+            ->where('branch_id', $branchId)
+            ->first();
+
+        if (!$assignment) {
+            throw new \InvalidArgumentException('Branch assignment not found.');
+        }
+
+        return $assignment->delete();
+    }
+
+    public function listBranchAssignments(string $staffUserId)
+    {
+        return StaffBranchAssignment::where('staff_user_id', $staffUserId)
+            ->with('branch', 'role')
+            ->get();
+    }
+
+    // ─── Staff Stats ────────────────────────────────────────
+
+    public function getStats(string $storeId): array
+    {
+        $total = StaffUser::where('store_id', $storeId)->count();
+        $active = StaffUser::where('store_id', $storeId)->where('status', 'active')->count();
+        $inactive = StaffUser::where('store_id', $storeId)->where('status', 'inactive')->count();
+        $onLeave = StaffUser::where('store_id', $storeId)->where('status', 'on_leave')->count();
+
+        $clockedIn = AttendanceRecord::where('store_id', $storeId)
+            ->whereNull('clock_out_at')
+            ->count();
+
+        $todayAttendance = AttendanceRecord::where('store_id', $storeId)
+            ->whereDate('clock_in_at', now()->toDateString())
+            ->count();
+
+        return [
+            'total_staff'       => $total,
+            'active'            => $active,
+            'inactive'          => $inactive,
+            'on_leave'          => $onLeave,
+            'currently_clocked_in' => $clockedIn,
+            'today_attendance'  => $todayAttendance,
+        ];
+    }
+
+    // ─── Attendance Export ───────────────────────────────────
+
+    public function exportAttendance(string $storeId, array $filters = []): array
+    {
+        $query = AttendanceRecord::where('store_id', $storeId)
+            ->with('staffUser');
+
+        if (!empty($filters['staff_user_id'])) {
+            $query->where('staff_user_id', $filters['staff_user_id']);
+        }
+
+        if (!empty($filters['date_from'])) {
+            $query->where('clock_in_at', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->where('clock_in_at', '<=', $filters['date_to'] . ' 23:59:59');
+        }
+
+        $records = $query->orderByDesc('clock_in_at')->get();
+
+        $rows = [];
+        foreach ($records as $record) {
+            $rows[] = [
+                'staff_name'       => $record->staffUser
+                    ? ($record->staffUser->first_name . ' ' . $record->staffUser->last_name)
+                    : 'N/A',
+                'clock_in'         => $record->clock_in_at?->toDateTimeString(),
+                'clock_out'        => $record->clock_out_at?->toDateTimeString(),
+                'break_minutes'    => $record->break_minutes ?? 0,
+                'overtime_minutes' => $record->overtime_minutes ?? 0,
+                'notes'            => $record->notes,
+            ];
+        }
+
+        return [
+            'headers' => ['Staff Name', 'Clock In', 'Clock Out', 'Break (min)', 'Overtime (min)', 'Notes'],
+            'rows'    => $rows,
+            'total'   => count($rows),
+        ];
+    }
+
+    // ─── User Account Linking ────────────────────────────────
+
+    /**
+     * Link a staff member to a User login account.
+     * Both must belong to the same store.
+     */
+    public function linkUserAccount(StaffUser $staff, string $userId): StaffUser
+    {
+        $user = User::findOrFail($userId);
+
+        if ($user->store_id !== $staff->store_id) {
+            throw new \InvalidArgumentException('User and staff member must belong to the same store.');
+        }
+
+        // Check if this user is already linked to another staff member
+        $existing = StaffUser::where('user_id', $userId)->first();
+        if ($existing && $existing->id !== $staff->id) {
+            throw new \InvalidArgumentException('This user account is already linked to another staff member.');
+        }
+
+        $staff->update(['user_id' => $userId]);
+
+        return $staff->refresh()->load('user');
+    }
+
+    /**
+     * Unlink a staff member from their User login account.
+     */
+    public function unlinkUserAccount(StaffUser $staff): StaffUser
+    {
+        if (!$staff->user_id) {
+            throw new \InvalidArgumentException('This staff member is not linked to any user account.');
+        }
+
+        $staff->update(['user_id' => null]);
+
+        return $staff->refresh();
     }
 }

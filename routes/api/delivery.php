@@ -41,4 +41,16 @@ Route::prefix('delivery')->middleware('auth:sanctum')->group(function () {
 
     // Sync logs
     Route::get('sync-logs', [DeliveryController::class, 'syncLogs']);
+
+    // Webhook logs
+    Route::get('webhook-logs', [DeliveryController::class, 'webhookLogs']);
+
+    // Status push logs
+    Route::get('status-push-logs', [DeliveryController::class, 'statusPushLogs']);
+
+    // Config detail (single config)
+    Route::get('configs/{id}', [DeliveryController::class, 'configDetail']);
+
+    // Delete config
+    Route::delete('configs/{id}', [DeliveryController::class, 'deleteConfig']);
 });

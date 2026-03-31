@@ -227,4 +227,46 @@ class DeliveryService
     {
         return DeliveryAdapterFactory::make($config);
     }
+
+    public function getWebhookLogs(string $storeId, array $filters = []): LengthAwarePaginator
+    {
+        $query = \App\Domain\DeliveryIntegration\Models\DeliveryWebhookLog::where('store_id', $storeId);
+
+        if (! empty($filters['platform'])) {
+            $query->where('platform', $filters['platform']);
+        }
+
+        return $query->orderByDesc('created_at')
+            ->paginate($filters['per_page'] ?? 15);
+    }
+
+    public function getStatusPushLogs(string $storeId, array $filters = []): LengthAwarePaginator
+    {
+        $query = \App\Domain\DeliveryIntegration\Models\DeliveryStatusPushLog::where('store_id', $storeId);
+
+        if (! empty($filters['platform'])) {
+            $query->where('platform', $filters['platform']);
+        }
+        if (! empty($filters['order_id'])) {
+            $query->where('delivery_order_mapping_id', $filters['order_id']);
+        }
+
+        return $query->orderByDesc('created_at')
+            ->paginate($filters['per_page'] ?? 15);
+    }
+
+    public function deleteConfig(string $configId, string $storeId): bool
+    {
+        $config = DeliveryPlatformConfig::where('id', $configId)
+            ->where('store_id', $storeId)
+            ->first();
+
+        if (! $config) {
+            return false;
+        }
+
+        $config->delete();
+
+        return true;
+    }
 }

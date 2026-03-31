@@ -14,6 +14,7 @@ use App\Domain\Payment\Resources\ExpenseResource;
 use App\Domain\Payment\Resources\GiftCardResource;
 use App\Domain\Payment\Resources\PaymentResource;
 use App\Domain\Payment\Services\CashSessionService;
+use App\Domain\Payment\Services\FinancialSummaryService;
 use App\Domain\Payment\Services\GiftCardService;
 use App\Domain\Payment\Services\PaymentService;
 use App\Http\Controllers\Api\BaseApiController;
@@ -26,6 +27,7 @@ class PaymentController extends BaseApiController
         private PaymentService $paymentService,
         private CashSessionService $cashSessionService,
         private GiftCardService $giftCardService,
+        private FinancialSummaryService $financialSummaryService,
     ) {}
 
     // ─── Payments ───────────────────────────────────────────
@@ -167,5 +169,35 @@ class PaymentController extends BaseApiController
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
         }
+    }
+
+    // ─── Financial Summary ──────────────────────────────────
+
+    public function dailySummary(Request $request): JsonResponse
+    {
+        $request->validate(['date' => 'sometimes|date_format:Y-m-d']);
+
+        $date = $request->input('date', now()->toDateString());
+        $storeId = $request->user()->store_id;
+
+        $summary = $this->financialSummaryService->dailySummary($storeId, $date);
+
+        return $this->success($summary);
+    }
+
+    public function reconciliation(Request $request): JsonResponse
+    {
+        $request->validate([
+            'start_date' => 'sometimes|date_format:Y-m-d',
+            'end_date' => 'sometimes|date_format:Y-m-d',
+        ]);
+
+        $startDate = $request->input('start_date', now()->toDateString());
+        $endDate = $request->input('end_date', now()->toDateString());
+        $storeId = $request->user()->store_id;
+
+        $data = $this->financialSummaryService->reconciliation($storeId, $startDate, $endDate);
+
+        return $this->success($data);
     }
 }

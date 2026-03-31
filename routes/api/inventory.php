@@ -6,6 +6,8 @@ use App\Domain\Inventory\Controllers\Api\RecipeController;
 use App\Domain\Inventory\Controllers\Api\StockAdjustmentController;
 use App\Domain\Inventory\Controllers\Api\StockController;
 use App\Domain\Inventory\Controllers\Api\StockTransferController;
+use App\Domain\Inventory\Controllers\Api\StocktakeController;
+use App\Domain\Inventory\Controllers\Api\WasteController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -24,6 +26,8 @@ Route::prefix('inventory')->middleware('auth:sanctum')->group(function () {
     Route::get('stock-levels', [StockController::class, 'levels']);
     Route::put('stock-levels/{stockLevel}/reorder-point', [StockController::class, 'setReorderPoint']);
     Route::get('stock-movements', [StockController::class, 'movements']);
+    Route::get('expiry-alerts', [StockController::class, 'expiryAlerts']);
+    Route::get('low-stock', [StockController::class, 'lowStock']);
 
     // Goods Receipts
     Route::get('goods-receipts', [GoodsReceiptController::class, 'index']);
@@ -58,4 +62,16 @@ Route::prefix('inventory')->middleware('auth:sanctum')->group(function () {
     Route::get('recipes/{recipe}', [RecipeController::class, 'show']);
     Route::put('recipes/{recipe}', [RecipeController::class, 'update']);
     Route::delete('recipes/{recipe}', [RecipeController::class, 'destroy']);
+
+    // Stocktakes
+    Route::get('stocktakes', [StocktakeController::class, 'index']);
+    Route::post('stocktakes', [StocktakeController::class, 'store']);
+    Route::get('stocktakes/{stocktake}', [StocktakeController::class, 'show']);
+    Route::put('stocktakes/{stocktake}/counts', [StocktakeController::class, 'updateCounts']);
+    Route::post('stocktakes/{stocktake}/apply', [StocktakeController::class, 'apply']);
+    Route::post('stocktakes/{stocktake}/cancel', [StocktakeController::class, 'cancel']);
+
+    // Waste Records
+    Route::get('waste-records', [WasteController::class, 'index']);
+    Route::post('waste-records', [WasteController::class, 'store']);
 });

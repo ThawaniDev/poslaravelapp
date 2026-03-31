@@ -10,7 +10,7 @@ use App\Domain\Payment\Models\CashSession;
 use App\Domain\Payment\Models\GiftCard;
 use App\Domain\PosTerminal\Models\PosSession;
 use App\Domain\PosTerminal\Models\Transaction;
-use App\Domain\Security\Enums\SessionStatus;
+use App\Domain\Payment\Enums\CashSessionStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -119,7 +119,7 @@ class PaymentApiTest extends TestCase
             'opened_by' => $this->user->id,
             'opening_float' => 100,
             'expected_cash' => 100,
-            'status' => SessionStatus::Open,
+            'status' => CashSessionStatus::Open,
             'opened_at' => now(),
         ]);
 
@@ -140,7 +140,7 @@ class PaymentApiTest extends TestCase
             'opened_by' => $this->user->id,
             'opening_float' => 100,
             'expected_cash' => 100,
-            'status' => SessionStatus::Open,
+            'status' => CashSessionStatus::Open,
             'opened_at' => now(),
         ]);
 
@@ -159,7 +159,7 @@ class PaymentApiTest extends TestCase
             'opened_by' => $this->user->id,
             'opening_float' => 100,
             'expected_cash' => 100,
-            'status' => SessionStatus::Open,
+            'status' => CashSessionStatus::Open,
             'opened_at' => now(),
         ]);
 
@@ -178,7 +178,7 @@ class PaymentApiTest extends TestCase
             'opened_by' => $this->user->id,
             'opening_float' => 100,
             'expected_cash' => 100,
-            'status' => SessionStatus::Open,
+            'status' => CashSessionStatus::Open,
             'opened_at' => now(),
         ]);
 
@@ -205,7 +205,7 @@ class PaymentApiTest extends TestCase
             'expected_cash' => 100,
             'actual_cash' => 100,
             'variance' => 0,
-            'status' => SessionStatus::Closed,
+            'status' => CashSessionStatus::Closed,
             'opened_at' => now(),
             'closed_at' => now(),
         ]);
@@ -227,7 +227,7 @@ class PaymentApiTest extends TestCase
             'opened_by' => $this->user->id,
             'opening_float' => 100,
             'expected_cash' => 100,
-            'status' => SessionStatus::Open,
+            'status' => CashSessionStatus::Open,
             'opened_at' => now(),
         ]);
 
@@ -253,7 +253,7 @@ class PaymentApiTest extends TestCase
             'opened_by' => $this->user->id,
             'opening_float' => 200,
             'expected_cash' => 200,
-            'status' => SessionStatus::Open,
+            'status' => CashSessionStatus::Open,
             'opened_at' => now(),
         ]);
 
@@ -439,6 +439,189 @@ class PaymentApiTest extends TestCase
         $response->assertStatus(401);
     }
 
+    // ─── Financial Reports ──────────────────────────────────
+
+    public function test_daily_summary_returns_expected_structure(): void
+    {
+        $transaction = $this->createTransaction();
+
+        // Create a payment for today
+        $this->withToken($this->token)->postJson('/api/v2/payments', [
+            'transaction_id' => $transaction->id,
+            'method' => 'cash',
+            'amount' => 75.00,
+            'cash_tendered' => 100.00,
+            'change_given' => 25.00,
+        ]);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/finance/daily-summary?date=' . now()->toDateString());
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonStructure([
+            'data' => [
+                'date',
+                'store_id',
+                'revenue' => ['gross', 'refunds', 'expenses', 'net'],
+                'transactions' => ['count', 'refund_count', 'average'],
+                'payment_breakdown',
+                'cash_sessions',
+                'expenses',
+                'hourly_activity',
+            ],
+        ]);
+    }
+
+    public function test_daily_summary_defaults_to_today(): void
+    {
+        $response = $this->withToken($this->token)->getJson('/api/v2/finance/daily-summary');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.date', now()->toDateString());
+    }
+
+    public function test_daily_summary_returns_correct_payment_totals(): void
+    {
+        $t1 = $this->createTransaction();
+        $t2 = $this->createTransaction();
+
+        $this->withToken($this->token)->postJson('/api/v2/payments', [
+            'transaction_id' => $t1->id,
+            'method' => 'cash',
+            'amount' => 100.00,
+        ]);
+
+        $this->withToken($this->token)->postJson('/api/v2/payments', [
+            'transaction_id' => $t2->id,
+            'method' => 'card_mada',
+            'amount' => 200.00,
+        ]);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/finance/daily-summary?date=' . now()->toDateString());
+
+        $response->assertStatus(200);
+        $data = $response->json('data');
+        $this->assertEquals(300.00, $data['revenue']['gross']);
+        $this->assertEquals(2, $data['transactions']['count']);
+        $this->assertEquals(150.00, $data['transactions']['average']);
+
+        // Check payment breakdown has both methods
+        $methods = collect($data['payment_breakdown'])->pluck('method')->toArray();
+        $this->assertContains('cash', $methods);
+        $this->assertContains('card_mada', $methods);
+    }
+
+    public function test_daily_summary_includes_expenses(): void
+    {
+        // Open a session first
+        $this->withToken($this->token)->postJson('/api/v2/cash-sessions', [
+            'opening_float' => 500.00,
+        ]);
+
+        // Create an expense
+        $this->withToken($this->token)->postJson('/api/v2/expenses', [
+            'amount' => 45.00,
+            'category' => 'supplies',
+            'description' => 'Cleaning supplies',
+        ]);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/finance/daily-summary?date=' . now()->toDateString());
+
+        $response->assertStatus(200);
+        $data = $response->json('data');
+        $this->assertEquals(45.00, $data['expenses']['total']);
+    }
+
+    public function test_daily_summary_includes_hourly_activity(): void
+    {
+        $response = $this->withToken($this->token)->getJson('/api/v2/finance/daily-summary?date=' . now()->toDateString());
+
+        $response->assertStatus(200);
+        $data = $response->json('data');
+        // Should have 24 hours of activity data
+        $this->assertCount(24, $data['hourly_activity']);
+    }
+
+    public function test_reconciliation_returns_expected_structure(): void
+    {
+        // Open and close a session
+        $openRes = $this->withToken($this->token)->postJson('/api/v2/cash-sessions', [
+            'opening_float' => 500.00,
+        ]);
+        $sessionId = $openRes->json('data.id');
+
+        $this->withToken($this->token)->putJson("/api/v2/cash-sessions/{$sessionId}/close", [
+            'actual_cash' => 520.00,
+            'close_notes' => 'End of shift',
+        ]);
+
+        $today = now()->toDateString();
+        $response = $this->withToken($this->token)->getJson("/api/v2/finance/reconciliation?start_date={$today}&end_date={$today}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonStructure([
+            'data' => [
+                'summary' => [
+                    'session_count',
+                    'total_expected',
+                    'total_actual',
+                    'total_variance',
+                    'within_tolerance',
+                ],
+                'sessions',
+            ],
+        ]);
+    }
+
+    public function test_reconciliation_defaults_to_today(): void
+    {
+        $response = $this->withToken($this->token)->getJson('/api/v2/finance/reconciliation');
+
+        $response->assertStatus(200);
+    }
+
+    public function test_reconciliation_calculates_variance_correctly(): void
+    {
+        // Open and close two sessions
+        $open1 = $this->withToken($this->token)->postJson('/api/v2/cash-sessions', [
+            'opening_float' => 500.00,
+        ]);
+        $sid1 = $open1->json('data.id');
+
+        $this->withToken($this->token)->putJson("/api/v2/cash-sessions/{$sid1}/close", [
+            'actual_cash' => 510.00,
+        ]);
+
+        $open2 = $this->withToken($this->token)->postJson('/api/v2/cash-sessions', [
+            'opening_float' => 300.00,
+        ]);
+        $sid2 = $open2->json('data.id');
+
+        $this->withToken($this->token)->putJson("/api/v2/cash-sessions/{$sid2}/close", [
+            'actual_cash' => 295.00,
+        ]);
+
+        $today = now()->toDateString();
+        $response = $this->withToken($this->token)->getJson("/api/v2/finance/reconciliation?start_date={$today}&end_date={$today}");
+
+        $response->assertStatus(200);
+        $data = $response->json('data');
+        $this->assertEquals(2, $data['summary']['session_count']);
+    }
+
+    public function test_daily_summary_unauthenticated(): void
+    {
+        $response = $this->getJson('/api/v2/finance/daily-summary');
+        $response->assertStatus(401);
+    }
+
+    public function test_reconciliation_unauthenticated(): void
+    {
+        $response = $this->getJson('/api/v2/finance/reconciliation');
+        $response->assertStatus(401);
+    }
+
     // ─── Helpers ────────────────────────────────────────────
 
     private function createTransaction(): Transaction
@@ -447,7 +630,7 @@ class PaymentApiTest extends TestCase
             'store_id' => $this->store->id,
             'register_id' => 'REG-001',
             'cashier_id' => $this->user->id,
-            'status' => SessionStatus::Open,
+            'status' => CashSessionStatus::Open,
             'opening_cash' => 100.00,
             'transaction_count' => 0,
             'opened_at' => now(),

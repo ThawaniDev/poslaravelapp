@@ -17,6 +17,8 @@ class UpdateCategoryRequest extends FormRequest
             'parent_id' => ['sometimes', 'nullable', 'uuid', 'exists:categories,id'],
             'name' => ['sometimes', 'string', 'max:255'],
             'name_ar' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'description_ar' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'image_url' => ['sometimes', 'nullable', 'string', 'max:500'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],
