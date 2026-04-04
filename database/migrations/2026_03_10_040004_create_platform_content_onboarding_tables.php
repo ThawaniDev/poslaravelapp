@@ -17,6 +17,15 @@ return new class extends Migration
     public function up(): void
     {
         if (\Illuminate\Support\Facades\Schema::getConnection()->getDriverName() === 'sqlite') {
+            \Illuminate\Support\Facades\Schema::create('pricing_page_content', function (\Illuminate\Database\Schema\Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('subscription_plan_id')->unique();
+                $table->json('feature_bullet_list')->default('[]');
+                $table->json('faq')->default('[]');
+                $table->timestamps();
+
+                $table->foreign('subscription_plan_id')->references('id')->on('subscription_plans')->cascadeOnDelete();
+            });
             return;
         }
 

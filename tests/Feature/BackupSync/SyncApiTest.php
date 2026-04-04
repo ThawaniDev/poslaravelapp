@@ -8,6 +8,7 @@ use App\Domain\BackupSync\Enums\SyncDirection;
 use App\Domain\BackupSync\Enums\SyncLogStatus;
 use App\Domain\BackupSync\Models\SyncConflict;
 use App\Domain\BackupSync\Models\SyncLog;
+use App\Domain\Catalog\Models\Product;
 use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -147,7 +148,7 @@ class SyncApiTest extends TestCase
                 [
                     'table' => 'products',
                     'records' => [
-                        ['id' => $recordId, 'name' => 'Test Product', 'price' => 10.00],
+                        ['id' => $recordId, 'name' => 'Test Product', 'sell_price' => 10.00, 'organization_id' => $this->store->organization_id],
                     ],
                 ],
             ],
@@ -180,8 +181,20 @@ class SyncApiTest extends TestCase
     public function test_push_detects_conflicts(): void
     {
         $recordId = Str::uuid()->toString();
+
+        // Create an existing product that was updated recently (after our sync token)
+        Product::forceCreate([
+            'id' => $recordId,
+            'name' => 'Cloud Version',
+            'sell_price' => 10.00,
+            'organization_id' => $this->store->organization_id,
+            'updated_at' => now(),
+        ]);
+
+        // Push with a sync_token older than the cloud record's updated_at
         $response = $this->postJson('/api/v2/sync/push', [
             'terminal_id' => $this->terminalId,
+            'sync_token' => now()->subHours(2)->toIso8601String(),
             'changes' => [
                 [
                     'table' => 'products',
@@ -189,8 +202,8 @@ class SyncApiTest extends TestCase
                         [
                             'id' => $recordId,
                             'name' => 'Local Version',
-                            '_conflict' => true,
-                            '_cloud_data' => ['name' => 'Cloud Version'],
+                            'sell_price' => 5.00,
+                            'organization_id' => $this->store->organization_id,
                         ],
                     ],
                 ],
@@ -216,14 +229,14 @@ class SyncApiTest extends TestCase
                 [
                     'table' => 'products',
                     'records' => [
-                        ['id' => Str::uuid()->toString(), 'name' => 'P1'],
-                        ['id' => Str::uuid()->toString(), 'name' => 'P2'],
+                        ['id' => Str::uuid()->toString(), 'name' => 'P1', 'sell_price' => 10.00, 'organization_id' => $this->store->organization_id],
+                        ['id' => Str::uuid()->toString(), 'name' => 'P2', 'sell_price' => 20.00, 'organization_id' => $this->store->organization_id],
                     ],
                 ],
                 [
                     'table' => 'customers',
                     'records' => [
-                        ['id' => Str::uuid()->toString(), 'name' => 'C1'],
+                        ['id' => Str::uuid()->toString(), 'name' => 'C1', 'organization_id' => $this->store->organization_id],
                     ],
                 ],
             ],
@@ -275,7 +288,7 @@ class SyncApiTest extends TestCase
     {
         $response = $this->getJson('/api/v2/sync/pull?' . http_build_query([
             'terminal_id' => $this->terminalId,
-            'sync_token' => Str::uuid()->toString(),
+            'sync_token' => now()->subHour()->toIso8601String(),
             'tables' => ['products'],
         ]), $this->authHeaders());
 
@@ -602,7 +615,7 @@ class SyncApiTest extends TestCase
             'changes' => [
                 [
                     'table' => 'products',
-                    'records' => [['id' => Str::uuid()->toString(), 'name' => 'P1']],
+                    'records' => [['id' => Str::uuid()->toString(), 'name' => 'P1', 'sell_price' => 10.00, 'organization_id' => $this->store->organization_id]],
                 ],
             ],
         ], $this->authHeaders());

@@ -291,7 +291,7 @@ class NotificationController extends BaseApiController
      */
     public function createSchedule(Request $request): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'event_key' => 'required|string',
             'channel' => 'required|string',
             'recipient_user_id' => 'nullable|string|uuid',
@@ -309,7 +309,7 @@ class NotificationController extends BaseApiController
         }
 
         $schedule = $this->notificationService->createSchedule(
-            array_merge($request->validated(), [
+            array_merge($validated, [
                 'store_id' => $storeId,
                 'created_by' => $request->user()->id,
                 'is_active' => true,

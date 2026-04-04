@@ -609,19 +609,23 @@ return new class extends Migration
         if (!Schema::hasTable('app_releases')) {
             Schema::create('app_releases', function (Blueprint $table) {
                 $table->uuid('id')->primary();
-                $table->string('platform', 20);
-                $table->string('version', 20);
+                $table->string('version_number', 20);
+                $table->string('platform', 10);
+                $table->string('channel', 10)->default('stable');
+                $table->text('download_url');
+                $table->text('store_url')->nullable();
                 $table->string('build_number', 20)->nullable();
+                $table->string('submission_status', 20)->default('not_applicable');
                 $table->text('release_notes')->nullable();
                 $table->text('release_notes_ar')->nullable();
-                $table->boolean('is_mandatory')->default(false);
+                $table->boolean('is_force_update')->default(false);
+                $table->string('min_supported_version', 20)->nullable();
+                $table->integer('rollout_percentage')->default(0);
                 $table->boolean('is_active')->default(true);
-                $table->integer('rollout_percentage')->default(100);
-                $table->string('min_os_version', 20)->nullable();
-                $table->string('download_url')->nullable();
-                $table->uuid('released_by')->nullable();
                 $table->timestamp('released_at')->nullable();
                 $table->timestamps();
+
+                $table->unique(['platform', 'channel', 'version_number']);
             });
         }
 
@@ -629,11 +633,11 @@ return new class extends Migration
         if (!Schema::hasTable('app_update_stats')) {
             Schema::create('app_update_stats', function (Blueprint $table) {
                 $table->uuid('id')->primary();
+                $table->uuid('store_id');
                 $table->uuid('app_release_id');
-                $table->date('date');
-                $table->integer('total_installs')->default(0);
-                $table->integer('total_updates')->default(0);
-                $table->integer('total_rollbacks')->default(0);
+                $table->string('status', 20)->default('pending');
+                $table->text('error_message')->nullable();
+                $table->timestamp('updated_at')->nullable();
             });
         }
 
@@ -2135,6 +2139,136 @@ return new class extends Migration
             $table->timestamp('sent_at')->nullable();
         });
 
+        // ─── Customer: wishlists ──────────────────────────────
+        Schema::create('wishlists', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->uuid('customer_id');
+            $table->uuid('product_id');
+            $table->timestamp('added_at')->nullable();
+        });
+
+        // ─── Customer: appointments ───────────────────────────
+        Schema::create('appointments', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->uuid('customer_id');
+            $table->uuid('staff_id')->nullable();
+            $table->uuid('service_product_id')->nullable();
+            $table->date('appointment_date')->nullable();
+            $table->string('start_time', 10)->nullable();
+            $table->string('end_time', 10)->nullable();
+            $table->string('status', 20)->default('scheduled');
+            $table->text('notes')->nullable();
+            $table->boolean('reminder_sent')->default(false);
+            $table->timestamps();
+        });
+
+        // ─── Customer: cfd_configurations ─────────────────────
+        Schema::create('cfd_configurations', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->boolean('is_enabled')->default(false);
+            $table->string('target_monitor', 50)->nullable();
+            $table->json('theme_config')->nullable();
+            $table->json('idle_content')->nullable();
+            $table->integer('idle_rotation_seconds')->default(10);
+        });
+
+        // ─── Customer: gift_registries ────────────────────────
+        Schema::create('gift_registries', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->uuid('customer_id');
+            $table->string('name', 200);
+            $table->string('event_type', 50)->nullable();
+            $table->date('event_date')->nullable();
+            $table->string('share_code', 20)->nullable();
+            $table->boolean('is_active')->default(true);
+        });
+
+        // ─── Customer: gift_registry_items ────────────────────
+        Schema::create('gift_registry_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('registry_id');
+            $table->uuid('product_id');
+            $table->integer('quantity_desired')->default(1);
+            $table->integer('quantity_purchased')->default(0);
+            $table->string('purchased_by_name')->nullable();
+        });
+
+        // ─── Customer: signage_playlists ──────────────────────
+        Schema::create('signage_playlists', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->string('name', 200);
+            $table->json('slides')->nullable();
+            $table->json('schedule')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        // ─── Customer: loyalty_challenges ─────────────────────
+        Schema::create('loyalty_challenges', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->string('name_ar')->nullable();
+            $table->string('name_en')->nullable();
+            $table->text('description_ar')->nullable();
+            $table->text('description_en')->nullable();
+            $table->string('challenge_type', 30)->nullable();
+            $table->decimal('target_value', 12, 2)->default(0);
+            $table->string('reward_type', 30)->nullable();
+            $table->decimal('reward_value', 12, 2)->default(0);
+            $table->uuid('reward_badge_id')->nullable();
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
+            $table->boolean('is_active')->default(true);
+        });
+
+        // ─── Customer: loyalty_badges ─────────────────────────
+        Schema::create('loyalty_badges', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->string('name_ar')->nullable();
+            $table->string('name_en')->nullable();
+            $table->string('icon_url')->nullable();
+            $table->text('description_ar')->nullable();
+            $table->text('description_en')->nullable();
+        });
+
+        // ─── Customer: loyalty_tiers ──────────────────────────
+        Schema::create('loyalty_tiers', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->string('tier_name_ar')->nullable();
+            $table->string('tier_name_en')->nullable();
+            $table->integer('tier_order')->default(0);
+            $table->integer('min_points')->default(0);
+            $table->json('benefits')->nullable();
+            $table->string('icon_url')->nullable();
+        });
+
+        // ─── Customer: customer_challenge_progress ────────────
+        Schema::create('customer_challenge_progress', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('customer_id');
+            $table->uuid('challenge_id');
+            $table->decimal('current_value', 12, 2)->default(0);
+            $table->boolean('is_completed')->default(false);
+            $table->timestamp('completed_at')->nullable();
+            $table->boolean('reward_claimed')->default(false);
+            $table->timestamps();
+        });
+
+        // ─── Customer: customer_badges ────────────────────────
+        Schema::create('customer_badges', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('customer_id');
+            $table->uuid('badge_id');
+            $table->timestamp('earned_at')->nullable();
+        });
+
         // ─── Label: label_templates ───────────────────────────
         Schema::create('label_templates', function (Blueprint $table) {
             $table->uuid('id')->primary();
@@ -2917,7 +3051,7 @@ return new class extends Migration
                 $table->string('severity', 20)->default('medium');
                 $table->string('title', 255);
                 $table->text('description')->nullable();
-                $table->string('source_ip', 45)->nullable();
+                $table->string('ip_address', 45)->nullable();
                 $table->uuid('user_id')->nullable();
                 $table->uuid('device_id')->nullable();
                 $table->string('status', 20)->default('open');
@@ -3055,7 +3189,9 @@ return new class extends Migration
             $table->string('status', 20);
             $table->integer('items_synced')->default(0);
             $table->integer('items_failed')->default(0);
+            $table->integer('products_count')->default(0);
             $table->json('error_details')->nullable();
+            $table->text('error_message')->nullable();
             $table->string('triggered_by', 30)->default('manual');
             $table->string('sync_type', 30)->default('full');
             $table->integer('duration_seconds')->nullable();
@@ -3480,6 +3616,8 @@ return new class extends Migration
             // Label domain
             'label_print_history', 'label_templates',
             // Customer domain
+            'customer_badges', 'customer_challenge_progress', 'loyalty_tiers', 'loyalty_badges', 'loyalty_challenges',
+            'signage_playlists', 'gift_registry_items', 'gift_registries', 'cfd_configurations', 'appointments', 'wishlists',
             'digital_receipt_log', 'store_credit_transactions', 'loyalty_transactions',
             'loyalty_config', 'customers', 'customer_groups',
             // Inventory domain

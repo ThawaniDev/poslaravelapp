@@ -49,11 +49,11 @@ class RestaurantController extends BaseApiController
 
     public function updateTableStatus(Request $request, string $id): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|string|in:available,occupied,reserved,cleaning',
         ]);
 
-        $table = $this->service->updateTableStatus($id, $request->user()->store_id, $request->validated()['status']);
+        $table = $this->service->updateTableStatus($id, $request->user()->store_id, $validated['status']);
         return $this->success(new RestaurantTableResource($table), __('industry.table_status_updated'));
     }
 
@@ -79,11 +79,11 @@ class RestaurantController extends BaseApiController
 
     public function updateKitchenTicketStatus(Request $request, string $id): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|string|in:pending,preparing,ready,served',
         ]);
 
-        $ticket = $this->service->updateKitchenTicketStatus($id, $request->user()->store_id, $request->validated()['status']);
+        $ticket = $this->service->updateKitchenTicketStatus($id, $request->user()->store_id, $validated['status']);
         return $this->success(new KitchenTicketResource($ticket), __('industry.kitchen_ticket_status_updated'));
     }
 
@@ -115,11 +115,11 @@ class RestaurantController extends BaseApiController
 
     public function updateReservationStatus(Request $request, string $id): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|string|in:confirmed,seated,completed,cancelled,no_show',
         ]);
 
-        $reservation = $this->service->updateReservationStatus($id, $request->user()->store_id, $request->validated()['status']);
+        $reservation = $this->service->updateReservationStatus($id, $request->user()->store_id, $validated['status']);
         return $this->success(new TableReservationResource($reservation), __('industry.reservation_status_updated'));
     }
 

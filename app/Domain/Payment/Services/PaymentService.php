@@ -48,6 +48,7 @@ class PaymentService
             'gift_card_code' => $data['gift_card_code'] ?? null,
             'coupon_code' => $data['coupon_code'] ?? null,
             'loyalty_points_used' => $data['loyalty_points_used'] ?? 0,
+            'created_at' => now(),
         ]);
     }
 }

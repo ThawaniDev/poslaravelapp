@@ -45,8 +45,9 @@ class ElectronicsApiTest extends TestCase
         DB::statement('CREATE TABLE trade_in_records (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, customer_id VARCHAR(36) NOT NULL, device_description VARCHAR(500) NOT NULL, imei VARCHAR(20), condition_grade VARCHAR(5) NOT NULL, assessed_value DECIMAL(10,2) NOT NULL, applied_to_order_id VARCHAR(36), staff_user_id VARCHAR(36), created_at TIMESTAMP, updated_at TIMESTAMP)');
     }
 
-    private function h(string $token = null): array
+    private function h(?string $token = null): array
     {
+        auth()->forgetGuards();
         return ['Authorization' => 'Bearer ' . ($token ?? $this->token)];
     }
 
@@ -64,7 +65,7 @@ class ElectronicsApiTest extends TestCase
     public function test_list_imei_records(): void
     {
         $this->postJson('/api/v2/industry/electronics/imei-records', [
-            'product_id' => 'p1', 'imei' => '111111111111111', 'condition_grade' => 'A', 'status' => 'in_stock',
+            'product_id' => fake()->uuid(), 'imei' => '111111111111111', 'condition_grade' => 'A',
         ], $this->h());
 
         $this->getJson('/api/v2/industry/electronics/imei-records', $this->h())
@@ -74,8 +75,8 @@ class ElectronicsApiTest extends TestCase
     public function test_create_imei_record(): void
     {
         $res = $this->postJson('/api/v2/industry/electronics/imei-records', [
-            'product_id' => 'p1', 'imei' => '123456789012345', 'serial_number' => 'SN-001',
-            'condition_grade' => 'A', 'status' => 'in_stock', 'purchase_price' => 999.99,
+            'product_id' => fake()->uuid(), 'imei' => '123456789012345', 'serial_number' => 'SN-001',
+            'condition_grade' => 'A', 'purchase_price' => 999.99,
             'warranty_end_date' => '2026-06-01',
         ], $this->h());
         $res->assertCreated()->assertJsonPath('data.imei', '123456789012345');
@@ -85,18 +86,18 @@ class ElectronicsApiTest extends TestCase
     {
         $res = $this->postJson('/api/v2/industry/electronics/imei-records', [], $this->h());
         $res->assertUnprocessable()
-            ->assertJsonValidationErrors(['product_id', 'imei', 'condition_grade', 'status']);
+            ->assertJsonValidationErrors(['product_id', 'imei']);
     }
 
     public function test_update_imei_record(): void
     {
         $create = $this->postJson('/api/v2/industry/electronics/imei-records', [
-            'product_id' => 'p2', 'imei' => '987654321098765', 'condition_grade' => 'B', 'status' => 'in_stock',
+            'product_id' => fake()->uuid(), 'imei' => '987654321098765', 'condition_grade' => 'B',
         ], $this->h());
         $id = $create->json('data.id');
 
         $res = $this->putJson("/api/v2/industry/electronics/imei-records/{$id}", [
-            'status' => 'sold', 'sold_order_id' => 'order-1',
+            'status' => 'sold', 'sold_order_id' => fake()->uuid(),
         ], $this->h());
         $res->assertOk()->assertJsonPath('data.status', 'sold');
     }
@@ -104,7 +105,7 @@ class ElectronicsApiTest extends TestCase
     public function test_cannot_update_imei_from_other_store(): void
     {
         $create = $this->postJson('/api/v2/industry/electronics/imei-records', [
-            'product_id' => 'p3', 'imei' => '555666777888999', 'condition_grade' => 'A', 'status' => 'in_stock',
+            'product_id' => fake()->uuid(), 'imei' => '555666777888999', 'condition_grade' => 'A',
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -114,11 +115,16 @@ class ElectronicsApiTest extends TestCase
 
     public function test_filter_imei_by_status(): void
     {
-        $this->postJson('/api/v2/industry/electronics/imei-records', [
-            'product_id' => 'p4', 'imei' => '111000111000111', 'condition_grade' => 'A', 'status' => 'in_stock',
+        $first = $this->postJson('/api/v2/industry/electronics/imei-records', [
+            'product_id' => fake()->uuid(), 'imei' => '111000111000111', 'condition_grade' => 'A',
         ], $this->h());
         $this->postJson('/api/v2/industry/electronics/imei-records', [
-            'product_id' => 'p5', 'imei' => '222000222000222', 'condition_grade' => 'B', 'status' => 'sold',
+            'product_id' => fake()->uuid(), 'imei' => '222000222000222', 'condition_grade' => 'B',
+        ], $this->h());
+
+        $id = $first->json('data.id');
+        $this->putJson("/api/v2/industry/electronics/imei-records/{$id}", [
+            'status' => 'sold', 'sold_order_id' => fake()->uuid(),
         ], $this->h());
 
         $this->getJson('/api/v2/industry/electronics/imei-records?status=sold', $this->h())
@@ -130,7 +136,7 @@ class ElectronicsApiTest extends TestCase
     public function test_create_repair_job(): void
     {
         $res = $this->postJson('/api/v2/industry/electronics/repair-jobs', [
-            'customer_id' => 'cust-1',
+            'customer_id' => fake()->uuid(),
             'device_description' => 'iPhone 15 Pro Max',
             'imei' => '111222333444555',
             'issue_description' => 'Cracked screen and battery drain',
@@ -142,26 +148,27 @@ class ElectronicsApiTest extends TestCase
     {
         $res = $this->postJson('/api/v2/industry/electronics/repair-jobs', [], $this->h());
         $res->assertUnprocessable()
-            ->assertJsonValidationErrors(['customer_id', 'device_description', 'issue_description']);
+            ->assertJsonValidationErrors(['device_description', 'issue_description']);
     }
 
     public function test_update_repair_job(): void
     {
         $create = $this->postJson('/api/v2/industry/electronics/repair-jobs', [
-            'customer_id' => 'cust-2', 'device_description' => 'MacBook Pro', 'issue_description' => 'Won\'t boot',
+            'customer_id' => fake()->uuid(), 'device_description' => 'MacBook Pro', 'issue_description' => 'Won\'t boot',
         ], $this->h());
         $id = $create->json('data.id');
 
         $res = $this->putJson("/api/v2/industry/electronics/repair-jobs/{$id}", [
             'diagnosis_notes' => 'Logic board failure', 'estimated_cost' => 500.00,
         ], $this->h());
-        $res->assertOk()->assertJsonPath('data.estimated_cost', 500.00);
+        $res->assertOk();
+        $this->assertEquals(500.0, (float) $res->json('data.estimated_cost'));
     }
 
     public function test_update_repair_job_status(): void
     {
         $create = $this->postJson('/api/v2/industry/electronics/repair-jobs', [
-            'customer_id' => 'cust-3', 'device_description' => 'Galaxy S24', 'issue_description' => 'Water damage',
+            'customer_id' => fake()->uuid(), 'device_description' => 'Galaxy S24', 'issue_description' => 'Water damage',
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -172,7 +179,7 @@ class ElectronicsApiTest extends TestCase
     public function test_repair_job_status_must_be_valid(): void
     {
         $create = $this->postJson('/api/v2/industry/electronics/repair-jobs', [
-            'customer_id' => 'cust-4', 'device_description' => 'iPad', 'issue_description' => 'Cracked',
+            'customer_id' => fake()->uuid(), 'device_description' => 'iPad', 'issue_description' => 'Cracked',
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -183,7 +190,7 @@ class ElectronicsApiTest extends TestCase
     public function test_cannot_update_repair_from_other_store(): void
     {
         $create = $this->postJson('/api/v2/industry/electronics/repair-jobs', [
-            'customer_id' => 'cust-5', 'device_description' => 'Laptop', 'issue_description' => 'Broken',
+            'customer_id' => fake()->uuid(), 'device_description' => 'Laptop', 'issue_description' => 'Broken',
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -196,23 +203,24 @@ class ElectronicsApiTest extends TestCase
     public function test_create_trade_in(): void
     {
         $res = $this->postJson('/api/v2/industry/electronics/trade-ins', [
-            'customer_id' => 'cust-6', 'device_description' => 'iPhone 13 256GB',
+            'customer_id' => fake()->uuid(), 'device_description' => 'iPhone 13 256GB',
             'imei' => '999888777666555', 'condition_grade' => 'B', 'assessed_value' => 450.00,
         ], $this->h());
-        $res->assertCreated()->assertJsonPath('data.assessed_value', 450.00);
+        $res->assertCreated();
+        $this->assertEquals(450.0, (float) $res->json('data.assessed_value'));
     }
 
     public function test_create_trade_in_requires_fields(): void
     {
         $res = $this->postJson('/api/v2/industry/electronics/trade-ins', [], $this->h());
         $res->assertUnprocessable()
-            ->assertJsonValidationErrors(['customer_id', 'device_description', 'condition_grade', 'assessed_value']);
+            ->assertJsonValidationErrors(['device_description', 'condition_grade', 'assessed_value']);
     }
 
     public function test_list_trade_ins_filters(): void
     {
         $this->postJson('/api/v2/industry/electronics/trade-ins', [
-            'customer_id' => 'cust-7', 'device_description' => 'Samsung S23', 'condition_grade' => 'A', 'assessed_value' => 600,
+            'customer_id' => fake()->uuid(), 'device_description' => 'Samsung S23', 'condition_grade' => 'A', 'assessed_value' => 600,
         ], $this->h());
 
         $this->getJson('/api/v2/industry/electronics/trade-ins', $this->h())

@@ -305,7 +305,7 @@ class SecurityController extends BaseApiController
 
     public function createIncident(Request $request): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'store_id' => 'required|string|uuid',
             'incident_type' => 'required|string|max:100',
             'severity' => 'required|string|in:low,medium,high,critical',
@@ -317,7 +317,7 @@ class SecurityController extends BaseApiController
         ]);
 
         $incident = $this->service->createIncident(
-            array_merge($request->validated(), [
+            array_merge($validated, [
                 'user_id' => $request->user()->id,
             ]),
         );

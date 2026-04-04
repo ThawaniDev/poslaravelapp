@@ -197,7 +197,7 @@ class SubscriptionServiceTest extends TestCase
         ]);
 
         $subscription = $this->billingService->subscribe(
-            $this->store->id, $plan->id, BillingCycle::Monthly
+            $this->store->organization_id, $plan->id, BillingCycle::Monthly
         );
 
         $this->assertInstanceOf(StoreSubscription::class, $subscription);
@@ -213,7 +213,7 @@ class SubscriptionServiceTest extends TestCase
         ]);
 
         $subscription = $this->billingService->subscribe(
-            $this->store->id, $plan->id, BillingCycle::Monthly
+            $this->store->organization_id, $plan->id, BillingCycle::Monthly
         );
 
         $this->assertEquals(SubscriptionStatus::Trial, $subscription->status);
@@ -229,7 +229,7 @@ class SubscriptionServiceTest extends TestCase
         ]);
 
         $subscription = $this->billingService->subscribe(
-            $this->store->id, $plan->id, BillingCycle::Yearly
+            $this->store->organization_id, $plan->id, BillingCycle::Yearly
         );
 
         $periodLength = $subscription->current_period_start->diffInDays($subscription->current_period_end);
@@ -244,10 +244,10 @@ class SubscriptionServiceTest extends TestCase
         ]);
 
         $subscription = $this->billingService->subscribe(
-            $this->store->id, $plan->id, BillingCycle::Monthly
+            $this->store->organization_id, $plan->id, BillingCycle::Monthly
         );
 
-        $cancelled = $this->billingService->cancelSubscription($this->store->id);
+        $cancelled = $this->billingService->cancelSubscription($this->store->organization_id);
 
         $this->assertEquals(SubscriptionStatus::Grace, $cancelled->status);
         $this->assertNotNull($cancelled->cancelled_at);
@@ -260,10 +260,10 @@ class SubscriptionServiceTest extends TestCase
             'monthly_price' => 49, 'is_active' => true, 'sort_order' => 1,
         ]);
 
-        $this->billingService->subscribe($this->store->id, $plan->id, BillingCycle::Monthly);
-        $this->billingService->cancelSubscription($this->store->id);
+        $this->billingService->subscribe($this->store->organization_id, $plan->id, BillingCycle::Monthly);
+        $this->billingService->cancelSubscription($this->store->organization_id);
 
-        $resumed = $this->billingService->resumeSubscription($this->store->id);
+        $resumed = $this->billingService->resumeSubscription($this->store->organization_id);
 
         $this->assertEquals(SubscriptionStatus::Active, $resumed->status);
         $this->assertNull($resumed->cancelled_at);
@@ -280,9 +280,9 @@ class SubscriptionServiceTest extends TestCase
             'monthly_price' => 49, 'is_active' => true, 'sort_order' => 2,
         ]);
 
-        $this->billingService->subscribe($this->store->id, $plan1->id, BillingCycle::Monthly);
+        $this->billingService->subscribe($this->store->organization_id, $plan1->id, BillingCycle::Monthly);
 
-        $changed = $this->billingService->changePlan($this->store->id, $plan2->id);
+        $changed = $this->billingService->changePlan($this->store->organization_id, $plan2->id);
 
         $this->assertEquals($plan2->id, $changed->subscription_plan_id);
     }
@@ -294,9 +294,9 @@ class SubscriptionServiceTest extends TestCase
             'monthly_price' => 49, 'is_active' => true, 'sort_order' => 1,
         ]);
 
-        $this->billingService->subscribe($this->store->id, $plan->id, BillingCycle::Monthly);
+        $this->billingService->subscribe($this->store->organization_id, $plan->id, BillingCycle::Monthly);
 
-        $invoices = $this->billingService->getInvoices($this->store->id);
+        $invoices = $this->billingService->getInvoices($this->store->organization_id);
         $this->assertGreaterThanOrEqual(1, $invoices->count());
     }
 
@@ -307,16 +307,16 @@ class SubscriptionServiceTest extends TestCase
             'monthly_price' => 10, 'is_active' => true, 'sort_order' => 1,
         ]);
 
-        $this->billingService->subscribe($this->store->id, $plan->id, BillingCycle::Monthly);
+        $this->billingService->subscribe($this->store->organization_id, $plan->id, BillingCycle::Monthly);
 
-        $current = $this->billingService->getCurrentSubscription($this->store->id);
+        $current = $this->billingService->getCurrentSubscription($this->store->organization_id);
         $this->assertNotNull($current);
         $this->assertEquals($plan->id, $current->subscription_plan_id);
     }
 
     public function test_get_current_subscription_returns_null_when_none(): void
     {
-        $current = $this->billingService->getCurrentSubscription($this->store->id);
+        $current = $this->billingService->getCurrentSubscription($this->store->organization_id);
         $this->assertNull($current);
     }
 }

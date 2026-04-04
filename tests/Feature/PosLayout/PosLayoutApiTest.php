@@ -257,13 +257,13 @@ class PosLayoutApiTest extends TestCase
     //  POS Layouts
     // ═══════════════════════════════════════════════════════════
 
-    public function test_get_layouts_requires_business_type(): void
+    public function test_get_layouts_without_business_type_returns_empty(): void
     {
         $response = $this->withToken($this->token)
             ->getJson('/api/v2/ui/layouts');
 
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['business_type']);
+        $response->assertOk()
+            ->assertJsonPath('success', true);
     }
 
     public function test_get_layouts_for_business_type(): void
@@ -776,13 +776,13 @@ class PosLayoutApiTest extends TestCase
     //  Label Templates
     // ═══════════════════════════════════════════════════════════
 
-    public function test_get_label_templates_requires_business_type(): void
+    public function test_get_label_templates_without_business_type_returns_ok(): void
     {
         $response = $this->withToken($this->token)
             ->getJson('/api/v2/ui/label-templates');
 
-        $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['business_type']);
+        $response->assertOk()
+            ->assertJsonPath('success', true);
     }
 
     public function test_get_label_templates(): void

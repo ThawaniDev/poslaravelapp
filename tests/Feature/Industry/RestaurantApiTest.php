@@ -48,8 +48,9 @@ class RestaurantApiTest extends TestCase
         DB::statement('CREATE TABLE open_tabs (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, order_id VARCHAR(36), customer_name VARCHAR(255), table_id VARCHAR(36), opened_at DATETIME, closed_at DATETIME, status VARCHAR(10) NOT NULL DEFAULT "open", created_at TIMESTAMP, updated_at TIMESTAMP)');
     }
 
-    private function h(string $token = null): array
+    private function h(?string $token = null): array
     {
+        auth()->forgetGuards();
         return ['Authorization' => 'Bearer ' . ($token ?? $this->token)];
     }
 
@@ -190,8 +191,8 @@ class RestaurantApiTest extends TestCase
     public function test_create_reservation(): void
     {
         $res = $this->postJson('/api/v2/industry/restaurant/reservations', [
-            'customer_name' => 'John Doe', 'customer_phone' => '+96812345678',
-            'party_size' => 4, 'reservation_date' => '2025-06-15', 'reservation_time' => '19:30',
+            'table_id' => fake()->uuid(), 'customer_name' => 'John Doe', 'customer_phone' => '+96812345678',
+            'party_size' => 4, 'reservation_date' => '2027-06-15', 'reservation_time' => '19:30',
             'duration_minutes' => 90,
         ], $this->h());
         $res->assertCreated()->assertJsonPath('data.customer_name', 'John Doe');
@@ -201,13 +202,13 @@ class RestaurantApiTest extends TestCase
     {
         $this->postJson('/api/v2/industry/restaurant/reservations', [], $this->h())
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['customer_name', 'party_size', 'reservation_date', 'reservation_time']);
+            ->assertJsonValidationErrors(['table_id', 'customer_name', 'customer_phone', 'party_size', 'reservation_date', 'reservation_time']);
     }
 
     public function test_update_reservation(): void
     {
         $create = $this->postJson('/api/v2/industry/restaurant/reservations', [
-            'customer_name' => 'Jane', 'party_size' => 2, 'reservation_date' => '2025-06-16', 'reservation_time' => '20:00',
+            'table_id' => fake()->uuid(), 'customer_name' => 'Jane', 'customer_phone' => '+96812345679', 'party_size' => 2, 'reservation_date' => '2027-06-16', 'reservation_time' => '20:00',
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -220,7 +221,7 @@ class RestaurantApiTest extends TestCase
     public function test_update_reservation_status(): void
     {
         $create = $this->postJson('/api/v2/industry/restaurant/reservations', [
-            'customer_name' => 'Bob', 'party_size' => 6, 'reservation_date' => '2025-06-17', 'reservation_time' => '18:00',
+            'table_id' => fake()->uuid(), 'customer_name' => 'Bob', 'customer_phone' => '+96812345680', 'party_size' => 6, 'reservation_date' => '2027-06-17', 'reservation_time' => '18:00',
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -230,7 +231,7 @@ class RestaurantApiTest extends TestCase
     public function test_reservation_status_must_be_valid(): void
     {
         $create = $this->postJson('/api/v2/industry/restaurant/reservations', [
-            'customer_name' => 'Alice', 'party_size' => 2, 'reservation_date' => '2025-06-18', 'reservation_time' => '19:00',
+            'table_id' => fake()->uuid(), 'customer_name' => 'Alice', 'customer_phone' => '+96812345681', 'party_size' => 2, 'reservation_date' => '2027-06-18', 'reservation_time' => '19:00',
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -241,7 +242,7 @@ class RestaurantApiTest extends TestCase
     public function test_cannot_update_reservation_from_other_store(): void
     {
         $create = $this->postJson('/api/v2/industry/restaurant/reservations', [
-            'customer_name' => 'Charlie', 'party_size' => 3, 'reservation_date' => '2025-06-19', 'reservation_time' => '17:00',
+            'table_id' => fake()->uuid(), 'customer_name' => 'Charlie', 'customer_phone' => '+96812345682', 'party_size' => 3, 'reservation_date' => '2027-06-19', 'reservation_time' => '17:00',
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -252,13 +253,13 @@ class RestaurantApiTest extends TestCase
     public function test_filter_reservations_by_date(): void
     {
         $this->postJson('/api/v2/industry/restaurant/reservations', [
-            'customer_name' => 'A', 'party_size' => 2, 'reservation_date' => '2025-06-20', 'reservation_time' => '18:00',
+            'table_id' => fake()->uuid(), 'customer_name' => 'A', 'customer_phone' => '+96812345683', 'party_size' => 2, 'reservation_date' => '2027-06-20', 'reservation_time' => '18:00',
         ], $this->h());
         $this->postJson('/api/v2/industry/restaurant/reservations', [
-            'customer_name' => 'B', 'party_size' => 2, 'reservation_date' => '2025-06-21', 'reservation_time' => '18:00',
+            'table_id' => fake()->uuid(), 'customer_name' => 'B', 'customer_phone' => '+96812345684', 'party_size' => 2, 'reservation_date' => '2027-06-21', 'reservation_time' => '18:00',
         ], $this->h());
 
-        $this->getJson('/api/v2/industry/restaurant/reservations?reservation_date=2025-06-20', $this->h())
+        $this->getJson('/api/v2/industry/restaurant/reservations?reservation_date=2027-06-20', $this->h())
             ->assertOk()->assertJsonCount(1, 'data.data');
     }
 

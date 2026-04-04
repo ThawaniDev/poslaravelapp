@@ -301,13 +301,13 @@ class StoreOnboardingEdgeCasesApiTest extends TestCase
 
         $response = $this->withToken($this->token)
             ->postJson("/api/v2/core/stores/{$this->store->id}/business-type", [
-                'business_type' => 'cafe',
+                'business_type' => 'bakery',
             ]);
 
         $response->assertOk();
         $this->store->refresh();
         // Business type should be updated
-        $this->assertEquals('cafe', $this->store->business_type->value);
+        $this->assertEquals('bakery', $this->store->business_type->value);
     }
 
     public function test_business_types_list_only_active(): void

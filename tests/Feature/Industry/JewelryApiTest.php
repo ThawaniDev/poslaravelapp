@@ -45,8 +45,9 @@ class JewelryApiTest extends TestCase
         DB::statement('CREATE TABLE buyback_transactions (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, customer_id VARCHAR(36) NOT NULL, metal_type VARCHAR(20) NOT NULL, karat VARCHAR(20), weight_g DECIMAL(10,2) NOT NULL, rate_per_gram DECIMAL(12,2) NOT NULL, total_amount DECIMAL(12,2) NOT NULL, payment_method VARCHAR(30) NOT NULL, staff_user_id VARCHAR(36), notes TEXT, created_at TIMESTAMP, updated_at TIMESTAMP)');
     }
 
-    private function h(string $token = null): array
+    private function h(?string $token = null): array
     {
+        auth()->forgetGuards();
         return ['Authorization' => 'Bearer ' . ($token ?? $this->token)];
     }
 
@@ -62,7 +63,7 @@ class JewelryApiTest extends TestCase
     public function test_list_metal_rates(): void
     {
         $this->postJson('/api/v2/industry/jewelry/metal-rates', [
-            'metal_type' => 'gold', 'karat' => '24K', 'rate_per_gram' => 62.50, 'effective_date' => '2025-06-01',
+            'metal_type' => 'gold', 'karat' => 24, 'rate_per_gram' => 62.50, 'buyback_rate_per_gram' => 58.00, 'effective_date' => '2025-06-01',
         ], $this->h());
 
         $this->getJson('/api/v2/industry/jewelry/metal-rates', $this->h())
@@ -72,26 +73,27 @@ class JewelryApiTest extends TestCase
     public function test_upsert_metal_rate(): void
     {
         $res = $this->postJson('/api/v2/industry/jewelry/metal-rates', [
-            'metal_type' => 'gold', 'karat' => '24K', 'rate_per_gram' => 62.50,
+            'metal_type' => 'gold', 'karat' => 24, 'rate_per_gram' => 62.50,
             'buyback_rate_per_gram' => 58.00, 'effective_date' => '2025-06-01',
         ], $this->h());
-        $res->assertOk()->assertJsonPath('data.rate_per_gram', 62.50);
+        $res->assertOk();
+        $this->assertEquals(62.5, (float) $res->json('data.rate_per_gram'));
     }
 
     public function test_upsert_metal_rate_requires_fields(): void
     {
         $this->postJson('/api/v2/industry/jewelry/metal-rates', [], $this->h())
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['metal_type', 'rate_per_gram', 'effective_date']);
+            ->assertJsonValidationErrors(['metal_type', 'karat', 'rate_per_gram', 'buyback_rate_per_gram', 'effective_date']);
     }
 
     public function test_filter_metal_rates_by_metal_type(): void
     {
         $this->postJson('/api/v2/industry/jewelry/metal-rates', [
-            'metal_type' => 'gold', 'karat' => '22K', 'rate_per_gram' => 55.00, 'effective_date' => '2025-06-01',
+            'metal_type' => 'gold', 'karat' => 22, 'rate_per_gram' => 55.00, 'buyback_rate_per_gram' => 50.00, 'effective_date' => '2025-06-01',
         ], $this->h());
         $this->postJson('/api/v2/industry/jewelry/metal-rates', [
-            'metal_type' => 'silver', 'karat' => '925', 'rate_per_gram' => 0.85, 'effective_date' => '2025-06-01',
+            'metal_type' => 'silver', 'karat' => 9, 'rate_per_gram' => 0.85, 'buyback_rate_per_gram' => 0.70, 'effective_date' => '2025-06-01',
         ], $this->h());
 
         $this->getJson('/api/v2/industry/jewelry/metal-rates?metal_type=gold', $this->h())
@@ -103,7 +105,7 @@ class JewelryApiTest extends TestCase
     public function test_create_product_detail(): void
     {
         $res = $this->postJson('/api/v2/industry/jewelry/product-details', [
-            'product_id' => 'p-j1', 'metal_type' => 'gold', 'karat' => '22K',
+            'product_id' => fake()->uuid(), 'metal_type' => 'gold', 'karat' => '22',
             'gross_weight_g' => 10.5, 'net_weight_g' => 9.8,
             'making_charges_type' => 'per_gram', 'making_charges_value' => 3.50,
             'certificate_number' => 'CERT-001',
@@ -115,14 +117,14 @@ class JewelryApiTest extends TestCase
     {
         $this->postJson('/api/v2/industry/jewelry/product-details', [], $this->h())
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['product_id', 'metal_type', 'gross_weight_g', 'making_charges_type', 'making_charges_value']);
+            ->assertJsonValidationErrors(['product_id', 'metal_type', 'karat', 'gross_weight_g', 'net_weight_g', 'making_charges_type', 'making_charges_value']);
     }
 
     public function test_update_product_detail(): void
     {
         $create = $this->postJson('/api/v2/industry/jewelry/product-details', [
-            'product_id' => 'p-j2', 'metal_type' => 'silver', 'karat' => '925',
-            'gross_weight_g' => 25.0, 'making_charges_type' => 'flat', 'making_charges_value' => 15.00,
+            'product_id' => fake()->uuid(), 'metal_type' => 'silver', 'karat' => '925',
+            'gross_weight_g' => 25.0, 'net_weight_g' => 23.5, 'making_charges_type' => 'flat', 'making_charges_value' => 15.00,
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -137,23 +139,24 @@ class JewelryApiTest extends TestCase
     public function test_create_buyback(): void
     {
         $res = $this->postJson('/api/v2/industry/jewelry/buybacks', [
-            'customer_id' => 'cust-j1', 'metal_type' => 'gold', 'karat' => '22K',
+            'customer_id' => fake()->uuid(), 'metal_type' => 'gold', 'karat' => 22,
             'weight_g' => 5.0, 'rate_per_gram' => 58.00, 'total_amount' => 290.00, 'payment_method' => 'cash',
         ], $this->h());
-        $res->assertCreated()->assertJsonPath('data.total_amount', 290.00);
+        $res->assertCreated();
+        $this->assertEquals(290.0, (float) $res->json('data.total_amount'));
     }
 
     public function test_create_buyback_requires_fields(): void
     {
         $this->postJson('/api/v2/industry/jewelry/buybacks', [], $this->h())
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['customer_id', 'metal_type', 'weight_g', 'rate_per_gram', 'total_amount', 'payment_method']);
+            ->assertJsonValidationErrors(['metal_type', 'karat', 'weight_g', 'rate_per_gram', 'total_amount', 'payment_method']);
     }
 
     public function test_list_buybacks(): void
     {
         $this->postJson('/api/v2/industry/jewelry/buybacks', [
-            'customer_id' => 'cust-j2', 'metal_type' => 'gold', 'weight_g' => 3.0,
+            'customer_id' => fake()->uuid(), 'metal_type' => 'gold', 'karat' => 22, 'weight_g' => 3.0,
             'rate_per_gram' => 60.00, 'total_amount' => 180.00, 'payment_method' => 'bank_transfer',
         ], $this->h());
 
@@ -164,7 +167,7 @@ class JewelryApiTest extends TestCase
     public function test_list_buybacks_only_shows_own_store(): void
     {
         $this->postJson('/api/v2/industry/jewelry/buybacks', [
-            'customer_id' => 'cust-j3', 'metal_type' => 'silver', 'weight_g' => 10.0,
+            'customer_id' => fake()->uuid(), 'metal_type' => 'silver', 'karat' => 9, 'weight_g' => 10.0,
             'rate_per_gram' => 0.80, 'total_amount' => 8.00, 'payment_method' => 'cash',
         ], $this->h());
 

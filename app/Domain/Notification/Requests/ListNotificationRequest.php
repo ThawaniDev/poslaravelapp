@@ -16,6 +16,7 @@ class ListNotificationRequest extends FormRequest
         return [
             'category' => ['nullable', 'string', 'max:30'],
             'is_read' => ['nullable', 'boolean'],
+            'priority' => ['nullable', 'string', 'in:low,normal,high,urgent'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:200'],
         ];
     }

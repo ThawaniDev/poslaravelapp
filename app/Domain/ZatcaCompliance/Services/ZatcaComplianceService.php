@@ -182,7 +182,7 @@ class ZatcaComplianceService
     {
         $total = ZatcaInvoice::where('store_id', $storeId)->count();
         $accepted = ZatcaInvoice::where('store_id', $storeId)
-            ->where('submission_status', ZatcaSubmissionStatus::Accepted)
+            ->whereIn('submission_status', [ZatcaSubmissionStatus::Accepted, ZatcaSubmissionStatus::Reported])
             ->count();
         $rejected = ZatcaInvoice::where('store_id', $storeId)
             ->where('submission_status', ZatcaSubmissionStatus::Rejected)

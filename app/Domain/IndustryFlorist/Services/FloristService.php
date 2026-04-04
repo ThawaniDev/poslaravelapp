@@ -15,6 +15,9 @@ class FloristService
         if (isset($filters['is_template'])) {
             $query->where('is_template', $filters['is_template']);
         }
+        if (! empty($filters['occasion'])) {
+            $query->where('occasion', $filters['occasion']);
+        }
         if (! empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'like', '%' . $filters['search'] . '%')

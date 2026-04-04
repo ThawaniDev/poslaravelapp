@@ -32,21 +32,25 @@ class DeploymentApiTest extends TestCase
         Sanctum::actingAs($this->admin, ['*'], 'admin-api');
     }
 
+    private int $releaseCounter = 0;
+
     private function createRelease(array $overrides = []): AppRelease
     {
+        $this->releaseCounter++;
         return AppRelease::forceCreate(array_merge([
-            'id'                 => Str::uuid()->toString(),
-            'platform'           => 'ios',
-            'version'            => '1.0.0',
-            'build_number'       => '100',
-            'release_notes'      => 'Initial release',
-            'release_notes_ar'   => 'الإصدار الأول',
-            'is_mandatory'       => false,
-            'is_active'          => false,
-            'rollout_percentage' => 100,
-            'min_os_version'     => '14.0',
-            'download_url'       => 'https://example.com/app.ipa',
-            'released_by'        => $this->admin->id,
+            'id'                    => Str::uuid()->toString(),
+            'platform'              => 'ios',
+            'version_number'        => "1.0.{$this->releaseCounter}",
+            'channel'               => 'stable',
+            'build_number'          => (string) (100 + $this->releaseCounter),
+            'release_notes'         => 'Initial release',
+            'release_notes_ar'      => 'الإصدار الأول',
+            'is_force_update'       => false,
+            'is_active'             => false,
+            'rollout_percentage'    => 0,
+            'min_supported_version' => '14.0',
+            'download_url'          => 'https://example.com/app.ipa',
+            'store_url'             => 'https://apps.apple.com/app/test',
         ], $overrides));
     }
 
@@ -55,10 +59,8 @@ class DeploymentApiTest extends TestCase
         return AppUpdateStat::forceCreate(array_merge([
             'id'               => Str::uuid()->toString(),
             'app_release_id'   => $releaseId,
-            'date'             => now()->toDateString(),
-            'total_installs'   => 50,
-            'total_updates'    => 30,
-            'total_rollbacks'  => 2,
+            'store_id'         => Str::uuid()->toString(),
+            'status'           => 'installed',
         ], $overrides));
     }
 
@@ -66,13 +68,13 @@ class DeploymentApiTest extends TestCase
 
     public function test_list_releases(): void
     {
-        $this->createRelease(['version' => '1.0.0']);
-        $this->createRelease(['version' => '2.0.0']);
+        $this->createRelease(['version_number' => '1.0.0']);
+        $this->createRelease(['version_number' => '2.0.0']);
 
         $res = $this->getJson("{$this->prefix}/releases");
         $res->assertOk()->assertJsonCount(2, 'data.data');
 
-        $versions = collect($res->json('data.data'))->pluck('version')->toArray();
+        $versions = collect($res->json('data.data'))->pluck('version_number')->toArray();
         $this->assertContains('1.0.0', $versions);
         $this->assertContains('2.0.0', $versions);
     }
@@ -95,24 +97,24 @@ class DeploymentApiTest extends TestCase
         $res->assertOk()->assertJsonCount(1, 'data.data');
     }
 
-    public function test_filter_releases_by_is_mandatory(): void
+    public function test_filter_releases_by_is_force_update(): void
     {
-        $this->createRelease(['is_mandatory' => true]);
-        $this->createRelease(['is_mandatory' => false]);
+        $this->createRelease(['is_force_update' => true]);
+        $this->createRelease(['is_force_update' => false]);
 
-        $res = $this->getJson("{$this->prefix}/releases?is_mandatory=1");
+        $res = $this->getJson("{$this->prefix}/releases?is_force_update=1");
         $res->assertOk()->assertJsonCount(1, 'data.data');
     }
 
     public function test_search_releases_by_version(): void
     {
-        $this->createRelease(['version' => '3.5.1']);
-        $this->createRelease(['version' => '1.0.0']);
+        $this->createRelease(['version_number' => '3.5.1']);
+        $this->createRelease(['version_number' => '1.0.0']);
 
         $res = $this->getJson("{$this->prefix}/releases?search=3.5");
         $res->assertOk()
             ->assertJsonCount(1, 'data.data')
-            ->assertJsonPath('data.data.0.version', '3.5.1');
+            ->assertJsonPath('data.data.0.version_number', '3.5.1');
     }
 
     public function test_search_releases_by_notes(): void
@@ -129,63 +131,66 @@ class DeploymentApiTest extends TestCase
     public function test_create_release(): void
     {
         $res = $this->postJson("{$this->prefix}/releases", [
-            'platform'      => 'android',
-            'version'        => '2.1.0',
-            'build_number'   => '210',
-            'release_notes'  => 'New features',
-            'release_notes_ar' => 'ميزات جديدة',
-            'is_mandatory'   => true,
-            'rollout_percentage' => 50,
-            'min_os_version' => '12.0',
-            'download_url'   => 'https://example.com/app.apk',
+            'platform'              => 'android',
+            'version_number'        => '2.1.0',
+            'build_number'          => '210',
+            'release_notes'         => 'New features',
+            'release_notes_ar'      => 'ميزات جديدة',
+            'is_force_update'       => true,
+            'rollout_percentage'    => 50,
+            'min_supported_version' => '12.0',
+            'download_url'          => 'https://example.com/app.apk',
         ]);
 
         $res->assertCreated()
             ->assertJsonPath('data.platform', 'android')
-            ->assertJsonPath('data.version', '2.1.0')
+            ->assertJsonPath('data.version_number', '2.1.0')
             ->assertJsonPath('data.build_number', '210')
             ->assertJsonPath('data.rollout_percentage', 50)
             ->assertJsonPath('data.is_active', false);
 
-        $this->assertDatabaseHas('app_releases', ['version' => '2.1.0', 'platform' => 'android']);
+        $this->assertDatabaseHas('app_releases', ['version_number' => '2.1.0', 'platform' => 'android']);
     }
 
     public function test_create_release_validation(): void
     {
         $res = $this->postJson("{$this->prefix}/releases", []);
         $res->assertUnprocessable()
-            ->assertJsonValidationErrors(['platform', 'version']);
+            ->assertJsonValidationErrors(['platform', 'version_number']);
     }
 
     public function test_create_release_invalid_platform(): void
     {
         $res = $this->postJson("{$this->prefix}/releases", [
-            'platform' => 'linux',
-            'version'  => '1.0.0',
+            'platform'       => 'linux',
+            'version_number' => '1.0.0',
+            'download_url'   => 'https://example.com/app',
         ]);
         $res->assertUnprocessable()
             ->assertJsonValidationErrors(['platform']);
     }
 
-    public function test_create_release_sets_released_by(): void
+    public function test_create_release_defaults(): void
     {
         $res = $this->postJson("{$this->prefix}/releases", [
-            'platform' => 'ios',
-            'version'  => '1.0.0',
+            'platform'       => 'ios',
+            'version_number' => '1.0.0',
+            'download_url'   => 'https://example.com/app.ipa',
         ]);
 
         $res->assertCreated()
-            ->assertJsonPath('data.released_by', $this->admin->id);
+            ->assertJsonPath('data.channel', 'stable')
+            ->assertJsonPath('data.is_active', false);
     }
 
     // ──────────────── Show Release ────────────────
 
     public function test_show_release(): void
     {
-        $release = $this->createRelease(['version' => '5.0.0']);
+        $release = $this->createRelease(['version_number' => '5.0.0']);
 
         $res = $this->getJson("{$this->prefix}/releases/{$release->id}");
-        $res->assertOk()->assertJsonPath('data.version', '5.0.0');
+        $res->assertOk()->assertJsonPath('data.version_number', '5.0.0');
     }
 
     public function test_show_release_not_found(): void
@@ -201,20 +206,20 @@ class DeploymentApiTest extends TestCase
         $release = $this->createRelease();
 
         $res = $this->putJson("{$this->prefix}/releases/{$release->id}", [
-            'version'        => '1.1.0',
+            'version_number' => '1.1.0',
             'release_notes'  => 'Updated notes',
-            'is_mandatory'   => true,
+            'is_force_update' => true,
         ]);
 
         $res->assertOk()
-            ->assertJsonPath('data.version', '1.1.0')
+            ->assertJsonPath('data.version_number', '1.1.0')
             ->assertJsonPath('data.release_notes', 'Updated notes');
     }
 
     public function test_update_release_not_found(): void
     {
         $res = $this->putJson("{$this->prefix}/releases/nonexistent", [
-            'version' => '1.0.0',
+            'version_number' => '1.0.0',
         ]);
         $res->assertNotFound();
     }
@@ -298,21 +303,21 @@ class DeploymentApiTest extends TestCase
     public function test_list_stats(): void
     {
         $release = $this->createRelease();
-        $this->createStat($release->id, ['date' => '2024-01-01']);
-        $this->createStat($release->id, ['date' => '2024-01-02']);
+        $this->createStat($release->id, ['status' => 'installed']);
+        $this->createStat($release->id, ['status' => 'pending']);
 
         $res = $this->getJson("{$this->prefix}/releases/{$release->id}/stats");
         $res->assertOk()->assertJsonCount(2, 'data.data');
     }
 
-    public function test_list_stats_filter_by_date_range(): void
+    public function test_list_stats_filter_by_status(): void
     {
         $release = $this->createRelease();
-        $this->createStat($release->id, ['date' => '2024-01-01']);
-        $this->createStat($release->id, ['date' => '2024-02-01']);
-        $this->createStat($release->id, ['date' => '2024-03-01']);
+        $this->createStat($release->id, ['status' => 'installed']);
+        $this->createStat($release->id, ['status' => 'pending']);
+        $this->createStat($release->id, ['status' => 'failed']);
 
-        $res = $this->getJson("{$this->prefix}/releases/{$release->id}/stats?date_from=2024-01-15&date_to=2024-02-15");
+        $res = $this->getJson("{$this->prefix}/releases/{$release->id}/stats?status=installed");
         $res->assertOk()->assertJsonCount(1, 'data.data');
     }
 
@@ -326,16 +331,12 @@ class DeploymentApiTest extends TestCase
         $release = $this->createRelease();
 
         $res = $this->postJson("{$this->prefix}/releases/{$release->id}/stats", [
-            'date'            => '2024-06-15',
-            'total_installs'  => 100,
-            'total_updates'   => 80,
-            'total_rollbacks' => 5,
+            'store_id' => Str::uuid()->toString(),
+            'status'   => 'installed',
         ]);
 
         $res->assertCreated()
-            ->assertJsonPath('data.total_installs', 100)
-            ->assertJsonPath('data.total_updates', 80)
-            ->assertJsonPath('data.total_rollbacks', 5);
+            ->assertJsonPath('data.status', 'installed');
     }
 
     public function test_record_stat_validation(): void
@@ -344,7 +345,7 @@ class DeploymentApiTest extends TestCase
 
         $this->postJson("{$this->prefix}/releases/{$release->id}/stats", [])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['date']);
+            ->assertJsonValidationErrors(['store_id', 'status']);
     }
 
     public function test_record_stat_release_not_found(): void
@@ -358,18 +359,20 @@ class DeploymentApiTest extends TestCase
 
     public function test_release_summary(): void
     {
-        $release = $this->createRelease(['version' => '4.0.0']);
-        $this->createStat($release->id, ['total_installs' => 100, 'total_updates' => 80, 'total_rollbacks' => 3]);
-        $this->createStat($release->id, ['total_installs' => 200, 'total_updates' => 150, 'total_rollbacks' => 7]);
+        $release = $this->createRelease(['version_number' => '4.0.0']);
+        $this->createStat($release->id, ['status' => 'installed']);
+        $this->createStat($release->id, ['status' => 'installed']);
+        $this->createStat($release->id, ['status' => 'pending']);
+        $this->createStat($release->id, ['status' => 'failed']);
 
         $res = $this->getJson("{$this->prefix}/releases/{$release->id}/summary");
         $res->assertOk();
 
         $data = $res->json('data');
-        $this->assertEquals(300, $data['total_installs']);
-        $this->assertEquals(230, $data['total_updates']);
-        $this->assertEquals(10, $data['total_rollbacks']);
-        $this->assertEquals(2, $data['days_tracked']);
+        $this->assertEquals(4, $data['total_stores']);
+        $this->assertEquals(2, $data['installed']);
+        $this->assertEquals(1, $data['pending']);
+        $this->assertEquals(1, $data['failed']);
     }
 
     public function test_release_summary_not_found(): void
@@ -385,8 +388,7 @@ class DeploymentApiTest extends TestCase
         $res->assertOk();
 
         $data = $res->json('data');
-        $this->assertEquals(0, $data['total_installs']);
-        $this->assertEquals(0, $data['days_tracked']);
+        $this->assertEquals(0, $data['total_stores']);
     }
 
     // ──────────────── Platform Overview ────────────────
@@ -418,7 +420,7 @@ class DeploymentApiTest extends TestCase
     public function test_releases_pagination(): void
     {
         for ($i = 0; $i < 20; $i++) {
-            $this->createRelease(['version' => "1.0.{$i}"]);
+            $this->createRelease(['version_number' => "1.0.{$i}"]);
         }
 
         $res = $this->getJson("{$this->prefix}/releases?per_page=5");

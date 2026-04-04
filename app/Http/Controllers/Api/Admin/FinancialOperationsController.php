@@ -22,7 +22,7 @@ use App\Domain\AccountingIntegration\Enums\AccountingExportStatus;
 use App\Domain\AccountingIntegration\Enums\ExportTriggeredBy;
 use App\Domain\Payment\Enums\GiftCardStatus;
 use App\Domain\Payment\Enums\RefundStatus;
-use App\Domain\Security\Enums\SessionStatus;
+use App\Domain\Payment\Enums\CashSessionStatus;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -154,12 +154,12 @@ class FinancialOperationsController extends BaseApiController
         $session = CashSession::find($id);
         if (! $session) return $this->notFound('Cash session not found');
 
-        if ($session->status !== SessionStatus::Open) {
+        if ($session->status !== CashSessionStatus::Open) {
             return $this->error('Cash session is not open', 422);
         }
 
         $session->forceFill([
-            'status'      => SessionStatus::Closed,
+            'status'      => CashSessionStatus::Closed->value,
             'closed_by'   => $request->user('admin-api')?->id,
             'closed_at'   => now(),
             'close_notes' => $request->input('notes', 'Force-closed by admin'),

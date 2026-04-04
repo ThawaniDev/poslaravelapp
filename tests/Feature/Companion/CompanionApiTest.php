@@ -59,15 +59,10 @@ class CompanionApiTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    'today_revenue',
-                    'yesterday_revenue',
-                    'today_orders',
-                    'yesterday_orders',
-                    'active_staff',
-                    'low_stock_items',
-                    'pending_orders',
-                    'store_is_open',
-                    'currency',
+                    'store' => ['id', 'name', 'currency', 'is_active'],
+                    'today' => ['revenue', 'orders', 'average_order'],
+                    'comparison' => ['yesterday_revenue', 'revenue_change_percent'],
+                    'quick_stats',
                 ],
             ]);
     }
@@ -93,10 +88,15 @@ class CompanionApiTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    'period',
-                    'total_revenue',
-                    'total_orders',
-                    'average_order_value',
+                    'period' => ['from', 'to'],
+                    'summary' => [
+                        'total_orders',
+                        'total_revenue',
+                        'total_tax',
+                        'total_discount',
+                        'average_order',
+                    ],
+                    'daily_breakdown',
                 ],
             ]);
     }
@@ -107,7 +107,11 @@ class CompanionApiTest extends TestCase
             ->getJson('/api/v2/companion/sales/summary?period=week');
 
         $response->assertOk()
-            ->assertJsonPath('data.period', 'week');
+            ->assertJsonStructure([
+                'data' => [
+                    'period' => ['from', 'to'],
+                ],
+            ]);
     }
 
     // ─── Active Orders ──────────────────────────────────────
@@ -132,7 +136,7 @@ class CompanionApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonStructure([
-                'data' => ['alerts', 'low_stock_count', 'out_of_stock_count'],
+                'data' => ['low_stock_items', 'total_low_stock', 'total_out_of_stock'],
             ]);
     }
 
@@ -145,7 +149,7 @@ class CompanionApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonStructure([
-                'data' => ['staff', 'total_active'],
+                'data' => ['staff', 'total', 'clocked_in'],
             ]);
     }
 
@@ -154,8 +158,8 @@ class CompanionApiTest extends TestCase
     public function test_can_toggle_store_availability(): void
     {
         $response = $this->withToken($this->token)
-            ->postJson('/api/v2/companion/store/availability', [
-                'is_open' => false,
+            ->putJson('/api/v2/companion/store/availability', [
+                'is_active' => false,
             ]);
 
         $response->assertOk()

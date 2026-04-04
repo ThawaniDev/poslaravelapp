@@ -185,6 +185,12 @@ class StoreService
         return $store->fresh(self::DETAIL_RELATIONS);
     }
 
+    public function deactivateStore(Store $store): Store
+    {
+        $store->update(['is_active' => false]);
+        return $store->fresh(self::DETAIL_RELATIONS);
+    }
+
     /**
      * Delete a store (only if it has no transactions/orders).
      */

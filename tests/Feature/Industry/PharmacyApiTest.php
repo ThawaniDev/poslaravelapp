@@ -42,8 +42,9 @@ class PharmacyApiTest extends TestCase
         DB::statement('CREATE TABLE drug_schedules (id VARCHAR(36) PRIMARY KEY, product_id VARCHAR(36) NOT NULL, schedule_type VARCHAR(30) NOT NULL, active_ingredient VARCHAR(255), dosage_form VARCHAR(100), strength VARCHAR(100), manufacturer VARCHAR(255), requires_prescription BOOLEAN DEFAULT 0, created_at TIMESTAMP, updated_at TIMESTAMP)');
     }
 
-    private function h(string $token = null): array
+    private function h(?string $token = null): array
     {
+        auth()->forgetGuards();
         return ['Authorization' => 'Bearer ' . ($token ?? $this->token)];
     }
 
@@ -59,7 +60,7 @@ class PharmacyApiTest extends TestCase
     public function test_list_prescriptions(): void
     {
         $this->postJson('/api/v2/industry/pharmacy/prescriptions', [
-            'prescription_number' => 'RX-001', 'patient_name' => 'John', 'doctor_name' => 'Dr Smith', 'doctor_license' => 'LIC-001',
+            'order_id' => fake()->uuid(), 'prescription_number' => 'RX-001', 'patient_name' => 'John', 'doctor_name' => 'Dr Smith', 'doctor_license' => 'LIC-001',
         ], $this->h());
 
         $this->getJson('/api/v2/industry/pharmacy/prescriptions', $this->h())
@@ -69,6 +70,7 @@ class PharmacyApiTest extends TestCase
     public function test_create_prescription(): void
     {
         $res = $this->postJson('/api/v2/industry/pharmacy/prescriptions', [
+            'order_id' => fake()->uuid(),
             'prescription_number' => 'RX-100',
             'patient_name' => 'Ahmed Al-Said',
             'patient_id' => 'PAT-100',
@@ -85,13 +87,13 @@ class PharmacyApiTest extends TestCase
     {
         $this->postJson('/api/v2/industry/pharmacy/prescriptions', [], $this->h())
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['prescription_number', 'patient_name', 'doctor_name', 'doctor_license']);
+            ->assertJsonValidationErrors(['order_id', 'prescription_number', 'patient_name', 'doctor_name', 'doctor_license']);
     }
 
     public function test_update_prescription(): void
     {
         $create = $this->postJson('/api/v2/industry/pharmacy/prescriptions', [
-            'prescription_number' => 'RX-200', 'patient_name' => 'Jane', 'doctor_name' => 'Dr Kim', 'doctor_license' => 'LIC-200',
+            'order_id' => fake()->uuid(), 'prescription_number' => 'RX-200', 'patient_name' => 'Jane', 'doctor_name' => 'Dr Kim', 'doctor_license' => 'LIC-200',
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -104,7 +106,7 @@ class PharmacyApiTest extends TestCase
     public function test_cannot_update_prescription_from_other_store(): void
     {
         $create = $this->postJson('/api/v2/industry/pharmacy/prescriptions', [
-            'prescription_number' => 'RX-300', 'patient_name' => 'Bob', 'doctor_name' => 'Dr Lee', 'doctor_license' => 'LIC-300',
+            'order_id' => fake()->uuid(), 'prescription_number' => 'RX-300', 'patient_name' => 'Bob', 'doctor_name' => 'Dr Lee', 'doctor_license' => 'LIC-300',
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -115,10 +117,10 @@ class PharmacyApiTest extends TestCase
     public function test_filter_prescriptions_by_search(): void
     {
         $this->postJson('/api/v2/industry/pharmacy/prescriptions', [
-            'prescription_number' => 'RX-400', 'patient_name' => 'Ahmed Specific', 'doctor_name' => 'Dr X', 'doctor_license' => 'L-400',
+            'order_id' => fake()->uuid(), 'prescription_number' => 'RX-400', 'patient_name' => 'Ahmed Specific', 'doctor_name' => 'Dr X', 'doctor_license' => 'L-400',
         ], $this->h());
         $this->postJson('/api/v2/industry/pharmacy/prescriptions', [
-            'prescription_number' => 'RX-401', 'patient_name' => 'Fatima Other', 'doctor_name' => 'Dr Y', 'doctor_license' => 'L-401',
+            'order_id' => fake()->uuid(), 'prescription_number' => 'RX-401', 'patient_name' => 'Fatima Other', 'doctor_name' => 'Dr Y', 'doctor_license' => 'L-401',
         ], $this->h());
 
         $this->getJson('/api/v2/industry/pharmacy/prescriptions?search=Ahmed', $this->h())
@@ -130,7 +132,7 @@ class PharmacyApiTest extends TestCase
     public function test_list_drug_schedules(): void
     {
         $this->postJson('/api/v2/industry/pharmacy/drug-schedules', [
-            'product_id' => 'p1', 'schedule_type' => 'otc',
+            'product_id' => fake()->uuid(), 'schedule_type' => 'otc', 'active_ingredient' => 'Ibuprofen', 'dosage_form' => 'tablet', 'strength' => '200mg', 'requires_prescription' => false,
         ], $this->h());
 
         $this->getJson('/api/v2/industry/pharmacy/drug-schedules', $this->h())
@@ -140,7 +142,7 @@ class PharmacyApiTest extends TestCase
     public function test_create_drug_schedule(): void
     {
         $res = $this->postJson('/api/v2/industry/pharmacy/drug-schedules', [
-            'product_id' => 'p2',
+            'product_id' => fake()->uuid(),
             'schedule_type' => 'controlled',
             'active_ingredient' => 'Codeine',
             'dosage_form' => 'tablet',
@@ -155,13 +157,13 @@ class PharmacyApiTest extends TestCase
     {
         $this->postJson('/api/v2/industry/pharmacy/drug-schedules', [], $this->h())
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['product_id', 'schedule_type']);
+            ->assertJsonValidationErrors(['product_id', 'schedule_type', 'active_ingredient', 'dosage_form', 'strength', 'requires_prescription']);
     }
 
     public function test_update_drug_schedule(): void
     {
         $create = $this->postJson('/api/v2/industry/pharmacy/drug-schedules', [
-            'product_id' => 'p3', 'schedule_type' => 'otc', 'requires_prescription' => false,
+            'product_id' => fake()->uuid(), 'schedule_type' => 'otc', 'active_ingredient' => 'Paracetamol', 'dosage_form' => 'tablet', 'strength' => '500mg', 'requires_prescription' => false,
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -173,8 +175,8 @@ class PharmacyApiTest extends TestCase
 
     public function test_filter_drug_schedules_by_type(): void
     {
-        $this->postJson('/api/v2/industry/pharmacy/drug-schedules', ['product_id' => 'p4', 'schedule_type' => 'controlled'], $this->h());
-        $this->postJson('/api/v2/industry/pharmacy/drug-schedules', ['product_id' => 'p5', 'schedule_type' => 'otc'], $this->h());
+        $this->postJson('/api/v2/industry/pharmacy/drug-schedules', ['product_id' => fake()->uuid(), 'schedule_type' => 'controlled', 'active_ingredient' => 'Codeine', 'dosage_form' => 'tablet', 'strength' => '30mg', 'requires_prescription' => true], $this->h());
+        $this->postJson('/api/v2/industry/pharmacy/drug-schedules', ['product_id' => fake()->uuid(), 'schedule_type' => 'otc', 'active_ingredient' => 'Aspirin', 'dosage_form' => 'tablet', 'strength' => '100mg', 'requires_prescription' => false], $this->h());
 
         $this->getJson('/api/v2/industry/pharmacy/drug-schedules?schedule_type=controlled', $this->h())
             ->assertOk()->assertJsonCount(1, 'data.data');

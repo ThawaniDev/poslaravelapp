@@ -37,10 +37,11 @@ class MarketplaceService
 
         if (! empty($filters['search'])) {
             $search = $filters['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'ILIKE', "%{$search}%")
-                    ->orWhere('title_ar', 'ILIKE', "%{$search}%")
-                    ->orWhere('description', 'ILIKE', "%{$search}%");
+            $like = DB::getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where(function ($q) use ($search, $like) {
+                $q->where('title', $like, "%{$search}%")
+                    ->orWhere('title_ar', $like, "%{$search}%")
+                    ->orWhere('description', $like, "%{$search}%");
             });
         }
 

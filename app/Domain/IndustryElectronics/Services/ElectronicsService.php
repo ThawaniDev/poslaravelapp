@@ -5,20 +5,22 @@ namespace App\Domain\IndustryElectronics\Services;
 use App\Domain\IndustryElectronics\Models\DeviceImeiRecord;
 use App\Domain\IndustryElectronics\Models\RepairJob;
 use App\Domain\IndustryElectronics\Models\TradeInRecord;
+use Illuminate\Support\Facades\DB;
 
 class ElectronicsService
 {
     public function listImeiRecords(string $storeId, array $filters = [])
     {
         $query = DeviceImeiRecord::where('store_id', $storeId);
+        $like = DB::getDriverName() === 'pgsql' ? 'ilike' : 'like';
 
         if (! empty($filters['status'])) {
             $query->where('status', $filters['status']);
         }
         if (! empty($filters['search'])) {
-            $query->where(function ($q) use ($filters) {
-                $q->where('imei', 'ilike', '%' . $filters['search'] . '%')
-                  ->orWhere('serial_number', 'ilike', '%' . $filters['search'] . '%');
+            $query->where(function ($q) use ($filters, $like) {
+                $q->where('imei', $like, '%' . $filters['search'] . '%')
+                  ->orWhere('serial_number', $like, '%' . $filters['search'] . '%');
             });
         }
 
@@ -27,7 +29,7 @@ class ElectronicsService
 
     public function createImeiRecord(string $storeId, array $data): DeviceImeiRecord
     {
-        return DeviceImeiRecord::create(array_merge($data, ['store_id' => $storeId]));
+        return DeviceImeiRecord::create(array_merge(['status' => 'in_stock'], $data, ['store_id' => $storeId]));
     }
 
     public function updateImeiRecord(string $id, string $storeId, array $data): DeviceImeiRecord
@@ -45,7 +47,8 @@ class ElectronicsService
             $query->where('status', $filters['status']);
         }
         if (! empty($filters['search'])) {
-            $query->where('device_description', 'ilike', '%' . $filters['search'] . '%');
+            $like = DB::getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where('device_description', $like, '%' . $filters['search'] . '%');
         }
 
         return $query->orderByDesc('received_at')->paginate($filters['per_page'] ?? 15);
@@ -87,7 +90,8 @@ class ElectronicsService
             $query->where('customer_id', $filters['customer_id']);
         }
         if (! empty($filters['search'])) {
-            $query->where('device_description', 'ilike', '%' . $filters['search'] . '%');
+            $like = DB::getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where('device_description', $like, '%' . $filters['search'] . '%');
         }
 
         return $query->orderByDesc('created_at')->paginate($filters['per_page'] ?? 15);

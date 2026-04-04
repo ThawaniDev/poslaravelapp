@@ -23,7 +23,10 @@ class SyncController extends BaseApiController
     public function push(SyncPushRequest $request): JsonResponse
     {
         $storeId = auth()->user()->store_id;
-        $result = $this->syncService->push($storeId, $request->validated());
+        $data = $request->validated();
+        // Preserve full record payloads (validated() strips fields not in rules)
+        $data['changes'] = $request->input('changes', []);
+        $result = $this->syncService->push($storeId, $data);
 
         return $this->success($result, __('sync.push_success'));
     }

@@ -370,6 +370,7 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_create_prescription(): void
     {
         $res = $this->postJson('/api/v2/industry/pharmacy/prescriptions', [
+            'order_id' => fake()->uuid(),
             'prescription_number' => 'RX-001',
             'patient_name' => 'John Doe',
             'doctor_name' => 'Dr Smith',
@@ -381,6 +382,7 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_update_prescription(): void
     {
         $create = $this->postJson('/api/v2/industry/pharmacy/prescriptions', [
+            'order_id' => fake()->uuid(),
             'prescription_number' => 'RX-002',
             'patient_name' => 'Jane Doe',
             'doctor_name' => 'Dr Smith',
@@ -404,7 +406,7 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_create_drug_schedule(): void
     {
         $res = $this->postJson('/api/v2/industry/pharmacy/drug-schedules', [
-            'product_id' => 'prod-1',
+            'product_id' => fake()->uuid(),
             'schedule_type' => 'controlled',
             'active_ingredient' => 'Codeine',
             'dosage_form' => 'tablet',
@@ -417,8 +419,11 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_update_drug_schedule(): void
     {
         $create = $this->postJson('/api/v2/industry/pharmacy/drug-schedules', [
-            'product_id' => 'prod-1',
+            'product_id' => fake()->uuid(),
             'schedule_type' => 'otc',
+            'active_ingredient' => 'Ibuprofen',
+            'dosage_form' => 'tablet',
+            'strength' => '200mg',
             'requires_prescription' => false,
         ], $this->authHeader());
         $id = $create->json('data.id');
@@ -444,10 +449,10 @@ class IndustryWorkflowApiTest extends TestCase
     {
         $res = $this->postJson('/api/v2/industry/jewelry/metal-rates', [
             'metal_type' => 'gold',
-            'karat' => '24K',
+            'karat' => 24,
             'rate_per_gram' => 62.50,
             'buyback_rate_per_gram' => 58.00,
-            'effective_date' => '2025-06-01',
+            'effective_date' => '2027-06-01',
         ], $this->authHeader());
         $res->assertOk();
     }
@@ -461,9 +466,9 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_create_product_detail(): void
     {
         $res = $this->postJson('/api/v2/industry/jewelry/product-details', [
-            'product_id' => 'prod-j1',
+            'product_id' => fake()->uuid(),
             'metal_type' => 'gold',
-            'karat' => '22K',
+            'karat' => '22',
             'gross_weight_g' => 10.5,
             'net_weight_g' => 9.8,
             'making_charges_type' => 'per_gram',
@@ -476,9 +481,9 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_update_product_detail(): void
     {
         $create = $this->postJson('/api/v2/industry/jewelry/product-details', [
-            'product_id' => 'prod-j2',
+            'product_id' => fake()->uuid(),
             'metal_type' => 'silver',
-            'karat' => '925',
+            'karat' => '9',
             'gross_weight_g' => 25.0,
             'net_weight_g' => 24.5,
             'making_charges_type' => 'flat',
@@ -501,9 +506,9 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_create_buyback(): void
     {
         $res = $this->postJson('/api/v2/industry/jewelry/buybacks', [
-            'customer_id' => 'cust-j1',
+            'customer_id' => fake()->uuid(),
             'metal_type' => 'gold',
-            'karat' => '22K',
+            'karat' => 22,
             'weight_g' => 5.0,
             'rate_per_gram' => 58.00,
             'total_amount' => 290.00,
@@ -525,11 +530,10 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_create_imei_record(): void
     {
         $res = $this->postJson('/api/v2/industry/electronics/imei-records', [
-            'product_id' => 'prod-e1',
+            'product_id' => fake()->uuid(),
             'imei' => '123456789012345',
             'serial_number' => 'SN-001',
             'condition_grade' => 'A',
-            'status' => 'in_stock',
             'purchase_price' => 999.99,
         ], $this->authHeader());
         $res->assertCreated();
@@ -538,16 +542,14 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_update_imei_record(): void
     {
         $create = $this->postJson('/api/v2/industry/electronics/imei-records', [
-            'product_id' => 'prod-e2',
+            'product_id' => fake()->uuid(),
             'imei' => '987654321098765',
             'condition_grade' => 'B',
-            'status' => 'in_stock',
         ], $this->authHeader());
         $id = $create->json('data.id');
 
         $res = $this->putJson("/api/v2/industry/electronics/imei-records/{$id}", [
-            'status' => 'sold',
-            'sold_order_id' => 'order-e1',
+            'sold_order_id' => fake()->uuid(),
         ], $this->authHeader());
         $res->assertOk();
     }
@@ -561,7 +563,7 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_create_repair_job(): void
     {
         $res = $this->postJson('/api/v2/industry/electronics/repair-jobs', [
-            'customer_id' => 'cust-e1',
+            'customer_id' => fake()->uuid(),
             'device_description' => 'Apple iPhone 15 Pro',
             'imei' => '111222333444555',
             'issue_description' => 'Cracked screen',
@@ -572,7 +574,7 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_update_repair_job(): void
     {
         $create = $this->postJson('/api/v2/industry/electronics/repair-jobs', [
-            'customer_id' => 'cust-e2',
+            'customer_id' => fake()->uuid(),
             'device_description' => 'Dell XPS 15 Laptop',
             'issue_description' => 'Not charging',
         ], $this->authHeader());
@@ -588,7 +590,7 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_update_repair_job_status(): void
     {
         $create = $this->postJson('/api/v2/industry/electronics/repair-jobs', [
-            'customer_id' => 'cust-e3',
+            'customer_id' => fake()->uuid(),
             'device_description' => 'Samsung Galaxy Tab S9',
             'issue_description' => 'Battery drain',
         ], $this->authHeader());
@@ -609,7 +611,7 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_create_trade_in(): void
     {
         $res = $this->postJson('/api/v2/industry/electronics/trade-ins', [
-            'customer_id' => 'cust-e4',
+            'customer_id' => fake()->uuid(),
             'device_description' => 'iPhone 13 Pro 256GB Silver',
             'imei' => '111222333444555',
             'condition_grade' => 'B',
@@ -633,7 +635,7 @@ class IndustryWorkflowApiTest extends TestCase
         $res = $this->postJson('/api/v2/industry/florist/arrangements', [
             'name' => 'Wedding Bouquet',
             'occasion' => 'wedding',
-            'items_json' => [['flower' => 'Rose', 'qty' => 12]],
+            'items_json' => [['product_id' => fake()->uuid(), 'quantity' => 12]],
             'total_price' => 85.00,
             'is_template' => true,
         ], $this->authHeader());
@@ -644,7 +646,7 @@ class IndustryWorkflowApiTest extends TestCase
     {
         $create = $this->postJson('/api/v2/industry/florist/arrangements', [
             'name' => 'Birthday Mix',
-            'items_json' => [['flower' => 'Tulip', 'qty' => 6]],
+            'items_json' => [['product_id' => fake()->uuid(), 'quantity' => 6]],
             'total_price' => 45.00,
         ], $this->authHeader());
         $id = $create->json('data.id');
@@ -660,7 +662,7 @@ class IndustryWorkflowApiTest extends TestCase
     {
         $create = $this->postJson('/api/v2/industry/florist/arrangements', [
             'name' => 'To Delete',
-            'items_json' => [['flower' => 'Daisy', 'qty' => 3]],
+            'items_json' => [['product_id' => fake()->uuid(), 'quantity' => 3]],
             'total_price' => 20.00,
         ], $this->authHeader());
         $id = $create->json('data.id');
@@ -678,7 +680,7 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_create_freshness_log(): void
     {
         $res = $this->postJson('/api/v2/industry/florist/freshness-logs', [
-            'product_id' => 'prod-f1',
+            'product_id' => fake()->uuid(),
             'received_date' => '2025-06-01',
             'expected_vase_life_days' => 7,
             'quantity' => 50,
@@ -689,7 +691,7 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_update_freshness_log_status(): void
     {
         $create = $this->postJson('/api/v2/industry/florist/freshness-logs', [
-            'product_id' => 'prod-f2',
+            'product_id' => fake()->uuid(),
             'received_date' => '2025-05-28',
             'expected_vase_life_days' => 5,
             'quantity' => 30,
@@ -711,12 +713,13 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_create_subscription(): void
     {
         $res = $this->postJson('/api/v2/industry/florist/subscriptions', [
-            'customer_id' => 'cust-f1',
+            'customer_id' => fake()->uuid(),
+            'arrangement_template_id' => fake()->uuid(),
             'frequency' => 'weekly',
-            'delivery_day' => 'Monday',
+            'delivery_day' => 'monday',
             'delivery_address' => '123 Flower St',
             'price_per_delivery' => 35.00,
-            'next_delivery_date' => '2025-06-09',
+            'next_delivery_date' => '2027-06-09',
         ], $this->authHeader());
         $res->assertCreated();
     }
@@ -724,12 +727,13 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_update_subscription(): void
     {
         $create = $this->postJson('/api/v2/industry/florist/subscriptions', [
-            'customer_id' => 'cust-f2',
+            'customer_id' => fake()->uuid(),
+            'arrangement_template_id' => fake()->uuid(),
             'frequency' => 'monthly',
-            'delivery_day' => 'Friday',
+            'delivery_day' => 'friday',
             'delivery_address' => '456 Garden Ave',
             'price_per_delivery' => 50.00,
-            'next_delivery_date' => '2025-07-01',
+            'next_delivery_date' => '2027-07-01',
         ], $this->authHeader());
         $id = $create->json('data.id');
 
@@ -742,12 +746,13 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_toggle_subscription(): void
     {
         $create = $this->postJson('/api/v2/industry/florist/subscriptions', [
-            'customer_id' => 'cust-f3',
+            'customer_id' => fake()->uuid(),
+            'arrangement_template_id' => fake()->uuid(),
             'frequency' => 'biweekly',
-            'delivery_day' => 'Wednesday',
+            'delivery_day' => 'wednesday',
             'delivery_address' => '789 Bloom Rd',
             'price_per_delivery' => 42.00,
-            'next_delivery_date' => '2025-06-15',
+            'next_delivery_date' => '2027-06-15',
         ], $this->authHeader());
         $id = $create->json('data.id');
 
@@ -769,7 +774,7 @@ class IndustryWorkflowApiTest extends TestCase
     {
         $res = $this->postJson('/api/v2/industry/bakery/recipes', [
             'name' => 'Sourdough Bread',
-            'expected_yield' => 10,
+            'expected_yield' => '10',
             'prep_time_minutes' => 30,
             'bake_time_minutes' => 45,
             'bake_temperature_c' => 230,
@@ -782,6 +787,7 @@ class IndustryWorkflowApiTest extends TestCase
     {
         $create = $this->postJson('/api/v2/industry/bakery/recipes', [
             'name' => 'Croissant',
+            'prep_time_minutes' => 60,
             'bake_time_minutes' => 20,
             'bake_temperature_c' => 200,
         ], $this->authHeader());
@@ -798,6 +804,8 @@ class IndustryWorkflowApiTest extends TestCase
     {
         $create = $this->postJson('/api/v2/industry/bakery/recipes', [
             'name' => 'To Delete Recipe',
+            'prep_time_minutes' => 10,
+            'bake_time_minutes' => 15,
         ], $this->authHeader());
         $id = $create->json('data.id');
 
@@ -815,12 +823,14 @@ class IndustryWorkflowApiTest extends TestCase
     {
         $recipe = $this->postJson('/api/v2/industry/bakery/recipes', [
             'name' => 'Baguette',
+            'prep_time_minutes' => 20,
+            'bake_time_minutes' => 25,
         ], $this->authHeader());
         $recipeId = $recipe->json('data.id');
 
         $res = $this->postJson('/api/v2/industry/bakery/production-schedules', [
             'recipe_id' => $recipeId,
-            'schedule_date' => '2025-06-10',
+            'schedule_date' => '2027-06-10',
             'planned_batches' => 5,
             'planned_yield' => 50,
         ], $this->authHeader());
@@ -831,12 +841,14 @@ class IndustryWorkflowApiTest extends TestCase
     {
         $recipe = $this->postJson('/api/v2/industry/bakery/recipes', [
             'name' => 'Baguette 2',
+            'prep_time_minutes' => 20,
+            'bake_time_minutes' => 25,
         ], $this->authHeader());
         $recipeId = $recipe->json('data.id');
 
         $create = $this->postJson('/api/v2/industry/bakery/production-schedules', [
             'recipe_id' => $recipeId,
-            'schedule_date' => '2025-06-11',
+            'schedule_date' => '2027-06-11',
             'planned_batches' => 3,
         ], $this->authHeader());
         $id = $create->json('data.id');
@@ -852,12 +864,14 @@ class IndustryWorkflowApiTest extends TestCase
     {
         $recipe = $this->postJson('/api/v2/industry/bakery/recipes', [
             'name' => 'Baguette 3',
+            'prep_time_minutes' => 20,
+            'bake_time_minutes' => 25,
         ], $this->authHeader());
         $recipeId = $recipe->json('data.id');
 
         $create = $this->postJson('/api/v2/industry/bakery/production-schedules', [
             'recipe_id' => $recipeId,
-            'schedule_date' => '2025-06-12',
+            'schedule_date' => '2027-06-12',
             'planned_batches' => 4,
         ], $this->authHeader());
         $id = $create->json('data.id');
@@ -877,11 +891,11 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_create_custom_cake_order(): void
     {
         $res = $this->postJson('/api/v2/industry/bakery/cake-orders', [
-            'customer_id' => 'cust-b1',
+            'customer_id' => fake()->uuid(),
             'description' => 'Two-tier chocolate cake with roses',
             'size' => '10 inch',
             'flavor' => 'Chocolate',
-            'delivery_date' => '2025-06-20',
+            'delivery_date' => '2027-06-20',
             'price' => 120.00,
             'deposit_paid' => 50.00,
         ], $this->authHeader());
@@ -891,11 +905,11 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_update_custom_cake_order(): void
     {
         $create = $this->postJson('/api/v2/industry/bakery/cake-orders', [
-            'customer_id' => 'cust-b2',
+            'customer_id' => fake()->uuid(),
             'description' => 'Vanilla birthday cake',
             'size' => '8 inch',
             'flavor' => 'Vanilla',
-            'delivery_date' => '2025-06-25',
+            'delivery_date' => '2027-06-25',
             'price' => 80.00,
         ], $this->authHeader());
         $id = $create->json('data.id');
@@ -909,11 +923,11 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_update_custom_cake_order_status(): void
     {
         $create = $this->postJson('/api/v2/industry/bakery/cake-orders', [
-            'customer_id' => 'cust-b3',
+            'customer_id' => fake()->uuid(),
             'description' => 'Red velvet cake',
             'size' => '12 inch',
             'flavor' => 'Red Velvet',
-            'delivery_date' => '2025-07-01',
+            'delivery_date' => '2027-07-01',
             'price' => 150.00,
         ], $this->authHeader());
         $id = $create->json('data.id');
@@ -1014,10 +1028,11 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_create_reservation(): void
     {
         $res = $this->postJson('/api/v2/industry/restaurant/reservations', [
+            'table_id' => fake()->uuid(),
             'customer_name' => 'John Doe',
             'customer_phone' => '+96812345678',
             'party_size' => 4,
-            'reservation_date' => '2025-06-15',
+            'reservation_date' => '2027-06-15',
             'reservation_time' => '19:30',
             'duration_minutes' => 90,
         ], $this->authHeader());
@@ -1027,9 +1042,11 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_update_reservation(): void
     {
         $create = $this->postJson('/api/v2/industry/restaurant/reservations', [
+            'table_id' => fake()->uuid(),
             'customer_name' => 'Jane Smith',
+            'customer_phone' => '+96812345679',
             'party_size' => 2,
-            'reservation_date' => '2025-06-16',
+            'reservation_date' => '2027-06-16',
             'reservation_time' => '20:00',
         ], $this->authHeader());
         $id = $create->json('data.id');
@@ -1044,9 +1061,11 @@ class IndustryWorkflowApiTest extends TestCase
     public function test_update_reservation_status(): void
     {
         $create = $this->postJson('/api/v2/industry/restaurant/reservations', [
+            'table_id' => fake()->uuid(),
             'customer_name' => 'Bob Johnson',
+            'customer_phone' => '+96812345680',
             'party_size' => 6,
-            'reservation_date' => '2025-06-17',
+            'reservation_date' => '2027-06-17',
             'reservation_time' => '18:00',
         ], $this->authHeader());
         $id = $create->json('data.id');

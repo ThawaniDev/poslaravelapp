@@ -24,7 +24,7 @@ class FloristController extends BaseApiController
     public function listArrangements(Request $request): JsonResponse
     {
         $storeId = $request->user()->store_id;
-        $paginator = $this->service->listArrangements($storeId, $request->only(['is_template', 'search', 'per_page']));
+        $paginator = $this->service->listArrangements($storeId, $request->only(['is_template', 'occasion', 'search', 'per_page']));
 
         $data = $paginator->toArray();
         $data['data'] = FlowerArrangementResource::collection($paginator->items())->resolve();
@@ -73,11 +73,11 @@ class FloristController extends BaseApiController
 
     public function updateFreshnessLogStatus(Request $request, string $id): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|string|in:fresh,marked_down,disposed',
         ]);
 
-        $log = $this->service->updateFreshnessLogStatus($id, $request->user()->store_id, $request->validated()['status']);
+        $log = $this->service->updateFreshnessLogStatus($id, $request->user()->store_id, $validated['status']);
         return $this->success(new FlowerFreshnessLogResource($log), __('industry.freshness_log_updated'));
     }
 

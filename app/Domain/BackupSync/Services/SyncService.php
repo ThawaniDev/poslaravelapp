@@ -377,11 +377,11 @@ class SyncService
         $resolution = SyncConflictResolution::from($data['resolution']);
 
         // Apply the resolution
-        if ($resolution === SyncConflictResolution::AcceptLocal || $resolution->value === 'accept_local') {
+        if ($resolution === SyncConflictResolution::LocalWins) {
             $this->applyConflictResolution($conflict, $conflict->local_data);
-        } elseif ($resolution === SyncConflictResolution::AcceptCloud || $resolution->value === 'accept_cloud') {
+        } elseif ($resolution === SyncConflictResolution::CloudWins) {
             $this->applyConflictResolution($conflict, $conflict->cloud_data);
-        } elseif (isset($data['merged_data'])) {
+        } elseif ($resolution === SyncConflictResolution::Merged && isset($data['merged_data'])) {
             $this->applyConflictResolution($conflict, $data['merged_data']);
         }
 
@@ -545,10 +545,10 @@ class SyncService
 
         $existing = $modelClass::find($recordId);
         if ($existing) {
-            $existing->update($cleanData);
+            $existing->forceFill($cleanData)->save();
         } else {
             $cleanData['id'] = $recordId;
-            $modelClass::create($cleanData);
+            $modelClass::forceCreate($cleanData);
         }
     }
 

@@ -24,6 +24,11 @@ class DeliveryMenuSyncLog extends Model
         'items_synced',
         'items_failed',
         'error_details',
+        'products_count',
+        'triggered_by',
+        'sync_type',
+        'duration_seconds',
+        'error_message',
         'started_at',
         'completed_at',
     ];

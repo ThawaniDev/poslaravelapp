@@ -6,6 +6,7 @@ use App\Domain\IndustryBakery\Models\BakeryRecipe;
 use App\Domain\IndustryBakery\Models\ProductionSchedule;
 use App\Domain\IndustryBakery\Models\CustomCakeOrder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 
 class BakeryService
 {
@@ -14,7 +15,8 @@ class BakeryService
         $query = BakeryRecipe::where('store_id', $storeId);
 
         if (! empty($filters['search'])) {
-            $query->where('name', 'ilike', '%' . $filters['search'] . '%');
+            $like = DB::getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where('name', $like, '%' . $filters['search'] . '%');
         }
 
         return $query->orderBy('name')->paginate($filters['per_page'] ?? 15);
@@ -45,7 +47,7 @@ class BakeryService
             $query->where('status', $filters['status']);
         }
         if (! empty($filters['schedule_date'])) {
-            $query->where('schedule_date', $filters['schedule_date']);
+            $query->whereDate('schedule_date', $filters['schedule_date']);
         }
 
         return $query->orderByDesc('schedule_date')->paginate($filters['per_page'] ?? 15);

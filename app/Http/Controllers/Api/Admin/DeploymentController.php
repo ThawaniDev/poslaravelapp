@@ -23,13 +23,13 @@ class DeploymentController extends BaseApiController
         if ($request->has('is_active')) {
             $query->where('is_active', filter_var($request->is_active, FILTER_VALIDATE_BOOLEAN));
         }
-        if ($request->has('is_mandatory')) {
-            $query->where('is_mandatory', filter_var($request->is_mandatory, FILTER_VALIDATE_BOOLEAN));
+        if ($request->has('is_force_update')) {
+            $query->where('is_force_update', filter_var($request->is_force_update, FILTER_VALIDATE_BOOLEAN));
         }
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
-                $q->where('version', 'like', "%{$s}%")
+                $q->where('version_number', 'like', "%{$s}%")
                   ->orWhere('release_notes', 'like', "%{$s}%")
                   ->orWhere('release_notes_ar', 'like', "%{$s}%");
             });
@@ -44,29 +44,32 @@ class DeploymentController extends BaseApiController
     {
         $request->validate([
             'platform'           => 'required|string|in:windows,macos,ios,android',
-            'version'            => 'required|string|max:20',
+            'version_number'     => 'required|string|max:20',
+            'channel'            => 'nullable|string|in:stable,beta,testflight,internal_test',
             'build_number'       => 'nullable|string|max:20',
             'release_notes'      => 'nullable|string',
             'release_notes_ar'   => 'nullable|string',
-            'is_mandatory'       => 'nullable|boolean',
+            'is_force_update'    => 'nullable|boolean',
             'rollout_percentage' => 'nullable|integer|min:0|max:100',
-            'min_os_version'     => 'nullable|string|max:20',
-            'download_url'       => 'nullable|string|max:500',
+            'min_supported_version' => 'nullable|string|max:20',
+            'download_url'       => 'required|string|max:500',
+            'store_url'          => 'nullable|string|max:500',
         ]);
 
         $release = AppRelease::forceCreate([
-            'id'                 => Str::uuid()->toString(),
-            'platform'           => $request->platform,
-            'version'            => $request->version,
-            'build_number'       => $request->build_number,
-            'release_notes'      => $request->release_notes,
-            'release_notes_ar'   => $request->release_notes_ar,
-            'is_mandatory'       => $request->boolean('is_mandatory', false),
-            'is_active'          => false,
-            'rollout_percentage' => $request->integer('rollout_percentage', 100),
-            'min_os_version'     => $request->min_os_version,
-            'download_url'       => $request->download_url,
-            'released_by'        => $request->user('admin-api')?->id,
+            'id'                    => Str::uuid()->toString(),
+            'platform'              => $request->platform,
+            'version_number'        => $request->version_number,
+            'channel'               => $request->input('channel', 'stable'),
+            'build_number'          => $request->build_number,
+            'release_notes'         => $request->release_notes,
+            'release_notes_ar'      => $request->release_notes_ar,
+            'is_force_update'       => $request->boolean('is_force_update', false),
+            'is_active'             => false,
+            'rollout_percentage'    => $request->integer('rollout_percentage', 0),
+            'min_supported_version' => $request->min_supported_version,
+            'download_url'          => $request->download_url,
+            'store_url'             => $request->store_url,
         ]);
 
         return $this->created($release, 'Release created');
@@ -90,19 +93,20 @@ class DeploymentController extends BaseApiController
         }
 
         $request->validate([
-            'version'            => 'sometimes|string|max:20',
-            'build_number'       => 'nullable|string|max:20',
-            'release_notes'      => 'nullable|string',
-            'release_notes_ar'   => 'nullable|string',
-            'is_mandatory'       => 'nullable|boolean',
-            'rollout_percentage' => 'nullable|integer|min:0|max:100',
-            'min_os_version'     => 'nullable|string|max:20',
-            'download_url'       => 'nullable|string|max:500',
+            'version_number'        => 'sometimes|string|max:20',
+            'build_number'          => 'nullable|string|max:20',
+            'release_notes'         => 'nullable|string',
+            'release_notes_ar'      => 'nullable|string',
+            'is_force_update'       => 'nullable|boolean',
+            'rollout_percentage'    => 'nullable|integer|min:0|max:100',
+            'min_supported_version' => 'nullable|string|max:20',
+            'download_url'          => 'nullable|string|max:500',
+            'store_url'             => 'nullable|string|max:500',
         ]);
 
         $release->forceFill($request->only([
-            'version', 'build_number', 'release_notes', 'release_notes_ar',
-            'is_mandatory', 'rollout_percentage', 'min_os_version', 'download_url',
+            'version_number', 'build_number', 'release_notes', 'release_notes_ar',
+            'is_force_update', 'rollout_percentage', 'min_supported_version', 'download_url', 'store_url',
         ]))->save();
 
         return $this->success($release->fresh(), 'Release updated');
@@ -165,18 +169,13 @@ class DeploymentController extends BaseApiController
     public function listStats(Request $request, string $releaseId): JsonResponse
     {
         $release = AppRelease::find($releaseId);
-        if (!$release) {
-            return $this->notFound('Release not found');
-        }
+        if (!$release) return $this->notFound('Release not found');
 
         $query = AppUpdateStat::where('app_release_id', $releaseId)
-            ->orderByDesc('date');
+            ->orderByDesc('updated_at');
 
-        if ($request->filled('date_from')) {
-            $query->whereDate('date', '>=', $request->date_from);
-        }
-        if ($request->filled('date_to')) {
-            $query->whereDate('date', '<=', $request->date_to);
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
         }
 
         $stats = $query->paginate($request->integer('per_page', 15));
@@ -187,24 +186,20 @@ class DeploymentController extends BaseApiController
     public function recordStat(Request $request, string $releaseId): JsonResponse
     {
         $release = AppRelease::find($releaseId);
-        if (!$release) {
-            return $this->notFound('Release not found');
-        }
+        if (!$release) return $this->notFound('Release not found');
 
         $request->validate([
-            'date'             => 'required|date',
-            'total_installs'   => 'nullable|integer|min:0',
-            'total_updates'    => 'nullable|integer|min:0',
-            'total_rollbacks'  => 'nullable|integer|min:0',
+            'store_id'      => 'required|uuid',
+            'status'        => 'required|string|in:pending,downloading,installed,failed',
+            'error_message' => 'nullable|string',
         ]);
 
         $stat = AppUpdateStat::forceCreate([
             'id'               => Str::uuid()->toString(),
             'app_release_id'   => $releaseId,
-            'date'             => $request->date,
-            'total_installs'   => $request->integer('total_installs', 0),
-            'total_updates'    => $request->integer('total_updates', 0),
-            'total_rollbacks'  => $request->integer('total_rollbacks', 0),
+            'store_id'         => $request->store_id,
+            'status'           => $request->status,
+            'error_message'    => $request->error_message,
         ]);
 
         return $this->created($stat, 'Stat recorded');
@@ -213,18 +208,23 @@ class DeploymentController extends BaseApiController
     public function releaseSummary(string $releaseId): JsonResponse
     {
         $release = AppRelease::find($releaseId);
-        if (!$release) {
-            return $this->notFound('Release not found');
-        }
+        if (!$release) return $this->notFound('Release not found');
 
         $stats = AppUpdateStat::where('app_release_id', $releaseId);
 
+        $statusCounts = AppUpdateStat::where('app_release_id', $releaseId)
+            ->selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status')
+            ->toArray();
+
         $summary = [
-            'release'          => $release,
-            'total_installs'   => (int) $stats->sum('total_installs'),
-            'total_updates'    => (int) $stats->sum('total_updates'),
-            'total_rollbacks'  => (int) $stats->sum('total_rollbacks'),
-            'days_tracked'     => $stats->count(),
+            'release'        => $release,
+            'total_stores'   => (int) $stats->count(),
+            'installed'      => (int) ($statusCounts['installed'] ?? 0),
+            'pending'        => (int) ($statusCounts['pending'] ?? 0),
+            'downloading'    => (int) ($statusCounts['downloading'] ?? 0),
+            'failed'         => (int) ($statusCounts['failed'] ?? 0),
         ];
 
         return $this->success($summary, 'Release summary retrieved');
@@ -249,7 +249,7 @@ class DeploymentController extends BaseApiController
                 'total_releases' => $releases->count(),
                 'active_release' => $activeRelease ? [
                     'id'                 => $activeRelease->id,
-                    'version'            => $activeRelease->version,
+                    'version_number'     => $activeRelease->version_number,
                     'rollout_percentage' => $activeRelease->rollout_percentage,
                     'released_at'        => $activeRelease->released_at,
                 ] : null,

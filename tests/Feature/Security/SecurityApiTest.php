@@ -43,6 +43,13 @@ class SecurityApiTest extends TestCase
                 $t->boolean('require_pin_override_return')->default(true);
                 $t->boolean('require_pin_override_discount')->default(false);
                 $t->decimal('discount_override_threshold', 5, 2)->default(20.00);
+                $t->boolean('biometric_enabled')->default(false);
+                $t->integer('max_devices')->default(10);
+                $t->integer('audit_retention_days')->default(90);
+                $t->boolean('force_logout_on_role_change')->default(false);
+                $t->boolean('require_strong_password')->default(false);
+                $t->boolean('ip_restriction_enabled')->default(false);
+                $t->json('allowed_ip_ranges')->nullable();
                 $t->timestamps();
             });
         }
@@ -102,13 +109,15 @@ class SecurityApiTest extends TestCase
                 $t->uuid('store_id');
                 $t->uuid('user_id');
                 $t->uuid('device_id')->nullable();
+                $t->string('session_type')->nullable();
+                $t->string('status')->default('active');
                 $t->string('ip_address', 45)->nullable();
                 $t->string('user_agent')->nullable();
                 $t->timestamp('started_at')->nullable();
                 $t->timestamp('last_activity_at')->nullable();
                 $t->timestamp('ended_at')->nullable();
                 $t->string('end_reason')->nullable();
-                $t->boolean('is_active')->default(true);
+                $t->json('metadata')->nullable();
                 $t->timestamps();
             });
         }
@@ -776,7 +785,7 @@ class SecurityApiTest extends TestCase
         ], $this->auth());
 
         $res->assertStatus(201);
-        $this->assertTrue($res->json('data.is_active'));
+        $this->assertEquals('active', $res->json('data.status'));
         $this->assertEquals($this->userId, $res->json('data.user_id'));
     }
 
@@ -787,7 +796,7 @@ class SecurityApiTest extends TestCase
             'user_id' => $this->userId,
             'started_at' => now(),
             'last_activity_at' => now(),
-            'is_active' => true,
+            'status' => 'active',
         ]);
 
         $res = $this->putJson("/api/v2/security/sessions/{$session->id}/end", [
@@ -795,7 +804,7 @@ class SecurityApiTest extends TestCase
         ], $this->auth());
 
         $res->assertOk();
-        $this->assertFalse($res->json('data.is_active'));
+        $this->assertEquals('ended', $res->json('data.status'));
         $this->assertEquals('manual', $res->json('data.end_reason'));
     }
 
@@ -806,14 +815,14 @@ class SecurityApiTest extends TestCase
             'user_id' => $this->userId,
             'started_at' => now(),
             'last_activity_at' => now(),
-            'is_active' => true,
+            'status' => 'active',
         ]);
         SecuritySession::create([
             'store_id' => $this->storeId,
             'user_id' => $this->userId,
             'started_at' => now(),
             'last_activity_at' => now(),
-            'is_active' => true,
+            'status' => 'active',
         ]);
 
         $res = $this->postJson('/api/v2/security/sessions/end-all', [
@@ -833,7 +842,7 @@ class SecurityApiTest extends TestCase
             'user_id' => $this->userId,
             'started_at' => now()->subHours(1),
             'last_activity_at' => now()->subHours(1),
-            'is_active' => true,
+            'status' => 'active',
         ]);
 
         $res = $this->putJson("/api/v2/security/sessions/{$session->id}/heartbeat", [], $this->auth());
@@ -847,7 +856,7 @@ class SecurityApiTest extends TestCase
             'user_id' => $this->userId,
             'started_at' => now(),
             'last_activity_at' => now(),
-            'is_active' => true,
+            'status' => 'active',
         ]);
 
         $res = $this->getJson("/api/v2/security/sessions?store_id={$this->storeId}", $this->auth());
@@ -862,7 +871,7 @@ class SecurityApiTest extends TestCase
             'user_id' => $this->userId,
             'started_at' => now(),
             'last_activity_at' => now(),
-            'is_active' => true,
+            'status' => 'active',
         ]);
         SecuritySession::create([
             'store_id' => $this->storeId,
@@ -870,7 +879,7 @@ class SecurityApiTest extends TestCase
             'started_at' => now()->subHours(2),
             'last_activity_at' => now()->subHours(2),
             'ended_at' => now()->subHour(),
-            'is_active' => false,
+            'status' => 'ended',
             'end_reason' => 'expired',
         ]);
 

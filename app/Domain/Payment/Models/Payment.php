@@ -32,6 +32,7 @@ class Payment extends Model
         'gift_card_code',
         'coupon_code',
         'loyalty_points_used',
+        'created_at',
     ];
 
     protected $casts = [

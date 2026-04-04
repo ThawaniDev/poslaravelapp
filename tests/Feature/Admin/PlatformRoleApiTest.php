@@ -54,21 +54,21 @@ class PlatformRoleApiTest extends TestCase
         // Create permissions
         $this->storesView = AdminPermission::forceCreate([
             'name' => 'stores.view',
-            'group' => 'Stores',
+            'group' => 'stores',
             'description' => 'View store list and details',
             'created_at' => now(),
         ]);
 
         $this->storesEdit = AdminPermission::forceCreate([
             'name' => 'stores.edit',
-            'group' => 'Stores',
+            'group' => 'stores',
             'description' => 'Edit store settings',
             'created_at' => now(),
         ]);
 
         $this->billingView = AdminPermission::forceCreate([
             'name' => 'billing.view',
-            'group' => 'Billing',
+            'group' => 'billing',
             'description' => 'View billing data',
             'created_at' => now(),
         ]);
@@ -393,17 +393,17 @@ class PlatformRoleApiTest extends TestCase
             ->assertJsonPath('data.total', 3);
 
         $permissions = $response->json('data.permissions');
-        $this->assertArrayHasKey('Stores', $permissions);
-        $this->assertArrayHasKey('Billing', $permissions);
-        $this->assertCount(2, $permissions['Stores']);
-        $this->assertCount(1, $permissions['Billing']);
+        $this->assertArrayHasKey('stores', $permissions);
+        $this->assertArrayHasKey('billing', $permissions);
+        $this->assertCount(2, $permissions['stores']);
+        $this->assertCount(1, $permissions['billing']);
     }
 
     public function test_permissions_include_details(): void
     {
         $response = $this->getJson('/api/v2/admin/permissions');
 
-        $storePerms = $response->json('data.permissions.Stores');
+        $storePerms = $response->json('data.permissions.stores');
         $first = $storePerms[0];
         $this->assertArrayHasKey('id', $first);
         $this->assertArrayHasKey('name', $first);

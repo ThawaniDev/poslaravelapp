@@ -82,24 +82,36 @@ class FinancialSummaryService
         $totalExpenses = collect($expenses)->sum('total');
 
         // Hourly breakdown
-        $hourly = DB::table('payments')
+        $driver = DB::getDriverName();
+        if ($driver === 'sqlite') {
+            $hourExpr = "CAST(strftime('%H', payments.created_at) AS INTEGER)";
+        } else {
+            $hourExpr = 'EXTRACT(HOUR FROM payments.created_at)';
+        }
+
+        $hourlyData = DB::table('payments')
             ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
             ->where('transactions.store_id', $storeId)
             ->whereDate('payments.created_at', $date)
             ->selectRaw("
-                EXTRACT(HOUR FROM payments.created_at) as hour,
+                {$hourExpr} as hour,
                 COUNT(*) as count,
                 COALESCE(SUM(payments.amount), 0) as total
             ")
-            ->groupByRaw('EXTRACT(HOUR FROM payments.created_at)')
-            ->orderByRaw('EXTRACT(HOUR FROM payments.created_at)')
+            ->groupByRaw($hourExpr)
+            ->orderByRaw($hourExpr)
             ->get()
-            ->map(fn ($row) => [
-                'hour' => (int) $row->hour,
-                'count' => (int) $row->count,
-                'total' => round((float) $row->total, 2),
-            ])
-            ->toArray();
+            ->keyBy(fn ($row) => (int) $row->hour);
+
+        $hourly = [];
+        for ($h = 0; $h < 24; $h++) {
+            $row = $hourlyData->get($h);
+            $hourly[] = [
+                'hour' => $h,
+                'count' => $row ? (int) $row->count : 0,
+                'total' => $row ? round((float) $row->total, 2) : 0,
+            ];
+        }
 
         return [
             'date' => $date,

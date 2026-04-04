@@ -92,12 +92,13 @@ class RestaurantService
             $query->where('status', $filters['status']);
         }
         if (! empty($filters['reservation_date'])) {
-            $query->where('reservation_date', $filters['reservation_date']);
+            $query->whereDate('reservation_date', $filters['reservation_date']);
         }
         if (! empty($filters['search'])) {
-            $query->where(function ($q) use ($filters) {
-                $q->where('customer_name', 'ilike', '%' . $filters['search'] . '%')
-                  ->orWhere('customer_phone', 'ilike', '%' . $filters['search'] . '%');
+            $like = \Illuminate\Support\Facades\DB::getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $query->where(function ($q) use ($filters, $like) {
+                $q->where('customer_name', $like, '%' . $filters['search'] . '%')
+                  ->orWhere('customer_phone', $like, '%' . $filters['search'] . '%');
             });
         }
 

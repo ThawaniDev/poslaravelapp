@@ -236,13 +236,14 @@ class DeliveryService
             $query->where('platform', $filters['platform']);
         }
 
-        return $query->orderByDesc('created_at')
+        return $query->orderByDesc('received_at')
             ->paginate($filters['per_page'] ?? 15);
     }
 
     public function getStatusPushLogs(string $storeId, array $filters = []): LengthAwarePaginator
     {
-        $query = \App\Domain\DeliveryIntegration\Models\DeliveryStatusPushLog::where('store_id', $storeId);
+        $query = \App\Domain\DeliveryIntegration\Models\DeliveryStatusPushLog::query()
+            ->whereHas('deliveryOrderMapping', fn ($q) => $q->where('store_id', $storeId));
 
         if (! empty($filters['platform'])) {
             $query->where('platform', $filters['platform']);
@@ -251,7 +252,7 @@ class DeliveryService
             $query->where('delivery_order_mapping_id', $filters['order_id']);
         }
 
-        return $query->orderByDesc('created_at')
+        return $query->orderByDesc('pushed_at')
             ->paginate($filters['per_page'] ?? 15);
     }
 

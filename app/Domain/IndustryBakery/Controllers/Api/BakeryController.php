@@ -80,11 +80,11 @@ class BakeryController extends BaseApiController
 
     public function updateProductionScheduleStatus(Request $request, string $id): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|string|in:planned,in_progress,completed',
         ]);
 
-        $schedule = $this->service->updateProductionScheduleStatus($id, $request->user()->store_id, $request->validated()['status']);
+        $schedule = $this->service->updateProductionScheduleStatus($id, $request->user()->store_id, $validated['status']);
         return $this->success(new ProductionScheduleResource($schedule), __('industry.schedule_status_updated'));
     }
 
@@ -116,11 +116,11 @@ class BakeryController extends BaseApiController
 
     public function updateCustomCakeOrderStatus(Request $request, string $id): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|string|in:ordered,in_production,ready,delivered',
         ]);
 
-        $order = $this->service->updateCustomCakeOrderStatus($id, $request->user()->store_id, $request->validated()['status']);
+        $order = $this->service->updateCustomCakeOrderStatus($id, $request->user()->store_id, $validated['status']);
         return $this->success(new CustomCakeOrderResource($order), __('industry.cake_order_status_updated'));
     }
 }

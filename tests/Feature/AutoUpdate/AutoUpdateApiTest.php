@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\AutoUpdate;
 
+use App\Domain\AppUpdateManagement\Models\AppRelease;
 use App\Domain\Auth\Models\User;
 use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
@@ -47,6 +48,25 @@ class AutoUpdateApiTest extends TestCase
         ]);
 
         $this->token = $this->user->createToken('test', ['*'])->plainTextToken;
+
+        // Seed an active AppRelease
+        AppRelease::forceCreate([
+            'id' => \Illuminate\Support\Str::uuid()->toString(),
+            'version_number' => '1.0.0',
+            'platform' => 'ios',
+            'channel' => 'stable',
+            'download_url' => 'https://example.com/download/1.0.0',
+            'store_url' => 'https://apps.apple.com/app/test',
+            'build_number' => '100',
+            'submission_status' => 'approved',
+            'release_notes' => 'Initial release',
+            'release_notes_ar' => 'الإصدار الأول',
+            'is_force_update' => false,
+            'min_supported_version' => '0.9.0',
+            'rollout_percentage' => 100,
+            'is_active' => true,
+            'released_at' => now(),
+        ]);
     }
 
     // ─── Manifest ────────────────────────────────────────────
@@ -59,13 +79,14 @@ class AutoUpdateApiTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    'current_version',
-                    'latest_version',
-                    'has_update',
-                    'release_notes',
-                    'checksum',
+                    'version',
+                    'build_number',
+                    'platform',
+                    'channel',
                     'download_url',
-                    'is_required',
+                    'checksum',
+                    'is_force_update',
+                    'release_notes',
                 ],
             ]);
     }
@@ -82,9 +103,9 @@ class AutoUpdateApiTest extends TestCase
                 'data' => [
                     'version',
                     'download_url',
-                    'file_size',
                     'checksum',
-                    'supported_platforms',
+                    'build_number',
+                    'platform',
                 ],
             ]);
     }
@@ -99,11 +120,10 @@ class AutoUpdateApiTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    'channel',
-                    'current_version',
-                    'latest_version',
+                    'has_active_rollout',
+                    'version',
                     'rollout_percentage',
-                    'is_eligible',
+                    'is_force_update',
                 ],
             ]);
     }

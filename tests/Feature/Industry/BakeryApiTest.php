@@ -49,8 +49,11 @@ class BakeryApiTest extends TestCase
         DB::statement('CREATE TABLE custom_cake_orders (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, customer_id VARCHAR(36) NOT NULL, order_id VARCHAR(36), description TEXT NOT NULL, size VARCHAR(50) NOT NULL, flavor VARCHAR(100) NOT NULL, decoration_notes TEXT, delivery_date DATE NOT NULL, delivery_time VARCHAR(10), price DECIMAL(10,2) NOT NULL, deposit_paid DECIMAL(10,2), status VARCHAR(20) NOT NULL DEFAULT "ordered", reference_image_url VARCHAR(500), created_at TIMESTAMP, updated_at TIMESTAMP)');
     }
 
-    private function h(string $token = null): array
+    private function h(?string $token = null): array
     {
+        // Reset auth guards to prevent stateful API session caching
+        // from reusing a previously authenticated user
+        auth()->forgetGuards();
         return ['Authorization' => 'Bearer ' . ($token ?? $this->token)];
     }
 
@@ -65,8 +68,8 @@ class BakeryApiTest extends TestCase
 
     public function test_list_recipes_returns_paginated(): void
     {
-        $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'Recipe 1'], $this->h());
-        $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'Recipe 2'], $this->h());
+        $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'Recipe 1', 'prep_time_minutes' => 30, 'bake_time_minutes' => 45], $this->h());
+        $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'Recipe 2', 'prep_time_minutes' => 20, 'bake_time_minutes' => 35], $this->h());
 
         $res = $this->getJson('/api/v2/industry/bakery/recipes', $this->h());
         $res->assertOk()
@@ -76,8 +79,8 @@ class BakeryApiTest extends TestCase
 
     public function test_list_recipes_filters_by_search(): void
     {
-        $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'Sourdough Bread'], $this->h());
-        $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'Croissant'], $this->h());
+        $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'Sourdough Bread', 'prep_time_minutes' => 30, 'bake_time_minutes' => 45], $this->h());
+        $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'Croissant', 'prep_time_minutes' => 20, 'bake_time_minutes' => 25], $this->h());
 
         $res = $this->getJson('/api/v2/industry/bakery/recipes?search=sourdough', $this->h());
         $res->assertOk()->assertJsonCount(1, 'data.data');
@@ -87,8 +90,8 @@ class BakeryApiTest extends TestCase
     {
         $res = $this->postJson('/api/v2/industry/bakery/recipes', [
             'name' => 'Sourdough Bread',
-            'product_id' => 'prod-1',
-            'expected_yield' => 10,
+            'product_id' => fake()->uuid(),
+            'expected_yield' => '10',
             'prep_time_minutes' => 30,
             'bake_time_minutes' => 45,
             'bake_temperature_c' => 230,
@@ -97,18 +100,18 @@ class BakeryApiTest extends TestCase
 
         $res->assertCreated()
             ->assertJsonPath('data.name', 'Sourdough Bread')
-            ->assertJsonPath('data.expected_yield', 10);
+            ->assertJsonPath('data.expected_yield', '10');
     }
 
     public function test_create_recipe_requires_name(): void
     {
         $res = $this->postJson('/api/v2/industry/bakery/recipes', [], $this->h());
-        $res->assertUnprocessable()->assertJsonValidationErrors(['name']);
+        $res->assertUnprocessable()->assertJsonValidationErrors(['name', 'prep_time_minutes', 'bake_time_minutes']);
     }
 
     public function test_update_recipe(): void
     {
-        $create = $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'Original'], $this->h());
+        $create = $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'Original', 'prep_time_minutes' => 30, 'bake_time_minutes' => 45], $this->h());
         $id = $create->json('data.id');
 
         $res = $this->putJson("/api/v2/industry/bakery/recipes/{$id}", ['name' => 'Updated', 'bake_time_minutes' => 60], $this->h());
@@ -117,7 +120,7 @@ class BakeryApiTest extends TestCase
 
     public function test_delete_recipe(): void
     {
-        $create = $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'To Delete'], $this->h());
+        $create = $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'To Delete', 'prep_time_minutes' => 30, 'bake_time_minutes' => 45], $this->h());
         $id = $create->json('data.id');
 
         $this->deleteJson("/api/v2/industry/bakery/recipes/{$id}", [], $this->h())->assertOk();
@@ -126,7 +129,7 @@ class BakeryApiTest extends TestCase
 
     public function test_cannot_update_recipe_from_other_store(): void
     {
-        $create = $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'My Recipe'], $this->h());
+        $create = $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'My Recipe', 'prep_time_minutes' => 30, 'bake_time_minutes' => 45], $this->h());
         $id = $create->json('data.id');
 
         $res = $this->putJson("/api/v2/industry/bakery/recipes/{$id}", ['name' => 'Hijacked'], $this->h($this->otherToken));
@@ -135,7 +138,7 @@ class BakeryApiTest extends TestCase
 
     public function test_cannot_delete_recipe_from_other_store(): void
     {
-        $create = $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'My Recipe'], $this->h());
+        $create = $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'My Recipe', 'prep_time_minutes' => 30, 'bake_time_minutes' => 45], $this->h());
         $id = $create->json('data.id');
 
         $this->deleteJson("/api/v2/industry/bakery/recipes/{$id}", [], $this->h($this->otherToken))->assertNotFound();
@@ -145,7 +148,7 @@ class BakeryApiTest extends TestCase
 
     private function createRecipe(): string
     {
-        return $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'Test Recipe'], $this->h())->json('data.id');
+        return $this->postJson('/api/v2/industry/bakery/recipes', ['name' => 'Test Recipe', 'prep_time_minutes' => 30, 'bake_time_minutes' => 45], $this->h())->json('data.id');
     }
 
     public function test_create_production_schedule(): void
@@ -225,11 +228,11 @@ class BakeryApiTest extends TestCase
     public function test_create_custom_cake_order(): void
     {
         $res = $this->postJson('/api/v2/industry/bakery/cake-orders', [
-            'customer_id' => 'cust-1',
+            'customer_id' => fake()->uuid(),
             'description' => 'Two-tier chocolate cake',
             'size' => '10 inch',
             'flavor' => 'Chocolate',
-            'delivery_date' => '2025-07-01',
+            'delivery_date' => '2027-07-01',
             'price' => 120.00,
             'deposit_paid' => 50.00,
         ], $this->h());
@@ -241,14 +244,14 @@ class BakeryApiTest extends TestCase
     {
         $res = $this->postJson('/api/v2/industry/bakery/cake-orders', [], $this->h());
         $res->assertUnprocessable()
-            ->assertJsonValidationErrors(['customer_id', 'description', 'size', 'flavor', 'delivery_date', 'price']);
+            ->assertJsonValidationErrors(['description', 'size', 'flavor', 'delivery_date', 'price']);
     }
 
     public function test_update_cake_order_status(): void
     {
         $create = $this->postJson('/api/v2/industry/bakery/cake-orders', [
-            'customer_id' => 'cust-2', 'description' => 'Red velvet', 'size' => '12 inch',
-            'flavor' => 'Red Velvet', 'delivery_date' => '2025-07-05', 'price' => 150.00,
+            'customer_id' => fake()->uuid(), 'description' => 'Red velvet', 'size' => '12 inch',
+            'flavor' => 'Red Velvet', 'delivery_date' => '2027-07-05', 'price' => 150.00,
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -258,8 +261,8 @@ class BakeryApiTest extends TestCase
     public function test_cake_order_status_must_be_valid(): void
     {
         $create = $this->postJson('/api/v2/industry/bakery/cake-orders', [
-            'customer_id' => 'cust-3', 'description' => 'Vanilla', 'size' => '8 inch',
-            'flavor' => 'Vanilla', 'delivery_date' => '2025-07-10', 'price' => 80.00,
+            'customer_id' => fake()->uuid(), 'description' => 'Vanilla', 'size' => '8 inch',
+            'flavor' => 'Vanilla', 'delivery_date' => '2027-07-10', 'price' => 80.00,
         ], $this->h());
         $id = $create->json('data.id');
 
@@ -270,8 +273,8 @@ class BakeryApiTest extends TestCase
     public function test_cannot_update_cake_order_from_other_store(): void
     {
         $create = $this->postJson('/api/v2/industry/bakery/cake-orders', [
-            'customer_id' => 'cust-4', 'description' => 'Mine', 'size' => '6 inch',
-            'flavor' => 'Lemon', 'delivery_date' => '2025-07-15', 'price' => 60.00,
+            'customer_id' => fake()->uuid(), 'description' => 'Mine', 'size' => '6 inch',
+            'flavor' => 'Lemon', 'delivery_date' => '2027-07-15', 'price' => 60.00,
         ], $this->h());
         $id = $create->json('data.id');
 

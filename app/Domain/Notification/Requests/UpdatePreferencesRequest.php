@@ -18,6 +18,9 @@ class UpdatePreferencesRequest extends FormRequest
             'preferences.*' => ['nullable', 'array'],
             'quiet_hours_start' => ['nullable', 'date_format:H:i'],
             'quiet_hours_end' => ['nullable', 'date_format:H:i'],
+            'sound_enabled' => ['nullable', 'boolean'],
+            'email_digest' => ['nullable', 'string', 'in:none,daily,weekly'],
+            'per_category_channels' => ['nullable', 'array'],
         ];
     }
 }

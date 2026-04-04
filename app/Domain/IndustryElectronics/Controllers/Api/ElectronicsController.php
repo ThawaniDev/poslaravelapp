@@ -69,11 +69,11 @@ class ElectronicsController extends BaseApiController
 
     public function updateRepairJobStatus(Request $request, string $id): JsonResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|string|in:received,diagnosing,repairing,testing,ready,collected,cancelled',
         ]);
 
-        $job = $this->service->updateRepairJobStatus($id, $request->user()->store_id, $request->validated()['status']);
+        $job = $this->service->updateRepairJobStatus($id, $request->user()->store_id, $validated['status']);
         return $this->success(new RepairJobResource($job), __('industry.repair_job_status_updated'));
     }
 
