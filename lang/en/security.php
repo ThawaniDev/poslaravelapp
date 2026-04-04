@@ -10,6 +10,20 @@ return [
     'login_attempt_recorded' => 'Login attempt recorded.',
     'failed_count_fetched'  => 'Failed attempt count retrieved.',
 
+    // ── Enhanced API messages ────────────────────────────────
+    'audit_stats_fetched'       => 'Audit statistics retrieved.',
+    'device_heartbeat'          => 'Device heartbeat recorded.',
+    'login_stats_fetched'       => 'Login attempt statistics retrieved.',
+    'is_locked_out'             => 'Account is locked out.',
+    'not_locked_out'            => 'Account is not locked out.',
+    'session_started'           => 'Session started.',
+    'session_ended'             => 'Session ended.',
+    'sessions_ended'            => 'All sessions ended.',
+    'session_heartbeat'         => 'Session heartbeat recorded.',
+    'incident_created'          => 'Security incident created.',
+    'incident_resolved'         => 'Security incident resolved.',
+    'incidents_fetched'         => 'Security incidents retrieved.',
+
     // ── Admin API messages ───────────────────────────────────
     'overview_fetched'         => 'Security overview retrieved.',
     'alerts_fetched'           => 'Security alerts retrieved.',

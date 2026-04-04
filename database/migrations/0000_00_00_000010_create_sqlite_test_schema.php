@@ -806,6 +806,10 @@ return new class extends Migration
                 $table->timestamp('last_active_at')->nullable();
                 $table->boolean('is_active')->default(true);
                 $table->boolean('remote_wipe_requested')->default(false);
+                $table->string('ip_address', 45)->nullable();
+                $table->string('screen_resolution', 20)->nullable();
+                $table->string('last_known_location', 100)->nullable();
+                $table->string('device_type', 30)->default('desktop');
                 $table->timestamp('registered_at')->nullable();
                 $table->timestamps();
             });
@@ -825,6 +829,11 @@ return new class extends Migration
                 $table->string('severity', 20)->default('info');
                 $table->string('ip_address', 45)->nullable();
                 $table->uuid('device_id')->nullable();
+                $table->string('request_method', 10)->nullable();
+                $table->text('request_url')->nullable();
+                $table->integer('response_code')->nullable();
+                $table->integer('duration_ms')->nullable();
+                $table->text('user_agent')->nullable();
                 $table->timestamps();
             });
         }
@@ -839,6 +848,10 @@ return new class extends Migration
                 $table->boolean('is_successful')->default(false);
                 $table->string('ip_address', 45)->nullable();
                 $table->uuid('device_id')->nullable();
+                $table->text('user_agent')->nullable();
+                $table->string('failure_reason', 100)->nullable();
+                $table->string('geo_location', 100)->nullable();
+                $table->string('device_name', 100)->nullable();
                 $table->timestamp('attempted_at')->nullable();
                 $table->timestamps();
             });
@@ -860,6 +873,16 @@ return new class extends Migration
                 $table->boolean('require_pin_override_return')->default(true);
                 $table->boolean('require_pin_override_discount')->default(false);
                 $table->decimal('discount_override_threshold', 5, 2)->default(0);
+                $table->boolean('biometric_enabled')->default(true);
+                $table->integer('pin_expiry_days')->default(0);
+                $table->boolean('require_unique_pins')->default(true);
+                $table->integer('max_devices')->default(10);
+                $table->integer('audit_retention_days')->default(90);
+                $table->boolean('force_logout_on_role_change')->default(true);
+                $table->integer('password_expiry_days')->default(0);
+                $table->boolean('require_strong_password')->default(false);
+                $table->boolean('ip_restriction_enabled')->default(false);
+                $table->json('allowed_ip_ranges')->nullable();
                 $table->timestamps();
             });
         }
@@ -2727,6 +2750,11 @@ return new class extends Migration
             $table->string('reference_type', 50)->nullable();
             $table->uuid('reference_id')->nullable();
             $table->boolean('is_read')->default(false);
+            $table->string('priority', 10)->default('normal');
+            $table->timestamp('expires_at')->nullable();
+            $table->json('metadata')->nullable();
+            $table->string('channel', 20)->default('in_app');
+            $table->timestamp('read_at')->nullable();
             $table->timestamp('created_at')->nullable();
         });
 
@@ -2736,6 +2764,9 @@ return new class extends Migration
             $table->json('preferences_json')->nullable();
             $table->time('quiet_hours_start')->nullable();
             $table->time('quiet_hours_end')->nullable();
+            $table->json('per_category_channels')->nullable();
+            $table->boolean('sound_enabled')->default(true);
+            $table->string('email_digest', 20)->default('none');
             $table->timestamp('updated_at')->nullable();
         });
 
@@ -2784,8 +2815,120 @@ return new class extends Migration
             $table->integer('latency_ms')->nullable();
             $table->boolean('is_fallback')->default(false);
             $table->json('attempted_providers')->nullable();
+            $table->integer('retry_count')->default(0);
+            $table->timestamp('next_retry_at')->nullable();
+            $table->json('request_payload')->nullable();
+            $table->json('response_payload')->nullable();
             $table->timestamp('created_at')->useCurrent();
         });
+
+        // ─── Notification Schedules ─────────────────────────
+        if (!Schema::hasTable('notification_schedules')) {
+            Schema::create('notification_schedules', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->string('event_key', 50);
+                $table->string('channel', 20);
+                $table->uuid('recipient_user_id')->nullable();
+                $table->string('recipient_group', 50)->nullable();
+                $table->json('variables')->nullable();
+                $table->string('schedule_type', 20)->default('once');
+                $table->timestamp('scheduled_at');
+                $table->string('cron_expression', 100)->nullable();
+                $table->string('timezone', 50)->default('Asia/Riyadh');
+                $table->boolean('is_active')->default(true);
+                $table->timestamp('last_sent_at')->nullable();
+                $table->timestamp('next_run_at')->nullable();
+                $table->uuid('created_by')->nullable();
+                $table->timestamps();
+            });
+        }
+
+        // ─── Notification Batches ───────────────────────────
+        if (!Schema::hasTable('notification_batches')) {
+            Schema::create('notification_batches', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id')->nullable();
+                $table->string('event_key', 50);
+                $table->string('channel', 20);
+                $table->integer('total_recipients')->default(0);
+                $table->integer('sent_count')->default(0);
+                $table->integer('failed_count')->default(0);
+                $table->string('status', 20)->default('pending');
+                $table->json('metadata')->nullable();
+                $table->timestamp('started_at')->nullable();
+                $table->timestamp('completed_at')->nullable();
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        // ─── Notification Sound Configs ─────────────────────
+        if (!Schema::hasTable('notification_sound_configs')) {
+            Schema::create('notification_sound_configs', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->string('event_key', 50);
+                $table->boolean('is_enabled')->default(true);
+                $table->string('sound_file', 255)->default('default');
+                $table->decimal('volume', 3, 2)->default(0.80);
+                $table->integer('repeat_count')->default(1);
+                $table->integer('repeat_interval_seconds')->default(5);
+                $table->timestamps();
+            });
+        }
+
+        // ─── Notification Read Receipts ─────────────────────
+        if (!Schema::hasTable('notification_read_receipts')) {
+            Schema::create('notification_read_receipts', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('notification_id');
+                $table->uuid('user_id');
+                $table->timestamp('read_at')->useCurrent();
+                $table->string('read_via', 30)->default('click');
+                $table->string('device_type', 20)->nullable();
+            });
+        }
+
+        // ─── Security Sessions (Provider-side) ──────────────
+        if (!Schema::hasTable('security_sessions')) {
+            Schema::create('security_sessions', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->uuid('user_id');
+                $table->uuid('device_id')->nullable();
+                $table->string('session_type', 20)->default('shift');
+                $table->string('status', 20)->default('active');
+                $table->string('ip_address', 45)->nullable();
+                $table->text('user_agent')->nullable();
+                $table->timestamp('started_at')->useCurrent();
+                $table->timestamp('last_activity_at')->nullable();
+                $table->timestamp('ended_at')->nullable();
+                $table->string('end_reason', 50)->nullable();
+                $table->json('metadata')->nullable();
+            });
+        }
+
+        // ─── Security Incidents (Provider-side) ─────────────
+        if (!Schema::hasTable('security_incidents')) {
+            Schema::create('security_incidents', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->string('incident_type', 50);
+                $table->string('severity', 20)->default('medium');
+                $table->string('title', 255);
+                $table->text('description')->nullable();
+                $table->string('source_ip', 45)->nullable();
+                $table->uuid('user_id')->nullable();
+                $table->uuid('device_id')->nullable();
+                $table->string('status', 20)->default('open');
+                $table->uuid('resolved_by')->nullable();
+                $table->timestamp('resolved_at')->nullable();
+                $table->text('resolution_notes')->nullable();
+                $table->boolean('auto_detected')->default(false);
+                $table->json('metadata')->nullable();
+                $table->timestamps();
+            });
+        }
 
         // ─── Accounting Integration ─────────────────────────
         Schema::create('store_accounting_configs', function (Blueprint $table) {
@@ -3314,6 +3457,7 @@ return new class extends Migration
             // Accounting integration
             'auto_export_configs', 'accounting_exports', 'account_mappings', 'store_accounting_configs',
             // Notifications
+            'notification_read_receipts', 'notification_sound_configs', 'notification_batches', 'notification_schedules',
             'notification_delivery_logs', 'notification_provider_status',
             'notification_events_log', 'fcm_tokens', 'notification_preferences', 'notifications_custom',
             // Reports & Analytics
@@ -3354,6 +3498,7 @@ return new class extends Migration
             'store_prices', 'product_barcodes', 'products', 'categories',
             // Platform Admin tables
             'store_health_snapshots', 'feature_adoption_stats', 'platform_plan_stats', 'platform_daily_stats',
+            'security_incidents', 'security_sessions',
             'security_alerts', 'security_policies', 'security_audit_log', 'login_attempts', 'device_registrations',
             'admin_sessions', 'admin_trusted_devices', 'admin_ip_blocklist', 'admin_ip_allowlist',
             'app_update_stats', 'app_releases',

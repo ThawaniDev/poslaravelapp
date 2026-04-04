@@ -170,6 +170,14 @@ class PosLayoutService
     }
 
     /**
+     * Get a single receipt template by ID.
+     */
+    public function getReceiptTemplateById(string $id): ?ReceiptLayoutTemplate
+    {
+        return ReceiptLayoutTemplate::find($id);
+    }
+
+    /**
      * Get CFD themes available for a plan.
      */
     public function getAvailableCfdThemes(?string $planId = null): Collection
@@ -192,6 +200,14 @@ class PosLayoutService
     public function getCfdThemeBySlug(string $slug): ?CfdTheme
     {
         return CfdTheme::where('slug', $slug)->where('is_active', true)->first();
+    }
+
+    /**
+     * Get a single CFD theme by ID.
+     */
+    public function getCfdThemeById(string $id): ?CfdTheme
+    {
+        return CfdTheme::find($id);
     }
 
     /**
@@ -223,10 +239,13 @@ class PosLayoutService
     /**
      * Get label layout templates for a business type slug + plan.
      */
-    public function getAvailableLabelTemplates(string $businessTypeSlug, ?string $planId = null): Collection
+    public function getAvailableLabelTemplates(?string $businessTypeSlug = null, ?string $planId = null): Collection
     {
-        $query = LabelLayoutTemplate::where('is_active', true)
-            ->whereHas('businessTypes', fn ($q) => $q->where('business_types.slug', $businessTypeSlug));
+        $query = LabelLayoutTemplate::where('is_active', true);
+
+        if ($businessTypeSlug) {
+            $query->whereHas('businessTypes', fn ($q) => $q->where('business_types.slug', $businessTypeSlug));
+        }
 
         if ($planId) {
             $query->where(function ($q) use ($planId) {
@@ -244,6 +263,14 @@ class PosLayoutService
     public function getLabelTemplateBySlug(string $slug): ?LabelLayoutTemplate
     {
         return LabelLayoutTemplate::where('slug', $slug)->where('is_active', true)->first();
+    }
+
+    /**
+     * Get a single label template by ID.
+     */
+    public function getLabelTemplateById(string $id): ?LabelLayoutTemplate
+    {
+        return LabelLayoutTemplate::find($id);
     }
 
     // ─── User Preference Management ─────────────────────────

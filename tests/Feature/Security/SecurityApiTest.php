@@ -8,7 +8,9 @@ use App\Domain\Core\Models\Store;
 use App\Domain\Security\Models\DeviceRegistration;
 use App\Domain\Security\Models\LoginAttempt;
 use App\Domain\Security\Models\SecurityAuditLog;
+use App\Domain\Security\Models\SecurityIncident;
 use App\Domain\Security\Models\SecurityPolicy;
+use App\Domain\Security\Models\SecuritySession;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -19,6 +21,7 @@ class SecurityApiTest extends TestCase
 
     private string $token;
     private string $storeId;
+    private string $userId;
 
     protected function setUp(): void
     {
@@ -86,6 +89,47 @@ class SecurityApiTest extends TestCase
                 $t->string('ip_address', 45)->nullable();
                 $t->string('device_id')->nullable();
                 $t->timestamp('attempted_at')->nullable();
+                $t->string('user_agent')->nullable();
+                $t->string('failure_reason')->nullable();
+                $t->json('geo_location')->nullable();
+                $t->string('device_name')->nullable();
+            });
+        }
+
+        if (! Schema::hasTable('security_sessions')) {
+            Schema::create('security_sessions', function ($t) {
+                $t->uuid('id')->primary();
+                $t->uuid('store_id');
+                $t->uuid('user_id');
+                $t->uuid('device_id')->nullable();
+                $t->string('ip_address', 45)->nullable();
+                $t->string('user_agent')->nullable();
+                $t->timestamp('started_at')->nullable();
+                $t->timestamp('last_activity_at')->nullable();
+                $t->timestamp('ended_at')->nullable();
+                $t->string('end_reason')->nullable();
+                $t->boolean('is_active')->default(true);
+                $t->timestamps();
+            });
+        }
+
+        if (! Schema::hasTable('security_incidents')) {
+            Schema::create('security_incidents', function ($t) {
+                $t->uuid('id')->primary();
+                $t->uuid('store_id');
+                $t->string('incident_type');
+                $t->string('severity');
+                $t->string('title');
+                $t->text('description')->nullable();
+                $t->uuid('user_id')->nullable();
+                $t->uuid('device_id')->nullable();
+                $t->string('ip_address', 45)->nullable();
+                $t->json('metadata')->nullable();
+                $t->string('status')->default('open');
+                $t->timestamp('resolved_at')->nullable();
+                $t->uuid('resolved_by')->nullable();
+                $t->text('resolution_notes')->nullable();
+                $t->timestamps();
             });
         }
 
@@ -103,6 +147,7 @@ class SecurityApiTest extends TestCase
             'store_id' => $store->id,
             'password_hash' => bcrypt('password'),
         ]);
+        $this->userId = $user->id;
         $this->token = $user->createToken('test', ['*'])->plainTextToken;
     }
 
@@ -568,5 +613,449 @@ class SecurityApiTest extends TestCase
         $this->getJson("/api/v2/security/policy?store_id={$this->storeId}", $this->auth())->assertOk();
 
         $this->assertEquals(1, SecurityPolicy::where('store_id', $this->storeId)->count());
+    }
+
+    // ─── Overview ───────────────────────────────────────────────
+
+    public function test_get_security_overview(): void
+    {
+        $res = $this->getJson("/api/v2/security/overview?store_id={$this->storeId}", $this->auth());
+        $res->assertOk();
+
+        $data = $res->json('data');
+        $this->assertArrayHasKey('policy', $data);
+        $this->assertArrayHasKey('login_stats', $data);
+        $this->assertArrayHasKey('audit_stats', $data);
+        $this->assertArrayHasKey('active_devices', $data);
+        $this->assertArrayHasKey('active_sessions', $data);
+        $this->assertArrayHasKey('open_incidents', $data);
+        $this->assertArrayHasKey('critical_audits_7d', $data);
+    }
+
+    public function test_overview_requires_store(): void
+    {
+        $res = $this->getJson('/api/v2/security/overview', $this->auth());
+        $res->assertStatus(422);
+    }
+
+    // ─── Audit Stats ────────────────────────────────────────────
+
+    public function test_audit_stats(): void
+    {
+        SecurityAuditLog::create([
+            'store_id' => $this->storeId,
+            'user_type' => 'staff',
+            'action' => 'login',
+            'severity' => 'info',
+            'created_at' => now(),
+        ]);
+        SecurityAuditLog::create([
+            'store_id' => $this->storeId,
+            'user_type' => 'staff',
+            'action' => 'failed_login',
+            'severity' => 'warning',
+            'created_at' => now(),
+        ]);
+
+        $res = $this->getJson("/api/v2/security/audit-stats?store_id={$this->storeId}", $this->auth());
+        $res->assertOk();
+
+        $data = $res->json('data');
+        $this->assertEquals(2, $data['total']);
+        $this->assertArrayHasKey('by_severity', $data);
+        $this->assertArrayHasKey('by_action', $data);
+    }
+
+    // ─── Device Show & Heartbeat ────────────────────────────────
+
+    public function test_show_device(): void
+    {
+        $device = DeviceRegistration::create([
+            'store_id' => $this->storeId,
+            'device_name' => 'Show Terminal',
+            'hardware_id' => 'HW-SHOW',
+            'is_active' => true,
+            'last_active_at' => now(),
+            'registered_at' => now(),
+        ]);
+
+        $res = $this->getJson("/api/v2/security/devices/{$device->id}", $this->auth());
+        $res->assertOk();
+        $this->assertEquals('Show Terminal', $res->json('data.device_name'));
+    }
+
+    public function test_device_heartbeat(): void
+    {
+        $device = DeviceRegistration::create([
+            'store_id' => $this->storeId,
+            'device_name' => 'Heartbeat Terminal',
+            'hardware_id' => 'HW-HB',
+            'is_active' => true,
+            'last_active_at' => now()->subHours(2),
+            'registered_at' => now(),
+        ]);
+
+        $res = $this->putJson("/api/v2/security/devices/{$device->id}/heartbeat", [], $this->auth());
+        $res->assertOk();
+    }
+
+    // ─── Lockout Check ──────────────────────────────────────────
+
+    public function test_lockout_check(): void
+    {
+        // Set policy and create failed attempts
+        $this->getJson("/api/v2/security/policy?store_id={$this->storeId}", $this->auth());
+
+        for ($i = 0; $i < 5; $i++) {
+            LoginAttempt::create([
+                'store_id' => $this->storeId,
+                'user_identifier' => 'locked@test.com',
+                'attempt_type' => 'pin',
+                'is_successful' => false,
+                'attempted_at' => now(),
+            ]);
+        }
+
+        $res = $this->getJson(
+            "/api/v2/security/login-attempts/is-locked-out?store_id={$this->storeId}&user_identifier=locked@test.com",
+            $this->auth(),
+        );
+        $res->assertOk();
+        $this->assertTrue($res->json('data.is_locked_out'));
+    }
+
+    public function test_not_locked_out(): void
+    {
+        $this->getJson("/api/v2/security/policy?store_id={$this->storeId}", $this->auth());
+
+        $res = $this->getJson(
+            "/api/v2/security/login-attempts/is-locked-out?store_id={$this->storeId}&user_identifier=good@test.com",
+            $this->auth(),
+        );
+        $res->assertOk();
+        $this->assertFalse($res->json('data.is_locked_out'));
+    }
+
+    // ─── Login Attempt Stats ────────────────────────────────────
+
+    public function test_login_attempt_stats(): void
+    {
+        LoginAttempt::create([
+            'store_id' => $this->storeId,
+            'user_identifier' => 'u1',
+            'attempt_type' => 'pin',
+            'is_successful' => true,
+            'attempted_at' => now(),
+        ]);
+        LoginAttempt::create([
+            'store_id' => $this->storeId,
+            'user_identifier' => 'u2',
+            'attempt_type' => 'pin',
+            'is_successful' => false,
+            'attempted_at' => now(),
+        ]);
+
+        $res = $this->getJson("/api/v2/security/login-attempts/stats?store_id={$this->storeId}", $this->auth());
+        $res->assertOk();
+
+        $data = $res->json('data');
+        $this->assertEquals(2, $data['total']);
+        $this->assertEquals(1, $data['successful']);
+        $this->assertEquals(1, $data['failed']);
+        $this->assertEquals(50.0, $data['success_rate']);
+    }
+
+    // ─── Session Tests ──────────────────────────────────────────
+
+    public function test_start_session(): void
+    {
+        $res = $this->postJson('/api/v2/security/sessions', [
+            'store_id' => $this->storeId,
+            'ip_address' => '192.168.1.100',
+            'user_agent' => 'POS/2.0',
+        ], $this->auth());
+
+        $res->assertStatus(201);
+        $this->assertTrue($res->json('data.is_active'));
+        $this->assertEquals($this->userId, $res->json('data.user_id'));
+    }
+
+    public function test_end_session(): void
+    {
+        $session = SecuritySession::create([
+            'store_id' => $this->storeId,
+            'user_id' => $this->userId,
+            'started_at' => now(),
+            'last_activity_at' => now(),
+            'is_active' => true,
+        ]);
+
+        $res = $this->putJson("/api/v2/security/sessions/{$session->id}/end", [
+            'reason' => 'manual',
+        ], $this->auth());
+
+        $res->assertOk();
+        $this->assertFalse($res->json('data.is_active'));
+        $this->assertEquals('manual', $res->json('data.end_reason'));
+    }
+
+    public function test_end_all_sessions(): void
+    {
+        SecuritySession::create([
+            'store_id' => $this->storeId,
+            'user_id' => $this->userId,
+            'started_at' => now(),
+            'last_activity_at' => now(),
+            'is_active' => true,
+        ]);
+        SecuritySession::create([
+            'store_id' => $this->storeId,
+            'user_id' => $this->userId,
+            'started_at' => now(),
+            'last_activity_at' => now(),
+            'is_active' => true,
+        ]);
+
+        $res = $this->postJson('/api/v2/security/sessions/end-all', [
+            'store_id' => $this->storeId,
+            'user_id' => $this->userId,
+            'reason' => 'force_logout',
+        ], $this->auth());
+
+        $res->assertOk();
+        $this->assertEquals(2, $res->json('data.ended_count'));
+    }
+
+    public function test_session_heartbeat(): void
+    {
+        $session = SecuritySession::create([
+            'store_id' => $this->storeId,
+            'user_id' => $this->userId,
+            'started_at' => now()->subHours(1),
+            'last_activity_at' => now()->subHours(1),
+            'is_active' => true,
+        ]);
+
+        $res = $this->putJson("/api/v2/security/sessions/{$session->id}/heartbeat", [], $this->auth());
+        $res->assertOk();
+    }
+
+    public function test_list_sessions(): void
+    {
+        SecuritySession::create([
+            'store_id' => $this->storeId,
+            'user_id' => $this->userId,
+            'started_at' => now(),
+            'last_activity_at' => now(),
+            'is_active' => true,
+        ]);
+
+        $res = $this->getJson("/api/v2/security/sessions?store_id={$this->storeId}", $this->auth());
+        $res->assertOk();
+        $this->assertCount(1, $res->json('data'));
+    }
+
+    public function test_list_sessions_active_only(): void
+    {
+        SecuritySession::create([
+            'store_id' => $this->storeId,
+            'user_id' => $this->userId,
+            'started_at' => now(),
+            'last_activity_at' => now(),
+            'is_active' => true,
+        ]);
+        SecuritySession::create([
+            'store_id' => $this->storeId,
+            'user_id' => $this->userId,
+            'started_at' => now()->subHours(2),
+            'last_activity_at' => now()->subHours(2),
+            'ended_at' => now()->subHour(),
+            'is_active' => false,
+            'end_reason' => 'expired',
+        ]);
+
+        $res = $this->getJson("/api/v2/security/sessions?store_id={$this->storeId}&active_only=true", $this->auth());
+        $res->assertOk();
+        $this->assertCount(1, $res->json('data'));
+    }
+
+    // ─── Incident Tests ─────────────────────────────────────────
+
+    public function test_create_incident(): void
+    {
+        $res = $this->postJson('/api/v2/security/incidents', [
+            'store_id' => $this->storeId,
+            'incident_type' => 'brute_force',
+            'severity' => 'high',
+            'title' => 'Multiple failed login attempts detected',
+            'description' => 'IP 10.0.0.5 had 20 failed attempts in 5 minutes',
+            'ip_address' => '10.0.0.5',
+            'metadata' => ['attempt_count' => 20, 'window_minutes' => 5],
+        ], $this->auth());
+
+        $res->assertStatus(201);
+        $this->assertEquals('open', $res->json('data.status'));
+        $this->assertEquals('high', $res->json('data.severity'));
+        $this->assertEquals('brute_force', $res->json('data.incident_type'));
+    }
+
+    public function test_resolve_incident(): void
+    {
+        $incident = SecurityIncident::create([
+            'store_id' => $this->storeId,
+            'incident_type' => 'unauthorized_access',
+            'severity' => 'critical',
+            'title' => 'Unauthorized access attempt',
+            'status' => 'open',
+        ]);
+
+        $res = $this->putJson("/api/v2/security/incidents/{$incident->id}/resolve", [
+            'resolution_notes' => 'False positive — authorized admin from new IP',
+        ], $this->auth());
+
+        $res->assertOk();
+        $this->assertEquals('resolved', $res->json('data.status'));
+        $this->assertNotNull($res->json('data.resolved_at'));
+    }
+
+    public function test_list_incidents(): void
+    {
+        SecurityIncident::create([
+            'store_id' => $this->storeId,
+            'incident_type' => 'brute_force',
+            'severity' => 'high',
+            'title' => 'First',
+            'status' => 'open',
+        ]);
+        SecurityIncident::create([
+            'store_id' => $this->storeId,
+            'incident_type' => 'device_theft',
+            'severity' => 'critical',
+            'title' => 'Second',
+            'status' => 'resolved',
+            'resolved_at' => now(),
+        ]);
+
+        $res = $this->getJson("/api/v2/security/incidents?store_id={$this->storeId}", $this->auth());
+        $res->assertOk();
+        $this->assertCount(2, $res->json('data.data'));
+    }
+
+    public function test_list_incidents_filter_by_status(): void
+    {
+        SecurityIncident::create([
+            'store_id' => $this->storeId,
+            'incident_type' => 'brute_force',
+            'severity' => 'high',
+            'title' => 'Open',
+            'status' => 'open',
+        ]);
+        SecurityIncident::create([
+            'store_id' => $this->storeId,
+            'incident_type' => 'device_theft',
+            'severity' => 'high',
+            'title' => 'Resolved',
+            'status' => 'resolved',
+        ]);
+
+        $res = $this->getJson("/api/v2/security/incidents?store_id={$this->storeId}&status=open", $this->auth());
+        $res->assertOk();
+        $this->assertCount(1, $res->json('data.data'));
+        $this->assertEquals('Open', $res->json('data.data.0.title'));
+    }
+
+    // ─── New Endpoints Auth ─────────────────────────────────────
+
+    public function test_new_endpoints_require_auth(): void
+    {
+        $this->getJson("/api/v2/security/overview?store_id={$this->storeId}")->assertUnauthorized();
+        $this->getJson("/api/v2/security/audit-stats?store_id={$this->storeId}")->assertUnauthorized();
+        $this->getJson("/api/v2/security/login-attempts/is-locked-out?store_id={$this->storeId}&user_identifier=x")->assertUnauthorized();
+        $this->getJson("/api/v2/security/login-attempts/stats?store_id={$this->storeId}")->assertUnauthorized();
+        $this->getJson("/api/v2/security/sessions?store_id={$this->storeId}")->assertUnauthorized();
+        $this->postJson('/api/v2/security/sessions')->assertUnauthorized();
+        $this->getJson("/api/v2/security/incidents?store_id={$this->storeId}")->assertUnauthorized();
+        $this->postJson('/api/v2/security/incidents')->assertUnauthorized();
+    }
+
+    // ─── Enhanced Policy ────────────────────────────────────────
+
+    public function test_update_policy_with_new_fields(): void
+    {
+        $this->getJson("/api/v2/security/policy?store_id={$this->storeId}", $this->auth());
+
+        $res = $this->putJson("/api/v2/security/policy?store_id={$this->storeId}", [
+            'biometric_enabled' => true,
+            'max_devices' => 5,
+            'audit_retention_days' => 180,
+            'force_logout_on_role_change' => true,
+            'require_strong_password' => true,
+            'ip_restriction_enabled' => true,
+            'allowed_ip_ranges' => ['192.168.1.0/24', '10.0.0.0/8'],
+        ], $this->auth());
+
+        $res->assertOk();
+        $data = $res->json('data');
+        $this->assertTrue($data['biometric_enabled']);
+        $this->assertEquals(5, $data['max_devices']);
+        $this->assertEquals(180, $data['audit_retention_days']);
+        $this->assertTrue($data['require_strong_password']);
+    }
+
+    // ─── Full Security Workflow ─────────────────────────────────
+
+    public function test_full_security_workflow(): void
+    {
+        // 1. Get policy
+        $this->getJson("/api/v2/security/policy?store_id={$this->storeId}", $this->auth())
+            ->assertOk();
+
+        // 2. Register device
+        $device = $this->postJson('/api/v2/security/devices', [
+            'store_id' => $this->storeId,
+            'device_name' => 'Workflow Terminal',
+            'hardware_id' => 'HW-FLOW',
+        ], $this->auth());
+        $device->assertStatus(201);
+        $deviceId = $device->json('data.id');
+
+        // 3. Start session
+        $session = $this->postJson('/api/v2/security/sessions', [
+            'store_id' => $this->storeId,
+            'device_id' => $deviceId,
+            'ip_address' => '192.168.1.50',
+        ], $this->auth());
+        $session->assertStatus(201);
+        $sessionId = $session->json('data.id');
+
+        // 4. Record successful login
+        $this->postJson('/api/v2/security/login-attempts', [
+            'store_id' => $this->storeId,
+            'user_identifier' => 'security@test.com',
+            'attempt_type' => 'pin',
+            'is_successful' => true,
+        ], $this->auth())->assertStatus(201);
+
+        // 5. Record audit action
+        $this->postJson('/api/v2/security/audit-logs', [
+            'store_id' => $this->storeId,
+            'user_type' => 'staff',
+            'action' => 'login',
+            'severity' => 'info',
+        ], $this->auth())->assertStatus(201);
+
+        // 6. Get overview
+        $overview = $this->getJson("/api/v2/security/overview?store_id={$this->storeId}", $this->auth());
+        $overview->assertOk();
+        $this->assertEquals(1, $overview->json('data.active_devices'));
+        $this->assertEquals(1, $overview->json('data.active_sessions'));
+
+        // 7. End session
+        $this->putJson("/api/v2/security/sessions/{$sessionId}/end", ['reason' => 'logout'], $this->auth())
+            ->assertOk();
+
+        // 8. Verify session count updated
+        $overview2 = $this->getJson("/api/v2/security/overview?store_id={$this->storeId}", $this->auth());
+        $this->assertEquals(0, $overview2->json('data.active_sessions'));
     }
 }

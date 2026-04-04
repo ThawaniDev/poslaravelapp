@@ -6,6 +6,13 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->prefix('companion')->group(function () {
     Route::get('/quick-stats', [CompanionController::class, 'quickStats']);
     Route::get('/summary', [CompanionController::class, 'mobileSummary']);
+    Route::get('/dashboard', [CompanionController::class, 'dashboard']);
+    Route::get('/branches', [CompanionController::class, 'branches']);
+    Route::get('/sales/summary', [CompanionController::class, 'salesSummary']);
+    Route::get('/orders/active', [CompanionController::class, 'activeOrders']);
+    Route::get('/inventory/alerts', [CompanionController::class, 'inventoryAlerts']);
+    Route::get('/staff/active', [CompanionController::class, 'activeStaff']);
+    Route::put('/store/availability', [CompanionController::class, 'toggleAvailability']);
     Route::post('/sessions', [CompanionController::class, 'registerSession']);
     Route::post('/sessions/{sessionId}/end', [CompanionController::class, 'endSession']);
     Route::get('/sessions', [CompanionController::class, 'listSessions']);

@@ -9,6 +9,7 @@ use App\Domain\ContentOnboarding\Enums\LabelType;
 use App\Domain\Subscription\Models\SubscriptionPlan;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -42,7 +43,6 @@ class LabelLayoutTemplate extends Model
 
     protected $casts = [
         'label_type' => LabelType::class,
-        'barcode_type' => BarcodeType::class,
         'default_font_size' => FontSize::class,
         'border_style' => BorderStyle::class,
         'barcode_position' => 'array',
@@ -51,6 +51,14 @@ class LabelLayoutTemplate extends Model
         'show_border' => 'boolean',
         'is_active' => 'boolean',
     ];
+
+    protected function barcodeType(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value ? BarcodeType::fromInsensitive($value) : null,
+            set: fn ($value) => $value instanceof BarcodeType ? $value->value : $value,
+        );
+    }
 
     public function labelTemplateBusinessTypes(): HasMany
     {

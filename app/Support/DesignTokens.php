@@ -75,7 +75,7 @@ final class DesignTokens
 
     // ─── Currency ──────────────────────────────────────────
     public const CURRENCY_CODE    = 'SAR';
-    public const CURRENCY_SYMBOL  = 'ر.ع.';
+    public const CURRENCY_SYMBOL  = 'ر.س.';
     public const CURRENCY_DECIMAL = 3;
 
     // ─── Date Formats ──────────────────────────────────────

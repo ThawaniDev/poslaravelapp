@@ -91,7 +91,7 @@ class ListOrganizations extends ListRecords
                                 ->default('Asia/Riyadh'),
                             Forms\Components\Select::make('currency')
                                 ->options([
-                                    'SAR' => __('SAR'), 'OMR' => 'OMR', 'AED' => 'AED',
+                                    'SAR' => __('SAR'), 'AED' => 'AED',
                                     'BHD' => __('BHD'), 'KWD' => 'KWD', 'QAR' => 'QAR',
                                 ])
                                 ->default('SAR')

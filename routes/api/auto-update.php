@@ -9,4 +9,7 @@ Route::middleware('auth:sanctum')->prefix('auto-update')->group(function () {
     Route::get('changelog', [AutoUpdateController::class, 'changelog']);
     Route::get('history', [AutoUpdateController::class, 'updateHistory']);
     Route::get('current-version', [AutoUpdateController::class, 'currentVersion']);
+    Route::get('manifest/{version}', [AutoUpdateController::class, 'manifest']);
+    Route::get('download/{version}', [AutoUpdateController::class, 'download']);
+    Route::get('rollout-status', [AutoUpdateController::class, 'rolloutStatus']);
 });

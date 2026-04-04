@@ -16,6 +16,20 @@ class SecurityController extends BaseApiController
 {
     public function __construct(private SecurityService $service) {}
 
+    // ─── Overview ───────────────────────────────────────────────
+
+    public function overview(Request $request): JsonResponse
+    {
+        $storeId = $request->query('store_id');
+        if (!$storeId) {
+            return $this->error(__('security.store_required'), 422);
+        }
+
+        $overview = $this->service->getOverview($storeId);
+
+        return $this->success($overview, __('security.overview_fetched'));
+    }
+
     // ─── Policies ───────────────────────────────────────────────
 
     public function getPolicy(Request $request): JsonResponse
@@ -52,6 +66,8 @@ class SecurityController extends BaseApiController
             action: $data['action'] ?? null,
             severity: $data['severity'] ?? null,
             userId: $data['user_id'] ?? null,
+            resourceType: $data['resource_type'] ?? null,
+            since: $data['since'] ?? null,
             perPage: $data['per_page'] ?? 50,
         );
 
@@ -63,6 +79,19 @@ class SecurityController extends BaseApiController
         $log = $this->service->recordAudit($request->validated());
 
         return $this->created($log, __('security.audit_recorded'));
+    }
+
+    public function auditStats(Request $request): JsonResponse
+    {
+        $storeId = $request->query('store_id');
+        if (!$storeId) {
+            return $this->error(__('security.store_required'), 422);
+        }
+
+        $days = (int) $request->query('days', 7);
+        $stats = $this->service->auditStats($storeId, $days);
+
+        return $this->success($stats, __('security.audit_stats_fetched'));
     }
 
     // ─── Devices ────────────────────────────────────────────────
@@ -90,6 +119,13 @@ class SecurityController extends BaseApiController
         return $this->created($device, __('security.device_registered'));
     }
 
+    public function showDevice(string $id): JsonResponse
+    {
+        $device = $this->service->getDevice($id);
+
+        return $this->success($device, __('security.device_fetched'));
+    }
+
     public function deactivateDevice(string $id): JsonResponse
     {
         $device = $this->service->deactivateDevice($id);
@@ -102,6 +138,13 @@ class SecurityController extends BaseApiController
         $device = $this->service->requestRemoteWipe($id);
 
         return $this->success($device, __('security.remote_wipe_requested'));
+    }
+
+    public function touchDevice(string $id): JsonResponse
+    {
+        $device = $this->service->touchDevice($id);
+
+        return $this->success($device, __('security.device_heartbeat'));
     }
 
     // ─── Login Attempts ─────────────────────────────────────────
@@ -119,6 +162,7 @@ class SecurityController extends BaseApiController
             successfulOnly: $request->has('is_successful')
                 ? filter_var($request->query('is_successful'), FILTER_VALIDATE_BOOLEAN)
                 : null,
+            since: $request->query('since'),
             perPage: (int) $request->query('per_page', 50),
         );
 
@@ -144,5 +188,155 @@ class SecurityController extends BaseApiController
         $count = $this->service->recentFailedAttempts($storeId, $userIdentifier, $window);
 
         return $this->success(['count' => $count], __('security.failed_count_fetched'));
+    }
+
+    public function isLockedOut(Request $request): JsonResponse
+    {
+        $storeId = $request->query('store_id');
+        $userIdentifier = $request->query('user_identifier');
+        if (!$storeId || !$userIdentifier) {
+            return $this->error(__('security.store_user_required'), 422);
+        }
+
+        $locked = $this->service->isLockedOut($storeId, $userIdentifier);
+
+        return $this->success(['is_locked_out' => $locked]);
+    }
+
+    public function loginAttemptStats(Request $request): JsonResponse
+    {
+        $storeId = $request->query('store_id');
+        if (!$storeId) {
+            return $this->error(__('security.store_required'), 422);
+        }
+
+        $days = (int) $request->query('days', 7);
+        $stats = $this->service->loginAttemptStats($storeId, $days);
+
+        return $this->success($stats, __('security.login_stats_fetched'));
+    }
+
+    // ─── Sessions ───────────────────────────────────────────────
+
+    public function listSessions(Request $request): JsonResponse
+    {
+        $storeId = $request->query('store_id');
+        if (!$storeId) {
+            return $this->error(__('security.store_required'), 422);
+        }
+
+        $activeOnly = $request->query('active_only');
+        $sessions = $this->service->listSessions(
+            $storeId,
+            $activeOnly !== null ? filter_var($activeOnly, FILTER_VALIDATE_BOOLEAN) : null,
+        );
+
+        return $this->success($sessions, __('security.sessions_fetched'));
+    }
+
+    public function startSession(Request $request): JsonResponse
+    {
+        $request->validate([
+            'store_id' => 'required|string|uuid',
+            'device_id' => 'nullable|string|uuid',
+            'ip_address' => 'nullable|string|ip',
+            'user_agent' => 'nullable|string|max:500',
+        ]);
+
+        $session = $this->service->startSession(array_merge(
+            $request->only(['store_id', 'device_id', 'ip_address', 'user_agent']),
+            ['user_id' => $request->user()->id],
+        ));
+
+        return $this->created($session, __('security.session_started'));
+    }
+
+    public function endSession(string $id, Request $request): JsonResponse
+    {
+        $reason = $request->input('reason', 'manual');
+        $session = $this->service->endSession($id, $reason);
+
+        return $this->success($session, __('security.session_ended'));
+    }
+
+    public function endAllSessions(Request $request): JsonResponse
+    {
+        $request->validate([
+            'store_id' => 'required|string|uuid',
+            'user_id' => 'required|string|uuid',
+            'reason' => 'nullable|string|max:100',
+        ]);
+
+        $count = $this->service->endAllSessions(
+            $request->input('store_id'),
+            $request->input('user_id'),
+            $request->input('reason', 'force_logout'),
+        );
+
+        return $this->success(['ended_count' => $count], __('security.sessions_ended'));
+    }
+
+    public function sessionHeartbeat(string $id): JsonResponse
+    {
+        $session = $this->service->sessionHeartbeat($id);
+
+        return $this->success($session, __('security.session_heartbeat'));
+    }
+
+    // ─── Incidents ──────────────────────────────────────────────
+
+    public function listIncidents(Request $request): JsonResponse
+    {
+        $storeId = $request->query('store_id');
+        if (!$storeId) {
+            return $this->error(__('security.store_required'), 422);
+        }
+
+        $incidents = $this->service->listIncidents(
+            storeId: $storeId,
+            status: $request->query('status'),
+            severity: $request->query('severity'),
+            type: $request->query('type'),
+            perPage: (int) $request->query('per_page', 50),
+        );
+
+        return $this->success($incidents, __('security.incidents_fetched'));
+    }
+
+    public function createIncident(Request $request): JsonResponse
+    {
+        $request->validate([
+            'store_id' => 'required|string|uuid',
+            'incident_type' => 'required|string|max:100',
+            'severity' => 'required|string|in:low,medium,high,critical',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'device_id' => 'nullable|string|uuid',
+            'ip_address' => 'nullable|string|ip',
+            'metadata' => 'nullable|array',
+        ]);
+
+        $incident = $this->service->createIncident(
+            array_merge($request->validated(), [
+                'user_id' => $request->user()->id,
+            ]),
+        );
+
+        return $this->created($incident, __('security.incident_created'));
+    }
+
+    public function resolveIncident(string $id, Request $request): JsonResponse
+    {
+        $request->validate([
+            'resolution_notes' => 'nullable|string',
+        ]);
+
+        $incident = $this->service->resolveIncident(
+            $id,
+            $request->user()->id,
+            $request->input('resolution_notes'),
+        );
+
+        return $this->success($incident, __('security.incident_resolved'));
     }
 }

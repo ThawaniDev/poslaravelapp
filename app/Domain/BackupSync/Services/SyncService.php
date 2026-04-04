@@ -7,13 +7,47 @@ use App\Domain\BackupSync\Enums\SyncDirection;
 use App\Domain\BackupSync\Enums\SyncLogStatus;
 use App\Domain\BackupSync\Models\SyncConflict;
 use App\Domain\BackupSync\Models\SyncLog;
+use App\Domain\Catalog\Models\Category;
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductVariant;
+use App\Domain\Core\Models\Store;
+use App\Domain\Core\Models\StoreSettings;
+use App\Domain\Customer\Models\Customer;
+use App\Domain\Inventory\Models\StockLevel;
+use App\Domain\Inventory\Models\StockMovement;
+use App\Domain\Order\Models\Order;
+use App\Domain\Payment\Models\Transaction;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class SyncService
 {
+    private const MAX_BATCH_SIZE = 100;
+
     /**
-     * Push local changes to the cloud.
+     * Map of syncable table names to their Eloquent model + store filter column.
+     */
+    private function syncableModels(string $storeId): array
+    {
+        $store = Store::find($storeId);
+        $orgId = $store?->organization_id;
+
+        return [
+            'orders' => ['model' => Order::class, 'filter' => ['store_id' => $storeId]],
+            'products' => ['model' => Product::class, 'filter' => ['organization_id' => $orgId]],
+            'categories' => ['model' => Category::class, 'filter' => ['organization_id' => $orgId]],
+            'product_variants' => ['model' => ProductVariant::class, 'filter' => [], 'via' => 'products', 'org_id' => $orgId],
+            'customers' => ['model' => Customer::class, 'filter' => [], 'global' => true],
+            'stock_levels' => ['model' => StockLevel::class, 'filter' => ['store_id' => $storeId]],
+            'stock_movements' => ['model' => StockMovement::class, 'filter' => ['store_id' => $storeId]],
+            'store_settings' => ['model' => StoreSettings::class, 'filter' => ['store_id' => $storeId]],
+        ];
+    }
+
+    /**
+     * Push local changes to the cloud with batch size enforcement and auto-conflict detection.
      */
     public function push(string $storeId, array $data): array
     {
@@ -21,13 +55,45 @@ class SyncService
         $terminalId = $data['terminal_id'];
         $changes = $data['changes'] ?? [];
         $syncToken = $data['sync_token'] ?? null;
+        $checksum = $data['checksum'] ?? null;
+
+        // Validate checksum if provided
+        if ($checksum !== null) {
+            $computedChecksum = hash('sha256', json_encode($changes));
+            if (!hash_equals($computedChecksum, $checksum)) {
+                return [
+                    'error' => 'checksum_mismatch',
+                    'message' => 'Payload checksum verification failed',
+                ];
+            }
+        }
 
         $recordsCount = 0;
         $conflicts = [];
+        $totalRecords = 0;
+
+        // Count total records for batch size validation
+        foreach ($changes as $change) {
+            $totalRecords += count($change['records'] ?? []);
+        }
+
+        if ($totalRecords > self::MAX_BATCH_SIZE) {
+            return [
+                'error' => 'batch_too_large',
+                'message' => 'Maximum ' . self::MAX_BATCH_SIZE . ' records per push. Got ' . $totalRecords,
+                'max_batch_size' => self::MAX_BATCH_SIZE,
+            ];
+        }
+
+        $syncableModels = $this->syncableModels($storeId);
 
         foreach ($changes as $change) {
             $tableName = $change['table'];
             $records = $change['records'] ?? [];
+
+            if (!isset($syncableModels[$tableName])) {
+                continue;
+            }
 
             foreach ($records as $record) {
                 $recordId = $record['id'] ?? Str::uuid()->toString();
@@ -36,6 +102,8 @@ class SyncService
                 if ($existingConflict) {
                     $conflicts[] = $existingConflict;
                 } else {
+                    // Apply the change to the database
+                    $this->applyChange($tableName, $recordId, $record, $syncableModels[$tableName]);
                     $recordsCount++;
                 }
             }
@@ -56,7 +124,7 @@ class SyncService
             'completed_at' => $completedAt,
         ]);
 
-        $newSyncToken = Str::uuid()->toString();
+        $newSyncToken = $completedAt->toIso8601String();
 
         return [
             'sync_log_id' => $log->id,
@@ -65,30 +133,86 @@ class SyncService
             'conflicts' => $conflicts,
             'sync_token' => $newSyncToken,
             'server_timestamp' => $completedAt->toIso8601String(),
+            'checksum' => hash('sha256', json_encode($conflicts)),
         ];
     }
 
     /**
-     * Pull cloud changes since last sync token.
+     * Pull cloud changes since last sync token (delta sync with real data).
      */
     public function pull(string $storeId, array $params): array
     {
         $startedAt = now();
         $terminalId = $params['terminal_id'];
         $syncToken = $params['sync_token'] ?? null;
-        $tables = $params['tables'] ?? [];
+        $requestedTables = $params['tables'] ?? [];
 
-        // Simulate delta pull: return changes since last sync
+        $syncableModels = $this->syncableModels($storeId);
+
+        // If no specific tables requested, pull all syncable tables
+        if (empty($requestedTables)) {
+            $requestedTables = array_keys($syncableModels);
+        }
+
+        // Determine the "since" timestamp from the sync token
+        $since = null;
+        if ($syncToken) {
+            $since = Carbon::parse($syncToken);
+        }
+
         $changes = [];
         $recordsCount = 0;
 
-        // In production, query each table for records updated after the sync token timestamp.
-        // For now, return empty delta with a new token.
-        foreach ($tables as $table) {
+        foreach ($requestedTables as $table) {
+            if (!isset($syncableModels[$table])) {
+                continue;
+            }
+
+            $config = $syncableModels[$table];
+            $modelClass = $config['model'];
+            $query = $modelClass::query();
+
+            // Apply store/org filter
+            foreach ($config['filter'] as $column => $value) {
+                $query->where($column, $value);
+            }
+
+            // Handle special cases (product_variants via products)
+            if (isset($config['via']) && $config['via'] === 'products') {
+                $query->whereHas('product', function ($q) use ($config) {
+                    $q->where('organization_id', $config['org_id']);
+                });
+            }
+
+            // Delta: only records updated since the sync token
+            if ($since) {
+                $query->where('updated_at', '>', $since);
+            }
+
+            // Enforce max batch size per table
+            $records = $query->limit(self::MAX_BATCH_SIZE)->get();
+
+            // Check for soft-deleted records (deleted since last sync)
+            $deletedIds = [];
+            if ($since && method_exists($modelClass, 'trashed')) {
+                $deletedIds = $modelClass::onlyTrashed()
+                    ->where('deleted_at', '>', $since);
+
+                foreach ($config['filter'] as $column => $value) {
+                    $deletedIds->where($column, $value);
+                }
+
+                $deletedIds = $deletedIds->pluck('id')->toArray();
+            }
+
+            $tableRecords = $records->map(fn ($r) => $r->toArray())->toArray();
+            $recordsCount += count($tableRecords);
+
             $changes[] = [
                 'table' => $table,
-                'records' => [],
-                'deleted_ids' => [],
+                'records' => $tableRecords,
+                'deleted_ids' => $deletedIds,
+                'has_more' => $records->count() >= self::MAX_BATCH_SIZE,
             ];
         }
 
@@ -105,37 +229,64 @@ class SyncService
             'completed_at' => $completedAt,
         ]);
 
+        $newToken = $completedAt->toIso8601String();
+
         return [
             'sync_log_id' => $log->id,
             'changes' => $changes,
             'records_count' => $recordsCount,
-            'sync_token' => Str::uuid()->toString(),
+            'sync_token' => $newToken,
             'server_timestamp' => $completedAt->toIso8601String(),
+            'checksum' => hash('sha256', json_encode($changes)),
         ];
     }
 
     /**
-     * Full sync — initial download of all data.
+     * Full sync — initial download of all data for a store.
      */
     public function fullSync(string $storeId, string $terminalId): array
     {
         $startedAt = now();
         $recordsCount = 0;
+        $syncableModels = $this->syncableModels($storeId);
+        $store = Store::find($storeId);
+        $orgId = $store?->organization_id;
 
-        // Categories of data to sync with priority order
-        $categories = [
-            'transactions' => ['orders', 'payments', 'refunds'],
-            'inventory' => ['products', 'stock_movements'],
-            'catalog' => ['categories', 'product_variants'],
+        // Priority-ordered categories for full sync
+        $categoryMap = [
+            'catalog' => ['categories', 'products', 'product_variants'],
+            'inventory' => ['stock_levels', 'stock_movements'],
+            'transactions' => ['orders'],
             'customers' => ['customers'],
-            'settings' => ['store_settings', 'tax_rates'],
+            'settings' => ['store_settings'],
         ];
 
         $data = [];
-        foreach ($categories as $category => $tables) {
+        foreach ($categoryMap as $category => $tables) {
             $categoryData = [];
             foreach ($tables as $table) {
-                $categoryData[$table] = [];
+                if (!isset($syncableModels[$table])) {
+                    $categoryData[$table] = [];
+                    continue;
+                }
+
+                $config = $syncableModels[$table];
+                $modelClass = $config['model'];
+                $query = $modelClass::query();
+
+                foreach ($config['filter'] as $column => $value) {
+                    $query->where($column, $value);
+                }
+
+                if (isset($config['via']) && $config['via'] === 'products') {
+                    $query->whereHas('product', function ($q) use ($config) {
+                        $q->where('organization_id', $config['org_id']);
+                    });
+                }
+
+                $records = $query->get();
+                $categoryData[$table] = $records->map(fn ($r) => $r->toArray())->toArray();
+                $recordsCount += count($categoryData[$table]);
             }
             $data[$category] = $categoryData;
         }
@@ -157,8 +308,9 @@ class SyncService
             'sync_log_id' => $log->id,
             'data' => $data,
             'records_count' => $recordsCount,
-            'sync_token' => Str::uuid()->toString(),
+            'sync_token' => $completedAt->toIso8601String(),
             'server_timestamp' => $completedAt->toIso8601String(),
+            'checksum' => hash('sha256', json_encode($data)),
         ];
     }
 
@@ -222,8 +374,19 @@ class SyncService
             return null;
         }
 
+        $resolution = SyncConflictResolution::from($data['resolution']);
+
+        // Apply the resolution
+        if ($resolution === SyncConflictResolution::AcceptLocal || $resolution->value === 'accept_local') {
+            $this->applyConflictResolution($conflict, $conflict->local_data);
+        } elseif ($resolution === SyncConflictResolution::AcceptCloud || $resolution->value === 'accept_cloud') {
+            $this->applyConflictResolution($conflict, $conflict->cloud_data);
+        } elseif (isset($data['merged_data'])) {
+            $this->applyConflictResolution($conflict, $data['merged_data']);
+        }
+
         $conflict->update([
-            'resolution' => SyncConflictResolution::from($data['resolution']),
+            'resolution' => $resolution,
             'resolved_by' => $data['resolved_by'] ?? auth()->id(),
             'resolved_at' => now(),
         ]);
@@ -303,20 +466,60 @@ class SyncService
     }
 
     /**
-     * Detect potential conflict between local and cloud data.
+     * Auto-detect conflicts by comparing timestamps between local and cloud data.
+     * Uses Last-Write-Wins (LWW) for simple conflicts, flags complex ones for manual resolution.
      */
     private function detectConflict(string $storeId, string $tableName, string $recordId, array $localData, ?string $syncToken): ?array
     {
-        // Simple conflict detection: check if a newer version exists on the server
-        // In production, compare timestamps and data hashes
-        // For MVP, conflicts are detected only when explicitly flagged by the client
+        $syncableModels = $this->syncableModels($storeId);
+        if (!isset($syncableModels[$tableName])) {
+            return null;
+        }
+
+        $config = $syncableModels[$tableName];
+        $modelClass = $config['model'];
+        $cloudRecord = $modelClass::find($recordId);
+
+        // No cloud record means no conflict (new record)
+        if (!$cloudRecord) {
+            return null;
+        }
+
+        // Compare updated_at timestamps for automatic conflict detection
+        $cloudUpdatedAt = $cloudRecord->updated_at;
+        $localUpdatedAt = isset($localData['updated_at']) ? Carbon::parse($localData['updated_at']) : null;
+
+        // If cloud was updated after the sync token, there's a potential conflict
+        $syncTokenTime = $syncToken ? Carbon::parse($syncToken) : null;
+
+        if ($syncTokenTime && $cloudUpdatedAt && $cloudUpdatedAt->isAfter($syncTokenTime)) {
+            // Cloud was modified since last sync — conflict detected
+            $conflict = SyncConflict::create([
+                'store_id' => $storeId,
+                'table_name' => $tableName,
+                'record_id' => $recordId,
+                'local_data' => $localData,
+                'cloud_data' => $cloudRecord->toArray(),
+                'detected_at' => now(),
+            ]);
+
+            return [
+                'id' => $conflict->id,
+                'table_name' => $tableName,
+                'record_id' => $recordId,
+                'local_updated_at' => $localUpdatedAt?->toIso8601String(),
+                'cloud_updated_at' => $cloudUpdatedAt->toIso8601String(),
+            ];
+        }
+
+        // Also detect if explicitly flagged by the client
         if (isset($localData['_conflict']) && $localData['_conflict'] === true) {
             $conflict = SyncConflict::create([
                 'store_id' => $storeId,
                 'table_name' => $tableName,
                 'record_id' => $recordId,
                 'local_data' => $localData,
-                'cloud_data' => $localData['_cloud_data'] ?? [],
+                'cloud_data' => $cloudRecord->toArray(),
                 'detected_at' => now(),
             ]);
 
@@ -328,5 +531,44 @@ class SyncService
         }
 
         return null;
+    }
+
+    /**
+     * Apply a pushed change to the database.
+     */
+    private function applyChange(string $tableName, string $recordId, array $data, array $config): void
+    {
+        $modelClass = $config['model'];
+
+        // Strip internal sync metadata fields
+        $cleanData = collect($data)->except(['_conflict', '_cloud_data', '_sync_version'])->toArray();
+
+        $existing = $modelClass::find($recordId);
+        if ($existing) {
+            $existing->update($cleanData);
+        } else {
+            $cleanData['id'] = $recordId;
+            $modelClass::create($cleanData);
+        }
+    }
+
+    /**
+     * Apply a conflict resolution by updating the record with chosen data.
+     */
+    private function applyConflictResolution(SyncConflict $conflict, array $resolvedData): void
+    {
+        $syncableModels = $this->syncableModels($conflict->store_id);
+        if (!isset($syncableModels[$conflict->table_name])) {
+            return;
+        }
+
+        $config = $syncableModels[$conflict->table_name];
+        $modelClass = $config['model'];
+        $record = $modelClass::find($conflict->record_id);
+
+        if ($record) {
+            $cleanData = collect($resolvedData)->except(['id', '_conflict', '_cloud_data', '_sync_version'])->toArray();
+            $record->update($cleanData);
+        }
     }
 }

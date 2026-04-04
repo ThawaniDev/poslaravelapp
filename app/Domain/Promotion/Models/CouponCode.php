@@ -26,6 +26,7 @@ class CouponCode extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'created_at' => 'datetime',
     ];
 
     public function promotion(): BelongsTo

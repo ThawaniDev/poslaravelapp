@@ -14,14 +14,14 @@ final class Formatters
 {
     // ─── Currency ──────────────────────────────────────────
 
-    /** 1234.567 → "ر.ع. 1,234.567" */
-    public static function currency(float $amount, string $symbol = 'ر.ع.'): string
+    /** 1234.567 → "ر.س. 1,234.567" */
+    public static function currency(float $amount, string $symbol = 'ر.س.'): string
     {
         return $symbol . ' ' . number_format($amount, DesignTokens::CURRENCY_DECIMAL);
     }
 
-    /** Short (no decimals): 1234 → "ر.ع. 1,234" */
-    public static function currencyShort(float $amount, string $symbol = 'ر.ع.'): string
+    /** Short (no decimals): 1234 → "ر.س. 1,234" */
+    public static function currencyShort(float $amount, string $symbol = 'ر.س.'): string
     {
         return $symbol . ' ' . number_format($amount, 0);
     }

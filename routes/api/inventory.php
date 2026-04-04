@@ -7,6 +7,7 @@ use App\Domain\Inventory\Controllers\Api\StockAdjustmentController;
 use App\Domain\Inventory\Controllers\Api\StockController;
 use App\Domain\Inventory\Controllers\Api\StockTransferController;
 use App\Domain\Inventory\Controllers\Api\StocktakeController;
+use App\Domain\Inventory\Controllers\Api\SupplierReturnController;
 use App\Domain\Inventory\Controllers\Api\WasteController;
 use Illuminate\Support\Facades\Route;
 
@@ -74,4 +75,15 @@ Route::prefix('inventory')->middleware('auth:sanctum')->group(function () {
     // Waste Records
     Route::get('waste-records', [WasteController::class, 'index']);
     Route::post('waste-records', [WasteController::class, 'store']);
+
+    // Supplier Returns
+    Route::get('supplier-returns', [SupplierReturnController::class, 'index']);
+    Route::post('supplier-returns', [SupplierReturnController::class, 'store']);
+    Route::get('supplier-returns/{supplierReturn}', [SupplierReturnController::class, 'show']);
+    Route::put('supplier-returns/{supplierReturn}', [SupplierReturnController::class, 'update']);
+    Route::delete('supplier-returns/{supplierReturn}', [SupplierReturnController::class, 'destroy']);
+    Route::post('supplier-returns/{supplierReturn}/submit', [SupplierReturnController::class, 'submit']);
+    Route::post('supplier-returns/{supplierReturn}/approve', [SupplierReturnController::class, 'approve']);
+    Route::post('supplier-returns/{supplierReturn}/complete', [SupplierReturnController::class, 'complete']);
+    Route::post('supplier-returns/{supplierReturn}/cancel', [SupplierReturnController::class, 'cancel']);
 });

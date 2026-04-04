@@ -28,6 +28,10 @@ class DeviceRegistration extends Model
         'is_active',
         'remote_wipe_requested',
         'registered_at',
+        'ip_address',
+        'screen_resolution',
+        'last_known_location',
+        'device_type',
     ];
 
     protected $casts = [
@@ -35,6 +39,7 @@ class DeviceRegistration extends Model
         'remote_wipe_requested' => 'boolean',
         'last_active_at' => 'datetime',
         'registered_at' => 'datetime',
+        'last_known_location' => 'array',
     ];
 
     // ─── Relationships ───────────────────────────────────────

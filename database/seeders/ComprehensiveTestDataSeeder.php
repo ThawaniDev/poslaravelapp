@@ -689,7 +689,7 @@ class ComprehensiveTestDataSeeder extends Seeder
                         'category_ar' => 'التكاملات والامتثال',
                         'features' => [
                             ['text_en' => 'ZATCA e-invoicing', 'text_ar' => 'فاتورة ZATCA الإلكترونية', 'limit' => null, 'icon' => 'heroicon-o-document-check', 'is_included' => true, 'is_highlighted' => true, 'tooltip_en' => null, 'tooltip_ar' => null],
-                            ['text_en' => 'Thawani Pay integration', 'text_ar' => 'تكامل ثواني Pay', 'limit' => null, 'icon' => 'heroicon-o-banknotes', 'is_included' => true, 'is_highlighted' => false, 'tooltip_en' => null, 'tooltip_ar' => null],
+                            ['text_en' => 'Thawani integration', 'text_ar' => 'تكامل ثواني', 'limit' => null, 'icon' => 'heroicon-o-banknotes', 'is_included' => true, 'is_highlighted' => false, 'tooltip_en' => null, 'tooltip_ar' => null],
                             ['text_en' => 'REST API (full access)', 'text_ar' => 'REST API (وصول كامل)', 'limit' => null, 'icon' => 'heroicon-o-code-bracket', 'is_included' => true, 'is_highlighted' => false, 'tooltip_en' => null, 'tooltip_ar' => null],
                         ],
                     ],
@@ -1002,7 +1002,7 @@ class ComprehensiveTestDataSeeder extends Seeder
             'store_id' => $this->storeId,
             'device_id' => $deviceId,
             'user_id' => $this->ownerId,
-            'user_type' => 'user',
+            'user_type' => 'owner',
             'action' => 'login',
             'severity' => 'info',
             'ip_address' => '192.168.1.100',
@@ -1393,7 +1393,7 @@ class ComprehensiveTestDataSeeder extends Seeder
         // Promotions
         $promo1 = DB::table('promotions')->insertGetId([
             'organization_id' => $this->orgId, 'name' => '20% Off Dairy',
-            'type' => 'percentage_discount',
+            'type' => 'percentage',
             'discount_value' => 20.00,
             'min_order_total' => 0, 'valid_from' => now()->subDays(7),
             'valid_to' => now()->addDays(30), 'is_stackable' => false,
@@ -1403,7 +1403,7 @@ class ComprehensiveTestDataSeeder extends Seeder
 
         $promo2 = DB::table('promotions')->insertGetId([
             'organization_id' => $this->orgId, 'name' => 'Ramadan Special',
-            'type' => 'fixed_discount',
+            'type' => 'fixed_amount',
             'discount_value' => 10.00,
             'min_order_total' => 50.00, 'valid_from' => now(),
             'valid_to' => now()->addDays(30), 'is_stackable' => false,

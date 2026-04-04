@@ -62,7 +62,35 @@ class StaffService
                 unset($data['pin']);
             }
 
-            return StaffUser::create($data);
+            // Extract user-account fields before creating StaffUser
+            $createUserAccount = filter_var($data['create_user_account'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $password = $data['password'] ?? null;
+            $userRole = $data['user_role'] ?? null;
+            unset($data['create_user_account'], $data['password'], $data['user_role']);
+
+            // Create linked User account if requested
+            if ($createUserAccount && $password && $userRole) {
+                $store = \App\Domain\Core\Models\Store::findOrFail($data['store_id']);
+
+                $user = User::create([
+                    'store_id'        => $data['store_id'],
+                    'organization_id' => $store->organization_id,
+                    'name'            => trim(($data['first_name'] ?? '') . ' ' . ($data['last_name'] ?? '')),
+                    'email'           => $data['email'],
+                    'phone'           => $data['phone'] ?? null,
+                    'password_hash'   => Hash::make($password),
+                    'pin_hash'        => $data['pin_hash'] ?? null,
+                    'role'            => $userRole,
+                    'locale'          => $data['language_preference'] ?? 'en',
+                    'is_active'       => true,
+                ]);
+
+                $data['user_id'] = $user->id;
+            }
+
+            $staff = StaffUser::create($data);
+
+            return $staff->load('user');
         });
     }
 

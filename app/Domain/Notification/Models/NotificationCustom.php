@@ -24,12 +24,20 @@ class NotificationCustom extends Model
         'reference_type',
         'reference_id',
         'is_read',
+        'priority',
+        'expires_at',
+        'metadata',
+        'channel',
+        'read_at',
         'created_at',
     ];
 
     protected $casts = [
         'is_read' => 'boolean',
+        'metadata' => 'array',
         'created_at' => 'datetime',
+        'expires_at' => 'datetime',
+        'read_at' => 'datetime',
     ];
 
     /**
@@ -54,5 +62,48 @@ class NotificationCustom extends Model
     public function scopeOfCategory($query, string $category)
     {
         return $query->where('category', $category);
+    }
+
+    /**
+     * Scope to non-expired notifications.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('expires_at')
+                ->orWhere('expires_at', '>', now());
+        });
+    }
+
+    /**
+     * Scope by priority.
+     */
+    public function scopeOfPriority($query, string $priority)
+    {
+        return $query->where('priority', $priority);
+    }
+
+    /**
+     * Scope for a store.
+     */
+    public function scopeForStore($query, string $storeId)
+    {
+        return $query->where('store_id', $storeId);
+    }
+
+    /**
+     * Get delivery logs for this notification.
+     */
+    public function deliveryLogs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(NotificationDeliveryLog::class, 'notification_id');
+    }
+
+    /**
+     * Get read receipts.
+     */
+    public function readReceipts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(NotificationReadReceipt::class, 'notification_id');
     }
 }

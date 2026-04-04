@@ -5,7 +5,9 @@ namespace App\Domain\Security\Services;
 use App\Domain\Security\Models\DeviceRegistration;
 use App\Domain\Security\Models\LoginAttempt;
 use App\Domain\Security\Models\SecurityAuditLog;
+use App\Domain\Security\Models\SecurityIncident;
 use App\Domain\Security\Models\SecurityPolicy;
+use App\Domain\Security\Models\SecuritySession;
 
 class SecurityService
 {
@@ -18,19 +20,7 @@ class SecurityService
     {
         return SecurityPolicy::firstOrCreate(
             ['store_id' => $storeId],
-            [
-                'pin_min_length' => 4,
-                'pin_max_length' => 6,
-                'auto_lock_seconds' => 300,
-                'max_failed_attempts' => 5,
-                'lockout_duration_minutes' => 15,
-                'require_2fa_owner' => false,
-                'session_max_hours' => 12,
-                'require_pin_override_void' => true,
-                'require_pin_override_return' => true,
-                'require_pin_override_discount' => false,
-                'discount_override_threshold' => 20.00,
-            ],
+            SecurityPolicy::$defaults,
         );
     }
 
@@ -65,6 +55,8 @@ class SecurityService
         ?string $action = null,
         ?string $severity = null,
         ?string $userId = null,
+        ?string $resourceType = null,
+        ?string $since = null,
         int $perPage = 50,
     ): \Illuminate\Contracts\Pagination\LengthAwarePaginator {
         $query = SecurityAuditLog::where('store_id', $storeId);
@@ -78,8 +70,42 @@ class SecurityService
         if ($userId) {
             $query->where('user_id', $userId);
         }
+        if ($resourceType) {
+            $query->where('resource_type', $resourceType);
+        }
+        if ($since) {
+            $query->where('created_at', '>=', $since);
+        }
 
-        return $query->orderByDesc('created_at')->paginate($perPage);
+        return $query->orderByDesc('created_at')->paginate(min($perPage, 200));
+    }
+
+    /**
+     * Get audit statistics for a store.
+     */
+    public function auditStats(string $storeId, int $days = 7): array
+    {
+        $since = now()->subDays($days);
+        $base = SecurityAuditLog::where('store_id', $storeId)->where('created_at', '>=', $since);
+
+        $total = (clone $base)->count();
+        $bySeverity = (clone $base)
+            ->selectRaw('severity, count(*) as count')
+            ->groupBy('severity')
+            ->pluck('count', 'severity')
+            ->toArray();
+        $byAction = (clone $base)
+            ->selectRaw('action, count(*) as count')
+            ->groupBy('action')
+            ->pluck('count', 'action')
+            ->toArray();
+
+        return [
+            'period_days' => $days,
+            'total' => $total,
+            'by_severity' => $bySeverity,
+            'by_action' => $byAction,
+        ];
     }
 
     // ─── Device Registration ────────────────────────────────────
@@ -117,6 +143,14 @@ class SecurityService
     }
 
     /**
+     * Get a single device by ID.
+     */
+    public function getDevice(string $deviceId): DeviceRegistration
+    {
+        return DeviceRegistration::findOrFail($deviceId);
+    }
+
+    /**
      * Request remote wipe for a device.
      */
     public function requestRemoteWipe(string $deviceId): DeviceRegistration
@@ -134,6 +168,17 @@ class SecurityService
     {
         $device = DeviceRegistration::findOrFail($deviceId);
         $device->update(['is_active' => false]);
+
+        return $device->fresh();
+    }
+
+    /**
+     * Update device heartbeat / activity.
+     */
+    public function touchDevice(string $deviceId): DeviceRegistration
+    {
+        $device = DeviceRegistration::findOrFail($deviceId);
+        $device->update(['last_active_at' => now()]);
 
         return $device->fresh();
     }
@@ -163,12 +208,28 @@ class SecurityService
     }
 
     /**
+     * Check if a user is currently locked out.
+     */
+    public function isLockedOut(string $storeId, string $userIdentifier): bool
+    {
+        $policy = $this->getPolicy($storeId);
+        $recentFails = $this->recentFailedAttempts(
+            $storeId,
+            $userIdentifier,
+            $policy->lockout_duration_minutes,
+        );
+
+        return $recentFails >= $policy->max_failed_attempts;
+    }
+
+    /**
      * List login attempts for a store.
      */
     public function listLoginAttempts(
         string $storeId,
         ?string $attemptType = null,
         ?bool $successfulOnly = null,
+        ?string $since = null,
         int $perPage = 50,
     ): \Illuminate\Contracts\Pagination\LengthAwarePaginator {
         $query = LoginAttempt::where('store_id', $storeId);
@@ -179,7 +240,174 @@ class SecurityService
         if ($successfulOnly !== null) {
             $query->where('is_successful', $successfulOnly);
         }
+        if ($since) {
+            $query->where('attempted_at', '>=', $since);
+        }
 
-        return $query->orderByDesc('attempted_at')->paginate($perPage);
+        return $query->orderByDesc('attempted_at')->paginate(min($perPage, 200));
+    }
+
+    /**
+     * Get login attempt statistics.
+     */
+    public function loginAttemptStats(string $storeId, int $days = 7): array
+    {
+        $since = now()->subDays($days);
+        $base = LoginAttempt::where('store_id', $storeId)->where('attempted_at', '>=', $since);
+
+        $total = (clone $base)->count();
+        $successful = (clone $base)->where('is_successful', true)->count();
+        $failed = (clone $base)->where('is_successful', false)->count();
+
+        return [
+            'period_days' => $days,
+            'total' => $total,
+            'successful' => $successful,
+            'failed' => $failed,
+            'success_rate' => $total > 0 ? round(($successful / $total) * 100, 1) : 0,
+        ];
+    }
+
+    // ─── Sessions ───────────────────────────────────────────────
+
+    /**
+     * Start a new security session.
+     */
+    public function startSession(array $data): SecuritySession
+    {
+        return SecuritySession::create(array_merge($data, [
+            'started_at' => now(),
+            'last_activity_at' => now(),
+            'status' => 'active',
+        ]));
+    }
+
+    /**
+     * End a security session.
+     */
+    public function endSession(string $sessionId, string $reason = 'manual'): SecuritySession
+    {
+        $session = SecuritySession::findOrFail($sessionId);
+        $session->end($reason);
+
+        return $session->fresh();
+    }
+
+    /**
+     * End all active sessions for a user in a store.
+     */
+    public function endAllSessions(string $storeId, string $userId, string $reason = 'force_logout'): int
+    {
+        return SecuritySession::where('store_id', $storeId)
+            ->where('user_id', $userId)
+            ->where('status', 'active')
+            ->update([
+                'status' => 'ended',
+                'ended_at' => now(),
+                'end_reason' => $reason,
+            ]);
+    }
+
+    /**
+     * Update session heartbeat.
+     */
+    public function sessionHeartbeat(string $sessionId): SecuritySession
+    {
+        $session = SecuritySession::findOrFail($sessionId);
+        $session->heartbeat();
+
+        return $session->fresh();
+    }
+
+    /**
+     * List active sessions for a store.
+     */
+    public function listSessions(string $storeId, ?bool $activeOnly = null): \Illuminate\Database\Eloquent\Collection
+    {
+        $query = SecuritySession::where('store_id', $storeId);
+
+        if ($activeOnly !== null) {
+            $query->where('status', $activeOnly ? 'active' : 'ended');
+        }
+
+        return $query->orderByDesc('last_activity_at')->get();
+    }
+
+    // ─── Incidents ──────────────────────────────────────────────
+
+    /**
+     * Create a security incident.
+     */
+    public function createIncident(array $data): SecurityIncident
+    {
+        $data['status'] = 'open';
+
+        return SecurityIncident::create($data);
+    }
+
+    /**
+     * Resolve a security incident.
+     */
+    public function resolveIncident(string $incidentId, string $resolvedBy, ?string $notes = null): SecurityIncident
+    {
+        $incident = SecurityIncident::findOrFail($incidentId);
+        $incident->resolve($resolvedBy, $notes);
+
+        return $incident->fresh();
+    }
+
+    /**
+     * List security incidents for a store.
+     */
+    public function listIncidents(
+        string $storeId,
+        ?string $status = null,
+        ?string $severity = null,
+        ?string $type = null,
+        int $perPage = 50,
+    ): \Illuminate\Contracts\Pagination\LengthAwarePaginator {
+        $query = SecurityIncident::where('store_id', $storeId);
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+        if ($severity) {
+            $query->where('severity', $severity);
+        }
+        if ($type) {
+            $query->where('incident_type', $type);
+        }
+
+        return $query->orderByDesc('created_at')->paginate(min($perPage, 200));
+    }
+
+    // ─── Security Overview ──────────────────────────────────────
+
+    /**
+     * Get a comprehensive security overview for a store.
+     */
+    public function getOverview(string $storeId): array
+    {
+        $policy = $this->getPolicy($storeId);
+        $loginStats = $this->loginAttemptStats($storeId, 7);
+        $auditStats = $this->auditStats($storeId, 7);
+
+        $activeDevices = DeviceRegistration::where('store_id', $storeId)->where('is_active', true)->count();
+        $activeSessions = SecuritySession::where('store_id', $storeId)->where('status', 'active')->count();
+        $openIncidents = SecurityIncident::where('store_id', $storeId)->where('status', 'open')->count();
+        $criticalAudits = SecurityAuditLog::where('store_id', $storeId)
+            ->where('severity', 'critical')
+            ->where('created_at', '>=', now()->subDays(7))
+            ->count();
+
+        return [
+            'policy' => $policy->toArray(),
+            'login_stats' => $loginStats,
+            'audit_stats' => $auditStats,
+            'active_devices' => $activeDevices,
+            'active_sessions' => $activeSessions,
+            'open_incidents' => $openIncidents,
+            'critical_audits_7d' => $criticalAudits,
+        ];
     }
 }

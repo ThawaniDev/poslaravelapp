@@ -3,7 +3,7 @@
 return [
     // Default currency
     'currency' => 'SAR',
-    'currency_symbol' => 'ر.ع.',
+    'currency_symbol' => 'ر.س.',
     'decimal_places' => 3,
 
     // Rounding

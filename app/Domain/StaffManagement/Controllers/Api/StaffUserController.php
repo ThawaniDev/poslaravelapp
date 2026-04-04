@@ -26,7 +26,17 @@ class StaffUserController extends BaseApiController
 
     public function index(Request $request)
     {
-        $storeId = $request->user()->store_id;
+        // Allow filtering by store_id; default to the authenticated user's store
+        $storeId = $request->input('store_id', $request->user()->store_id);
+
+        // Ensure the requested store belongs to the same organization
+        $userOrgId = $request->user()->organization_id;
+        if ($storeId !== $request->user()->store_id) {
+            $store = \App\Domain\Core\Models\Store::find($storeId);
+            if (!$store || $store->organization_id !== $userOrgId) {
+                return $this->error('Store not found in your organization', 403);
+            }
+        }
 
         $result = $this->staffService->list($storeId, $request->only([
             'search', 'status', 'employment_type', 'per_page',

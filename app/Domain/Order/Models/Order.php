@@ -4,6 +4,10 @@ namespace App\Domain\Order\Models;
 
 use App\Domain\Order\Enums\OrderSource;
 use App\Domain\Order\Enums\OrderStatus;
+use App\Domain\Auth\Models\User;
+use App\Domain\Core\Models\Store;
+use App\Domain\Customer\Models\Customer;
+use App\Domain\Transaction\Models\Transaction;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

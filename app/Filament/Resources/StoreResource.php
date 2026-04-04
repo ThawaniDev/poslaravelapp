@@ -144,7 +144,6 @@ class StoreResource extends Resource
                                     Forms\Components\Select::make('currency')
                                         ->options([
                                             'SAR' => __('SAR — Saudi Riyal'),
-                                            'OMR' => __('OMR — Omani Rial'),
                                             'AED' => __('AED — UAE Dirham'),
                                             'BHD' => __('BHD — Bahraini Dinar'),
                                             'KWD' => __('KWD — Kuwaiti Dinar'),

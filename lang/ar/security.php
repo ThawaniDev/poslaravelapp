@@ -10,6 +10,20 @@ return [
     'login_attempt_recorded' => 'تم تسجيل محاولة الدخول.',
     'failed_count_fetched'  => 'تم جلب عدد المحاولات الفاشلة.',
 
+    // ── Enhanced API messages ────────────────────────────────
+    'audit_stats_fetched'       => 'تم جلب إحصائيات التدقيق.',
+    'device_heartbeat'          => 'تم تسجيل نبضة الجهاز.',
+    'login_stats_fetched'       => 'تم جلب إحصائيات محاولات الدخول.',
+    'is_locked_out'             => 'الحساب مقفل.',
+    'not_locked_out'            => 'الحساب غير مقفل.',
+    'session_started'           => 'تم بدء الجلسة.',
+    'session_ended'             => 'تم إنهاء الجلسة.',
+    'sessions_ended'            => 'تم إنهاء جميع الجلسات.',
+    'session_heartbeat'         => 'تم تسجيل نبضة الجلسة.',
+    'incident_created'          => 'تم إنشاء حادث أمني.',
+    'incident_resolved'         => 'تم حل الحادث الأمني.',
+    'incidents_fetched'         => 'تم جلب الحوادث الأمنية.',
+
     // ── Admin API messages ───────────────────────────────────
     'overview_fetched'         => 'تم جلب نظرة عامة على الأمان.',
     'alerts_fetched'           => 'تم جلب تنبيهات الأمان.',

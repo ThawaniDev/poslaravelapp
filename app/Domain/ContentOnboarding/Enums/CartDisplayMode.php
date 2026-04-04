@@ -6,4 +6,5 @@ enum CartDisplayMode: string
 {
     case Compact = 'compact';
     case Detailed = 'detailed';
+    case List = 'list';
 }

@@ -9,6 +9,7 @@ use App\Domain\MobileCompanion\Requests\UpdateQuickActionsRequest;
 use App\Domain\MobileCompanion\Services\CompanionService;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CompanionController extends BaseApiController
 {
@@ -22,6 +23,78 @@ class CompanionController extends BaseApiController
         $result = $this->companionService->quickStats($storeId);
 
         return $this->success($result, __('companion.quick_stats_retrieved'));
+    }
+
+    public function dashboard(): JsonResponse
+    {
+        $storeId = auth()->user()->store_id;
+        $result = $this->companionService->getDashboard($storeId);
+
+        return $this->success($result, __('companion.dashboard_retrieved'));
+    }
+
+    public function branches(): JsonResponse
+    {
+        $storeId = auth()->user()->store_id;
+        $result = $this->companionService->getBranches($storeId);
+
+        return $this->success($result, __('companion.branches_retrieved'));
+    }
+
+    public function salesSummary(Request $request): JsonResponse
+    {
+        $storeId = auth()->user()->store_id;
+
+        $from = $request->query('from');
+        $to = $request->query('to');
+
+        // Support period shorthand (today, week, month)
+        if (! $from && $request->query('period')) {
+            $period = $request->query('period');
+            $to = now()->endOfDay()->toDateTimeString();
+            $from = match ($period) {
+                'week' => now()->startOfWeek()->toDateTimeString(),
+                'month' => now()->startOfMonth()->toDateTimeString(),
+                default => now()->startOfDay()->toDateTimeString(), // 'today'
+            };
+        }
+
+        $result = $this->companionService->getSalesSummary($storeId, $from, $to);
+
+        return $this->success($result, __('companion.sales_summary_retrieved'));
+    }
+
+    public function activeOrders(): JsonResponse
+    {
+        $storeId = auth()->user()->store_id;
+        $result = $this->companionService->getActiveOrders($storeId);
+
+        return $this->success($result, __('companion.active_orders_retrieved'));
+    }
+
+    public function inventoryAlerts(): JsonResponse
+    {
+        $storeId = auth()->user()->store_id;
+        $result = $this->companionService->getInventoryAlerts($storeId);
+
+        return $this->success($result, __('companion.inventory_alerts_retrieved'));
+    }
+
+    public function activeStaff(): JsonResponse
+    {
+        $storeId = auth()->user()->store_id;
+        $result = $this->companionService->getActiveStaff($storeId);
+
+        return $this->success($result, __('companion.active_staff_retrieved'));
+    }
+
+    public function toggleAvailability(Request $request): JsonResponse
+    {
+        $storeId = auth()->user()->store_id;
+        $isActive = (bool) $request->input('is_active', true);
+        $result = $this->companionService->toggleStoreAvailability($storeId, $isActive);
+
+        return $this->success($result, __('companion.availability_updated'));
     }
 
     public function registerSession(RegisterSessionRequest $request): JsonResponse

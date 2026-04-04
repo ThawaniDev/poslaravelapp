@@ -77,7 +77,8 @@ class StockService
                 StockMovementType::AdjustmentOut,
                 StockMovementType::TransferOut,
                 StockMovementType::Waste,
-                StockMovementType::RecipeDeduction => -abs($quantity),
+                StockMovementType::RecipeDeduction,
+                StockMovementType::SupplierReturn => -abs($quantity),
             };
 
             // Update WAC on receipt

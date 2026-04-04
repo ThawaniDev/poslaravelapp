@@ -26,12 +26,17 @@ class LoginAttempt extends Model
         'ip_address',
         'device_id',
         'attempted_at',
+        'user_agent',
+        'failure_reason',
+        'geo_location',
+        'device_name',
     ];
 
     protected $casts = [
         'attempt_type' => LoginAttemptType::class,
         'is_successful' => 'boolean',
         'attempted_at' => 'datetime',
+        'geo_location' => 'array',
     ];
 
     // ─── Relationships ───────────────────────────────────────

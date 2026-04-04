@@ -25,10 +25,12 @@ Route::prefix('ui')->middleware('auth:sanctum')->group(function () {
     // Receipt layout templates
     Route::get('receipt-templates', [UiController::class, 'receiptTemplates']);
     Route::get('receipt-templates/{slug}', [UiController::class, 'receiptTemplateBySlug']);
+    Route::get('receipt-templates/{id}/preview-url', [UiController::class, 'receiptTemplatePreviewUrl']);
 
     // CFD themes
     Route::get('cfd-themes', [UiController::class, 'cfdThemes']);
     Route::get('cfd-themes/{slug}', [UiController::class, 'cfdThemeBySlug']);
+    Route::get('cfd-themes/{id}/preview-url', [UiController::class, 'cfdThemePreviewUrl']);
 
     // Signage templates
     Route::get('signage-templates', [UiController::class, 'signageTemplates']);
@@ -37,6 +39,7 @@ Route::prefix('ui')->middleware('auth:sanctum')->group(function () {
     // Label templates
     Route::get('label-templates', [UiController::class, 'labelTemplates']);
     Route::get('label-templates/{slug}', [UiController::class, 'labelTemplateBySlug']);
+    Route::get('label-templates/{id}/preview-url', [UiController::class, 'labelTemplatePreviewUrl']);
 
     // ─── Layout Builder ──────────────────────────────────
     Route::prefix('layout-builder')->group(function () {
@@ -44,7 +47,17 @@ Route::prefix('ui')->middleware('auth:sanctum')->group(function () {
         Route::get('widgets', [LayoutBuilderController::class, 'widgetCatalog']);
         Route::get('widgets/{id}', [LayoutBuilderController::class, 'widget']);
 
-        // Canvas configuration
+        // Flat convenience routes (resolve user's active template)
+        Route::get('canvas', [LayoutBuilderController::class, 'activeCanvasConfig']);
+        Route::put('canvas', [LayoutBuilderController::class, 'updateActiveCanvasConfig']);
+        Route::get('placements', [LayoutBuilderController::class, 'activePlacements']);
+        Route::post('placements', [LayoutBuilderController::class, 'addActivePlacement']);
+        Route::get('versions', [LayoutBuilderController::class, 'activeVersions']);
+        Route::post('versions', [LayoutBuilderController::class, 'createActiveVersion']);
+        Route::post('clone', [LayoutBuilderController::class, 'cloneActiveTemplate']);
+        Route::get('full', [LayoutBuilderController::class, 'activeFullLayout']);
+
+        // Template-scoped routes (explicit templateId)
         Route::get('templates/{templateId}/canvas', [LayoutBuilderController::class, 'canvasConfig']);
         Route::put('templates/{templateId}/canvas', [LayoutBuilderController::class, 'updateCanvasConfig']);
 
@@ -75,6 +88,7 @@ Route::prefix('ui')->middleware('auth:sanctum')->group(function () {
         // Browse
         Route::get('listings', [MarketplaceController::class, 'listings']);
         Route::get('listings/{id}', [MarketplaceController::class, 'listing']);
+        Route::get('listings/{id}/preview-url', [UiController::class, 'marketplaceListingPreviewUrl']);
 
         // Categories
         Route::get('categories', [MarketplaceController::class, 'categories']);

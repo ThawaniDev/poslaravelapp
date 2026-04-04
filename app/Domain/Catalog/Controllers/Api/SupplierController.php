@@ -47,6 +47,7 @@ class SupplierController extends BaseApiController
     public function show(string $supplier): JsonResponse
     {
         $found = $this->supplierService->find($supplier);
+        $found->loadCount(['productSuppliers', 'purchaseOrders', 'goodsReceipts', 'supplierReturns']);
 
         return $this->success(new SupplierResource($found));
     }
@@ -57,11 +58,21 @@ class SupplierController extends BaseApiController
             'name' => 'sometimes|string|max:255',
             'phone' => 'sometimes|nullable|string|max:20',
             'email' => 'sometimes|nullable|email|max:255',
+            'website' => 'sometimes|nullable|string|max:255',
             'address' => 'sometimes|nullable|string|max:500',
+            'city' => 'sometimes|nullable|string|max:100',
+            'country' => 'sometimes|nullable|string|max:100',
+            'postal_code' => 'sometimes|nullable|string|max:20',
             'notes' => 'sometimes|nullable|string|max:1000',
             'contact_person' => 'sometimes|nullable|string|max:255',
             'tax_number' => 'sometimes|nullable|string|max:50',
             'payment_terms' => 'sometimes|nullable|string|max:100',
+            'bank_name' => 'sometimes|nullable|string|max:255',
+            'bank_account' => 'sometimes|nullable|string|max:100',
+            'iban' => 'sometimes|nullable|string|max:50',
+            'credit_limit' => 'sometimes|nullable|numeric|min:0',
+            'rating' => 'sometimes|nullable|integer|min:1|max:5',
+            'category' => 'sometimes|nullable|string|max:100',
             'is_active' => 'sometimes|boolean',
         ]);
 

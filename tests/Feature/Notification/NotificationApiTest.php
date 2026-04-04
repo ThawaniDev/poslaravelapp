@@ -610,4 +610,244 @@ class NotificationApiTest extends TestCase
             'created_at' => now(),
         ], $overrides));
     }
+
+    // ─── Batch Create ────────────────────────────────────
+
+    public function test_batch_create_notifications(): void
+    {
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/notifications/batch', [
+                'user_ids' => [$this->user->id, $this->otherUser->id],
+                'category' => 'system',
+                'title' => 'System Update',
+                'message' => 'A system update is available',
+            ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.total_recipients', 2)
+            ->assertJsonPath('data.sent_count', 2)
+            ->assertJsonPath('data.failed_count', 0)
+            ->assertJsonPath('data.status', 'completed');
+    }
+
+    public function test_batch_requires_user_ids(): void
+    {
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/notifications/batch', [
+                'category' => 'system',
+                'title' => 'No Users',
+                'message' => 'Missing user_ids',
+            ]);
+
+        $response->assertStatus(422);
+    }
+
+    // ─── Bulk Delete ─────────────────────────────────────
+
+    public function test_bulk_delete_notifications(): void
+    {
+        $n1 = $this->createNotification(['title' => 'Bulk 1']);
+        $n2 = $this->createNotification(['title' => 'Bulk 2']);
+        $n3 = $this->createNotification(['title' => 'Keep']);
+
+        $response = $this->withToken($this->token)
+            ->deleteJson('/api/v2/notifications/bulk', [
+                'ids' => [$n1->id, $n2->id],
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.deleted_count', 2);
+
+        $this->assertDatabaseMissing('notifications_custom', ['id' => $n1->id]);
+        $this->assertDatabaseHas('notifications_custom', ['id' => $n3->id]);
+    }
+
+    public function test_bulk_delete_user_isolation(): void
+    {
+        $otherNotif = $this->createNotification(['user_id' => $this->otherUser->id]);
+
+        $response = $this->withToken($this->token)
+            ->deleteJson('/api/v2/notifications/bulk', [
+                'ids' => [$otherNotif->id],
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.deleted_count', 0);
+
+        $this->assertDatabaseHas('notifications_custom', ['id' => $otherNotif->id]);
+    }
+
+    // ─── Unread Count by Category ────────────────────────
+
+    public function test_unread_count_by_category(): void
+    {
+        $this->createNotification(['category' => 'order', 'is_read' => false]);
+        $this->createNotification(['category' => 'order', 'is_read' => false]);
+        $this->createNotification(['category' => 'system', 'is_read' => false]);
+        $this->createNotification(['category' => 'order', 'is_read' => true]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/notifications/unread-count-by-category');
+
+        $response->assertOk();
+        $data = $response->json('data');
+        $this->assertEquals(2, $data['order']);
+        $this->assertEquals(1, $data['system']);
+    }
+
+    // ─── Stats ───────────────────────────────────────────
+
+    public function test_user_notification_stats(): void
+    {
+        $this->createNotification(['is_read' => false]);
+        $this->createNotification(['is_read' => false]);
+        $this->createNotification(['is_read' => true]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/notifications/stats');
+
+        $response->assertOk();
+        $data = $response->json('data');
+        $this->assertEquals(3, $data['total']);
+        $this->assertEquals(2, $data['unread']);
+        $this->assertEquals(1, $data['read']);
+    }
+
+    // ─── Priority Filter ─────────────────────────────────
+
+    public function test_list_filters_by_priority(): void
+    {
+        $this->createNotification(['priority' => 'high']);
+        $this->createNotification(['priority' => 'normal']);
+        $this->createNotification(['priority' => 'high']);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/notifications?priority=high');
+
+        $response->assertOk()
+            ->assertJsonCount(2, 'data');
+    }
+
+    // ─── Sound Configuration ─────────────────────────────
+
+    public function test_get_sound_configs_empty(): void
+    {
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/notifications/sound-configs');
+
+        $response->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_update_sound_config(): void
+    {
+        $response = $this->withToken($this->token)
+            ->putJson('/api/v2/notifications/sound-configs/new_order', [
+                'is_enabled' => true,
+                'sound_file' => 'chime.mp3',
+                'volume' => 80,
+                'repeat_count' => 2,
+                'repeat_interval_seconds' => 3,
+            ]);
+
+        $response->assertOk();
+
+        // Verify it appears in list
+        $list = $this->withToken($this->token)
+            ->getJson('/api/v2/notifications/sound-configs');
+
+        $list->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
+    // ─── Schedules ───────────────────────────────────────
+
+    public function test_create_and_list_schedules(): void
+    {
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/notifications/schedules', [
+                'event_key' => 'daily_report',
+                'channel' => 'email',
+                'schedule_type' => 'recurring',
+                'scheduled_at' => now()->addHour()->toIso8601String(),
+                'cron_expression' => '0 9 * * *',
+                'timezone' => 'Asia/Muscat',
+            ]);
+
+        $response->assertStatus(201);
+
+        $list = $this->withToken($this->token)
+            ->getJson('/api/v2/notifications/schedules');
+
+        $list->assertOk()
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_cancel_schedule(): void
+    {
+        $create = $this->withToken($this->token)
+            ->postJson('/api/v2/notifications/schedules', [
+                'event_key' => 'reminder',
+                'channel' => 'push',
+                'schedule_type' => 'once',
+                'scheduled_at' => now()->addDay()->toIso8601String(),
+            ]);
+
+        $scheduleId = $create->json('data.id');
+
+        $response = $this->withToken($this->token)
+            ->putJson("/api/v2/notifications/schedules/{$scheduleId}/cancel");
+
+        $response->assertOk();
+    }
+
+    // ─── Enhanced Preferences ────────────────────────────
+
+    public function test_update_preferences_with_new_fields(): void
+    {
+        $response = $this->withToken($this->token)
+            ->putJson('/api/v2/notifications/preferences', [
+                'preferences' => [
+                    'order_updates' => ['in_app' => true, 'push' => true, 'email' => false, 'sound' => true],
+                ],
+                'per_category_channels' => [
+                    'order' => ['in_app', 'push', 'sound'],
+                    'inventory' => ['in_app', 'email'],
+                ],
+                'quiet_hours_start' => '22:00',
+                'quiet_hours_end' => '07:00',
+                'sound_enabled' => true,
+                'email_digest' => 'daily',
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.sound_enabled', true)
+            ->assertJsonPath('data.email_digest', 'daily');
+
+        $perCategory = $response->json('data.per_category_channels');
+        $this->assertContains('sound', $perCategory['order']);
+        $this->assertContains('email', $perCategory['inventory']);
+    }
+
+    // ─── New Endpoints Auth ──────────────────────────────
+
+    public function test_new_endpoints_require_authentication(): void
+    {
+        $endpoints = [
+            ['POST', '/api/v2/notifications/batch'],
+            ['DELETE', '/api/v2/notifications/bulk'],
+            ['GET', '/api/v2/notifications/unread-count-by-category'],
+            ['GET', '/api/v2/notifications/stats'],
+            ['GET', '/api/v2/notifications/delivery-logs'],
+            ['GET', '/api/v2/notifications/delivery-stats'],
+            ['GET', '/api/v2/notifications/sound-configs'],
+            ['GET', '/api/v2/notifications/schedules'],
+            ['POST', '/api/v2/notifications/schedules'],
+        ];
+
+        foreach ($endpoints as [$method, $url]) {
+            $response = $this->json($method, $url);
+            $response->assertStatus(401);
+        }
+    }
 }

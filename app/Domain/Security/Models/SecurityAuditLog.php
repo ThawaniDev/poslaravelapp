@@ -33,6 +33,11 @@ class SecurityAuditLog extends Model
         'ip_address',
         'device_id',
         'created_at',
+        'request_method',
+        'request_url',
+        'response_code',
+        'duration_ms',
+        'user_agent',
     ];
 
     protected $casts = [
@@ -42,6 +47,8 @@ class SecurityAuditLog extends Model
         'severity' => AuditSeverity::class,
         'details' => 'array',
         'created_at' => 'datetime',
+        'response_code' => 'integer',
+        'duration_ms' => 'integer',
     ];
 
     // ─── Relationships ───────────────────────────────────────

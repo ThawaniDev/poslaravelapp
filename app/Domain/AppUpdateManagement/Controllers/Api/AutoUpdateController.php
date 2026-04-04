@@ -74,4 +74,43 @@ class AutoUpdateController extends BaseApiController
             __('auto_update.current_loaded'),
         );
     }
+
+    public function manifest(string $version, Request $request): JsonResponse
+    {
+        $platform = $request->query('platform', 'ios');
+        $channel = $request->query('channel', 'stable');
+
+        $data = $this->service->getManifest($version, $platform, $channel);
+
+        if (!$data) {
+            return $this->notFound(__('auto_update.version_not_found'));
+        }
+
+        return $this->success($data, __('auto_update.manifest_loaded'));
+    }
+
+    public function download(string $version, Request $request): JsonResponse
+    {
+        $platform = $request->query('platform', 'ios');
+        $channel = $request->query('channel', 'stable');
+
+        $data = $this->service->getDownloadInfo($version, $platform, $channel);
+
+        if (!$data) {
+            return $this->notFound(__('auto_update.version_not_found'));
+        }
+
+        return $this->success($data, __('auto_update.download_info_loaded'));
+    }
+
+    public function rolloutStatus(Request $request): JsonResponse
+    {
+        $platform = $request->query('platform', 'ios');
+        $channel = $request->query('channel', 'stable');
+
+        return $this->success(
+            $this->service->getRolloutStatus($platform, $channel),
+            __('auto_update.rollout_status_loaded'),
+        );
+    }
 }

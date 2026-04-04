@@ -23,7 +23,7 @@ class RegisterRequest extends FormRequest
             'store_name' => ['nullable', 'string', 'max:255'],
             'store_name_ar' => ['nullable', 'string', 'max:255'],
             'country' => ['nullable', 'string', 'in:OM,SA'],
-            'currency' => ['nullable', 'string', 'in:SAR,OMR,AED,USD'],
+            'currency' => ['nullable', 'string', 'in:SAR,AED,USD'],
             'locale' => ['nullable', 'string', 'in:ar,en'],
             'business_type' => ['nullable', 'string', 'max:50'],
         ];

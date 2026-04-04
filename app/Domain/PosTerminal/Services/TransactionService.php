@@ -8,6 +8,7 @@ use App\Domain\PosTerminal\Enums\TransactionStatus;
 use App\Domain\PosTerminal\Enums\TransactionType;
 use App\Domain\PosTerminal\Models\Transaction;
 use App\Domain\PosTerminal\Models\TransactionItem;
+use App\Domain\PosTerminal\Models\PosSession;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -52,11 +53,19 @@ class TransactionService
     public function create(array $data, User $actor): Transaction
     {
         return DB::transaction(function () use ($data, $actor) {
+            // Resolve register_id from session if not provided
+            $registerId = $data['register_id'] ?? null;
+            $sessionId = $data['pos_session_id'] ?? null;
+            if (! $registerId && $sessionId) {
+                $session = PosSession::find($sessionId);
+                $registerId = $session?->register_id;
+            }
+
             $transaction = Transaction::create([
                 'organization_id' => $actor->organization_id,
                 'store_id' => $actor->store_id,
-                'register_id' => $data['register_id'] ?? null,
-                'pos_session_id' => $data['pos_session_id'] ?? null,
+                'register_id' => $registerId,
+                'pos_session_id' => $sessionId,
                 'cashier_id' => $actor->id,
                 'customer_id' => $data['customer_id'] ?? null,
                 'transaction_number' => $data['transaction_number'] ?? $this->generateNumber($actor->store_id),

@@ -39,12 +39,29 @@ Route::prefix('notifications')->middleware('auth:sanctum')->group(function () {
     // Notifications listing and creation
     Route::get('/', [NotificationController::class, 'index']);
     Route::post('/', [NotificationController::class, 'store']);
+    Route::post('batch', [NotificationController::class, 'batch']);
+    Route::delete('bulk', [NotificationController::class, 'bulkDelete']);
     Route::get('unread-count', [NotificationController::class, 'unreadCount']);
+    Route::get('unread-count-by-category', [NotificationController::class, 'unreadCountByCategory']);
+    Route::get('stats', [NotificationController::class, 'stats']);
     Route::put('read-all', [NotificationController::class, 'markAllAsRead']);
+
+    // Delivery logs & stats
+    Route::get('delivery-logs', [NotificationController::class, 'deliveryLogs']);
+    Route::get('delivery-stats', [NotificationController::class, 'deliveryStats']);
 
     // Preferences (must be before {id} wildcard)
     Route::get('preferences', [NotificationController::class, 'getPreferences']);
     Route::put('preferences', [NotificationController::class, 'updatePreferences']);
+
+    // Sound configurations
+    Route::get('sound-configs', [NotificationController::class, 'getSoundConfigs']);
+    Route::put('sound-configs/{eventKey}', [NotificationController::class, 'updateSoundConfig']);
+
+    // Schedules
+    Route::get('schedules', [NotificationController::class, 'listSchedules']);
+    Route::post('schedules', [NotificationController::class, 'createSchedule']);
+    Route::put('schedules/{id}/cancel', [NotificationController::class, 'cancelSchedule']);
 
     // FCM Tokens (must be before {id} wildcard)
     Route::post('fcm-tokens', [NotificationController::class, 'registerFcmToken']);

@@ -3,7 +3,9 @@
 namespace App\Domain\ContentOnboarding\Controllers\Api;
 
 use App\Domain\ContentOnboarding\Enums\WidgetCategory;
+use App\Domain\ContentOnboarding\Models\PosLayoutTemplate;
 use App\Domain\ContentOnboarding\Services\LayoutBuilderService;
+use App\Domain\Shared\Models\UserPreference;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -242,5 +244,113 @@ class LayoutBuilderController extends BaseApiController
         }
 
         return $this->success($layout, __('ui.full_layout_loaded'));
+    }
+
+    // ─── Flat Convenience Routes (resolve active template) ───
+
+    private function resolveActiveTemplateId(Request $request): ?string
+    {
+        $userId = $request->user()?->id;
+
+        if ($userId) {
+            $pref = UserPreference::where('user_id', $userId)->first();
+            if ($pref?->pos_layout_id) {
+                return $pref->pos_layout_id;
+            }
+        }
+
+        // Fallback: first active default template
+        return PosLayoutTemplate::where('is_active', true)
+            ->where('is_default', true)
+            ->first()?->id
+            ?? PosLayoutTemplate::where('is_active', true)->first()?->id;
+    }
+
+    public function activeCanvasConfig(Request $request): JsonResponse
+    {
+        $templateId = $this->resolveActiveTemplateId($request);
+
+        if (! $templateId) {
+            return $this->notFound(__('ui.no_active_template'));
+        }
+
+        return $this->canvasConfig($templateId);
+    }
+
+    public function updateActiveCanvasConfig(Request $request): JsonResponse
+    {
+        $templateId = $this->resolveActiveTemplateId($request);
+
+        if (! $templateId) {
+            return $this->notFound(__('ui.no_active_template'));
+        }
+
+        return $this->updateCanvasConfig($request, $templateId);
+    }
+
+    public function activePlacements(Request $request): JsonResponse
+    {
+        $templateId = $this->resolveActiveTemplateId($request);
+
+        if (! $templateId) {
+            return $this->notFound(__('ui.no_active_template'));
+        }
+
+        return $this->placements($templateId);
+    }
+
+    public function addActivePlacement(Request $request): JsonResponse
+    {
+        $templateId = $this->resolveActiveTemplateId($request);
+
+        if (! $templateId) {
+            return $this->notFound(__('ui.no_active_template'));
+        }
+
+        return $this->addPlacement($request, $templateId);
+    }
+
+    public function activeVersions(Request $request): JsonResponse
+    {
+        $templateId = $this->resolveActiveTemplateId($request);
+
+        if (! $templateId) {
+            return $this->notFound(__('ui.no_active_template'));
+        }
+
+        return $this->versions($templateId);
+    }
+
+    public function createActiveVersion(Request $request): JsonResponse
+    {
+        $templateId = $this->resolveActiveTemplateId($request);
+
+        if (! $templateId) {
+            return $this->notFound(__('ui.no_active_template'));
+        }
+
+        return $this->createVersion($request, $templateId);
+    }
+
+    public function cloneActiveTemplate(Request $request): JsonResponse
+    {
+        $templateId = $this->resolveActiveTemplateId($request);
+
+        if (! $templateId) {
+            return $this->notFound(__('ui.no_active_template'));
+        }
+
+        return $this->cloneTemplate($request, $templateId);
+    }
+
+    public function activeFullLayout(Request $request): JsonResponse
+    {
+        $templateId = $this->resolveActiveTemplateId($request);
+
+        if (! $templateId) {
+            return $this->notFound(__('ui.no_active_template'));
+        }
+
+        return $this->fullLayout($templateId);
     }
 }

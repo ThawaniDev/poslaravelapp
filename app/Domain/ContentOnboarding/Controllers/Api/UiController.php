@@ -6,6 +6,7 @@ use App\Domain\ContentOnboarding\Services\PosLayoutService;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\URL;
 
 class UiController extends BaseApiController
 {
@@ -16,15 +17,17 @@ class UiController extends BaseApiController
     public function layouts(Request $request): JsonResponse
     {
         $request->validate([
-            'business_type' => ['required', 'string', 'max:50'],
+            'business_type' => ['sometimes', 'string', 'max:50'],
         ]);
 
         $planId = $request->user()->store?->activeSubscription?->subscription_plan_id ?? null;
 
-        $layouts = $this->service->getAvailableLayouts(
-            $request->input('business_type'),
-            $planId,
-        );
+        $businessType = $request->input('business_type')
+            ?? $request->user()->store?->business_type?->value;
+
+        $layouts = $businessType
+            ? $this->service->getAvailableLayouts($businessType, $planId)
+            : collect();
 
         return $this->success($layouts, __('ui.layouts_loaded'));
     }
@@ -184,7 +187,7 @@ class UiController extends BaseApiController
     public function labelTemplates(Request $request): JsonResponse
     {
         $request->validate([
-            'business_type' => ['required', 'string', 'max:50'],
+            'business_type' => ['nullable', 'string', 'max:50'],
         ]);
 
         $planId = $request->user()->store?->activeSubscription?->subscription_plan_id ?? null;
@@ -206,5 +209,87 @@ class UiController extends BaseApiController
         }
 
         return $this->success($template, __('ui.label_template_loaded'));
+    }
+
+    // ─── Preview URL Generators ──────────────────────────
+
+    /**
+     * Generate a signed preview URL for a receipt layout template.
+     */
+    public function receiptTemplatePreviewUrl(string $id): JsonResponse
+    {
+        $template = $this->service->getReceiptTemplateById($id);
+
+        if (! $template) {
+            return $this->notFound(__('ui.receipt_template_not_found'));
+        }
+
+        $url = URL::temporarySignedRoute(
+            'preview.receipt-template',
+            now()->addHour(),
+            ['id' => $template->id],
+        );
+
+        return $this->success(['preview_url' => $url], __('ui.preview_url_generated'));
+    }
+
+    /**
+     * Generate a signed preview URL for a CFD theme.
+     */
+    public function cfdThemePreviewUrl(string $id): JsonResponse
+    {
+        $theme = $this->service->getCfdThemeById($id);
+
+        if (! $theme) {
+            return $this->notFound(__('ui.cfd_theme_not_found'));
+        }
+
+        $url = URL::temporarySignedRoute(
+            'preview.cfd-theme',
+            now()->addHour(),
+            ['id' => $theme->id],
+        );
+
+        return $this->success(['preview_url' => $url], __('ui.preview_url_generated'));
+    }
+
+    /**
+     * Generate a signed preview URL for a label layout template.
+     */
+    public function labelTemplatePreviewUrl(string $id): JsonResponse
+    {
+        $template = $this->service->getLabelTemplateById($id);
+
+        if (! $template) {
+            return $this->notFound(__('ui.label_template_not_found'));
+        }
+
+        $url = URL::temporarySignedRoute(
+            'preview.label-template',
+            now()->addHour(),
+            ['id' => $template->id],
+        );
+
+        return $this->success(['preview_url' => $url], __('ui.preview_url_generated'));
+    }
+
+    /**
+     * Generate a signed preview URL for a marketplace listing.
+     */
+    public function marketplaceListingPreviewUrl(string $id): JsonResponse
+    {
+        $listing = \App\Domain\ContentOnboarding\Models\TemplateMarketplaceListing::find($id);
+
+        if (! $listing) {
+            return $this->notFound(__('ui.marketplace_listing_not_found'));
+        }
+
+        $url = URL::temporarySignedRoute(
+            'preview.marketplace-listing',
+            now()->addHour(),
+            ['id' => $listing->id],
+        );
+
+        return $this->success(['preview_url' => $url], __('ui.preview_url_generated'));
     }
 }

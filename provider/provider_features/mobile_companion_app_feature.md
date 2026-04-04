@@ -21,6 +21,10 @@ The Mobile Companion App is a lightweight Flutter mobile application for store o
 - **Cash session viewer** — view active cash sessions; see expected vs actual cash
 - **Multi-branch overview** — switch between branches; aggregated view across all branches
 - **Quick approve/reject** — approve/reject delivery orders, stock transfers, refund requests from mobile
+- **Biometric app lock** — optional fingerprint/Face ID lock for app security
+- **Offline cache** — view last fetched dashboard data even when offline; auto-refresh when back online
+- **Return management** — view and manage return requests; approve/reject from mobile
+- **Settings & preferences** — notification preferences, default branch, language, logout
 
 ---
 

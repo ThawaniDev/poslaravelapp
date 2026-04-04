@@ -11,4 +11,5 @@ enum StockReferenceType: string
     case Waste = 'waste';
     case Stocktake = 'stocktake';
     case Recipe = 'recipe';
+    case SupplierReturn = 'supplier_return';
 }

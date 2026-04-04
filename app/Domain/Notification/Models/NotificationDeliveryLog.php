@@ -28,13 +28,20 @@ class NotificationDeliveryLog extends Model
         'latency_ms',
         'is_fallback',
         'attempted_providers',
+        'retry_count',
+        'next_retry_at',
+        'request_payload',
+        'response_payload',
     ];
 
     protected $casts = [
         'channel' => NotificationChannel::class,
         'status' => NotificationDeliveryStatus::class,
         'attempted_providers' => 'array',
+        'request_payload' => 'array',
+        'response_payload' => 'array',
         'is_fallback' => 'boolean',
+        'next_retry_at' => 'datetime',
     ];
 
     public function notification(): BelongsTo

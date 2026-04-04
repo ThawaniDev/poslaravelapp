@@ -22,11 +22,16 @@ class UserNotificationPreference extends Model
         'preferences_json',
         'quiet_hours_start',
         'quiet_hours_end',
+        'per_category_channels',
+        'sound_enabled',
+        'email_digest',
         'updated_at',
     ];
 
     protected $casts = [
         'preferences_json' => 'array',
+        'per_category_channels' => 'array',
+        'sound_enabled' => 'boolean',
         'updated_at' => 'datetime',
     ];
 }
