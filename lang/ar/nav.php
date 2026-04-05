@@ -54,4 +54,8 @@ return [
     'templates'                   => 'القوالب',
     'terminals'                   => 'الأجهزة الطرفية',
     'trusted_devices'             => 'الأجهزة الموثوقة',
+
+    // الكتالوج المحدد مسبقاً
+    'predefined_categories'       => 'التصنيفات المحددة مسبقاً',
+    'predefined_products'         => 'المنتجات المحددة مسبقاً',
 ];

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Domain\SystemConfig\Models\ABTest;
+use App\Domain\SystemConfig\Models\ABTestEvent;
 use App\Domain\SystemConfig\Models\ABTestVariant;
 use App\Domain\SystemConfig\Models\FeatureFlag;
 use App\Http\Controllers\Api\BaseApiController;
@@ -349,25 +350,59 @@ class FeatureFlagController extends BaseApiController
             return $this->notFound('A/B test not found');
         }
 
-        // Build synthetic results from variant weights (real implementation
-        // would aggregate conversion events)
-        $variantResults = $test->variants->map(function ($v) {
+        // Aggregate real impressions and conversions per variant
+        $eventCounts = ABTestEvent::where('ab_test_id', $test->id)
+            ->selectRaw("
+                variant_id,
+                SUM(CASE WHEN event_type = 'impression' THEN 1 ELSE 0 END) as impressions,
+                SUM(CASE WHEN event_type = 'conversion' THEN 1 ELSE 0 END) as conversions
+            ")
+            ->groupBy('variant_id')
+            ->get()
+            ->keyBy('variant_id');
+
+        $variantResults = $test->variants->map(function ($v) use ($eventCounts) {
+            $counts = $eventCounts->get($v->id);
+            $impressions = (int) ($counts->impressions ?? 0);
+            $conversions = (int) ($counts->conversions ?? 0);
+
             return [
                 'variant_key' => $v->variant_key,
                 'variant_label' => $v->variant_label,
                 'is_control' => $v->is_control,
                 'weight' => $v->weight,
-                'impressions' => 0,
-                'conversions' => 0,
-                'conversion_rate' => 0.0,
+                'impressions' => $impressions,
+                'conversions' => $conversions,
+                'conversion_rate' => $impressions > 0
+                    ? round(($conversions / $impressions) * 100, 2)
+                    : 0.0,
             ];
         });
 
+        // Determine winner: variant with highest conversion rate (if enough data)
+        $winner = null;
+        $confidence = 0.0;
+        $controlResult = $variantResults->firstWhere('is_control', true);
+        $bestNonControl = $variantResults->where('is_control', false)
+            ->sortByDesc('conversion_rate')
+            ->first();
+
+        if ($controlResult && $bestNonControl
+            && $controlResult['impressions'] >= 30 && $bestNonControl['impressions'] >= 30
+        ) {
+            if ($bestNonControl['conversion_rate'] > $controlResult['conversion_rate']) {
+                $winner = $bestNonControl['variant_key'];
+                // Simplified confidence based on sample size
+                $totalImpressions = $controlResult['impressions'] + $bestNonControl['impressions'];
+                $confidence = min(99.0, round(50 + ($totalImpressions / 20), 1));
+            }
+        }
+
         return $this->success([
             'test' => $test,
-            'results' => $variantResults,
-            'winner' => null,
-            'confidence' => 0.0,
+            'results' => $variantResults->values(),
+            'winner' => $winner,
+            'confidence' => $confidence,
         ], 'A/B test results');
     }
 

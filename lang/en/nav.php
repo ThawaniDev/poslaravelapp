@@ -54,4 +54,8 @@ return [
     'templates'                   => 'Templates',
     'terminals'                   => 'Terminals',
     'trusted_devices'             => 'Trusted Devices',
+
+    // Predefined Catalog
+    'predefined_categories'       => 'Predefined Categories',
+    'predefined_products'         => 'Predefined Products',
 ];

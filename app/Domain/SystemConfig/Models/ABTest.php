@@ -41,4 +41,9 @@ class ABTest extends Model
     {
         return $this->hasMany(ABTestVariant::class, 'ab_test_id');
     }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(ABTestEvent::class, 'ab_test_id');
+    }
 }

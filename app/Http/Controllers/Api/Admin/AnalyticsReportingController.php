@@ -9,8 +9,13 @@ use App\Domain\Analytics\Models\StoreHealthSnapshot;
 use App\Domain\AdminPanel\Models\AdminActivityLog;
 use App\Domain\AdminPanel\Models\AdminUser;
 use App\Domain\Core\Models\Store;
+use App\Domain\Notification\Models\Notification;
+use App\Domain\Notification\Models\NotificationBatch;
+use App\Domain\Notification\Models\NotificationDeliveryLog;
+use App\Domain\Notification\Models\NotificationReadReceipt;
 use App\Domain\ProviderSubscription\Models\Invoice;
 use App\Domain\ProviderSubscription\Models\StoreSubscription;
+use App\Domain\Support\Models\SupportTicket;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -311,16 +316,74 @@ class AnalyticsReportingController extends BaseApiController
      */
     public function supportAnalyticsDashboard(Request $request): JsonResponse
     {
-        // Support metrics from activity logs (as a proxy since support_tickets may not exist yet)
-        $supportActions = AdminActivityLog::where('entity_type', 'support')
+        $dateFrom = $request->query('date_from', now()->subDays(30)->toDateString());
+        $dateTo = $request->query('date_to', now()->toDateString());
+
+        $ticketsQuery = SupportTicket::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59']);
+
+        $totalTickets = (clone $ticketsQuery)->count();
+        $openTickets = SupportTicket::where('status', 'open')->count();
+        $inProgressTickets = SupportTicket::where('status', 'in_progress')->count();
+        $resolvedTickets = (clone $ticketsQuery)->where('status', 'resolved')->count();
+        $closedTickets = (clone $ticketsQuery)->where('status', 'closed')->count();
+
+        // SLA compliance: tickets resolved before SLA deadline
+        $resolvedWithSla = SupportTicket::whereNotNull('resolved_at')
+            ->whereNotNull('sla_deadline_at')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59']);
+        $totalWithSla = (clone $resolvedWithSla)->count();
+        $slaCompliant = (clone $resolvedWithSla)->whereColumn('resolved_at', '<=', 'sla_deadline_at')->count();
+        $slaComplianceRate = $totalWithSla > 0 ? round(($slaCompliant / $totalWithSla) * 100, 2) : 100;
+
+        // Average first response time (hours) — computed in PHP for SQLite/PG compat
+        $ticketsWithResponse = SupportTicket::whereNotNull('first_response_at')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->get(['created_at', 'first_response_at']);
+        $avgFirstResponse = $ticketsWithResponse->count() > 0
+            ? $ticketsWithResponse->avg(fn ($t) => $t->first_response_at->diffInMinutes($t->created_at) / 60)
+            : 0;
+
+        // Average resolution time (hours) — computed in PHP for SQLite/PG compat
+        $ticketsWithResolution = SupportTicket::whereNotNull('resolved_at')
+            ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->get(['created_at', 'resolved_at']);
+        $avgResolution = $ticketsWithResolution->count() > 0
+            ? $ticketsWithResolution->avg(fn ($t) => $t->resolved_at->diffInMinutes($t->created_at) / 60)
+            : 0;
+
+        // Tickets by category
+        $byCategory = SupportTicket::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->selectRaw('category, COUNT(*) as count')
+            ->groupBy('category')
+            ->pluck('count', 'category')
+            ->toArray();
+
+        // Tickets by priority
+        $byPriority = SupportTicket::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->selectRaw('priority, COUNT(*) as count')
+            ->groupBy('priority')
+            ->pluck('count', 'priority')
+            ->toArray();
+
+        // SLA breached (open/in_progress tickets past deadline)
+        $slaBreached = SupportTicket::whereIn('status', ['open', 'in_progress'])
+            ->whereNotNull('sla_deadline_at')
+            ->where('sla_deadline_at', '<', now())
             ->count();
 
         return $this->success([
-            'total_support_actions' => $supportActions,
-            'open_tickets' => 0,
-            'avg_first_response_hours' => 0,
-            'avg_resolution_hours' => 0,
-            'sla_compliance_rate' => 100,
+            'total_tickets' => $totalTickets,
+            'open_tickets' => $openTickets,
+            'in_progress_tickets' => $inProgressTickets,
+            'resolved_tickets' => $resolvedTickets,
+            'closed_tickets' => $closedTickets,
+            'sla_compliance_rate' => $slaComplianceRate,
+            'sla_breached' => $slaBreached,
+            'avg_first_response_hours' => round((float) ($avgFirstResponse ?? 0), 2),
+            'avg_resolution_hours' => round((float) ($avgResolution ?? 0), 2),
+            'by_category' => $byCategory,
+            'by_priority' => $byPriority,
+            'date_range' => ['from' => $dateFrom, 'to' => $dateTo],
         ]);
     }
 
@@ -368,13 +431,80 @@ class AnalyticsReportingController extends BaseApiController
      */
     public function notificationAnalytics(Request $request): JsonResponse
     {
+        $dateFrom = $request->query('date_from', now()->subDays(30)->toDateString());
+        $dateTo = $request->query('date_to', now()->toDateString());
+
+        // Total notifications sent in the period
+        $totalSent = Notification::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])->count();
+
+        // Delivery stats from delivery logs
+        $deliveryStats = NotificationDeliveryLog::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                AVG(latency_ms) as avg_latency_ms
+            ")
+            ->first();
+
+        $totalDelivered = (int) ($deliveryStats->delivered ?? 0);
+        $totalFailed = (int) ($deliveryStats->failed ?? 0);
+        $totalAttempted = (int) ($deliveryStats->total ?? 0);
+        $avgLatencyMs = round((float) ($deliveryStats->avg_latency_ms ?? 0), 1);
+
+        $deliveryRate = $totalAttempted > 0
+            ? round(($totalDelivered / $totalAttempted) * 100, 2)
+            : 100;
+
+        // Read/opened from read receipts
+        $totalOpened = NotificationReadReceipt::whereBetween('read_at', [$dateFrom, $dateTo . ' 23:59:59'])->count();
+        $openRate = $totalSent > 0 ? round(($totalOpened / $totalSent) * 100, 2) : 0;
+
+        // Breakdown by channel
+        $byChannel = NotificationDeliveryLog::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->selectRaw("
+                channel,
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'delivered' THEN 1 ELSE 0 END) as delivered,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
+            ")
+            ->groupBy('channel')
+            ->get()
+            ->map(fn ($row) => [
+                'channel' => $row->channel,
+                'total' => (int) $row->total,
+                'delivered' => (int) $row->delivered,
+                'failed' => (int) $row->failed,
+                'delivery_rate' => $row->total > 0 ? round(($row->delivered / $row->total) * 100, 2) : 0,
+            ])
+            ->toArray();
+
+        // Batch stats
+        $batchStats = NotificationBatch::whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
+            ->selectRaw("
+                COUNT(*) as total_batches,
+                SUM(total_recipients) as total_recipients,
+                SUM(sent_count) as total_sent,
+                SUM(failed_count) as total_failed
+            ")
+            ->first();
+
         return $this->success([
-            'total_sent' => 0,
-            'total_delivered' => 0,
-            'total_opened' => 0,
-            'delivery_rate' => 100,
-            'open_rate' => 0,
-            'by_channel' => [],
+            'total_sent' => $totalSent,
+            'total_delivered' => $totalDelivered,
+            'total_failed' => $totalFailed,
+            'total_opened' => $totalOpened,
+            'delivery_rate' => $deliveryRate,
+            'open_rate' => $openRate,
+            'avg_latency_ms' => $avgLatencyMs,
+            'by_channel' => $byChannel,
+            'batch_stats' => [
+                'total_batches' => (int) ($batchStats->total_batches ?? 0),
+                'total_recipients' => (int) ($batchStats->total_recipients ?? 0),
+                'total_sent' => (int) ($batchStats->total_sent ?? 0),
+                'total_failed' => (int) ($batchStats->total_failed ?? 0),
+            ],
+            'date_range' => ['from' => $dateFrom, 'to' => $dateTo],
         ]);
     }
 

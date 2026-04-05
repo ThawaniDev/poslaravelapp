@@ -663,41 +663,58 @@ class AnalyticsReportingApiTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    'total_support_actions',
+                    'total_tickets',
                     'open_tickets',
+                    'in_progress_tickets',
+                    'resolved_tickets',
+                    'closed_tickets',
+                    'sla_compliance_rate',
+                    'sla_breached',
                     'avg_first_response_hours',
                     'avg_resolution_hours',
-                    'sla_compliance_rate',
+                    'by_category',
+                    'by_priority',
+                    'date_range',
                 ],
             ]);
     }
 
-    public function test_support_analytics_counts_support_actions(): void
+    public function test_support_analytics_counts_real_ticket_data(): void
     {
-        AdminActivityLog::forceCreate([
-            'admin_user_id' => $this->admin->id,
-            'action' => 'reply_ticket',
-            'entity_type' => 'support',
-            'entity_id' => null,
-            'details' => json_encode(['message' => 'Replied to ticket']),
-            'ip_address' => '127.0.0.1',
+        \App\Domain\Support\Models\SupportTicket::forceCreate([
+            'ticket_number' => 'TKT-TEST0001',
+            'organization_id' => $this->org->id,
+            'store_id' => $this->store->id,
+            'user_id' => null,
+            'status' => 'open',
+            'category' => 'technical',
+            'priority' => 'high',
+            'subject' => 'Test ticket 1',
+            'description' => 'Test',
             'created_at' => now()->toDateTimeString(),
         ]);
 
-        AdminActivityLog::forceCreate([
-            'admin_user_id' => $this->admin->id,
-            'action' => 'close_ticket',
-            'entity_type' => 'support',
-            'entity_id' => null,
-            'details' => json_encode(['message' => 'Closed ticket']),
-            'ip_address' => '127.0.0.1',
-            'created_at' => now()->toDateTimeString(),
+        \App\Domain\Support\Models\SupportTicket::forceCreate([
+            'ticket_number' => 'TKT-TEST0002',
+            'organization_id' => $this->org->id,
+            'store_id' => $this->store->id,
+            'user_id' => null,
+            'status' => 'resolved',
+            'category' => 'billing',
+            'priority' => 'medium',
+            'subject' => 'Test ticket 2',
+            'description' => 'Test',
+            'first_response_at' => now()->subHours(2)->toDateTimeString(),
+            'resolved_at' => now()->toDateTimeString(),
+            'created_at' => now()->subHours(3)->toDateTimeString(),
         ]);
 
         $response = $this->getJson('/api/v2/admin/analytics/support');
         $response->assertOk();
 
-        $this->assertEquals(2, $response->json('data.total_support_actions'));
+        $this->assertEquals(2, $response->json('data.total_tickets'));
+        $this->assertEquals(1, $response->json('data.open_tickets'));
+        $this->assertEquals(1, $response->json('data.resolved_tickets'));
     }
 
     // ═══════════════════════════════════════════════════════════

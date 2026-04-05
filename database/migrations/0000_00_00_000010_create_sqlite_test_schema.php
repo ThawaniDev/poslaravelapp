@@ -498,6 +498,25 @@ return new class extends Migration
             });
         }
 
+        // ─── Platform: ab_test_events ────────────────────────
+        if (!Schema::hasTable('ab_test_events')) {
+            Schema::create('ab_test_events', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('ab_test_id');
+                $table->uuid('variant_id');
+                $table->string('event_type', 20); // impression, conversion
+                $table->uuid('store_id')->nullable();
+                $table->uuid('user_id')->nullable();
+                $table->json('metadata')->nullable();
+                $table->timestamp('created_at')->nullable();
+
+                $table->foreign('ab_test_id')->references('id')->on('ab_tests')->cascadeOnDelete();
+                $table->foreign('variant_id')->references('id')->on('ab_test_variants')->cascadeOnDelete();
+                $table->index(['ab_test_id', 'variant_id']);
+                $table->index(['ab_test_id', 'event_type']);
+            });
+        }
+
         // ─── Platform: notification_templates ────────────────
         if (!Schema::hasTable('notification_templates')) {
             Schema::create('notification_templates', function (Blueprint $table) {
@@ -1135,6 +1154,57 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->integer('sort_order')->default(0);
             $table->timestamps();
+        });
+
+        // ─── Predefined Catalog: predefined_categories ────────
+        Schema::create('predefined_categories', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('business_type_id');
+            $table->foreign('business_type_id')->references('id')->on('business_types')->cascadeOnDelete();
+            $table->uuid('parent_id')->nullable();
+            $table->foreign('parent_id')->references('id')->on('predefined_categories')->nullOnDelete();
+            $table->string('name', 150);
+            $table->string('name_ar', 150)->nullable();
+            $table->text('description')->nullable();
+            $table->text('description_ar')->nullable();
+            $table->text('image_url')->nullable();
+            $table->integer('sort_order')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        // ─── Predefined Catalog: predefined_products ─────────
+        Schema::create('predefined_products', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('business_type_id');
+            $table->foreign('business_type_id')->references('id')->on('business_types')->cascadeOnDelete();
+            $table->uuid('predefined_category_id')->nullable();
+            $table->foreign('predefined_category_id')->references('id')->on('predefined_categories')->nullOnDelete();
+            $table->string('name', 200);
+            $table->string('name_ar', 200)->nullable();
+            $table->text('description')->nullable();
+            $table->text('description_ar')->nullable();
+            $table->string('sku', 50)->nullable();
+            $table->string('barcode', 50)->nullable();
+            $table->decimal('sell_price', 12, 2)->default(0);
+            $table->decimal('cost_price', 12, 2)->nullable();
+            $table->string('unit', 20)->default('piece');
+            $table->decimal('tax_rate', 5, 2)->default(0);
+            $table->boolean('is_weighable')->default(false);
+            $table->decimal('tare_weight', 8, 3)->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->boolean('age_restricted')->default(false);
+            $table->text('image_url')->nullable();
+            $table->timestamps();
+        });
+
+        // ─── Predefined Catalog: predefined_product_images ───
+        Schema::create('predefined_product_images', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('predefined_product_id');
+            $table->foreign('predefined_product_id')->references('id')->on('predefined_products')->cascadeOnDelete();
+            $table->text('image_url');
+            $table->integer('sort_order')->default(0);
         });
 
         // ─── Content Onboarding: pos_layout_templates ────────
@@ -2873,6 +2943,18 @@ return new class extends Migration
         });
 
         // ─── Notifications ──────────────────────────────────
+        if (!Schema::hasTable('notifications')) {
+            Schema::create('notifications', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('type');
+                $table->string('notifiable_type');
+                $table->uuid('notifiable_id');
+                $table->json('data');
+                $table->timestamp('read_at')->nullable();
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
         Schema::create('notifications_custom', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('user_id');
@@ -3595,7 +3677,7 @@ return new class extends Migration
             // Notifications
             'notification_read_receipts', 'notification_sound_configs', 'notification_batches', 'notification_schedules',
             'notification_delivery_logs', 'notification_provider_status',
-            'notification_events_log', 'fcm_tokens', 'notification_preferences', 'notifications_custom',
+            'notification_events_log', 'fcm_tokens', 'notification_preferences', 'notifications_custom', 'notifications',
             // Reports & Analytics
             'daily_sales_summary', 'product_sales_summary',
             // Staff Management
@@ -3643,7 +3725,7 @@ return new class extends Migration
             'delivery_platform_endpoints', 'delivery_platform_fields', 'delivery_platforms',
             'system_health_checks', 'platform_event_logs',
             'cms_pages', 'notification_templates',
-            'feature_flags', 'ab_test_variants', 'ab_tests', 'system_settings',
+            'feature_flags', 'ab_test_events', 'ab_test_variants', 'ab_tests', 'system_settings',
             'implementation_fees', 'hardware_sales', 'payment_gateway_configs', 'payment_retry_rules',
             'subscription_credits', 'subscription_discounts',
             'payment_reminders', 'platform_announcement_dismissals', 'platform_announcements',
@@ -3662,7 +3744,9 @@ return new class extends Migration
             'template_reviews', 'template_purchases', 'template_marketplace_listings',
             'marketplace_categories',
             'widget_theme_overrides', 'layout_widget_placements', 'layout_widgets',
-            'themes', 'platform_ui_defaults', 'pos_layout_templates', 'business_types',
+            'themes', 'platform_ui_defaults', 'pos_layout_templates',
+            'predefined_product_images', 'predefined_products', 'predefined_categories',
+            'business_types',
             // Original tables
             'audit_logs', 'role_audit_log', 'pin_overrides',
             'default_role_template_permissions', 'default_role_templates', 'provider_permissions',
