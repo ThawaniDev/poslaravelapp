@@ -384,7 +384,7 @@ class CompanionService
     {
         $orders = Order::where('store_id', $storeId)
             ->whereIn('status', ['new', 'confirmed', 'preparing', 'ready'])
-            ->with(['orderItems:id,order_id,product_id,quantity,unit_price', 'customer:id,first_name,last_name'])
+            ->with(['orderItems:id,order_id,product_id,quantity,unit_price', 'customer:id,name'])
             ->orderByDesc('created_at')
             ->limit($limit)
             ->get();
@@ -398,7 +398,7 @@ class CompanionService
                 'total' => (float) $o->total,
                 'items_count' => $o->orderItems->count(),
                 'customer' => $o->customer ? [
-                    'name' => trim(($o->customer->first_name ?? '') . ' ' . ($o->customer->last_name ?? '')),
+                    'name' => $o->customer->name,
                 ] : null,
                 'created_at' => $o->created_at?->toIso8601String(),
             ])->toArray(),
