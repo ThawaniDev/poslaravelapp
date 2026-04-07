@@ -41,7 +41,10 @@ Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
     // Customers (POS search)
     Route::get('/customers', [PosTerminalController::class, 'customers'])->middleware('permission:pos.sell');
 
-    // Terminals (Registers)
+    // Registers (read-only for cashiers to select during shift opening)
+    Route::get('/registers', [RegisterController::class, 'listActive'])->middleware('permission:pos.sell');
+
+    // Terminals (Registers) — full CRUD for admins
     Route::middleware('permission:pos.manage_terminals')->group(function () {
         Route::get('/terminals', [RegisterController::class, 'index']);
         Route::post('/terminals', [RegisterController::class, 'store']);

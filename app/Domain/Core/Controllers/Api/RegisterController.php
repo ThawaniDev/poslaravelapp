@@ -33,6 +33,20 @@ class RegisterController extends BaseApiController
     }
 
     /**
+     * List active registers for the cashier to select during shift opening.
+     * Lightweight endpoint — no pagination, only active registers, minimal fields.
+     */
+    public function listActive(Request $request): JsonResponse
+    {
+        $registers = Register::where('store_id', $request->user()->store_id)
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'store_id', 'name', 'device_id', 'platform', 'is_online']);
+
+        return $this->success($registers);
+    }
+
+    /**
      * Create a new register (terminal).
      */
     public function store(StoreRegisterRequest $request): JsonResponse

@@ -1,5 +1,5 @@
 -- ==========================================================================
--- THAWANI POS PLATFORM - COMPREHENSIVE DATABASE SCHEMA
+-- Wameed POS PLATFORM - COMPREHENSIVE DATABASE SCHEMA
 -- Generated: 8 March 2026
 -- Database: PostgreSQL 15+ (Laravel 11 backend)
 -- Total tables: 255 unique tables across 47 feature files

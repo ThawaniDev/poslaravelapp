@@ -85,7 +85,7 @@ A **complete, commercial POS system** for Saudi supermarkets that can be:
 ### Product Positioning
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     THAWANI POS                                 │
+│                     Wameed POS                                 │
 │              "Saudi's Complete Retail Solution"                 │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
@@ -8072,7 +8072,7 @@ Provider portal pages, menu items, and capabilities adapt automatically based on
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│                       THAWANI POS PACKAGE TIERS                          │
+│                       Wameed POS PACKAGE TIERS                          │
 ├───────────────────┬──────────────────┬────────────────┬──────────────────┤
 │ Feature           │  STARTER         │  PROFESSIONAL  │  ENTERPRISE      │
 ├───────────────────┼──────────────────┼────────────────┼──────────────────┤
@@ -13152,14 +13152,14 @@ Accept card payments **directly on the POS device's NFC chip** (Tap-to-Pay / Sof
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│            NEARPAY INTEGRATION IN THAWANI POS                   │
+│            NEARPAY INTEGRATION IN Wameed POS                   │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ANDROID TABLET (Samsung Tab A8 / S6 Lite / etc.)              │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │                                                          │  │
 │  │  ┌──────────────────────────────────────────────────┐   │  │
-│  │  │           THAWANI POS (Flutter App)               │   │  │
+│  │  │           Wameed POS (Flutter App)               │   │  │
 │  │  │                                                    │   │  │
 │  │  │  ┌────────────┐  ┌────────────┐  ┌────────────┐  │   │  │
 │  │  │  │  Sales UI  │  │  Payment   │  │  Receipt   │  │   │  │

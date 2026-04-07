@@ -1,4 +1,4 @@
-# THAWANI POS — COMPREHENSIVE API AUDIT
+# Wameed POS — COMPREHENSIVE API AUDIT
 
 > **Generated:** 2026-03-16
 > **Total API Routes:** 718
