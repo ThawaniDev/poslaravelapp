@@ -18,14 +18,33 @@ class Role extends Model
         'store_id',
         'name',
         'display_name',
+        'display_name_ar',
         'guard_name',
         'is_predefined',
+        'scope',
         'description',
+        'description_ar',
     ];
 
     protected $casts = [
         'is_predefined' => 'boolean',
     ];
+
+    /**
+     * Whether this role is scoped to the organization (cross-branch).
+     */
+    public function isOrganizationScoped(): bool
+    {
+        return ($this->scope ?? 'branch') === 'organization';
+    }
+
+    /**
+     * Whether this role is scoped to a single branch.
+     */
+    public function isBranchScoped(): bool
+    {
+        return ($this->scope ?? 'branch') === 'branch';
+    }
 
     // ─── Relationships ───────────────────────────────────────────
 

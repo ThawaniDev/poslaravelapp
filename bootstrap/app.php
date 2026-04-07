@@ -23,10 +23,16 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'permission' => \App\Http\Middleware\CheckPermission::class,
+            'branch.scope' => \App\Http\Middleware\BranchScope::class,
         ]);
 
         $middleware->statefulApi();
         $middleware->throttleApi('api');
+
+        // Apply branch scope to all API requests (resolves after auth:sanctum)
+        $middleware->appendToGroup('api', [
+            \App\Http\Middleware\BranchScope::class,
+        ]);
         $middleware->validateCsrfTokens(except: [
             'api/v2/website/*',
         ]);

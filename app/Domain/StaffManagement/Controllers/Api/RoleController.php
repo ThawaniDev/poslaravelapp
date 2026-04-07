@@ -110,16 +110,25 @@ class RoleController extends BaseApiController
      * GET /api/v2/staff/roles/user-permissions?store_id=xxx
      *
      * Get the effective permissions for the authenticated user.
+     * Also returns branch scope and accessible store IDs.
      */
     public function userPermissions(Request $request)
     {
         $request->validate(['store_id' => 'required|uuid|exists:stores,id']);
 
-        $permissions = $this->roleService->getEffectivePermissions(
-            $request->user(),
-            $request->store_id,
-        );
+        $user = $request->user();
+        $storeId = $request->store_id;
 
-        return $this->success(['permissions' => $permissions]);
+        $permissions = $this->roleService->getEffectivePermissions($user, $storeId);
+        $branchScope = $this->roleService->getUserBranchScope($user, $storeId);
+        $accessibleStoreIds = $this->roleService->getAccessibleStoreIds($user, $storeId);
+        $branchRoles = $this->roleService->getUserBranchRoles($user, $storeId);
+
+        return $this->success([
+            'permissions'          => $permissions,
+            'branch_scope'         => $branchScope,
+            'accessible_store_ids' => $accessibleStoreIds,
+            'branch_roles'         => $branchRoles,
+        ]);
     }
 }

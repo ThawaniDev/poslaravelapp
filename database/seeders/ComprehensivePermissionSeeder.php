@@ -13,17 +13,18 @@ use Illuminate\Support\Facades\DB;
 /**
  * Comprehensive permission & role seeder.
  *
- * Seeds all 167 system permissions (with Arabic translations), then creates
- * predefined roles for ALL stores that don't have them yet.
+ * Seeds all 167 system permissions (with Arabic translations), REMOVES all old
+ * predefined roles, then creates 16 new predefined roles for ALL stores.
  *
- * Safe to re-run: permissions use updateOrCreate, roles skip existing stores.
+ * Safe to re-run: permissions use updateOrCreate, old roles are fully replaced.
  *
  * Usage:
  *   php artisan db:seed --class=ComprehensivePermissionSeeder
  *
- * Options (via --class arguments in tinker or direct call):
- *   - Default: seeds permissions + roles for ALL stores
- *   - Pass store_id to target a single store
+ * 16 Predefined Roles:
+ * Organization-level (7): owner, manager, accountant, chain_manager, inventory_manager, viewer, sales_manager
+ * Branch-level (9): branch_manager, branch_accountant, branch_chain_manager, branch_inventory_manager,
+ *                    branch_kitchen_staff, senior_cashier, cashier, branch_viewer, branch_sales_manager
  */
 class ComprehensivePermissionSeeder extends Seeder
 {
@@ -31,7 +32,7 @@ class ComprehensivePermissionSeeder extends Seeder
     {
         $this->command->info('');
         $this->command->info('╔══════════════════════════════════════════════════╗');
-        $this->command->info('║   Comprehensive Permission & Role Seeder        ║');
+        $this->command->info('║   Comprehensive Permission & Role Seeder v2     ║');
         $this->command->info('╚══════════════════════════════════════════════════╝');
         $this->command->info('');
 
@@ -59,7 +60,6 @@ class ComprehensivePermissionSeeder extends Seeder
         $staleCount = Permission::whereNotIn('name', $validNames)->count();
 
         if ($staleCount > 0) {
-            // Detach from roles first, then delete
             $staleIds = Permission::whereNotIn('name', $validNames)->pluck('id');
             DB::table('role_has_permissions')->whereIn('permission_id', $staleIds)->delete();
             Permission::whereIn('id', $staleIds)->delete();
@@ -69,8 +69,31 @@ class ComprehensivePermissionSeeder extends Seeder
         }
         $this->command->info('');
 
-        // ─── Step 3: Seed predefined roles for all stores ─────────
-        $this->command->info('Step 3: Seeding predefined roles for stores...');
+        // ─── Step 3: Remove ALL old predefined roles ──────────────
+        $this->command->info('Step 3: Removing old predefined roles...');
+
+        $oldRoles = Role::where('is_predefined', true)->get();
+        $oldCount = $oldRoles->count();
+
+        if ($oldCount > 0) {
+            foreach ($oldRoles as $oldRole) {
+                // Detach permissions
+                $oldRole->permissions()->detach();
+                // Remove user assignments to this role
+                DB::table('model_has_roles')->where('role_id', $oldRole->id)->delete();
+                // Remove staff branch assignments referencing this role
+                DB::table('staff_branch_assignments')->where('role_id', $oldRole->id)->delete();
+                $oldRole->delete();
+            }
+            $this->command->warn("  ⚠ Removed {$oldCount} old predefined roles (and their user assignments).");
+            $this->command->warn('    NOTE: Users will need to be reassigned to new roles after seeding.');
+        } else {
+            $this->command->info('  ✓ No old predefined roles to remove.');
+        }
+        $this->command->info('');
+
+        // ─── Step 4: Seed new predefined roles for all stores ─────
+        $this->command->info('Step 4: Seeding 16 new predefined roles for stores...');
 
         $stores = Store::all();
 
@@ -80,26 +103,12 @@ class ComprehensivePermissionSeeder extends Seeder
         } else {
             $allPermissions = Permission::all();
             $templates = RoleService::DEFAULT_ROLE_TEMPLATES;
-            $storesSeeded = 0;
             $rolesCreated = 0;
 
             foreach ($stores as $store) {
-                $existingRoles = Role::forStore($store->id)
-                    ->where('is_predefined', true)
-                    ->pluck('name')
-                    ->all();
+                $this->command->info("  ─ Store: {$store->name} ({$store->id})");
 
-                $missingTemplates = collect($templates)
-                    ->filter(fn ($t) => !in_array($t['name'], $existingRoles));
-
-                if ($missingTemplates->isEmpty()) {
-                    $this->command->line("  ─ {$store->name}: all roles exist, skipping.");
-                    continue;
-                }
-
-                $storesSeeded++;
-
-                foreach ($missingTemplates as $template) {
+                foreach ($templates as $template) {
                     $role = Role::create([
                         'store_id'        => $store->id,
                         'name'            => $template['name'],
@@ -107,6 +116,7 @@ class ComprehensivePermissionSeeder extends Seeder
                         'display_name_ar' => $template['display_name_ar'] ?? null,
                         'guard_name'      => 'staff',
                         'is_predefined'   => true,
+                        'scope'           => $template['scope'] ?? 'branch',
                         'description'     => $template['description'] ?? null,
                         'description_ar'  => $template['description_ar'] ?? null,
                     ]);
@@ -120,35 +130,78 @@ class ComprehensivePermissionSeeder extends Seeder
                         $role->permissions()->attach($permIds);
                         $permCount = $permIds->count();
 
-                        // Warn about missing permissions
                         $missing = count($template['permissions']) - $permCount;
                         if ($missing > 0) {
                             $this->command->warn("    ⚠ {$template['display_name']}: {$missing} permissions not found in DB");
                         }
                     }
 
+                    $scope = $template['scope'] ?? 'branch';
+                    $this->command->line("    ✓ {$template['display_name']} ({$scope}): {$permCount} permissions");
                     $rolesCreated++;
-                    $this->command->info("  ✓ {$store->name} → {$template['display_name']}: {$permCount} permissions");
                 }
             }
 
             $this->command->info('');
-            $this->command->info("  Summary: {$rolesCreated} roles created across {$storesSeeded} stores.");
+            $this->command->info("  Summary: {$rolesCreated} roles created across {$stores->count()} stores.");
         }
 
-        // ─── Step 4: Verification ─────────────────────────────────
+        // ─── Step 5: Auto-assign owner role to store owners ──────
         $this->command->info('');
-        $this->command->info('Step 4: Verification...');
+        $this->command->info('Step 5: Auto-assigning owner roles...');
+
+        $ownerAssignments = 0;
+        foreach (Store::all() as $store) {
+            // Find users with store_id matching this store and role = 'owner'
+            $ownerUsers = \App\Domain\Auth\Models\User::where('store_id', $store->id)
+                ->where('role', 'owner')
+                ->get();
+
+            $ownerRole = Role::where('store_id', $store->id)
+                ->where('name', 'owner')
+                ->where('is_predefined', true)
+                ->first();
+
+            if ($ownerRole && $ownerUsers->isNotEmpty()) {
+                foreach ($ownerUsers as $ownerUser) {
+                    DB::table('model_has_roles')->updateOrInsert(
+                        [
+                            'role_id'    => $ownerRole->id,
+                            'model_id'   => $ownerUser->id,
+                            'model_type' => get_class($ownerUser),
+                        ],
+                    );
+                    $ownerAssignments++;
+                    $this->command->info("  ✓ Assigned owner role to {$ownerUser->email} in {$store->name}");
+                }
+            }
+        }
+
+        if ($ownerAssignments === 0) {
+            $this->command->info('  ─ No owner users found to auto-assign.');
+        }
+
+        // ─── Step 6: Verification ─────────────────────────────────
+        $this->command->info('');
+        $this->command->info('Step 6: Verification...');
 
         $finalPerms = Permission::count();
         $finalRoles = Role::count();
+        $finalPredefined = Role::where('is_predefined', true)->count();
         $finalMappings = DB::table('role_has_permissions')->count();
+        $finalAssignments = DB::table('model_has_roles')->count();
+
+        $orgRoles = Role::where('is_predefined', true)->where('scope', 'organization')->count();
+        $branchRoles = Role::where('is_predefined', true)->where('scope', 'branch')->count();
 
         $this->command->info("  ✓ Permissions in DB: {$finalPerms}");
-        $this->command->info("  ✓ Roles in DB: {$finalRoles}");
+        $this->command->info("  ✓ Roles in DB: {$finalRoles} ({$finalPredefined} predefined)");
+        $this->command->info("  ✓ Organization-scoped roles: {$orgRoles}");
+        $this->command->info("  ✓ Branch-scoped roles: {$branchRoles}");
         $this->command->info("  ✓ Role ↔ Permission mappings: {$finalMappings}");
+        $this->command->info("  ✓ User ↔ Role assignments: {$finalAssignments}");
         $this->command->info('');
-        $this->command->info('Done! ✓');
+        $this->command->info('Done! Users need to be assigned to their new roles.');
         $this->command->info('');
     }
 }
