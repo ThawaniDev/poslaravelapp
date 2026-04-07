@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('owner-dashboard')->middleware('auth:sanctum')->group(function () {
+Route::prefix('owner-dashboard')->middleware(['auth:sanctum', 'permission:dashboard.view'])->group(function () {
     Route::get('stats', [OwnerDashboardController::class, 'stats']);
     Route::get('sales-trend', [OwnerDashboardController::class, 'salesTrend']);
     Route::get('top-products', [OwnerDashboardController::class, 'topProducts']);

@@ -15,14 +15,14 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('orders')->middleware('auth:sanctum')->group(function () {
     // Returns (before wildcard routes)
-    Route::get('/returns/list', [OrderController::class, 'returns']);
-    Route::get('/returns/{returnId}', [OrderController::class, 'showReturn']);
+    Route::get('/returns/list', [OrderController::class, 'returns'])->middleware('permission:orders.view');
+    Route::get('/returns/{returnId}', [OrderController::class, 'showReturn'])->middleware('permission:orders.view');
 
     // Orders
-    Route::get('/', [OrderController::class, 'index']);
-    Route::post('/', [OrderController::class, 'store']);
-    Route::get('/{order}', [OrderController::class, 'show']);
-    Route::put('/{order}/status', [OrderController::class, 'updateStatus']);
-    Route::post('/{order}/void', [OrderController::class, 'void']);
-    Route::post('/{order}/return', [OrderController::class, 'createReturn']);
+    Route::get('/', [OrderController::class, 'index'])->middleware('permission:orders.view');
+    Route::post('/', [OrderController::class, 'store'])->middleware('permission:orders.manage');
+    Route::get('/{order}', [OrderController::class, 'show'])->middleware('permission:orders.view');
+    Route::put('/{order}/status', [OrderController::class, 'updateStatus'])->middleware('permission:orders.update_status');
+    Route::post('/{order}/void', [OrderController::class, 'void'])->middleware('permission:orders.void');
+    Route::post('/{order}/return', [OrderController::class, 'createReturn'])->middleware('permission:orders.return');
 });

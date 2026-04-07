@@ -13,9 +13,13 @@ class Permission extends Model
     protected $fillable = [
         'name',
         'display_name',
+        'display_name_ar',
         'module',
         'guard_name',
         'requires_pin',
+        'description',
+        'description_ar',
+        'sort_order',
     ];
 
     protected $casts = [

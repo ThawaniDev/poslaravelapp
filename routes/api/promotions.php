@@ -14,17 +14,17 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('promotions')->middleware('auth:sanctum')->group(function () {
-    Route::get('/', [PromotionController::class, 'index']);
-    Route::post('/', [PromotionController::class, 'store']);
-    Route::get('/{promotion}', [PromotionController::class, 'show']);
-    Route::put('/{promotion}', [PromotionController::class, 'update']);
-    Route::delete('/{promotion}', [PromotionController::class, 'destroy']);
-    Route::post('/{promotion}/toggle', [PromotionController::class, 'toggle']);
-    Route::post('/{promotion}/generate-coupons', [PromotionController::class, 'generateCoupons']);
-    Route::get('/{promotion}/analytics', [PromotionController::class, 'analytics']);
+    Route::get('/', [PromotionController::class, 'index'])->middleware('permission:promotions.manage');
+    Route::post('/', [PromotionController::class, 'store'])->middleware('permission:promotions.manage');
+    Route::get('/{promotion}', [PromotionController::class, 'show'])->middleware('permission:promotions.manage');
+    Route::put('/{promotion}', [PromotionController::class, 'update'])->middleware('permission:promotions.manage');
+    Route::delete('/{promotion}', [PromotionController::class, 'destroy'])->middleware('permission:promotions.manage');
+    Route::post('/{promotion}/toggle', [PromotionController::class, 'toggle'])->middleware('permission:promotions.manage');
+    Route::post('/{promotion}/generate-coupons', [PromotionController::class, 'generateCoupons'])->middleware('permission:promotions.manage');
+    Route::get('/{promotion}/analytics', [PromotionController::class, 'analytics'])->middleware('permission:promotions.view_analytics');
 });
 
 Route::prefix('coupons')->middleware('auth:sanctum')->group(function () {
-    Route::post('/validate', [PromotionController::class, 'validateCoupon']);
-    Route::post('/redeem', [PromotionController::class, 'redeemCoupon']);
+    Route::post('/validate', [PromotionController::class, 'validateCoupon'])->middleware('permission:promotions.apply_manual');
+    Route::post('/redeem', [PromotionController::class, 'redeemCoupon'])->middleware('permission:promotions.apply_manual');
 });

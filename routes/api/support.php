@@ -14,14 +14,14 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('support')->middleware('auth:sanctum')->group(function () {
-    Route::get('stats', [SupportController::class, 'stats']);
-    Route::get('tickets', [SupportController::class, 'index']);
-    Route::post('tickets', [SupportController::class, 'store']);
-    Route::get('tickets/{id}', [SupportController::class, 'show']);
-    Route::post('tickets/{id}/messages', [SupportController::class, 'addMessage']);
-    Route::put('tickets/{id}/close', [SupportController::class, 'close']);
+    Route::get('stats', [SupportController::class, 'stats'])->middleware('permission:support.view');
+    Route::get('tickets', [SupportController::class, 'index'])->middleware('permission:support.view');
+    Route::post('tickets', [SupportController::class, 'store'])->middleware('permission:support.create_ticket');
+    Route::get('tickets/{id}', [SupportController::class, 'show'])->middleware('permission:support.view');
+    Route::post('tickets/{id}/messages', [SupportController::class, 'addMessage'])->middleware('permission:support.create_ticket');
+    Route::put('tickets/{id}/close', [SupportController::class, 'close'])->middleware('permission:support.create_ticket');
 
     // Knowledge Base (published articles only)
-    Route::get('kb', [SupportController::class, 'kbIndex']);
-    Route::get('kb/{slug}', [SupportController::class, 'kbShow']);
+    Route::get('kb', [SupportController::class, 'kbIndex'])->middleware('permission:support.view');
+    Route::get('kb/{slug}', [SupportController::class, 'kbShow'])->middleware('permission:support.view');
 });

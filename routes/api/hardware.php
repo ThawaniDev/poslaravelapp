@@ -14,11 +14,11 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('hardware')->middleware('auth:sanctum')->group(function () {
-    Route::get('config', [HardwareController::class, 'listConfigs']);
-    Route::post('config', [HardwareController::class, 'saveConfig']);
-    Route::delete('config/{id}', [HardwareController::class, 'removeConfig']);
-    Route::get('supported-models', [HardwareController::class, 'supportedModels']);
-    Route::post('test', [HardwareController::class, 'testDevice']);
-    Route::post('event-log', [HardwareController::class, 'recordEvent']);
-    Route::get('event-logs', [HardwareController::class, 'eventLogs']);
+    Route::get('config', [HardwareController::class, 'listConfigs'])->middleware('permission:hardware.view');
+    Route::post('config', [HardwareController::class, 'saveConfig'])->middleware('permission:hardware.manage');
+    Route::delete('config/{id}', [HardwareController::class, 'removeConfig'])->middleware('permission:hardware.manage');
+    Route::get('supported-models', [HardwareController::class, 'supportedModels'])->middleware('permission:hardware.view');
+    Route::post('test', [HardwareController::class, 'testDevice'])->middleware('permission:hardware.manage');
+    Route::post('event-log', [HardwareController::class, 'recordEvent'])->middleware('permission:hardware.view');
+    Route::get('event-logs', [HardwareController::class, 'eventLogs'])->middleware('permission:hardware.view');
 });

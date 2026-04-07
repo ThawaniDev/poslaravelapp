@@ -32,14 +32,17 @@ class PermissionController extends BaseApiController
     {
         $grouped = $this->permissionService->groupedByModule();
 
-        // Transform grouped data with PermissionResource
+        // Transform grouped data with full details
         $result = [];
         foreach ($grouped as $module => $perms) {
             $result[$module] = collect($perms)->map(fn ($p) => [
-                'id'           => $p['id'],
-                'name'         => $p['name'],
-                'display_name' => $p['display_name'],
-                'requires_pin' => $p['requires_pin'],
+                'id'               => $p['id'],
+                'name'             => $p['name'],
+                'display_name'     => $p['display_name'],
+                'display_name_ar'  => $p['display_name_ar'] ?? null,
+                'description'      => $p['description'] ?? null,
+                'description_ar'   => $p['description_ar'] ?? null,
+                'requires_pin'     => $p['requires_pin'],
             ])->values()->toArray();
         }
 

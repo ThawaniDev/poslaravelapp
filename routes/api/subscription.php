@@ -27,32 +27,32 @@ Route::prefix('subscription')->group(function () {
     // ─── Authenticated: Subscription management ─────────────────
     Route::middleware('auth:sanctum')->group(function () {
         // Current subscription & lifecycle
-        Route::get('current', [SubscriptionController::class, 'current']);
-        Route::post('subscribe', [SubscriptionController::class, 'subscribe']);
-        Route::put('change-plan', [SubscriptionController::class, 'changePlan']);
-        Route::post('cancel', [SubscriptionController::class, 'cancel']);
-        Route::post('resume', [SubscriptionController::class, 'resume']);
+        Route::get('current', [SubscriptionController::class, 'current'])->middleware('permission:subscription.view');
+        Route::post('subscribe', [SubscriptionController::class, 'subscribe'])->middleware('permission:subscription.manage');
+        Route::put('change-plan', [SubscriptionController::class, 'changePlan'])->middleware('permission:subscription.manage');
+        Route::post('cancel', [SubscriptionController::class, 'cancel'])->middleware('permission:subscription.manage');
+        Route::post('resume', [SubscriptionController::class, 'resume'])->middleware('permission:subscription.manage');
 
         // Usage & enforcement
-        Route::get('usage', [SubscriptionController::class, 'usage']);
-        Route::get('check-feature/{featureKey}', [SubscriptionController::class, 'checkFeature']);
-        Route::get('check-limit/{limitKey}', [SubscriptionController::class, 'checkLimit']);
+        Route::get('usage', [SubscriptionController::class, 'usage'])->middleware('permission:subscription.view');
+        Route::get('check-feature/{featureKey}', [SubscriptionController::class, 'checkFeature'])->middleware('permission:subscription.view');
+        Route::get('check-limit/{limitKey}', [SubscriptionController::class, 'checkLimit'])->middleware('permission:subscription.view');
 
         // Invoices
-        Route::get('invoices', [InvoiceController::class, 'index']);
-        Route::get('invoices/{invoiceId}', [InvoiceController::class, 'show']);
-        Route::get('invoices/{invoiceId}/pdf', [InvoiceController::class, 'downloadPdf']);
+        Route::get('invoices', [InvoiceController::class, 'index'])->middleware('permission:subscription.view');
+        Route::get('invoices/{invoiceId}', [InvoiceController::class, 'show'])->middleware('permission:subscription.view');
+        Route::get('invoices/{invoiceId}/pdf', [InvoiceController::class, 'downloadPdf'])->middleware('permission:subscription.view');
 
         // Sync — offline entitlement cache
-        Route::get('sync/entitlements', [SubscriptionController::class, 'syncEntitlements']);
+        Route::get('sync/entitlements', [SubscriptionController::class, 'syncEntitlements'])->middleware('permission:subscription.view');
 
         // Add-ons for current store
-        Route::get('store-add-ons', [SubscriptionController::class, 'storeAddOns']);
+        Route::get('store-add-ons', [SubscriptionController::class, 'storeAddOns'])->middleware('permission:subscription.view');
 
         // Admin-only plan management
-        Route::post('plans', [PlanController::class, 'store']);
-        Route::put('plans/{planId}', [PlanController::class, 'update']);
-        Route::patch('plans/{planId}/toggle', [PlanController::class, 'toggle']);
-        Route::delete('plans/{planId}', [PlanController::class, 'destroy']);
+        Route::post('plans', [PlanController::class, 'store'])->middleware('permission:subscription.manage');
+        Route::put('plans/{planId}', [PlanController::class, 'update'])->middleware('permission:subscription.manage');
+        Route::patch('plans/{planId}/toggle', [PlanController::class, 'toggle'])->middleware('permission:subscription.manage');
+        Route::delete('plans/{planId}', [PlanController::class, 'destroy'])->middleware('permission:subscription.manage');
     });
 });

@@ -17,7 +17,7 @@ Route::prefix('config')->group(function () {
     // Public (or lightly-authed) endpoint for maintenance check
     Route::get('maintenance', [ConfigController::class, 'maintenance']);
 
-    // Authenticated endpoints
+    // Authenticated endpoints — essential bootstrap config, no permission restriction
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('feature-flags', [ConfigController::class, 'featureFlags']);
         Route::get('tax', [ConfigController::class, 'tax']);

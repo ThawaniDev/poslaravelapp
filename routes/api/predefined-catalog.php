@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('predefined-catalog')->middleware('auth:sanctum')->group(function () {
+Route::prefix('predefined-catalog')->middleware(['auth:sanctum', 'permission:products.use_predefined'])->group(function () {
 
     // ─── Predefined Categories ───────────────────────────────
     Route::prefix('categories')->group(function () {

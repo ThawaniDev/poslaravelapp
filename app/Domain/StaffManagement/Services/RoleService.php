@@ -219,20 +219,25 @@ class RoleService
     public function seedPredefinedRoles(string $storeId): void
     {
         $templates = config('pos.role_templates', self::DEFAULT_ROLE_TEMPLATES);
+        $allPermissions = Permission::all();
 
         foreach ($templates as $template) {
             $role = Role::create([
-                'store_id'      => $storeId,
-                'name'          => $template['name'],
-                'display_name'  => $template['display_name'],
-                'guard_name'    => 'staff',
-                'is_predefined' => true,
-                'description'   => $template['description'] ?? null,
+                'store_id'        => $storeId,
+                'name'            => $template['name'],
+                'display_name'    => $template['display_name'],
+                'display_name_ar' => $template['display_name_ar'] ?? null,
+                'guard_name'      => 'staff',
+                'is_predefined'   => true,
+                'description'     => $template['description'] ?? null,
+                'description_ar'  => $template['description_ar'] ?? null,
             ]);
 
-            // Attach permissions by name
-            if (!empty($template['permissions'])) {
-                $permIds = Permission::whereIn('name', $template['permissions'])->pluck('id');
+            // Owner gets all permissions
+            if (in_array('*', $template['permissions'])) {
+                $role->permissions()->attach($allPermissions->pluck('id'));
+            } else {
+                $permIds = $allPermissions->whereIn('name', $template['permissions'])->pluck('id');
                 $role->permissions()->attach($permIds);
             }
         }
@@ -254,69 +259,165 @@ class RoleService
 
     /**
      * Default role templates — used when no config override exists.
+     * Permission names must match PermissionService::ALL_PERMISSIONS exactly.
      */
     public const DEFAULT_ROLE_TEMPLATES = [
         [
             'name'         => 'owner',
             'display_name' => 'Owner',
+            'display_name_ar' => 'المالك',
             'description'  => 'Full access to all features and settings',
+            'description_ar' => 'وصول كامل لجميع الميزات والإعدادات',
             'permissions'  => ['*'], // handled specially — gets ALL permissions
         ],
         [
             'name'         => 'branch_manager',
             'display_name' => 'Branch Manager',
+            'display_name_ar' => 'مدير الفرع',
             'description'  => 'Manage store operations, staff, and reports',
+            'description_ar' => 'إدارة عمليات المتجر والموظفين والتقارير',
             'permissions'  => [
-                'pos.open_session', 'pos.close_session', 'pos.sell', 'pos.apply_discount', 'pos.void_transaction',
-                'pos.hold_recall', 'pos.refund', 'pos.reprint_receipt',
-                'orders.view', 'orders.create', 'orders.update_status', 'orders.cancel',
-                'inventory.view', 'inventory.adjust', 'inventory.receive', 'inventory.transfer',
-                'catalog.view', 'catalog.create', 'catalog.update', 'catalog.manage_categories',
-                'customers.view', 'customers.create', 'customers.update',
-                'reports.view_sales', 'reports.view_inventory', 'reports.view_staff',
-                'staff.view', 'staff.create', 'staff.update', 'staff.assign_role',
-                'settings.view',
+                // POS
+                'pos.shift_open', 'pos.shift_close', 'pos.sell', 'pos.discount', 'pos.void_transaction',
+                'pos.hold_recall', 'pos.refund', 'pos.return', 'pos.reprint_receipt', 'pos.view_sessions',
+                'pos.manage_terminals', 'pos.price_override', 'pos.no_sale',
+                // Orders
+                'orders.view', 'orders.manage', 'orders.return', 'orders.void', 'orders.update_status',
+                // Products
+                'products.view', 'products.manage', 'products.manage_categories', 'products.manage_suppliers',
+                'products.import_export', 'products.manage_pricing',
+                // Inventory
+                'inventory.view', 'inventory.manage', 'inventory.adjust', 'inventory.transfer',
+                'inventory.stocktake', 'inventory.receive', 'inventory.purchase_orders',
+                // Customers
+                'customers.view', 'customers.manage', 'customers.manage_loyalty', 'customers.manage_debits',
+                // Payments & Cash
+                'payments.process', 'payments.refund',
+                'cash.manage', 'cash.view_sessions', 'cash.view_daily_summary', 'cash.reconciliation',
+                // Reports
+                'reports.view', 'reports.sales', 'reports.inventory', 'reports.staff',
+                'reports.customers', 'reports.attendance', 'reports.export',
+                // Staff
+                'staff.view', 'staff.create', 'staff.edit', 'staff.manage', 'staff.manage_shifts',
+                'roles.view', 'roles.assign',
+                // Labels & Promotions
+                'labels.view', 'labels.manage', 'labels.print',
+                'promotions.manage', 'promotions.apply_manual', 'promotions.view_analytics',
+                // Settings (view only)
+                'settings.view', 'settings.localization',
+                // Dashboard & Notifications
+                'dashboard.view',
+                'notifications.view', 'notifications.manage',
+                // Support
+                'support.view', 'support.create_ticket',
             ],
         ],
         [
             'name'         => 'cashier',
             'display_name' => 'Cashier',
+            'display_name_ar' => 'كاشير',
             'description'  => 'Process sales and manage the register',
+            'description_ar' => 'معالجة المبيعات وإدارة الصندوق',
             'permissions'  => [
-                'pos.open_session', 'pos.close_session', 'pos.sell', 'pos.hold_recall', 'pos.reprint_receipt',
-                'orders.view', 'orders.create',
-                'catalog.view',
-                'customers.view', 'customers.create',
+                'pos.shift_open', 'pos.shift_close', 'pos.sell', 'pos.hold_recall',
+                'pos.reprint_receipt', 'pos.return', 'pos.view_sessions',
+                'orders.view', 'orders.manage', 'orders.update_status',
+                'products.view',
+                'customers.view', 'customers.manage',
+                'payments.process',
+                'cash.manage', 'cash.view_sessions',
+                'labels.print',
+                'dashboard.view',
+                'notifications.view',
+                'support.view', 'support.create_ticket',
+            ],
+        ],
+        [
+            'name'         => 'senior_cashier',
+            'display_name' => 'Senior Cashier',
+            'display_name_ar' => 'كاشير أول',
+            'description'  => 'Cashier with discount and refund privileges',
+            'description_ar' => 'كاشير مع صلاحيات الخصم والاسترجاع',
+            'permissions'  => [
+                'pos.shift_open', 'pos.shift_close', 'pos.sell', 'pos.hold_recall',
+                'pos.reprint_receipt', 'pos.return', 'pos.view_sessions',
+                'pos.discount', 'pos.refund', 'pos.void', 'pos.price_override',
+                'orders.view', 'orders.manage', 'orders.return', 'orders.update_status',
+                'products.view',
+                'customers.view', 'customers.manage', 'customers.manage_loyalty',
+                'payments.process', 'payments.refund',
+                'cash.manage', 'cash.view_sessions', 'cash.view_daily_summary',
+                'labels.print',
+                'promotions.apply_manual',
+                'dashboard.view',
+                'notifications.view',
+                'support.view', 'support.create_ticket',
             ],
         ],
         [
             'name'         => 'inventory_clerk',
             'display_name' => 'Inventory Clerk',
+            'display_name_ar' => 'أمين المخزون',
             'description'  => 'Manage stock and inventory',
+            'description_ar' => 'إدارة المخزون والبضائع',
             'permissions'  => [
-                'inventory.view', 'inventory.adjust', 'inventory.receive', 'inventory.transfer', 'inventory.count',
-                'catalog.view', 'catalog.create', 'catalog.update',
-                'reports.view_inventory',
+                'inventory.view', 'inventory.manage', 'inventory.adjust', 'inventory.transfer',
+                'inventory.stocktake', 'inventory.receive', 'inventory.purchase_orders',
+                'inventory.supplier_returns', 'inventory.recipes',
+                'products.view', 'products.manage', 'products.manage_categories', 'products.manage_suppliers',
+                'labels.view', 'labels.manage', 'labels.print',
+                'reports.inventory',
+                'dashboard.view',
+                'notifications.view',
+                'support.view', 'support.create_ticket',
             ],
         ],
         [
             'name'         => 'accountant',
             'display_name' => 'Accountant',
+            'display_name_ar' => 'محاسب',
             'description'  => 'Financial reporting and cash management',
+            'description_ar' => 'التقارير المالية وإدارة النقد',
             'permissions'  => [
-                'reports.view_sales', 'reports.view_financial', 'reports.export',
-                'accounting.view', 'accounting.manage_expenses',
+                'reports.view', 'reports.sales', 'reports.view_financial', 'reports.view_margin',
+                'reports.inventory', 'reports.customers', 'reports.export',
+                'accounting.configure', 'accounting.view_history', 'accounting.export', 'accounting.manage_mappings',
+                'finance.commissions', 'finance.settlements', 'finance.expenses', 'finance.gift_cards',
+                'cash.view_sessions', 'cash.view_daily_summary', 'cash.reconciliation',
                 'orders.view',
                 'pos.view_sessions',
+                'customers.view', 'customers.manage_debits',
+                'dashboard.view',
+                'notifications.view',
+                'support.view', 'support.create_ticket',
             ],
         ],
         [
             'name'         => 'kitchen_staff',
             'display_name' => 'Kitchen Staff',
+            'display_name_ar' => 'طاقم المطبخ',
             'description'  => 'View and process kitchen orders',
+            'description_ar' => 'عرض ومعالجة طلبات المطبخ',
             'permissions'  => [
                 'orders.view', 'orders.update_status',
-                'kitchen.view', 'kitchen.update_status',
+                'restaurant.kds', 'restaurant.tables', 'restaurant.view',
+                'notifications.view',
+            ],
+        ],
+        [
+            'name'         => 'viewer',
+            'display_name' => 'Viewer',
+            'display_name_ar' => 'مشاهد',
+            'description'  => 'Read-only access to reports and dashboards',
+            'description_ar' => 'صلاحية العرض فقط للتقارير ولوحات المعلومات',
+            'permissions'  => [
+                'dashboard.view',
+                'reports.view', 'reports.sales', 'reports.inventory', 'reports.customers',
+                'orders.view',
+                'products.view',
+                'inventory.view',
+                'customers.view',
+                'notifications.view',
             ],
         ],
     ];

@@ -21,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
             return '/admin/login';
         });
 
+        $middleware->alias([
+            'permission' => \App\Http\Middleware\CheckPermission::class,
+        ]);
+
         $middleware->statefulApi();
         $middleware->throttleApi('api');
         $middleware->validateCsrfTokens(except: [

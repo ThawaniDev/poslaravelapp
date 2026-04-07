@@ -15,26 +15,26 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('accounting')->middleware('auth:sanctum')->group(function () {
     // Connection
-    Route::get('status', [AccountingController::class, 'status']);
-    Route::post('connect', [AccountingController::class, 'connect']);
-    Route::post('disconnect', [AccountingController::class, 'disconnect']);
-    Route::post('refresh-token', [AccountingController::class, 'refreshToken']);
+    Route::get('status', [AccountingController::class, 'status'])->middleware('permission:accounting.view_history');
+    Route::post('connect', [AccountingController::class, 'connect'])->middleware('permission:accounting.connect');
+    Route::post('disconnect', [AccountingController::class, 'disconnect'])->middleware('permission:accounting.connect');
+    Route::post('refresh-token', [AccountingController::class, 'refreshToken'])->middleware('permission:accounting.connect');
 
     // POS Account Keys reference
-    Route::get('pos-account-keys', [AccountingController::class, 'posAccountKeys']);
+    Route::get('pos-account-keys', [AccountingController::class, 'posAccountKeys'])->middleware('permission:accounting.manage_mappings');
 
     // Account Mapping
-    Route::get('mapping', [AccountingController::class, 'getMappings']);
-    Route::put('mapping', [AccountingController::class, 'saveMappings']);
-    Route::delete('mapping/{id}', [AccountingController::class, 'deleteMapping']);
+    Route::get('mapping', [AccountingController::class, 'getMappings'])->middleware('permission:accounting.manage_mappings');
+    Route::put('mapping', [AccountingController::class, 'saveMappings'])->middleware('permission:accounting.manage_mappings');
+    Route::delete('mapping/{id}', [AccountingController::class, 'deleteMapping'])->middleware('permission:accounting.manage_mappings');
 
     // Auto-Export (before exports/{id} to avoid wildcard match)
-    Route::get('auto-export', [AccountingController::class, 'getAutoExport']);
-    Route::put('auto-export', [AccountingController::class, 'updateAutoExport']);
+    Route::get('auto-export', [AccountingController::class, 'getAutoExport'])->middleware('permission:accounting.export');
+    Route::put('auto-export', [AccountingController::class, 'updateAutoExport'])->middleware('permission:accounting.export');
 
     // Exports
-    Route::get('exports', [AccountingController::class, 'listExports']);
-    Route::post('exports', [AccountingController::class, 'triggerExport']);
-    Route::get('exports/{id}', [AccountingController::class, 'getExport']);
-    Route::post('exports/{id}/retry', [AccountingController::class, 'retryExport']);
+    Route::get('exports', [AccountingController::class, 'listExports'])->middleware('permission:accounting.view_history');
+    Route::post('exports', [AccountingController::class, 'triggerExport'])->middleware('permission:accounting.export');
+    Route::get('exports/{id}', [AccountingController::class, 'getExport'])->middleware('permission:accounting.view_history');
+    Route::post('exports/{id}/retry', [AccountingController::class, 'retryExport'])->middleware('permission:accounting.export');
 });
