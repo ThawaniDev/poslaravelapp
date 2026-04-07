@@ -13,6 +13,18 @@ class ReportService
 
     public function salesSummary(string $storeId, array $filters): array
     {
+        // When advanced filters are used (staff_id, payment_method, min/max_amount, order_status),
+        // we query orders directly instead of the pre-aggregated DailySalesSummary.
+        $hasAdvancedFilters = ! empty($filters['staff_id'])
+            || ! empty($filters['payment_method'])
+            || ! empty($filters['min_amount'])
+            || ! empty($filters['max_amount'])
+            || ! empty($filters['order_status']);
+
+        if ($hasAdvancedFilters) {
+            return $this->salesSummaryFromOrders($storeId, $filters);
+        }
+
         $query = DailySalesSummary::where('store_id', $storeId);
 
         if (! empty($filters['date_from'])) {
@@ -23,6 +35,10 @@ class ReportService
         }
 
         $rows = $query->orderBy('date')->get();
+
+        // Apply granularity grouping
+        $granularity = $filters['granularity'] ?? 'daily';
+        $grouped = $this->groupByGranularity($rows, $granularity);
 
         $totals = [
             'total_transactions' => $rows->sum('total_transactions'),
@@ -43,16 +59,8 @@ class ReportService
 
         $result = [
             'totals' => $totals,
-            'daily' => $rows->map(fn ($r) => [
-                'date' => $r->date->format('Y-m-d'),
-                'total_transactions' => $r->total_transactions,
-                'total_revenue' => (float) $r->total_revenue,
-                'net_revenue' => (float) $r->net_revenue,
-                'total_cost' => (float) $r->total_cost,
-                'total_discount' => (float) $r->total_discount,
-                'total_tax' => (float) $r->total_tax,
-                'total_refunds' => (float) $r->total_refunds,
-            ])->values()->toArray(),
+            'granularity' => $granularity,
+            'series' => $grouped,
         ];
 
         // Period comparison
@@ -61,6 +69,133 @@ class ReportService
         }
 
         return $result;
+    }
+
+    /**
+     * Sales summary queried directly from orders when advanced filters are applied.
+     */
+    private function salesSummaryFromOrders(string $storeId, array $filters): array
+    {
+        $query = DB::table('orders')
+            ->where('store_id', $storeId)
+            ->whereNotIn('status', ['cancelled', 'voided']);
+
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+        if (! empty($filters['staff_id'])) {
+            $query->where('created_by', $filters['staff_id']);
+        }
+        if (! empty($filters['order_status'])) {
+            $query->where('status', $filters['order_status']);
+        }
+        if (! empty($filters['min_amount'])) {
+            $query->where('total', '>=', $filters['min_amount']);
+        }
+        if (! empty($filters['max_amount'])) {
+            $query->where('total', '<=', $filters['max_amount']);
+        }
+        if (! empty($filters['payment_method'])) {
+            $query->whereIn('id', function ($sub) use ($filters) {
+                $sub->select('transactions.order_id')
+                    ->from('payments')
+                    ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
+                    ->where('payments.method', $filters['payment_method']);
+            });
+        }
+
+        $granularity = $filters['granularity'] ?? 'daily';
+        $dateExpr = $this->dateGroupExpression('created_at', $granularity);
+
+        $rows = $query->select([
+            DB::raw("$dateExpr as period"),
+            DB::raw('COUNT(*) as total_transactions'),
+            DB::raw('COALESCE(SUM(total), 0) as total_revenue'),
+            DB::raw('COALESCE(SUM(discount_amount), 0) as total_discount'),
+        ])
+            ->groupBy(DB::raw($dateExpr))
+            ->orderBy('period')
+            ->get();
+
+        $totals = [
+            'total_transactions' => (int) $rows->sum('total_transactions'),
+            'total_revenue' => (float) $rows->sum('total_revenue'),
+            'total_discount' => (float) $rows->sum('total_discount'),
+            'net_revenue' => (float) $rows->sum('total_revenue') - (float) $rows->sum('total_discount'),
+        ];
+
+        return [
+            'totals' => $totals,
+            'granularity' => $granularity,
+            'series' => $rows->map(fn ($r) => [
+                'period' => $r->period,
+                'total_transactions' => (int) $r->total_transactions,
+                'total_revenue' => (float) $r->total_revenue,
+                'total_discount' => (float) $r->total_discount,
+            ])->values()->toArray(),
+        ];
+    }
+
+    /**
+     * Group DailySalesSummary rows by granularity (daily, weekly, monthly).
+     */
+    private function groupByGranularity($rows, string $granularity): array
+    {
+        if ($granularity === 'daily') {
+            return $rows->map(fn ($r) => [
+                'period' => $r->date->format('Y-m-d'),
+                'total_transactions' => $r->total_transactions,
+                'total_revenue' => (float) $r->total_revenue,
+                'net_revenue' => (float) $r->net_revenue,
+                'total_cost' => (float) $r->total_cost,
+                'total_discount' => (float) $r->total_discount,
+                'total_tax' => (float) $r->total_tax,
+                'total_refunds' => (float) $r->total_refunds,
+            ])->values()->toArray();
+        }
+
+        $grouped = $rows->groupBy(function ($r) use ($granularity) {
+            $date = $r->date;
+            return $granularity === 'weekly'
+                ? $date->startOfWeek()->format('Y-m-d')
+                : $date->format('Y-m');
+        });
+
+        return $grouped->map(function ($group, $key) {
+            return [
+                'period' => $key,
+                'total_transactions' => (int) $group->sum('total_transactions'),
+                'total_revenue' => (float) $group->sum('total_revenue'),
+                'net_revenue' => (float) $group->sum('net_revenue'),
+                'total_cost' => (float) $group->sum('total_cost'),
+                'total_discount' => (float) $group->sum('total_discount'),
+                'total_tax' => (float) $group->sum('total_tax'),
+                'total_refunds' => (float) $group->sum('total_refunds'),
+            ];
+        })->values()->toArray();
+    }
+
+    /**
+     * SQL expression for grouping dates by granularity.
+     */
+    private function dateGroupExpression(string $column, string $granularity): string
+    {
+        $driver = DB::connection()->getDriverName();
+
+        return match ($granularity) {
+            'weekly' => $driver === 'pgsql'
+                ? "TO_CHAR(DATE_TRUNC('week', $column), 'YYYY-MM-DD')"
+                : "strftime('%Y-%m-%d', $column, 'weekday 0', '-6 days')",
+            'monthly' => $driver === 'pgsql'
+                ? "TO_CHAR($column, 'YYYY-MM')"
+                : "strftime('%Y-%m', $column)",
+            default => $driver === 'pgsql'
+                ? "TO_CHAR($column, 'YYYY-MM-DD')"
+                : "strftime('%Y-%m-%d', $column)",
+        };
     }
 
     private function previousPeriodSummary(string $storeId, string $dateFrom, string $dateTo): array
@@ -110,6 +245,17 @@ class ReportService
         if (! empty($filters['category_id'])) {
             $query->where('products.category_id', $filters['category_id']);
         }
+        if (! empty($filters['product_id'])) {
+            $query->where('product_sales_summary.product_id', $filters['product_id']);
+        }
+
+        $sortBy = match ($filters['sort_by'] ?? 'revenue') {
+            'quantity' => 'total_quantity',
+            'profit' => DB::raw('(SUM(product_sales_summary.revenue) - SUM(product_sales_summary.cost))'),
+            'name' => 'products.name',
+            default => 'total_revenue',
+        };
+        $sortDir = ($filters['sort_dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
         $results = $query->select([
             'product_sales_summary.product_id',
@@ -131,7 +277,7 @@ class ReportService
                 'products.sku',
                 'products.category_id',
             )
-            ->orderByDesc('total_revenue')
+            ->orderBy($sortBy, $sortDir)
             ->limit((int) ($filters['limit'] ?? 50))
             ->get();
 
@@ -207,6 +353,33 @@ class ReportService
         if (! empty($filters['date_to'])) {
             $query->whereDate('orders.created_at', '<=', $filters['date_to']);
         }
+        if (! empty($filters['staff_id'])) {
+            $query->where('orders.created_by', $filters['staff_id']);
+        }
+        if (! empty($filters['order_status'])) {
+            $query->where('orders.status', $filters['order_status']);
+        }
+        if (! empty($filters['min_amount'])) {
+            $query->where('orders.total', '>=', $filters['min_amount']);
+        }
+        if (! empty($filters['max_amount'])) {
+            $query->where('orders.total', '<=', $filters['max_amount']);
+        }
+        if (! empty($filters['payment_method'])) {
+            $query->whereIn('orders.id', function ($sub) use ($filters) {
+                $sub->select('transactions.order_id')
+                    ->from('payments')
+                    ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
+                    ->where('payments.method', $filters['payment_method']);
+            });
+        }
+
+        $sortBy = match ($filters['sort_by'] ?? 'revenue') {
+            'orders' => 'total_orders',
+            'name' => 'staff_name',
+            default => 'total_revenue',
+        };
+        $sortDir = ($filters['sort_dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
         return $query->select([
             'staff_users.id as staff_id',
@@ -217,7 +390,7 @@ class ReportService
             DB::raw('SUM(orders.discount_amount) as total_discounts_given'),
         ])
             ->groupBy('staff_users.id', 'staff_users.first_name', 'staff_users.last_name')
-            ->orderByDesc('total_revenue')
+            ->orderBy($sortBy, $sortDir)
             ->get()
             ->map(fn ($r) => [
                 'staff_id' => $r->staff_id,
@@ -242,6 +415,26 @@ class ReportService
         }
         if (! empty($filters['date_to'])) {
             $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+        if (! empty($filters['staff_id'])) {
+            $query->where('created_by', $filters['staff_id']);
+        }
+        if (! empty($filters['order_status'])) {
+            $query->where('status', $filters['order_status']);
+        }
+        if (! empty($filters['min_amount'])) {
+            $query->where('total', '>=', $filters['min_amount']);
+        }
+        if (! empty($filters['max_amount'])) {
+            $query->where('total', '<=', $filters['max_amount']);
+        }
+        if (! empty($filters['payment_method'])) {
+            $query->whereIn('id', function ($sub) use ($filters) {
+                $sub->select('transactions.order_id')
+                    ->from('payments')
+                    ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
+                    ->where('payments.method', $filters['payment_method']);
+            });
         }
 
         // SQLite: strftime('%H', ...) returns hour.  PostgreSQL: EXTRACT(HOUR FROM ...)
@@ -280,6 +473,18 @@ class ReportService
         }
         if (! empty($filters['date_to'])) {
             $query->whereDate('payments.created_at', '<=', $filters['date_to']);
+        }
+        if (! empty($filters['payment_method'])) {
+            $query->where('payments.method', $filters['payment_method']);
+        }
+        if (! empty($filters['staff_id'])) {
+            $query->where('transactions.created_by', $filters['staff_id']);
+        }
+        if (! empty($filters['min_amount'])) {
+            $query->where('payments.amount', '>=', $filters['min_amount']);
+        }
+        if (! empty($filters['max_amount'])) {
+            $query->where('payments.amount', '<=', $filters['max_amount']);
         }
 
         return $query->select([
@@ -633,6 +838,8 @@ class ReportService
 
     public function financialDailyPL(string $storeId, array $filters): array
     {
+        $granularity = $filters['granularity'] ?? 'daily';
+
         // Revenue from daily_sales_summary
         $revenueQuery = DailySalesSummary::where('store_id', $storeId);
 

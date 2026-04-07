@@ -9,6 +9,7 @@ use App\Domain\Report\Services\ReportService;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ReportController extends BaseApiController
 {
@@ -17,12 +18,39 @@ class ReportController extends BaseApiController
     ) {}
 
     /**
+     * Resolve the effective store_id for report queries.
+     *
+     * - If user is organization-scoped and branch_id is provided & valid, use it.
+     * - Otherwise, fall back to the authenticated user's store_id.
+     */
+    private function resolveStoreId(Request $request): string
+    {
+        $user = $request->user();
+        $requestedBranch = $request->input('branch_id');
+
+        if ($requestedBranch && $requestedBranch !== $user->store_id) {
+            // Verify user has access to the requested branch via their organization
+            $orgId = DB::table('stores')->where('id', $user->store_id)->value('organization_id');
+            $valid = DB::table('stores')
+                ->where('id', $requestedBranch)
+                ->where('organization_id', $orgId)
+                ->exists();
+
+            if ($valid) {
+                return $requestedBranch;
+            }
+        }
+
+        return $user->store_id;
+    }
+
+    /**
      * GET /api/v2/reports/sales-summary
      */
     public function salesSummary(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->salesSummary(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -35,7 +63,7 @@ class ReportController extends BaseApiController
     public function productPerformance(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->productPerformance(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -48,7 +76,7 @@ class ReportController extends BaseApiController
     public function categoryBreakdown(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->categoryBreakdown(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -61,7 +89,7 @@ class ReportController extends BaseApiController
     public function staffPerformance(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->staffPerformance(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -74,7 +102,7 @@ class ReportController extends BaseApiController
     public function hourlySales(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->hourlySales(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -87,7 +115,7 @@ class ReportController extends BaseApiController
     public function paymentMethods(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->paymentMethodBreakdown(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -97,10 +125,10 @@ class ReportController extends BaseApiController
     /**
      * GET /api/v2/reports/dashboard
      */
-    public function dashboard(): JsonResponse
+    public function dashboard(Request $request): JsonResponse
     {
         $data = $this->reportService->dashboard(
-            request()->user()->store_id,
+            $this->resolveStoreId($request),
         );
 
         return $this->success($data);
@@ -114,7 +142,7 @@ class ReportController extends BaseApiController
     public function slowMovers(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->slowMovers(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -127,7 +155,7 @@ class ReportController extends BaseApiController
     public function productMargin(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->productMargin(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -139,10 +167,10 @@ class ReportController extends BaseApiController
     /**
      * GET /api/v2/reports/inventory/valuation
      */
-    public function inventoryValuation(): JsonResponse
+    public function inventoryValuation(Request $request): JsonResponse
     {
         $data = $this->reportService->inventoryValuation(
-            request()->user()->store_id,
+            $this->resolveStoreId($request),
         );
 
         return $this->success($data);
@@ -154,7 +182,7 @@ class ReportController extends BaseApiController
     public function inventoryTurnover(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->inventoryTurnover(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -167,7 +195,7 @@ class ReportController extends BaseApiController
     public function inventoryShrinkage(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->inventoryShrinkage(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -177,10 +205,10 @@ class ReportController extends BaseApiController
     /**
      * GET /api/v2/reports/inventory/low-stock
      */
-    public function inventoryLowStock(): JsonResponse
+    public function inventoryLowStock(Request $request): JsonResponse
     {
         $data = $this->reportService->inventoryLowStock(
-            request()->user()->store_id,
+            $this->resolveStoreId($request),
         );
 
         return $this->success($data);
@@ -194,7 +222,7 @@ class ReportController extends BaseApiController
     public function financialDailyPL(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->financialDailyPL(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -207,7 +235,7 @@ class ReportController extends BaseApiController
     public function financialExpenses(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->financialExpenses(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -220,7 +248,7 @@ class ReportController extends BaseApiController
     public function financialCashVariance(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->financialCashVariance(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -235,7 +263,7 @@ class ReportController extends BaseApiController
     public function topCustomers(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->topCustomers(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -248,7 +276,7 @@ class ReportController extends BaseApiController
     public function customerRetention(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->customerRetention(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -265,7 +293,7 @@ class ReportController extends BaseApiController
         $validated = $request->validated();
 
         $data = $this->reportService->exportReport(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $validated['report_type'],
             collect($validated)->except(['report_type', 'format'])->toArray(),
             $validated['format'],
@@ -279,10 +307,10 @@ class ReportController extends BaseApiController
     /**
      * GET /api/v2/reports/schedules
      */
-    public function listSchedules(): JsonResponse
+    public function listSchedules(Request $request): JsonResponse
     {
         $data = $this->reportService->listScheduledReports(
-            request()->user()->store_id,
+            $this->resolveStoreId($request),
         );
 
         return $this->success($data);
@@ -294,7 +322,7 @@ class ReportController extends BaseApiController
     public function createSchedule(ScheduleReportRequest $request): JsonResponse
     {
         $report = $this->reportService->createScheduledReport(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $request->validated(),
         );
 
@@ -307,7 +335,7 @@ class ReportController extends BaseApiController
     public function deleteSchedule(Request $request, string $id): JsonResponse
     {
         $deleted = $this->reportService->deleteScheduledReport(
-            $request->user()->store_id,
+            $this->resolveStoreId($request),
             $id,
         );
 
@@ -325,7 +353,7 @@ class ReportController extends BaseApiController
      */
     public function refreshSummaries(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolveStoreId($request);
         $date = $request->input('date', now()->toDateString());
 
         $this->reportService->refreshDailySummary($storeId, $date);
