@@ -365,6 +365,8 @@ class RoleService
                 'pos.view_sessions', 'pos.manage_terminals',
                 // Orders
                 'orders.view', 'orders.manage', 'orders.return', 'orders.void', 'orders.update_status',
+                // Transactions
+                'transactions.view', 'transactions.export', 'transactions.void',
                 // Products
                 'products.view', 'products.manage', 'products.manage_categories', 'products.manage_suppliers',
                 'products.import_export', 'products.manage_pricing', 'products.use_predefined',
@@ -450,6 +452,8 @@ class RoleService
                 'cash.view_sessions', 'cash.view_daily_summary', 'cash.reconciliation',
                 // Orders & POS (view only)
                 'orders.view', 'pos.view_sessions',
+                // Transactions
+                'transactions.view', 'transactions.export',
                 // Customers (debits)
                 'customers.view', 'customers.manage_debits',
                 // Products (view for costing)
@@ -484,6 +488,8 @@ class RoleService
                 'products.import_export', 'products.manage_pricing',
                 // Orders
                 'orders.view', 'orders.manage', 'orders.update_status',
+                // Transactions
+                'transactions.view', 'transactions.export',
                 // Reports
                 'reports.view', 'reports.sales', 'reports.inventory', 'reports.customers', 'reports.export',
                 // Staff (view)
@@ -541,6 +547,7 @@ class RoleService
                 'reports.view', 'reports.view_financial', 'reports.view_margin', 'reports.sales',
                 'reports.inventory', 'reports.customers', 'reports.staff', 'reports.attendance',
                 'orders.view', 'products.view', 'inventory.view', 'customers.view',
+                'transactions.view',
                 'pos.view_sessions', 'cash.view_sessions', 'cash.view_daily_summary',
                 'branches.view',
                 'accounting.view_history',
@@ -569,6 +576,8 @@ class RoleService
                 'pos.hold_recall', 'pos.reprint_receipt', 'pos.price_override', 'pos.view_sessions',
                 // Orders
                 'orders.view', 'orders.manage', 'orders.return', 'orders.void', 'orders.update_status',
+                // Transactions
+                'transactions.view', 'transactions.export', 'transactions.void',
                 // Products (view + pricing)
                 'products.view', 'products.manage_pricing',
                 // Customers (full)
@@ -612,6 +621,8 @@ class RoleService
                 'pos.view_sessions', 'pos.manage_terminals',
                 // Orders
                 'orders.view', 'orders.manage', 'orders.return', 'orders.void', 'orders.update_status',
+                // Transactions
+                'transactions.view', 'transactions.export', 'transactions.void',
                 // Products
                 'products.view', 'products.manage', 'products.manage_categories', 'products.manage_suppliers',
                 'products.import_export', 'products.manage_pricing',
@@ -668,6 +679,8 @@ class RoleService
                 'finance.commissions', 'finance.settlements', 'finance.expenses', 'finance.gift_cards',
                 'cash.view_sessions', 'cash.view_daily_summary', 'cash.reconciliation',
                 'orders.view', 'pos.view_sessions',
+                // Transactions
+                'transactions.view', 'transactions.export',
                 'customers.view', 'customers.manage_debits',
                 'products.view', 'inventory.view',
                 'zatca.view',
@@ -751,6 +764,8 @@ class RoleService
                 'pos.price_override', 'pos.view_sessions',
                 // Orders
                 'orders.view', 'orders.manage', 'orders.return', 'orders.update_status',
+                // Transactions
+                'transactions.view',
                 // Products
                 'products.view',
                 // Customers
@@ -781,6 +796,7 @@ class RoleService
                 'pos.shift_open', 'pos.shift_close', 'pos.sell', 'pos.hold_recall',
                 'pos.reprint_receipt', 'pos.return', 'pos.view_sessions',
                 'orders.view', 'orders.manage', 'orders.update_status',
+                'transactions.view',
                 'products.view',
                 'customers.view', 'customers.manage',
                 'payments.process',
@@ -803,6 +819,7 @@ class RoleService
                 'dashboard.view',
                 'reports.view', 'reports.sales', 'reports.inventory', 'reports.customers',
                 'orders.view', 'products.view', 'inventory.view', 'customers.view',
+                'transactions.view',
                 'pos.view_sessions', 'cash.view_sessions', 'cash.view_daily_summary',
                 'labels.view', 'promotions.view_analytics',
                 'notifications.view',
@@ -824,6 +841,8 @@ class RoleService
                 'pos.hold_recall', 'pos.reprint_receipt', 'pos.price_override', 'pos.view_sessions',
                 // Orders
                 'orders.view', 'orders.manage', 'orders.return', 'orders.void', 'orders.update_status',
+                // Transactions
+                'transactions.view', 'transactions.export', 'transactions.void',
                 // Products (view + pricing)
                 'products.view', 'products.manage_pricing',
                 // Customers

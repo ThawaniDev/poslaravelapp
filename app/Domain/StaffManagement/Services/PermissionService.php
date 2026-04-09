@@ -127,6 +127,13 @@ class PermissionService
             ['name' => 'orders.update_status', 'display_name' => 'Update Order Status',         'display_name_ar' => 'تحديث حالة الطلب',             'requires_pin' => false, 'description' => 'Change order status',                      'description_ar' => 'تغيير حالة الطلب'],
         ],
 
+        // ─── Transactions ────────────────────────────────────────
+        'transactions' => [
+            ['name' => 'transactions.view',    'display_name' => 'View Transactions',           'display_name_ar' => 'عرض المعاملات',                'requires_pin' => false, 'description' => 'View transaction explorer and details',    'description_ar' => 'عرض مستكشف المعاملات والتفاصيل'],
+            ['name' => 'transactions.export',  'display_name' => 'Export Transactions',         'display_name_ar' => 'تصدير المعاملات',              'requires_pin' => false, 'description' => 'Export transaction data to CSV/PDF',       'description_ar' => 'تصدير بيانات المعاملات إلى CSV/PDF'],
+            ['name' => 'transactions.void',    'display_name' => 'Void Transactions',           'display_name_ar' => 'إلغاء المعاملات',              'requires_pin' => true,  'description' => 'Void completed transactions',              'description_ar' => 'إلغاء المعاملات المكتملة'],
+        ],
+
         // ─── Products / Catalog ──────────────────────────────────
         'products' => [
             ['name' => 'products.view',              'display_name' => 'View Products',                'display_name_ar' => 'عرض المنتجات',                'requires_pin' => false, 'description' => 'View product list and details',            'description_ar' => 'عرض قائمة وتفاصيل المنتجات'],
