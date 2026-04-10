@@ -20,7 +20,7 @@ class CustomerSegmentationService extends BaseFeatureService
                    EXTRACT(DAY FROM NOW() - c.last_visit_at) as days_since_last_visit,
                    CASE WHEN c.visit_count > 0 THEN c.total_spend / c.visit_count ELSE 0 END as avg_basket
             FROM customers c
-            LEFT JOIN customer_groups cg ON cg.id = c.customer_group_id
+            LEFT JOIN customer_groups cg ON cg.id = c.group_id
             WHERE c.organization_id = ?
               AND c.visit_count > 0
             ORDER BY c.total_spend DESC

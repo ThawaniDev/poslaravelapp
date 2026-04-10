@@ -11,7 +11,7 @@ class SentimentAnalysisService extends BaseFeatureService
     public function analyze(string $storeId, string $organizationId, ?string $userId = null): ?array
     {
         $ticketMessages = DB::select("
-            SELECT stm.message, stm.is_from_staff, st.subject, st.status,
+            SELECT stm.message_text as message, stm.sender_type, st.subject, st.status,
                    st.priority, st.created_at
             FROM support_ticket_messages stm
             JOIN support_tickets st ON st.id = stm.support_ticket_id

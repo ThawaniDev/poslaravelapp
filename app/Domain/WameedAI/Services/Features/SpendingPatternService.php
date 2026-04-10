@@ -18,7 +18,7 @@ class SpendingPatternService extends BaseFeatureService
                    c.store_credit_balance, c.date_of_birth,
                    cg.name as customer_group
             FROM customers c
-            LEFT JOIN customer_groups cg ON cg.id = c.customer_group_id
+            LEFT JOIN customer_groups cg ON cg.id = c.group_id
             WHERE c.id = ?
         ", [$customerId]);
 

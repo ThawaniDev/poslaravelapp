@@ -36,14 +36,13 @@ class CashierErrorService extends BaseFeatureService
         }
 
         $cashVariances = DB::select("
-            SELECT cs.user_id, u.name,
+            SELECT cs.opened_by as user_id, u.name,
                    cs.opening_float, cs.actual_cash, cs.expected_cash,
                    (cs.actual_cash - cs.expected_cash) as variance,
-                   cs.total_cash_sales, cs.total_refunds,
                    cs.closed_at
             FROM cash_sessions cs
-            JOIN users u ON u.id = cs.user_id
-            WHERE cs.store_id = ? AND cs.created_at >= NOW() - INTERVAL '30 days'
+            JOIN users u ON u.id = cs.opened_by
+            WHERE cs.store_id = ? AND cs.opened_at >= NOW() - INTERVAL '30 days'
               AND cs.closed_at IS NOT NULL
             ORDER BY ABS(cs.actual_cash - cs.expected_cash) DESC
             LIMIT 30

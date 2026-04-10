@@ -31,7 +31,7 @@ class ShrinkageDetectionService extends BaseFeatureService
                 SELECT product_id, SUM(quantity) as total_received
                 FROM goods_receipt_items gri
                 JOIN goods_receipts gr ON gr.id = gri.goods_receipt_id
-                WHERE gr.store_id = ? AND gr.created_at >= NOW() - INTERVAL '90 days'
+                WHERE gr.store_id = ? AND gr.received_at >= NOW() - INTERVAL '90 days'
                 GROUP BY product_id
             ) received ON received.product_id = p.id
             LEFT JOIN (
@@ -42,7 +42,7 @@ class ShrinkageDetectionService extends BaseFeatureService
                 GROUP BY ti.product_id
             ) sold ON sold.product_id = p.id
             LEFT JOIN (
-                SELECT sai.product_id, SUM(ABS(sai.quantity_change)) as total_adjusted
+                SELECT sai.product_id, SUM(ABS(sai.quantity)) as total_adjusted
                 FROM stock_adjustment_items sai
                 JOIN stock_adjustments sa ON sa.id = sai.stock_adjustment_id
                 WHERE sa.store_id = ? AND sa.created_at >= NOW() - INTERVAL '90 days'

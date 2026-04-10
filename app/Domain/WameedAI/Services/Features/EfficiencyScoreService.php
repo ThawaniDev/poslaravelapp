@@ -32,11 +32,11 @@ class EfficiencyScoreService extends BaseFeatureService
         ", [$storeId]);
 
         $staffMetrics = DB::selectOne("
-            SELECT COUNT(DISTINCT staff_member_id) as active_staff,
-                   AVG(EXTRACT(EPOCH FROM (clock_out - clock_in)) / 3600) as avg_hours,
-                   SUM(EXTRACT(EPOCH FROM (clock_out - clock_in)) / 3600) as total_hours
+            SELECT COUNT(DISTINCT staff_user_id) as active_staff,
+                   AVG(EXTRACT(EPOCH FROM (clock_out_at - clock_in_at)) / 3600) as avg_hours,
+                   SUM(EXTRACT(EPOCH FROM (clock_out_at - clock_in_at)) / 3600) as total_hours
             FROM attendance_records
-            WHERE store_id = ? AND clock_in >= NOW() - INTERVAL '30 days' AND clock_out IS NOT NULL
+            WHERE store_id = ? AND clock_in_at >= NOW() - INTERVAL '30 days' AND clock_out_at IS NOT NULL
         ", [$storeId]);
 
         $cashVariance = DB::selectOne("

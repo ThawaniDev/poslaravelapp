@@ -39,12 +39,12 @@ class PeakHoursService extends BaseFeatureService
         }
 
         $staffOnShift = DB::select("
-            SELECT EXTRACT(DOW FROM clock_in) as day_of_week,
-                   EXTRACT(HOUR FROM clock_in) as start_hour,
-                   COUNT(DISTINCT staff_member_id) as staff_count
+            SELECT EXTRACT(DOW FROM clock_in_at) as day_of_week,
+                   EXTRACT(HOUR FROM clock_in_at) as start_hour,
+                   COUNT(DISTINCT staff_user_id) as staff_count
             FROM attendance_records
-            WHERE store_id = ? AND clock_in >= NOW() - INTERVAL '{$days} days'
-            GROUP BY EXTRACT(DOW FROM clock_in), EXTRACT(HOUR FROM clock_in)
+            WHERE store_id = ? AND clock_in_at >= NOW() - INTERVAL '{$days} days'
+            GROUP BY EXTRACT(DOW FROM clock_in_at), EXTRACT(HOUR FROM clock_in_at)
         ", [$storeId]);
 
         $busiestDays = DB::select("

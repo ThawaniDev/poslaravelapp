@@ -43,12 +43,13 @@ class SeasonalPlanningService extends BaseFeatureService
         ", [$storeId]);
 
         $supplierLeadTimes = DB::select("
-            SELECT s.name as supplier, AVG(EXTRACT(DAY FROM gr.received_at - gr.created_at)) as avg_lead_days,
+            SELECT s.name as supplier, AVG(EXTRACT(DAY FROM gr.received_at - po.created_at)) as avg_lead_days,
                    COUNT(*) as deliveries
             FROM goods_receipts gr
             JOIN suppliers s ON s.id = gr.supplier_id
+            LEFT JOIN purchase_orders po ON po.id = gr.purchase_order_id
             WHERE gr.store_id = ? AND gr.received_at IS NOT NULL
-              AND gr.created_at >= NOW() - INTERVAL '180 days'
+              AND gr.received_at >= NOW() - INTERVAL '180 days'
             GROUP BY s.id, s.name
         ", [$storeId]);
 

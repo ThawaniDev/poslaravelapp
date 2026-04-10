@@ -18,7 +18,7 @@ class StoreHealthService extends BaseFeatureService
                    (SELECT COUNT(*) FROM transactions t WHERE t.store_id = s.id AND t.created_at >= NOW() - INTERVAL '30 days' AND t.status = 'completed') as txn_30d,
                    (SELECT COALESCE(SUM(total_amount), 0) FROM transactions t WHERE t.store_id = s.id AND t.created_at >= NOW() - INTERVAL '30 days' AND t.status = 'completed') as revenue_30d,
                    (SELECT COUNT(*) FROM products p WHERE p.organization_id = s.organization_id AND p.is_active = true) as active_products,
-                   (SELECT COUNT(*) FROM staff_members sm WHERE sm.store_id = s.id AND sm.is_active = true) as active_staff,
+                   (SELECT COUNT(*) FROM users u WHERE u.store_id = s.id AND u.is_active = true) as active_staff,
                    (SELECT MAX(t.created_at) FROM transactions t WHERE t.store_id = s.id) as last_transaction
             FROM stores s
             JOIN organizations o ON o.id = s.organization_id

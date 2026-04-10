@@ -21,7 +21,7 @@ class ChurnPredictionService extends BaseFeatureService
                    COALESCE(recent.txn_count, 0) as recent_transactions,
                    COALESCE(recent.favorite_category, '') as favorite_category
             FROM customers c
-            LEFT JOIN customer_groups cg ON cg.id = c.customer_group_id
+            LEFT JOIN customer_groups cg ON cg.id = c.group_id
             LEFT JOIN LATERAL (
                 SELECT AVG(t.total_amount) as avg_basket,
                        COUNT(t.id) as txn_count,

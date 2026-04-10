@@ -61,7 +61,7 @@ class SmartReorderService extends BaseFeatureService
 
         $pendingOrders = DB::select("
             SELECT poi.product_id, SUM(poi.quantity) as pending_quantity,
-                   MIN(po.expected_delivery_date) as earliest_delivery
+                   MIN(po.expected_date) as earliest_delivery
             FROM purchase_order_items poi
             JOIN purchase_orders po ON po.id = poi.purchase_order_id
             WHERE po.store_id = ? AND po.status IN ('pending', 'approved', 'ordered')

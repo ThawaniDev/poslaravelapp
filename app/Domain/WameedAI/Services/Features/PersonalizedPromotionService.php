@@ -26,7 +26,7 @@ class PersonalizedPromotionService extends BaseFeatureService
                     AND t2.created_at >= NOW() - INTERVAL '60 days'
                    ) as favorite_categories
             FROM customers c
-            LEFT JOIN customer_groups cg ON cg.id = c.customer_group_id
+            LEFT JOIN customer_groups cg ON cg.id = c.group_id
             WHERE c.organization_id = ? AND c.visit_count >= 2
             ORDER BY c.total_spend DESC
             LIMIT 200

@@ -36,11 +36,12 @@ class RevenueAnomalyService extends BaseFeatureService
         }
 
         $cashEvents = DB::select("
-            SELECT DATE(created_at) as event_date, type as event_type, COUNT(*) as count,
-                   SUM(amount) as total_amount
-            FROM cash_events
-            WHERE store_id = ? AND created_at >= NOW() - INTERVAL '30 days'
-            GROUP BY DATE(created_at), type
+            SELECT DATE(ce.created_at) as event_date, ce.type as event_type, COUNT(*) as count,
+                   SUM(ce.amount) as total_amount
+            FROM cash_events ce
+            JOIN cash_sessions cs ON cs.id = ce.cash_session_id
+            WHERE cs.store_id = ? AND ce.created_at >= NOW() - INTERVAL '30 days'
+            GROUP BY DATE(ce.created_at), ce.type
             ORDER BY event_date
         ", [$storeId]);
 

@@ -13,7 +13,7 @@ class StaffPerformanceService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $staffStats = DB::select("
-            SELECT sm.id, sm.first_name, sm.last_name,
+            SELECT u.id, u.name,
                    COUNT(t.id) as transaction_count,
                    COALESCE(SUM(t.total_amount), 0) as total_sales,
                    COALESCE(AVG(t.total_amount), 0) as avg_basket,
@@ -21,11 +21,11 @@ class StaffPerformanceService extends BaseFeatureService
                    SUM(CASE WHEN t.type = 'return' THEN 1 ELSE 0 END) as return_count,
                    COALESCE(SUM(t.discount_amount), 0) as total_discounts_given,
                    COUNT(DISTINCT DATE(t.created_at)) as days_worked
-            FROM staff_members sm
-            LEFT JOIN transactions t ON t.cashier_id = sm.user_id AND t.store_id = ?
+            FROM users u
+            LEFT JOIN transactions t ON t.cashier_id = u.id AND t.store_id = ?
               AND t.created_at >= NOW() - INTERVAL '30 days'
-            WHERE sm.store_id = ?
-            GROUP BY sm.id, sm.first_name, sm.last_name
+            WHERE u.store_id = ?
+            GROUP BY u.id, u.name
             ORDER BY total_sales DESC
         ", [$storeId, $storeId]);
 
@@ -34,33 +34,34 @@ class StaffPerformanceService extends BaseFeatureService
         }
 
         $attendance = DB::select("
-            SELECT staff_member_id, COUNT(*) as days_present,
-                   SUM(EXTRACT(EPOCH FROM (clock_out - clock_in)) / 3600) as total_hours,
-                   AVG(EXTRACT(EPOCH FROM (clock_out - clock_in)) / 3600) as avg_hours,
+            SELECT staff_user_id, COUNT(*) as days_present,
+                   SUM(EXTRACT(EPOCH FROM (clock_out_at - clock_in_at)) / 3600) as total_hours,
+                   AVG(EXTRACT(EPOCH FROM (clock_out_at - clock_in_at)) / 3600) as avg_hours,
                    SUM(COALESCE(overtime_minutes, 0)) as total_overtime_minutes,
                    SUM(COALESCE(break_minutes, 0)) as total_break_minutes,
-                   MIN(clock_in) as first_shift, MAX(clock_out) as last_shift
+                   MIN(clock_in_at) as first_shift, MAX(clock_out_at) as last_shift
             FROM attendance_records
-            WHERE store_id = ? AND clock_in >= NOW() - INTERVAL '30 days' AND clock_out IS NOT NULL
-            GROUP BY staff_member_id
-        ", [$storeId]);
-
-        $commissions = DB::select("
-            SELECT staff_user_id,
-                   COALESCE(SUM(commission_amount), 0) as total_commission,
-                   COUNT(*) as commission_count,
-                   COALESCE(SUM(order_total), 0) as commission_order_total
-            FROM commission_earnings
-            WHERE store_id = ? AND created_at >= NOW() - INTERVAL '30 days'
+            WHERE store_id = ? AND clock_in_at >= NOW() - INTERVAL '30 days' AND clock_out_at IS NOT NULL
             GROUP BY staff_user_id
         ", [$storeId]);
 
+        $commissions = DB::select("
+            SELECT ce.staff_user_id,
+                   COALESCE(SUM(ce.commission_amount), 0) as total_commission,
+                   COUNT(*) as commission_count,
+                   COALESCE(SUM(ce.order_total), 0) as commission_order_total
+            FROM commission_earnings ce
+            JOIN transactions t ON t.id = ce.order_id
+            WHERE t.store_id = ? AND ce.created_at >= NOW() - INTERVAL '30 days'
+            GROUP BY ce.staff_user_id
+        ", [$storeId]);
+
         $cashVariances = DB::select("
-            SELECT cs.user_id, AVG(ABS(cs.actual_cash - cs.expected_cash)) as avg_variance,
+            SELECT cs.opened_by as user_id, AVG(ABS(cs.actual_cash - cs.expected_cash)) as avg_variance,
                    COUNT(*) as sessions
             FROM cash_sessions cs
             WHERE cs.store_id = ? AND cs.closed_at >= NOW() - INTERVAL '30 days' AND cs.closed_at IS NOT NULL
-            GROUP BY cs.user_id
+            GROUP BY cs.opened_by
         ", [$storeId]);
 
         $context = [

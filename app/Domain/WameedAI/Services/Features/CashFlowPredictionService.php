@@ -33,13 +33,13 @@ class CashFlowPredictionService extends BaseFeatureService
         ", [$storeId]);
 
         $upcomingPayments = DB::select("
-            SELECT po.id, po.total_cost as total_amount, po.expected_delivery_date,
+            SELECT po.id, po.total_cost as total_amount, po.expected_date,
                    s.name as supplier_name
             FROM purchase_orders po
             LEFT JOIN suppliers s ON s.id = po.supplier_id
             WHERE po.store_id = ? AND po.status IN ('pending', 'approved', 'ordered')
-              AND po.expected_delivery_date >= NOW()
-            ORDER BY po.expected_delivery_date LIMIT 20
+              AND po.expected_date >= NOW()
+            ORDER BY po.expected_date LIMIT 20
         ", [$storeId]);
 
         $paymentMethodSplit = DB::select("
@@ -51,8 +51,7 @@ class CashFlowPredictionService extends BaseFeatureService
         ", [$storeId]);
 
         $latestCashSession = DB::selectOne("
-            SELECT opening_float, expected_cash, actual_cash, variance,
-                   total_cash_sales, total_card_sales, total_refunds
+            SELECT opening_float, expected_cash, actual_cash, variance
             FROM cash_sessions
             WHERE store_id = ? AND closed_at IS NOT NULL
             ORDER BY closed_at DESC LIMIT 1

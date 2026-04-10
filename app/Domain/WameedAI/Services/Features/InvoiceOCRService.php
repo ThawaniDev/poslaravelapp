@@ -19,7 +19,7 @@ class InvoiceOCRService extends BaseFeatureService
         ", [$organizationId]);
 
         $suppliers = DB::select("
-            SELECT id, name, name_ar FROM suppliers WHERE organization_id = ? ORDER BY name
+            SELECT id, name FROM suppliers WHERE organization_id = ? ORDER BY name
         ", [$organizationId]);
 
         $context = [

@@ -13,21 +13,23 @@ class SupplierAnalysisService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $supplierMetrics = DB::select("
-            SELECT s.id, s.name, s.name_ar, s.credit_limit, s.outstanding_balance,
+            SELECT s.id, s.name, s.credit_limit, s.outstanding_balance,
                    s.rating, s.category as supplier_category,
                    COUNT(DISTINCT gr.id) as total_deliveries,
-                   AVG(EXTRACT(DAY FROM gr.received_at - gr.created_at)) as avg_delivery_days,
-                   MIN(EXTRACT(DAY FROM gr.received_at - gr.created_at)) as min_delivery_days,
-                   MAX(EXTRACT(DAY FROM gr.received_at - gr.created_at)) as max_delivery_days,
-                   SUM(gri.received_quantity) as total_items_received,
-                   SUM(gri.total_cost) as total_spend,
+                   AVG(EXTRACT(DAY FROM gr.received_at - po.created_at)) as avg_delivery_days,
+                   MIN(EXTRACT(DAY FROM gr.received_at - po.created_at)) as min_delivery_days,
+                   MAX(EXTRACT(DAY FROM gr.received_at - po.created_at)) as max_delivery_days,
+                   SUM(gri.quantity) as total_items_received,
+                   SUM(gri.quantity * gri.unit_cost) as total_spend,
                    MAX(gr.received_at) as last_delivery
             FROM suppliers s
             LEFT JOIN goods_receipts gr ON gr.supplier_id = s.id AND gr.store_id = ?
-              AND gr.received_at IS NOT NULL AND gr.created_at >= NOW() - INTERVAL '180 days'
+              AND gr.received_at IS NOT NULL
+            LEFT JOIN purchase_orders po ON po.id = gr.purchase_order_id
+              AND po.created_at >= NOW() - INTERVAL '180 days'
             LEFT JOIN goods_receipt_items gri ON gri.goods_receipt_id = gr.id
             WHERE s.organization_id = ?
-            GROUP BY s.id, s.name, s.name_ar, s.credit_limit, s.outstanding_balance, s.rating, s.category
+            GROUP BY s.id, s.name, s.credit_limit, s.outstanding_balance, s.rating, s.category
             ORDER BY total_spend DESC
             LIMIT 30
         ", [$storeId, $organizationId]);
@@ -40,7 +42,7 @@ class SupplierAnalysisService extends BaseFeatureService
             SELECT po.supplier_id, s.name as supplier_name,
                    COUNT(*) as pending_count,
                    SUM(po.total_cost) as pending_value,
-                   MIN(po.expected_delivery_date) as earliest_expected
+                   MIN(po.expected_date) as earliest_expected
             FROM purchase_orders po
             JOIN suppliers s ON s.id = po.supplier_id
             WHERE po.store_id = ? AND po.status IN ('pending', 'approved', 'ordered')
