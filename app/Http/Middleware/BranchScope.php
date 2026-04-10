@@ -30,11 +30,14 @@ class BranchScope
     {
         $user = $request->user();
 
-        if (!$user || !$user->store_id) {
+        if (!$user || !method_exists($user, 'getAttribute') || !array_key_exists('store_id', $user->getAttributes())) {
             return $next($request);
         }
 
         $storeId = $user->store_id;
+        if (!$storeId) {
+            return $next($request);
+        }
         $scope = $this->roleService->getUserBranchScope($user, $storeId);
         $accessibleStoreIds = $this->roleService->getAccessibleStoreIds($user, $storeId);
 

@@ -3,12 +3,19 @@
 namespace App\Domain\PosTerminal\Services;
 
 use App\Domain\Auth\Models\User;
+use App\Domain\Customer\Models\Customer;
+use App\Domain\Inventory\Enums\StockMovementType;
+use App\Domain\Inventory\Enums\StockReferenceType;
+use App\Domain\Inventory\Models\StockLevel;
+use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Payment\Models\Payment;
 use App\Domain\PosTerminal\Enums\TransactionStatus;
 use App\Domain\PosTerminal\Enums\TransactionType;
 use App\Domain\PosTerminal\Models\Transaction;
 use App\Domain\PosTerminal\Models\TransactionItem;
 use App\Domain\PosTerminal\Models\PosSession;
+use App\Domain\Report\Models\DailySalesSummary;
+use App\Domain\Report\Models\ProductSalesSummary;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
@@ -143,6 +150,15 @@ class TransactionService
                 }
             }
 
+            // Update sales summary tables for reports/dashboard
+            $this->updateSalesSummaries($transaction);
+
+            // Update inventory (stock_levels + stock_movements)
+            $this->updateInventory($transaction);
+
+            // Update customer stats (total_spend, visit_count, last_visit_at)
+            $this->updateCustomerStats($transaction);
+
             return $transaction->load(['transactionItems', 'payments']);
         });
     }
@@ -180,6 +196,15 @@ class TransactionService
             'sync_version' => ($transaction->sync_version ?? 0) + 1,
         ]);
 
+        // Reverse the sales summaries for the voided transaction
+        $this->reverseSalesSummaries($transaction);
+
+        // Reverse inventory changes
+        $this->reverseInventory($transaction);
+
+        // Reverse customer stats
+        $this->reverseCustomerStats($transaction);
+
         // Update session counters
         if ($transaction->pos_session_id) {
             $session = $transaction->posSession;
@@ -205,6 +230,383 @@ class TransactionService
                 $session->increment('total_other_sales', $amount);
             }
         }
+    }
+
+    /**
+     * Update daily_sales_summary and product_sales_summary after a transaction is created.
+     */
+    private function updateSalesSummaries(Transaction $transaction): void
+    {
+        $date = $transaction->created_at->toDateString();
+        $storeId = $transaction->store_id;
+        $isReturn = $transaction->type === TransactionType::Return
+            || $transaction->type === TransactionType::Return->value;
+
+        // Determine payment breakdown
+        $cashRevenue = 0;
+        $cardRevenue = 0;
+        $otherRevenue = 0;
+        foreach ($transaction->payments as $payment) {
+            $amount = (float) $payment->amount;
+            $method = $payment->method;
+            if ($method === 'cash') {
+                $cashRevenue += $amount;
+            } elseif (in_array($method, ['card', 'mada', 'apple_pay', 'visa', 'mastercard'])) {
+                $cardRevenue += $amount;
+            } else {
+                $otherRevenue += $amount;
+            }
+        }
+
+        $totalAmount = (float) $transaction->total_amount;
+        $discountAmount = (float) $transaction->discount_amount;
+        $taxAmount = (float) $transaction->tax_amount;
+        $totalCost = $transaction->transactionItems->sum(fn ($item) => (float) $item->cost_price * (float) $item->quantity);
+
+        // Upsert daily_sales_summary
+        $existing = DailySalesSummary::where('store_id', $storeId)
+            ->whereDate('date', $date)
+            ->first();
+
+        if ($existing) {
+            if ($isReturn) {
+                $existing->total_refunds = (float) $existing->total_refunds + $totalAmount;
+                $existing->net_revenue = (float) $existing->net_revenue - $totalAmount;
+            } else {
+                $existing->total_transactions = $existing->total_transactions + 1;
+                $existing->total_revenue = (float) $existing->total_revenue + $totalAmount;
+                $existing->total_cost = (float) $existing->total_cost + $totalCost;
+                $existing->total_discount = (float) $existing->total_discount + $discountAmount;
+                $existing->total_tax = (float) $existing->total_tax + $taxAmount;
+                $existing->net_revenue = (float) $existing->net_revenue + $totalAmount;
+                $existing->cash_revenue = (float) $existing->cash_revenue + $cashRevenue;
+                $existing->card_revenue = (float) $existing->card_revenue + $cardRevenue;
+                $existing->other_revenue = (float) $existing->other_revenue + $otherRevenue;
+                $existing->avg_basket_size = $existing->total_transactions > 0
+                    ? round((float) $existing->total_revenue / $existing->total_transactions, 2)
+                    : 0;
+            }
+            $existing->save();
+        } else {
+            DailySalesSummary::create([
+                'store_id' => $storeId,
+                'date' => $date,
+                'total_transactions' => $isReturn ? 0 : 1,
+                'total_revenue' => $isReturn ? 0 : $totalAmount,
+                'total_cost' => $isReturn ? 0 : $totalCost,
+                'total_discount' => $isReturn ? 0 : $discountAmount,
+                'total_tax' => $isReturn ? 0 : $taxAmount,
+                'total_refunds' => $isReturn ? $totalAmount : 0,
+                'net_revenue' => $isReturn ? -$totalAmount : $totalAmount,
+                'cash_revenue' => $isReturn ? 0 : $cashRevenue,
+                'card_revenue' => $isReturn ? 0 : $cardRevenue,
+                'other_revenue' => $isReturn ? 0 : $otherRevenue,
+                'avg_basket_size' => $isReturn ? 0 : $totalAmount,
+                'unique_customers' => $transaction->customer_id ? 1 : 0,
+            ]);
+        }
+
+        // Upsert product_sales_summary for each item
+        foreach ($transaction->transactionItems as $item) {
+            if (! $item->product_id) {
+                continue;
+            }
+
+            $existingProduct = ProductSalesSummary::where('store_id', $storeId)
+                ->where('product_id', $item->product_id)
+                ->whereDate('date', $date)
+                ->first();
+
+            $qty = (float) $item->quantity;
+            $revenue = (float) $item->line_total;
+            $cost = (float) $item->cost_price * $qty;
+            $discount = (float) $item->discount_amount;
+            $tax = (float) $item->tax_amount;
+
+            if ($existingProduct) {
+                if ($isReturn || $item->is_return_item) {
+                    $existingProduct->return_quantity = (float) $existingProduct->return_quantity + $qty;
+                    $existingProduct->return_amount = (float) $existingProduct->return_amount + $revenue;
+                } else {
+                    $existingProduct->quantity_sold = (float) $existingProduct->quantity_sold + $qty;
+                    $existingProduct->revenue = (float) $existingProduct->revenue + $revenue;
+                    $existingProduct->cost = (float) $existingProduct->cost + $cost;
+                    $existingProduct->discount_amount = (float) $existingProduct->discount_amount + $discount;
+                    $existingProduct->tax_amount = (float) $existingProduct->tax_amount + $tax;
+                }
+                $existingProduct->save();
+            } else {
+                ProductSalesSummary::create([
+                    'store_id' => $storeId,
+                    'product_id' => $item->product_id,
+                    'date' => $date,
+                    'quantity_sold' => ($isReturn || $item->is_return_item) ? 0 : $qty,
+                    'revenue' => ($isReturn || $item->is_return_item) ? 0 : $revenue,
+                    'cost' => ($isReturn || $item->is_return_item) ? 0 : $cost,
+                    'discount_amount' => ($isReturn || $item->is_return_item) ? 0 : $discount,
+                    'tax_amount' => ($isReturn || $item->is_return_item) ? 0 : $tax,
+                    'return_quantity' => ($isReturn || $item->is_return_item) ? $qty : 0,
+                    'return_amount' => ($isReturn || $item->is_return_item) ? $revenue : 0,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Reverse sales summaries when a transaction is voided.
+     */
+    private function reverseSalesSummaries(Transaction $transaction): void
+    {
+        $date = $transaction->created_at->toDateString();
+        $storeId = $transaction->store_id;
+        $isReturn = $transaction->type === TransactionType::Return
+            || $transaction->type === TransactionType::Return->value;
+
+        // Determine payment breakdown
+        $cashRevenue = 0;
+        $cardRevenue = 0;
+        $otherRevenue = 0;
+        foreach ($transaction->payments as $payment) {
+            $amount = (float) $payment->amount;
+            $method = $payment->method;
+            if ($method === 'cash') {
+                $cashRevenue += $amount;
+            } elseif (in_array($method, ['card', 'mada', 'apple_pay', 'visa', 'mastercard'])) {
+                $cardRevenue += $amount;
+            } else {
+                $otherRevenue += $amount;
+            }
+        }
+
+        $totalAmount = (float) $transaction->total_amount;
+        $discountAmount = (float) $transaction->discount_amount;
+        $taxAmount = (float) $transaction->tax_amount;
+        $totalCost = $transaction->transactionItems->sum(fn ($item) => (float) $item->cost_price * (float) $item->quantity);
+
+        $existing = DailySalesSummary::where('store_id', $storeId)
+            ->whereDate('date', $date)
+            ->first();
+
+        if ($existing) {
+            if ($isReturn) {
+                $existing->total_refunds = max(0, (float) $existing->total_refunds - $totalAmount);
+                $existing->net_revenue = (float) $existing->net_revenue + $totalAmount;
+            } else {
+                $existing->total_transactions = max(0, $existing->total_transactions - 1);
+                $existing->total_revenue = max(0, (float) $existing->total_revenue - $totalAmount);
+                $existing->total_cost = max(0, (float) $existing->total_cost - $totalCost);
+                $existing->total_discount = max(0, (float) $existing->total_discount - $discountAmount);
+                $existing->total_tax = max(0, (float) $existing->total_tax - $taxAmount);
+                $existing->net_revenue = (float) $existing->net_revenue - $totalAmount;
+                $existing->cash_revenue = max(0, (float) $existing->cash_revenue - $cashRevenue);
+                $existing->card_revenue = max(0, (float) $existing->card_revenue - $cardRevenue);
+                $existing->other_revenue = max(0, (float) $existing->other_revenue - $otherRevenue);
+                $existing->avg_basket_size = $existing->total_transactions > 0
+                    ? round((float) $existing->total_revenue / $existing->total_transactions, 2)
+                    : 0;
+            }
+            $existing->save();
+        }
+
+        // Reverse product summaries
+        foreach ($transaction->transactionItems as $item) {
+            if (! $item->product_id) {
+                continue;
+            }
+
+            $existingProduct = ProductSalesSummary::where('store_id', $storeId)
+                ->where('product_id', $item->product_id)
+                ->whereDate('date', $date)
+                ->first();
+
+            if (! $existingProduct) {
+                continue;
+            }
+
+            $qty = (float) $item->quantity;
+            $revenue = (float) $item->line_total;
+            $cost = (float) $item->cost_price * $qty;
+            $discount = (float) $item->discount_amount;
+            $tax = (float) $item->tax_amount;
+
+            if ($isReturn || $item->is_return_item) {
+                $existingProduct->return_quantity = max(0, (float) $existingProduct->return_quantity - $qty);
+                $existingProduct->return_amount = max(0, (float) $existingProduct->return_amount - $revenue);
+            } else {
+                $existingProduct->quantity_sold = max(0, (float) $existingProduct->quantity_sold - $qty);
+                $existingProduct->revenue = max(0, (float) $existingProduct->revenue - $revenue);
+                $existingProduct->cost = max(0, (float) $existingProduct->cost - $cost);
+                $existingProduct->discount_amount = max(0, (float) $existingProduct->discount_amount - $discount);
+                $existingProduct->tax_amount = max(0, (float) $existingProduct->tax_amount - $tax);
+            }
+            $existingProduct->save();
+        }
+    }
+
+    /**
+     * Update stock_levels and create stock_movements for each item in the transaction.
+     */
+    private function updateInventory(Transaction $transaction): void
+    {
+        $storeId = $transaction->store_id;
+        $isReturn = $transaction->type === TransactionType::Return
+            || $transaction->type === TransactionType::Return->value;
+
+        foreach ($transaction->transactionItems as $item) {
+            if (! $item->product_id) {
+                continue;
+            }
+
+            $qty = (float) $item->quantity;
+
+            // Sale = decrement stock, Return = increment stock
+            if ($isReturn || $item->is_return_item) {
+                $movementType = StockMovementType::AdjustmentIn;
+                $stockChange = $qty;
+                $reason = 'POS return - ' . $transaction->transaction_number;
+            } else {
+                $movementType = StockMovementType::Sale;
+                $stockChange = -$qty;
+                $reason = 'POS sale - ' . $transaction->transaction_number;
+            }
+
+            // Update stock_levels
+            $stockLevel = StockLevel::where('store_id', $storeId)
+                ->where('product_id', $item->product_id)
+                ->first();
+
+            if ($stockLevel) {
+                $stockLevel->quantity = (float) $stockLevel->quantity + $stockChange;
+                $stockLevel->sync_version = ($stockLevel->sync_version ?? 0) + 1;
+                $stockLevel->save();
+            }
+
+            // Create stock_movement audit record
+            StockMovement::create([
+                'store_id' => $storeId,
+                'product_id' => $item->product_id,
+                'type' => $movementType->value,
+                'quantity' => $qty,
+                'unit_cost' => $item->cost_price,
+                'reference_type' => StockReferenceType::Transaction->value,
+                'reference_id' => $transaction->id,
+                'reason' => $reason,
+                'performed_by' => $transaction->cashier_id,
+            ]);
+        }
+    }
+
+    /**
+     * Reverse inventory changes when a transaction is voided.
+     */
+    private function reverseInventory(Transaction $transaction): void
+    {
+        $storeId = $transaction->store_id;
+        $isReturn = $transaction->type === TransactionType::Return
+            || $transaction->type === TransactionType::Return->value;
+
+        foreach ($transaction->transactionItems as $item) {
+            if (! $item->product_id) {
+                continue;
+            }
+
+            $qty = (float) $item->quantity;
+
+            // Reverse: voiding a sale = add stock back, voiding a return = remove stock
+            if ($isReturn || $item->is_return_item) {
+                $stockChange = -$qty;
+                $reason = 'Void return - ' . $transaction->transaction_number;
+            } else {
+                $stockChange = $qty;
+                $reason = 'Void sale - ' . $transaction->transaction_number;
+            }
+
+            $stockLevel = StockLevel::where('store_id', $storeId)
+                ->where('product_id', $item->product_id)
+                ->first();
+
+            if ($stockLevel) {
+                $stockLevel->quantity = (float) $stockLevel->quantity + $stockChange;
+                $stockLevel->sync_version = ($stockLevel->sync_version ?? 0) + 1;
+                $stockLevel->save();
+            }
+
+            // Create reversal stock_movement
+            StockMovement::create([
+                'store_id' => $storeId,
+                'product_id' => $item->product_id,
+                'type' => $stockChange > 0
+                    ? StockMovementType::AdjustmentIn->value
+                    : StockMovementType::AdjustmentOut->value,
+                'quantity' => $qty,
+                'unit_cost' => $item->cost_price,
+                'reference_type' => StockReferenceType::Transaction->value,
+                'reference_id' => $transaction->id,
+                'reason' => $reason,
+                'performed_by' => $transaction->cashier_id,
+            ]);
+        }
+    }
+
+    /**
+     * Update customer total_spend, visit_count, last_visit_at after a transaction.
+     */
+    private function updateCustomerStats(Transaction $transaction): void
+    {
+        if (! $transaction->customer_id) {
+            return;
+        }
+
+        $customer = Customer::find($transaction->customer_id);
+        if (! $customer) {
+            return;
+        }
+
+        $isReturn = $transaction->type === TransactionType::Return
+            || $transaction->type === TransactionType::Return->value;
+
+        $totalAmount = (float) $transaction->total_amount;
+
+        if ($isReturn) {
+            $customer->total_spend = max(0, (float) $customer->total_spend - $totalAmount);
+        } else {
+            $customer->total_spend = (float) $customer->total_spend + $totalAmount;
+            $customer->visit_count = ($customer->visit_count ?? 0) + 1;
+            $customer->last_visit_at = $transaction->created_at;
+        }
+
+        $customer->save();
+    }
+
+    /**
+     * Reverse customer stats when a transaction is voided.
+     */
+    private function reverseCustomerStats(Transaction $transaction): void
+    {
+        if (! $transaction->customer_id) {
+            return;
+        }
+
+        $customer = Customer::find($transaction->customer_id);
+        if (! $customer) {
+            return;
+        }
+
+        $isReturn = $transaction->type === TransactionType::Return
+            || $transaction->type === TransactionType::Return->value;
+
+        $totalAmount = (float) $transaction->total_amount;
+
+        if ($isReturn) {
+            // Voiding a return = add spend back
+            $customer->total_spend = (float) $customer->total_spend + $totalAmount;
+        } else {
+            // Voiding a sale = subtract spend, decrement visit
+            $customer->total_spend = max(0, (float) $customer->total_spend - $totalAmount);
+            $customer->visit_count = max(0, ($customer->visit_count ?? 0) - 1);
+        }
+
+        $customer->save();
     }
 
     private function generateNumber(string $storeId): string

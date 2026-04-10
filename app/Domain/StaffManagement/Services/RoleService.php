@@ -380,8 +380,9 @@ class RoleService
                 // Payments & Cash
                 'payments.process', 'payments.refund',
                 'cash.manage', 'cash.view_sessions', 'cash.view_daily_summary', 'cash.reconciliation',
+                // Installments
+                'installments.configure', 'installments.use', 'installments.view_history',
                 // Finance
-                'finance.commissions', 'finance.settlements', 'finance.expenses', 'finance.gift_cards',
                 // Reports
                 'reports.view', 'reports.view_financial', 'reports.view_margin', 'reports.attendance',
                 'reports.sales', 'reports.inventory', 'reports.customers', 'reports.staff', 'reports.export',
@@ -450,6 +451,8 @@ class RoleService
                 'finance.commissions', 'finance.settlements', 'finance.expenses', 'finance.gift_cards',
                 // Cash
                 'cash.view_sessions', 'cash.view_daily_summary', 'cash.reconciliation',
+                // Installments
+                'installments.view_history',
                 // Orders & POS (view only)
                 'orders.view', 'pos.view_sessions',
                 // Transactions
@@ -551,6 +554,7 @@ class RoleService
                 'pos.view_sessions', 'cash.view_sessions', 'cash.view_daily_summary',
                 'branches.view',
                 'accounting.view_history',
+                'installments.view_history',
                 'labels.view', 'promotions.view_analytics',
                 'delivery.view_dashboard', 'delivery.view_logs',
                 'thawani.view_dashboard',
@@ -587,6 +591,8 @@ class RoleService
                 'payments.process', 'payments.refund',
                 // Cash
                 'cash.manage', 'cash.view_sessions', 'cash.view_daily_summary',
+                // Installments
+                'installments.use', 'installments.view_history',
                 // Finance
                 'finance.commissions', 'finance.gift_cards',
                 // Promotions
@@ -636,6 +642,8 @@ class RoleService
                 // Payments & Cash
                 'payments.process', 'payments.refund',
                 'cash.manage', 'cash.view_sessions', 'cash.view_daily_summary', 'cash.reconciliation',
+                // Installments
+                'installments.configure', 'installments.use', 'installments.view_history',
                 // Finance
                 'finance.commissions', 'finance.expenses', 'finance.gift_cards',
                 // Reports
@@ -678,6 +686,8 @@ class RoleService
                 'accounting.configure', 'accounting.export', 'accounting.view_history', 'accounting.manage_mappings',
                 'finance.commissions', 'finance.settlements', 'finance.expenses', 'finance.gift_cards',
                 'cash.view_sessions', 'cash.view_daily_summary', 'cash.reconciliation',
+                // Installments
+                'installments.view_history',
                 'orders.view', 'pos.view_sessions',
                 // Transactions
                 'transactions.view', 'transactions.export',
@@ -774,6 +784,8 @@ class RoleService
                 'payments.process', 'payments.refund',
                 // Cash
                 'cash.manage', 'cash.view_sessions', 'cash.view_daily_summary',
+                // Installments
+                'installments.use', 'installments.view_history',
                 // Promotions
                 'promotions.apply_manual',
                 // Labels
@@ -801,6 +813,8 @@ class RoleService
                 'customers.view', 'customers.manage',
                 'payments.process',
                 'cash.manage', 'cash.view_sessions',
+                // Installments
+                'installments.use',
                 'labels.print',
                 'dashboard.view',
                 'notifications.view',
@@ -821,6 +835,7 @@ class RoleService
                 'orders.view', 'products.view', 'inventory.view', 'customers.view',
                 'transactions.view',
                 'pos.view_sessions', 'cash.view_sessions', 'cash.view_daily_summary',
+                'installments.view_history',
                 'labels.view', 'promotions.view_analytics',
                 'notifications.view',
                 'support.view',
@@ -852,6 +867,8 @@ class RoleService
                 'payments.process', 'payments.refund',
                 // Cash
                 'cash.manage', 'cash.view_sessions', 'cash.view_daily_summary',
+                // Installments
+                'installments.use', 'installments.view_history',
                 // Finance
                 'finance.commissions', 'finance.gift_cards',
                 // Promotions

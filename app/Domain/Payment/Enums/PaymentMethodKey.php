@@ -17,4 +17,13 @@ enum PaymentMethodKey: string
     case MobilePayment = 'mobile_payment';
     case LoyaltyPoints = 'loyalty_points';
     case BankTransfer = 'bank_transfer';
+    case Tabby = 'tabby';
+    case Tamara = 'tamara';
+    case MisPay = 'mispay';
+    case Madfu = 'madfu';
+
+    public function isInstallment(): bool
+    {
+        return in_array($this, [self::Tabby, self::Tamara, self::MisPay, self::Madfu]);
+    }
 }

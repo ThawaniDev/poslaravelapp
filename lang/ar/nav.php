@@ -32,6 +32,7 @@ return [
     'hardware_quotes'             => 'عروض الأجهزة',
     'hardware_sales'              => 'مبيعات الأجهزة',
     'implementation_fees'         => 'رسوم التنفيذ',
+    'installment_providers'        => 'مزودي الأقساط',
     'invoices'                    => 'الفواتير',
     'ip_allowlist'                => 'قائمة IP المسموح بها',
     'ip_blocklist'                => 'قائمة IP المحظورة',

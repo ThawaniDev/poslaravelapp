@@ -32,6 +32,7 @@ return [
     'hardware_quotes'             => 'Hardware Quotes',
     'hardware_sales'              => 'Hardware Sales',
     'implementation_fees'         => 'Implementation Fees',
+    'installment_providers'        => 'Installment Providers',
     'invoices'                    => 'Invoices',
     'ip_allowlist'                => 'IP Allowlist',
     'ip_blocklist'                => 'IP Blocklist',

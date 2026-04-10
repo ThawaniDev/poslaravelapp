@@ -173,6 +173,11 @@ class PermissionService
             ['name' => 'payments.process',          'display_name' => 'Process Payments',             'display_name_ar' => 'معالجة المدفوعات',             'requires_pin' => false, 'description' => 'Accept and process payments',             'description_ar' => 'قبول ومعالجة المدفوعات'],
             ['name' => 'payments.refund',           'display_name' => 'Process Refunds',              'display_name_ar' => 'معالجة المبالغ المستردة',       'requires_pin' => true,  'description' => 'Issue payment refunds',                   'description_ar' => 'إصدار المبالغ المستردة'],
         ],
+        'installments' => [
+            ['name' => 'installments.configure',    'display_name' => 'Configure Installments',       'display_name_ar' => 'إعداد التقسيط',                'requires_pin' => false, 'description' => 'Configure installment provider credentials and settings', 'description_ar' => 'إعداد بيانات اعتماد مزودي التقسيط والإعدادات'],
+            ['name' => 'installments.use',          'display_name' => 'Use Installment Payments',     'display_name_ar' => 'استخدام الدفع بالتقسيط',       'requires_pin' => false, 'description' => 'Initiate installment payments at POS checkout', 'description_ar' => 'بدء مدفوعات التقسيط عند نقطة البيع'],
+            ['name' => 'installments.view_history', 'display_name' => 'View Installment History',     'display_name_ar' => 'عرض سجل التقسيط',              'requires_pin' => false, 'description' => 'View installment payment history and details', 'description_ar' => 'عرض سجل مدفوعات التقسيط وتفاصيلها'],
+        ],
         'cash' => [
             ['name' => 'cash.manage',              'display_name' => 'Manage Cash Drawer',           'display_name_ar' => 'إدارة درج النقود',             'requires_pin' => false, 'description' => 'Cash in/out and drawer management',       'description_ar' => 'إدارة النقود والدرج'],
             ['name' => 'cash.view_sessions',       'display_name' => 'View Cash Sessions',           'display_name_ar' => 'عرض جلسات النقد',              'requires_pin' => false, 'description' => 'View cash session history',               'description_ar' => 'عرض سجل جلسات النقد'],

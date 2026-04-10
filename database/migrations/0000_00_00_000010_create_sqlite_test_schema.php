@@ -450,6 +450,142 @@ return new class extends Migration
             });
         }
 
+        // ─── Platform: translation_overrides ─────────────────
+        if (!Schema::hasTable('translation_overrides')) {
+            Schema::create('translation_overrides', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->string('string_key');
+                $table->string('locale', 10);
+                $table->text('custom_value');
+                $table->timestamp('updated_at')->nullable();
+                $table->foreign('store_id')->references('id')->on('stores')->onDelete('cascade');
+            });
+        }
+
+        // ─── Platform: supported_locales ─────────────────────
+        if (!Schema::hasTable('supported_locales')) {
+            Schema::create('supported_locales', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('locale_code', 10)->unique();
+                $table->string('language_name');
+                $table->string('language_name_native');
+                $table->string('direction', 3)->default('rtl');
+                $table->string('date_format', 20)->nullable();
+                $table->string('number_format', 20)->nullable();
+                $table->string('calendar_system', 20)->default('gregorian');
+                $table->boolean('is_active')->default(true);
+                $table->boolean('is_default')->default(false);
+            });
+        }
+
+        // ─── Platform: master_translation_strings ────────────
+        if (!Schema::hasTable('master_translation_strings')) {
+            Schema::create('master_translation_strings', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('string_key')->unique();
+                $table->string('category', 50);
+                $table->text('value_en');
+                $table->text('value_ar');
+                $table->text('description')->nullable();
+                $table->boolean('is_overridable')->default(true);
+            });
+        }
+
+        // ─── Platform: translation_versions ──────────────────
+        if (!Schema::hasTable('translation_versions')) {
+            Schema::create('translation_versions', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('version_hash');
+                $table->timestamp('published_at')->nullable();
+                $table->uuid('published_by')->nullable();
+                $table->text('notes')->nullable();
+            });
+        }
+
+        // ─── Platform: tax_exemption_types ───────────────────
+        if (!Schema::hasTable('tax_exemption_types')) {
+            Schema::create('tax_exemption_types', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('code', 50)->unique();
+                $table->string('name');
+                $table->string('name_ar');
+                $table->text('required_documents')->nullable();
+                $table->boolean('is_active')->default(true);
+            });
+        }
+
+        // ─── Platform: age_restricted_categories ─────────────
+        if (!Schema::hasTable('age_restricted_categories')) {
+            Schema::create('age_restricted_categories', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('category_slug', 50)->unique();
+                $table->integer('min_age');
+                $table->boolean('is_active')->default(true);
+            });
+        }
+
+        // ─── Platform: payment_methods ───────────────────────
+        if (!Schema::hasTable('payment_methods')) {
+            Schema::create('payment_methods', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('method_key', 50)->unique();
+                $table->string('name');
+                $table->string('name_ar');
+                $table->string('icon')->nullable();
+                $table->string('category', 50);
+                $table->boolean('requires_terminal')->default(false);
+                $table->boolean('requires_customer_profile')->default(false);
+                $table->json('provider_config_schema')->nullable();
+                $table->boolean('is_active')->default(true);
+                $table->integer('sort_order')->default(0);
+                $table->timestamps();
+            });
+        }
+
+        // ─── Platform: certified_hardware ────────────────────
+        if (!Schema::hasTable('certified_hardware')) {
+            Schema::create('certified_hardware', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->string('device_type', 50);
+                $table->string('brand');
+                $table->string('model');
+                $table->string('driver_protocol', 50);
+                $table->json('connection_types')->nullable();
+                $table->string('firmware_version_min')->nullable();
+                $table->json('paper_widths')->nullable();
+                $table->text('setup_instructions')->nullable();
+                $table->text('setup_instructions_ar')->nullable();
+                $table->boolean('is_certified')->default(true);
+                $table->boolean('is_active')->default(true);
+                $table->text('notes')->nullable();
+                $table->timestamps();
+                $table->unique(['brand', 'model']);
+            });
+        }
+
+        // ─── Platform: security_policy_defaults ──────────────
+        if (!Schema::hasTable('security_policy_defaults')) {
+            Schema::create('security_policy_defaults', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->integer('session_timeout_minutes')->default(30);
+                $table->boolean('require_reauth_on_wake')->default(true);
+                $table->integer('pin_min_length')->default(4);
+                $table->string('pin_complexity', 20)->default('numeric');
+                $table->boolean('require_unique_pins')->default(true);
+                $table->integer('pin_expiry_days')->default(0);
+                $table->boolean('biometric_enabled_default')->default(false);
+                $table->boolean('biometric_can_replace_pin')->default(false);
+                $table->integer('max_failed_login_attempts')->default(5);
+                $table->integer('lockout_duration_minutes')->default(15);
+                $table->boolean('failed_attempt_alert_to_owner')->default(true);
+                $table->string('device_registration_policy', 30)->default('open');
+                $table->integer('max_devices_per_store')->default(10);
+                $table->uuid('updated_by')->nullable();
+                $table->timestamp('updated_at')->nullable();
+            });
+        }
+
         // ─── Platform: feature_flags ─────────────────────────
         if (!Schema::hasTable('feature_flags')) {
             Schema::create('feature_flags', function (Blueprint $table) {
@@ -3586,7 +3722,7 @@ return new class extends Migration
             $table->string('status', 20)->default('available');
             $table->uuid('current_order_id')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->timestamp('created_at')->nullable();
+            $table->timestamps();
             $table->unique(['store_id', 'table_number']);
         });
 
@@ -3603,7 +3739,7 @@ return new class extends Migration
             $table->string('status', 20)->default('pending');
             $table->integer('course_number')->default(1);
             $table->timestamp('fire_at')->nullable();
-            $table->timestamp('created_at')->nullable();
+            $table->timestamps();
             $table->timestamp('completed_at')->nullable();
         });
 
@@ -3647,6 +3783,44 @@ return new class extends Migration
             $table->uuid('processed_by');
             $table->timestamp('created_at')->nullable();
         });
+
+        // ─── ZATCA Compliance ───────────────────────────────
+        if (!Schema::hasTable('zatca_invoices')) {
+            Schema::create('zatca_invoices', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->uuid('order_id');
+                $table->string('invoice_number', 50);
+                $table->string('invoice_type', 20);
+                $table->text('invoice_xml');
+                $table->string('invoice_hash', 64);
+                $table->string('previous_invoice_hash', 64);
+                $table->text('digital_signature');
+                $table->text('qr_code_data');
+                $table->decimal('total_amount', 12, 2);
+                $table->decimal('vat_amount', 12, 2);
+                $table->string('submission_status', 20)->default('pending');
+                $table->string('zatca_response_code', 10)->nullable();
+                $table->text('zatca_response_message')->nullable();
+                $table->timestamp('submitted_at')->nullable();
+                $table->timestamp('created_at')->nullable();
+            });
+        }
+
+        if (!Schema::hasTable('zatca_certificates')) {
+            Schema::create('zatca_certificates', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->string('certificate_type', 20);
+                $table->text('certificate_pem');
+                $table->string('ccsid', 100);
+                $table->string('pcsid', 100)->nullable();
+                $table->string('status', 20)->default('active');
+                $table->timestamp('issued_at')->nullable();
+                $table->timestamp('expires_at')->nullable();
+                $table->timestamps();
+            });
+        }
     }
 
     public function down(): void
@@ -3656,6 +3830,8 @@ return new class extends Migration
         }
 
         $tables = [
+            // ZATCA Compliance
+            'zatca_certificates', 'zatca_invoices',
             // Industry: Restaurant
             'open_tabs', 'table_reservations', 'kitchen_tickets', 'restaurant_tables',
             // Industry: Bakery
@@ -3725,7 +3901,10 @@ return new class extends Migration
             'delivery_platform_endpoints', 'delivery_platform_fields', 'delivery_platforms',
             'system_health_checks', 'platform_event_logs',
             'cms_pages', 'notification_templates',
-            'feature_flags', 'ab_test_events', 'ab_test_variants', 'ab_tests', 'system_settings',
+            'feature_flags', 'ab_test_events', 'ab_test_variants', 'ab_tests',
+            'security_policy_defaults', 'certified_hardware', 'payment_methods',
+            'age_restricted_categories', 'tax_exemption_types', 'translation_versions',
+            'master_translation_strings', 'supported_locales', 'translation_overrides', 'system_settings',
             'implementation_fees', 'hardware_sales', 'payment_gateway_configs', 'payment_retry_rules',
             'subscription_credits', 'subscription_discounts',
             'payment_reminders', 'platform_announcement_dismissals', 'platform_announcements',
