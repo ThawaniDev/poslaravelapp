@@ -38,6 +38,7 @@ use App\Domain\WameedAI\Services\Features\DeadStockService;
 use App\Domain\WameedAI\Services\Features\EfficiencyScoreService;
 use App\Domain\WameedAI\Services\Features\ExpenseAnalysisService;
 use App\Domain\WameedAI\Services\Features\ExpiryManagerService;
+use App\Domain\WameedAI\Services\Features\InvoiceOCRService;
 use App\Domain\WameedAI\Services\Features\MarginAnalyzerService;
 use App\Domain\WameedAI\Services\Features\MarketingGeneratorService;
 use App\Domain\WameedAI\Services\Features\PeakHoursService;
