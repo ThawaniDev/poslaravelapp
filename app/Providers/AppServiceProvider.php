@@ -7,6 +7,10 @@ use App\Domain\Auth\Policies\UserPolicy;
 use App\Domain\Auth\Services\AuthService;
 use App\Domain\Auth\Services\OtpService;
 use App\Domain\Auth\Services\TokenService;
+use App\Domain\WameedAI\Commands\AggregateDailyUsageCommand;
+use App\Domain\WameedAI\Commands\AggregateMonthlyUsageCommand;
+use App\Domain\WameedAI\Commands\AggregatePlatformUsageCommand;
+use App\Domain\WameedAI\Commands\CleanupAICacheCommand;
 use App\Domain\Billing\Models\HardwareSale;
 use App\Domain\Billing\Models\ImplementationFee;
 use App\Domain\Core\Services\OnboardingService;
@@ -50,6 +54,14 @@ class AppServiceProvider extends ServiceProvider
 
         // Billing service
         $this->app->singleton(BillingService::class);
+
+        // WameedAI commands
+        $this->commands([
+            AggregateDailyUsageCommand::class,
+            AggregateMonthlyUsageCommand::class,
+            AggregatePlatformUsageCommand::class,
+            CleanupAICacheCommand::class,
+        ]);
 
         // Custom Filament logout response — marks admin session as ended
         $this->app->bind(LogoutResponseContract::class, AdminLogoutResponse::class);

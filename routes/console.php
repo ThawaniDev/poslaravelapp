@@ -7,6 +7,12 @@ use App\Domain\ProviderSubscription\Jobs\GenerateRenewalInvoicesJob;
 use App\Domain\ProviderSubscription\Jobs\RenewPaidSubscriptionsJob;
 use App\Domain\ProviderSubscription\Jobs\RetryFailedPaymentsJob;
 use App\Domain\Report\Jobs\RefreshDailySummariesJob;
+use App\Domain\WameedAI\Jobs\CalculateEfficiencyScoreJob;
+use App\Domain\WameedAI\Jobs\DetectAnomaliesJob;
+use App\Domain\WameedAI\Jobs\DetectCashierErrorsJob;
+use App\Domain\WameedAI\Jobs\GenerateDailySummaryJob;
+use App\Domain\WameedAI\Jobs\GenerateExpiryAlertsJob;
+use App\Domain\WameedAI\Jobs\GenerateReorderSuggestionsJob;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -70,5 +76,67 @@ Schedule::job(new SendPaymentReminders)
 // Check for auto-rollback of failing releases (every 30 minutes)
 Schedule::job(new CheckAutoRollback)
     ->everyThirtyMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// ─── Wameed AI Schedules ─────────────────────────────────────
+
+// Aggregate store-level daily AI usage (daily at 00:05)
+Schedule::command('ai:aggregate-daily')
+    ->dailyAt('00:05')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Aggregate monthly AI usage (1st of month at 00:30)
+Schedule::command('ai:aggregate-monthly')
+    ->monthlyOn(1, '00:30')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Aggregate platform-wide AI usage (daily at 00:15)
+Schedule::command('ai:aggregate-platform')
+    ->dailyAt('00:15')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Cleanup expired AI cache entries (daily at 03:00)
+Schedule::command('ai:cleanup-cache')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Generate smart reorder suggestions for all stores (daily at 05:00)
+Schedule::job(new GenerateReorderSuggestionsJob)
+    ->dailyAt('05:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Generate daily business summary (daily at 23:30)
+Schedule::job(new GenerateDailySummaryJob)
+    ->dailyAt('23:30')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Detect revenue anomalies (daily at 04:00)
+Schedule::job(new DetectAnomaliesJob)
+    ->dailyAt('04:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Check for expiring products and generate alerts (daily at 06:30)
+Schedule::job(new GenerateExpiryAlertsJob)
+    ->dailyAt('06:30')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Detect cashier errors from previous day (daily at 01:00)
+Schedule::job(new DetectCashierErrorsJob)
+    ->dailyAt('01:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Calculate store efficiency scores (daily at 04:30)
+Schedule::job(new CalculateEfficiencyScoreJob)
+    ->dailyAt('04:30')
     ->withoutOverlapping()
     ->onOneServer();

@@ -431,6 +431,8 @@ class RoleService
                 'jewelry.manage_rates', 'jewelry.buyback', 'jewelry.view', 'jewelry.manage_details',
                 'pharmacy.prescriptions', 'pharmacy.controlled_substances', 'pharmacy.view', 'pharmacy.drug_schedules',
                 'restaurant.tables', 'restaurant.kds', 'restaurant.reservations', 'restaurant.tabs', 'restaurant.split_bill', 'restaurant.view',
+                // Wameed AI
+                'wameed_ai.view', 'wameed_ai.use', 'wameed_ai.manage',
             ],
         ],
 
@@ -563,6 +565,8 @@ class RoleService
                 'zatca.view',
                 'notifications.view',
                 'support.view',
+                // Wameed AI
+                'wameed_ai.view',
             ],
         ],
 
@@ -604,8 +608,8 @@ class RoleService
                 // Branches, Dashboard
                 'branches.view', 'dashboard.view', 'companion.view',
                 'notifications.view', 'notifications.manage',
-                'support.view', 'support.create_ticket',
-            ],
+                'support.view', 'support.create_ticket',                // Wameed AI
+                'wameed_ai.view', 'wameed_ai.use',            ],
         ],
 
         // ═══════════════════════════════════════════════════════════
@@ -670,6 +674,8 @@ class RoleService
                 'jewelry.manage_rates', 'jewelry.buyback', 'jewelry.view', 'jewelry.manage_details',
                 'pharmacy.prescriptions', 'pharmacy.controlled_substances', 'pharmacy.view', 'pharmacy.drug_schedules',
                 'restaurant.tables', 'restaurant.kds', 'restaurant.reservations', 'restaurant.tabs', 'restaurant.split_bill', 'restaurant.view',
+                // Wameed AI
+                'wameed_ai.view', 'wameed_ai.use', 'wameed_ai.manage',
             ],
         ],
 
@@ -839,6 +845,8 @@ class RoleService
                 'labels.view', 'promotions.view_analytics',
                 'notifications.view',
                 'support.view',
+                // Wameed AI
+                'wameed_ai.view',
             ],
         ],
 
@@ -881,6 +889,8 @@ class RoleService
                 'dashboard.view',
                 'notifications.view', 'notifications.manage',
                 'support.view', 'support.create_ticket',
+                // Wameed AI
+                'wameed_ai.view', 'wameed_ai.use',
             ],
         ],
     ];

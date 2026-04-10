@@ -64,6 +64,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()->label(fn () => __('nav.group_ui_management')),
                 NavigationGroup::make()->label(fn () => __('nav.group_website')),
                 NavigationGroup::make()->label(fn () => __('nav.group_subscription_billing')),
+                NavigationGroup::make()->label(fn () => __('nav.group_ai')),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

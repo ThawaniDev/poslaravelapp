@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Domain\WameedAI\Seeders\AIFeatureDefinitionSeeder;
+use App\Domain\WameedAI\Seeders\AIProviderConfigSeeder;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -23,5 +25,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(ComprehensivePermissionSeeder::class);
+        $this->call(AIFeatureDefinitionSeeder::class);
+        $this->call(AIProviderConfigSeeder::class);
     }
 }

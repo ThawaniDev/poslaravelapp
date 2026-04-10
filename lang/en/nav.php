@@ -17,6 +17,7 @@ return [
     'group_ui_management'         => 'UI Management',
     'group_website'               => 'Website',
     'group_subscription_billing'  => 'Subscription & Billing',
+    'group_ai'                    => 'Wameed AI',
 
     // Navigation Labels
     'active_sessions'             => 'Active Sessions',
@@ -59,4 +60,10 @@ return [
     // Predefined Catalog
     'predefined_categories'       => 'Predefined Categories',
     'predefined_products'         => 'Predefined Products',
+
+    // Wameed AI
+    'ai_providers'                => 'AI Providers',
+    'ai_features'                 => 'AI Features',
+    'ai_usage_logs'               => 'AI Usage Logs',
+    'ai_dashboard'                => 'AI Dashboard',
 ];

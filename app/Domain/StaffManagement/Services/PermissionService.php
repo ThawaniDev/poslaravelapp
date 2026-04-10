@@ -438,5 +438,12 @@ class PermissionService
             ['name' => 'restaurant.split_bill',     'display_name' => 'Split Bills',                 'display_name_ar' => 'تقسيم الفواتير',              'requires_pin' => false, 'description' => 'Split bills between customers',           'description_ar' => 'تقسيم الفواتير بين العملاء'],
             ['name' => 'restaurant.view',           'display_name' => 'View Restaurant Dashboard',   'display_name_ar' => 'عرض لوحة المطعم',             'requires_pin' => false, 'description' => 'View restaurant dashboard',               'description_ar' => 'عرض لوحة المطعم'],
         ],
+
+        // ─── Wameed AI ───────────────────────────────────────────
+        'wameed_ai' => [
+            ['name' => 'wameed_ai.view',    'display_name' => 'View AI Features',       'display_name_ar' => 'عرض ميزات الذكاء الاصطناعي',       'requires_pin' => false, 'description' => 'View AI suggestions, usage logs, and feature list',       'description_ar' => 'عرض اقتراحات الذكاء الاصطناعي وسجلات الاستخدام وقائمة الميزات'],
+            ['name' => 'wameed_ai.use',     'display_name' => 'Use AI Features',        'display_name_ar' => 'استخدام ميزات الذكاء الاصطناعي',   'requires_pin' => false, 'description' => 'Invoke AI features (reorder, OCR, analytics, etc.)',      'description_ar' => 'استخدام ميزات الذكاء الاصطناعي (إعادة الطلب، المسح الضوئي، التحليلات، إلخ)'],
+            ['name' => 'wameed_ai.manage',  'display_name' => 'Manage AI Settings',     'display_name_ar' => 'إدارة إعدادات الذكاء الاصطناعي',   'requires_pin' => false, 'description' => 'Configure AI features, providers, and store settings',    'description_ar' => 'تكوين ميزات الذكاء الاصطناعي والمزودين وإعدادات المتجر'],
+        ],
     ];
 }

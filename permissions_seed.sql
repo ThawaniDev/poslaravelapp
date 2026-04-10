@@ -120,7 +120,12 @@ INSERT INTO admin_permissions (name, "group", description) VALUES
 ('security.manage_alerts', 'security',       'Investigate and resolve security alerts'),
 
 -- ── Knowledge Base ───────────────────────────────────────────────────
-('kb.manage',              'kb',             'Manage canned responses and knowledge base articles')
+('kb.manage',              'kb',             'Manage canned responses and knowledge base articles'),
+
+-- ── Wameed AI ────────────────────────────────────────────────────────
+('wameed_ai.view',         'wameed_ai',      'View AI usage analytics and platform-wide AI metrics'),
+('wameed_ai.manage',       'wameed_ai',      'Manage AI provider configurations and feature definitions'),
+('wameed_ai.logs',         'wameed_ai',      'View AI usage logs and audit trails')
 
 ON CONFLICT (name) DO NOTHING;
 
@@ -179,7 +184,8 @@ WHERE r.slug = 'platform_manager'
     'content.view', 'content.manage',
     'notifications.manage',
     'ui.manage',
-    'security.view'
+    'security.view',
+    'wameed_ai.view', 'wameed_ai.manage'
   )
 ON CONFLICT DO NOTHING;
 
@@ -390,7 +396,12 @@ INSERT INTO provider_permissions (name, "group", description, description_ar, is
 ('restaurant.kds',         'restaurant',  'Access kitchen display system, mark items ready',    'الوصول إلى نظام عرض المطبخ',                     TRUE),
 ('restaurant.reservations','restaurant',  'Create and manage table reservations',               'إنشاء وإدارة حجوزات الطاولات',                   TRUE),
 ('restaurant.tabs',        'restaurant',  'Open and close tabs',                                'فتح وإغلاق الحسابات المفتوحة',                   TRUE),
-('restaurant.split_bill',  'restaurant',  'Split bills between diners',                        'تقسيم الفاتورة بين الزبائن',                     TRUE)
+('restaurant.split_bill',  'restaurant',  'Split bills between diners',                        'تقسيم الفاتورة بين الزبائن',                     TRUE),
+
+-- ── Wameed AI (3) ────────────────────────────────────────────────────
+('wameed_ai.view',         'wameed_ai',   'View AI features, suggestions, and usage logs',      'عرض ميزات الذكاء الاصطناعي والاقتراحات وسجلات الاستخدام', TRUE),
+('wameed_ai.use',          'wameed_ai',   'Invoke AI features (reorder, OCR, analytics)',       'استخدام ميزات الذكاء الاصطناعي',                  TRUE),
+('wameed_ai.manage',       'wameed_ai',   'Configure AI features and store settings',           'تكوين ميزات الذكاء الاصطناعي وإعدادات المتجر',    TRUE)
 
 ON CONFLICT (name) DO NOTHING;
 
@@ -794,7 +805,12 @@ INSERT INTO permissions (name, display_name, module, guard_name, requires_pin) V
 ('restaurant.kds',         'Kitchen Display',                     'restaurant',  'staff', FALSE),
 ('restaurant.reservations','Manage Reservations',                  'restaurant',  'staff', FALSE),
 ('restaurant.tabs',        'Manage Tabs',                         'restaurant',  'staff', FALSE),
-('restaurant.split_bill',  'Split Bills',                         'restaurant',  'staff', FALSE)
+('restaurant.split_bill',  'Split Bills',                         'restaurant',  'staff', FALSE),
+
+-- ── Wameed AI (3) ────────────────────────────────────────────────────
+('wameed_ai.view',         'View AI Features',                    'wameed_ai',   'staff', FALSE),
+('wameed_ai.use',          'Use AI Features',                     'wameed_ai',   'staff', FALSE),
+('wameed_ai.manage',       'Manage AI Settings',                  'wameed_ai',   'staff', FALSE)
 
 ON CONFLICT (name) DO NOTHING;
 
