@@ -15,9 +15,8 @@ class ProductCategorizationService extends BaseFeatureService
         ", [$organizationId]);
 
         $context = [
-            'product_name' => $productName,
-            'barcode' => $barcode ?? '',
-            'existing_categories' => json_encode($existingCategories, JSON_UNESCAPED_UNICODE),
+            'uncategorized' => json_encode(['name' => $productName, 'barcode' => $barcode ?? ''], JSON_UNESCAPED_UNICODE),
+            'categories' => json_encode($existingCategories, JSON_UNESCAPED_UNICODE),
         ];
 
         return $this->callAI($storeId, $organizationId, $context, $userId, cacheTtlMinutes: 43200); // 30 days

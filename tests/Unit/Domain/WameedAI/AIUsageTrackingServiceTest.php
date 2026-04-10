@@ -104,7 +104,7 @@ class AIUsageTrackingServiceTest extends TestCase
             $table->integer('output_tokens')->default(0);
             $table->integer('total_tokens')->default(0);
             $table->decimal('estimated_cost_usd', 10, 6)->default(0);
-            $table->string('request_payload_hash', 64)->nullable();
+            $table->string('request_payload_hash', 255)->nullable();
             $table->boolean('response_cached')->default(false);
             $table->integer('latency_ms')->default(0);
             $table->string('status', 20)->default('success');

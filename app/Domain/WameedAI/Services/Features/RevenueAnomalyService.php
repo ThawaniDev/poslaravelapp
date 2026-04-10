@@ -37,6 +37,7 @@ class RevenueAnomalyService extends BaseFeatureService
         $context = [
             'daily_revenue' => json_encode($dailyRevenue, JSON_UNESCAPED_UNICODE),
             'cash_events' => json_encode($cashEvents, JSON_UNESCAPED_UNICODE),
+            'currency' => 'SAR',
         ];
 
         return $this->callAI($storeId, $organizationId, $context, $userId, cacheTtlMinutes: 360);

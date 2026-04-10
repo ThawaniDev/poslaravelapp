@@ -2,6 +2,7 @@
 
 namespace App\Domain\WameedAI\Services\Features;
 
+use App\Domain\Store\Models\Store;
 use Illuminate\Support\Facades\DB;
 
 class DailySummaryService extends BaseFeatureService
@@ -13,6 +14,9 @@ class DailySummaryService extends BaseFeatureService
 
     public function getSummary(string $storeId, string $organizationId, string $date, ?string $userId = null): ?array
     {
+        $store = Store::find($storeId);
+        $currency = $store?->currency ?? 'SAR';
+
         $sales = DB::selectOne("
             SELECT COALESCE(SUM(total_amount), 0) as total_sales,
                    COUNT(*) as total_transactions,
@@ -21,6 +25,20 @@ class DailySummaryService extends BaseFeatureService
             FROM transactions
             WHERE store_id = ? AND DATE(created_at) = ? AND status = 'completed'
         ", [$storeId, $date]);
+
+        if ((int) $sales->total_transactions === 0) {
+            return [
+                'headline_ar' => 'لا توجد مبيعات لهذا اليوم',
+                'revenue' => 0,
+                'transaction_count' => 0,
+                'avg_basket' => 0,
+                'top_products' => [],
+                'alerts' => [],
+                'comparison_yesterday' => ['revenue_change' => 0, 'transaction_count_change' => 0, 'avg_basket_change' => 0],
+                'recommendations_ar' => [],
+                'narrative_ar' => 'لا توجد بيانات مبيعات مسجلة لهذا اليوم (' . $date . ').',
+            ];
+        }
 
         $topProducts = DB::select("
             SELECT p.name, p.name_ar, SUM(ti.quantity) as qty_sold,
@@ -51,14 +69,20 @@ class DailySummaryService extends BaseFeatureService
         ", [$storeId, $date]);
 
         $context = [
-            'date' => $date,
-            'total_sales' => number_format((float) $sales->total_sales, 2),
-            'total_transactions' => $sales->total_transactions,
-            'avg_basket' => number_format((float) $sales->avg_basket, 2),
+            'sales_data' => json_encode([
+                'date' => $date,
+                'total_sales' => number_format((float) $sales->total_sales, 2),
+                'total_transactions' => $sales->total_transactions,
+                'avg_basket' => number_format((float) $sales->avg_basket, 2),
+                'max_transaction' => number_format((float) $sales->max_transaction, 2),
+            ], JSON_UNESCAPED_UNICODE),
             'top_products' => json_encode($topProducts, JSON_UNESCAPED_UNICODE),
-            'low_stock_items' => json_encode($lowStock, JSON_UNESCAPED_UNICODE),
-            'returns_count' => $returns->return_count ?? 0,
-            'returns_total' => number_format((float) ($returns->return_total ?? 0), 2),
+            'low_stock' => json_encode($lowStock, JSON_UNESCAPED_UNICODE),
+            'returns' => json_encode([
+                'count' => $returns->return_count ?? 0,
+                'total' => number_format((float) ($returns->return_total ?? 0), 2),
+            ], JSON_UNESCAPED_UNICODE),
+            'currency' => $currency,
         ];
 
         return $this->callAI($storeId, $organizationId, $context, $userId, cacheTtlMinutes: 1440);

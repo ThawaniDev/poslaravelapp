@@ -23,13 +23,17 @@ class ProductDescriptionService extends BaseFeatureService
         }
 
         $context = [
-            'product_name' => $product->name,
-            'product_name_ar' => $product->name_ar ?? '',
-            'category' => $product->category_name ?? '',
-            'category_ar' => $product->category_name_ar ?? '',
-            'price' => $product->sell_price,
-            'unit' => $product->unit ?? '',
-            'currency' => 'SAR',
+            'product_data' => json_encode([
+                'name' => $product->name,
+                'name_ar' => $product->name_ar ?? '',
+                'category' => $product->category_name ?? '',
+                'category_ar' => $product->category_name_ar ?? '',
+                'price' => $product->sell_price,
+                'unit' => $product->unit ?? '',
+                'currency' => 'SAR',
+            ], JSON_UNESCAPED_UNICODE),
+            'tone' => 'professional',
+            'language' => 'ar',
         ];
 
         return $this->callAI($storeId, $organizationId, $context, $userId, cacheTtlMinutes: 10080); // 7 days

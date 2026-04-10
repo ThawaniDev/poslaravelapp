@@ -42,8 +42,8 @@ class SmartReorderService extends BaseFeatureService
         }
 
         $context = [
-            'low_stock_products' => json_encode($lowStockProducts, JSON_UNESCAPED_UNICODE),
-            'sales_history_30d' => json_encode($salesHistory, JSON_UNESCAPED_UNICODE),
+            'products' => json_encode($lowStockProducts, JSON_UNESCAPED_UNICODE),
+            'recent_sales' => json_encode($salesHistory, JSON_UNESCAPED_UNICODE),
             'store_id' => $storeId,
         ];
 

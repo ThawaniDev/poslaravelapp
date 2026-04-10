@@ -40,7 +40,7 @@ class PersonalizedPromotionService extends BaseFeatureService
         $context = [
             'customer_data' => json_encode($customerData, JSON_UNESCAPED_UNICODE),
             'top_products' => json_encode($topProducts, JSON_UNESCAPED_UNICODE),
-            'segment_filter' => $segment ?? 'all',
+            'segment' => $segment ?? 'all',
             'currency' => 'SAR',
         ];
 

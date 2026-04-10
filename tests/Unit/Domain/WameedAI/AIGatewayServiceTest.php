@@ -111,7 +111,7 @@ class AIGatewayServiceTest extends TestCase
             $t->integer('output_tokens')->default(0);
             $t->integer('total_tokens')->default(0);
             $t->decimal('estimated_cost_usd', 10, 6)->default(0);
-            $t->string('request_payload_hash', 64)->nullable();
+            $t->string('request_payload_hash', 255)->nullable();
             $t->boolean('response_cached')->default(false);
             $t->integer('latency_ms')->default(0);
             $t->string('status', 20)->default('success');

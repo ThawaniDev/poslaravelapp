@@ -89,7 +89,7 @@ CREATE TABLE ai_usage_logs (
     output_tokens INT NOT NULL DEFAULT 0,
     total_tokens INT NOT NULL DEFAULT 0,
     estimated_cost_usd DECIMAL(10,6) NOT NULL DEFAULT 0,
-    request_payload_hash VARCHAR(64),
+    request_payload_hash VARCHAR(255),
     response_cached BOOLEAN NOT NULL DEFAULT FALSE,
     latency_ms INT NOT NULL DEFAULT 0,
     status VARCHAR(20) NOT NULL DEFAULT 'success',

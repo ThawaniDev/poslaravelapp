@@ -32,8 +32,7 @@ class ExpiryManagerService extends BaseFeatureService
         }
 
         $context = [
-            'expiring_products' => json_encode($expiringProducts, JSON_UNESCAPED_UNICODE),
-            'days_ahead' => $daysAhead,
+            'expiring_stock' => json_encode($expiringProducts, JSON_UNESCAPED_UNICODE),
             'currency' => 'SAR',
         ];
 

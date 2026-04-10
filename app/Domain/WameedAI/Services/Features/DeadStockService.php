@@ -35,8 +35,7 @@ class DeadStockService extends BaseFeatureService
         }
 
         $context = [
-            'dead_stock_products' => json_encode($deadStock, JSON_UNESCAPED_UNICODE),
-            'days_threshold' => $daysSinceLastSale,
+            'dead_products' => json_encode($deadStock, JSON_UNESCAPED_UNICODE),
             'currency' => 'SAR',
         ];
 

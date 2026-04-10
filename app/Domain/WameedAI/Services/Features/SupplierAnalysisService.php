@@ -26,8 +26,8 @@ class SupplierAnalysisService extends BaseFeatureService
         ", [$storeId, $organizationId]);
 
         $context = [
-            'supplier_metrics' => json_encode($supplierMetrics, JSON_UNESCAPED_UNICODE),
-            'currency' => 'SAR',
+            'supplier_data' => json_encode($supplierMetrics, JSON_UNESCAPED_UNICODE),
+            'delivery_records' => json_encode($supplierMetrics, JSON_UNESCAPED_UNICODE),
         ];
 
         return $this->callAI($storeId, $organizationId, $context, $userId, cacheTtlMinutes: 1440);

@@ -34,7 +34,7 @@ class PricingOptimizationService extends BaseFeatureService
         ", [$storeId, $storeId, $organizationId]);
 
         $context = [
-            'products_performance' => json_encode($productPerformance, JSON_UNESCAPED_UNICODE),
+            'product_performance' => json_encode($productPerformance, JSON_UNESCAPED_UNICODE),
             'currency' => 'SAR',
         ];
 

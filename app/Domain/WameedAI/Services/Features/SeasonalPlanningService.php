@@ -33,10 +33,9 @@ class SeasonalPlanningService extends BaseFeatureService
         ", [$storeId]);
 
         $context = [
-            'season' => $season,
-            'historical_monthly_sales' => json_encode($historicalSales, JSON_UNESCAPED_UNICODE),
-            'current_stock' => json_encode($currentStock, JSON_UNESCAPED_UNICODE),
-            'currency' => 'SAR',
+            'monthly_sales' => json_encode($historicalSales, JSON_UNESCAPED_UNICODE),
+            'category_trends' => json_encode($currentStock, JSON_UNESCAPED_UNICODE),
+            'current_month' => now()->format('F Y'),
         ];
 
         return $this->callAI($storeId, $organizationId, $context, $userId, cacheTtlMinutes: 1440);

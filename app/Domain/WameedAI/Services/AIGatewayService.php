@@ -192,7 +192,7 @@ class AIGatewayService
             if (is_array($value)) {
                 $value = json_encode($value, JSON_UNESCAPED_UNICODE);
             }
-            $template = str_replace("{{$key}}", (string) $value, $template);
+            $template = str_replace('{{' . $key . '}}', (string) $value, $template);
         }
 
         return $template;

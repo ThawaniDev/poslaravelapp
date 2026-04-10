@@ -30,7 +30,8 @@ class BarcodeEnrichmentService extends BaseFeatureService
 
         $context = [
             'barcode' => $barcode,
-            'predefined_match' => $predefined ? json_encode($predefined, JSON_UNESCAPED_UNICODE) : 'none',
+            'existing_data' => 'none',
+            'predefined_data' => $predefined ? json_encode($predefined, JSON_UNESCAPED_UNICODE) : 'none',
         ];
 
         return $this->callAI($storeId, $organizationId, $context, $userId, cacheTtlMinutes: 43200); // 30 days

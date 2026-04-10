@@ -55,7 +55,7 @@ class ShrinkageDetectionService extends BaseFeatureService
         }
 
         $context = [
-            'shrinkage_data' => json_encode($shrinkageData, JSON_UNESCAPED_UNICODE),
+            'discrepancies' => json_encode($shrinkageData, JSON_UNESCAPED_UNICODE),
             'currency' => 'SAR',
         ];
 

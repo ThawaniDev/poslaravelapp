@@ -41,9 +41,9 @@ class SalesForecastService extends BaseFeatureService
 
         $context = [
             'forecast_days' => $days,
-            'historical_daily_sales' => json_encode($historicalSales, JSON_UNESCAPED_UNICODE),
-            'category_daily_sales' => json_encode($categorySales, JSON_UNESCAPED_UNICODE),
-            'current_date' => now()->toDateString(),
+            'historical_sales' => json_encode($historicalSales, JSON_UNESCAPED_UNICODE),
+            'category_breakdown' => json_encode($categorySales, JSON_UNESCAPED_UNICODE),
+            'currency' => 'SAR',
         ];
 
         return $this->callAI($storeId, $organizationId, $context, $userId, cacheTtlMinutes: 720);

@@ -42,9 +42,9 @@ class PeakHoursService extends BaseFeatureService
         ", [$storeId]);
 
         $context = [
-            'period' => $period,
-            'hourly_transactions' => json_encode($hourlyData, JSON_UNESCAPED_UNICODE),
-            'staff_on_shift' => json_encode($staffOnShift, JSON_UNESCAPED_UNICODE),
+            'hourly_data' => json_encode($hourlyData, JSON_UNESCAPED_UNICODE),
+            'staff_data' => json_encode($staffOnShift, JSON_UNESCAPED_UNICODE),
+            'currency' => 'SAR',
         ];
 
         return $this->callAI($storeId, $organizationId, $context, $userId, cacheTtlMinutes: 720);

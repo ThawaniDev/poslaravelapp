@@ -36,8 +36,19 @@ class BundleSuggestionService extends BaseFeatureService
             return ['suggestions' => [], 'message' => 'Not enough transaction data for bundle analysis'];
         }
 
+        $topProducts = DB::select("
+            SELECT p.name, p.name_ar, SUM(ti.quantity) as qty_sold, SUM(ti.line_total) as revenue
+            FROM transaction_items ti
+            JOIN transactions t ON t.id = ti.transaction_id
+            JOIN products p ON p.id = ti.product_id
+            WHERE t.store_id = ? AND t.created_at >= NOW() - INTERVAL '30 days' AND t.status = 'completed'
+            GROUP BY p.id, p.name, p.name_ar
+            ORDER BY revenue DESC LIMIT 20
+        ", [$storeId]);
+
         $context = [
-            'co_purchased_products' => json_encode($coPurchased, JSON_UNESCAPED_UNICODE),
+            'copurchase_pairs' => json_encode($coPurchased, JSON_UNESCAPED_UNICODE),
+            'top_products' => json_encode($topProducts, JSON_UNESCAPED_UNICODE),
             'currency' => 'SAR',
         ];
 
