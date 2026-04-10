@@ -16,7 +16,7 @@ class PricingOptimizationService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $productPerformance = DB::select("
-            SELECT p.id, p.name, p.name_ar, p.sell_price, p.cost_price,
+            SELECT p.name, p.name_ar, p.sell_price, p.cost_price,
                    c.name as category,
                    COALESCE(pss.total_quantity, 0) as qty_sold_30d,
                    COALESCE(pss.total_revenue, 0) as revenue_30d,

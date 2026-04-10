@@ -16,7 +16,7 @@ class ShrinkageDetectionService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $shrinkageData = DB::select("
-            SELECT p.id, p.name, p.name_ar, p.cost_price,
+            SELECT p.name, p.name_ar, p.cost_price,
                    c.name as category,
                    sl.quantity as actual_stock,
                    COALESCE(received.total_received, 0) as total_received,

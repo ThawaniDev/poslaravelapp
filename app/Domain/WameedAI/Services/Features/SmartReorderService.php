@@ -16,7 +16,7 @@ class SmartReorderService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $lowStockProducts = DB::select("
-            SELECT p.id, p.name, p.name_ar, p.sku, p.barcode,
+            SELECT p.name, p.name_ar, p.sku, p.barcode,
                    sl.quantity as current_stock,
                    COALESCE(sl.reorder_point, 10) as reorder_point,
                    COALESCE(sl.max_stock_level, 100) as max_stock_level,
@@ -32,7 +32,7 @@ class SmartReorderService extends BaseFeatureService
         ", [$storeId, $organizationId]);
 
         $salesHistory = DB::select("
-            SELECT ti.product_id, p.name,
+            SELECT p.name,
                    SUM(ti.quantity) as total_sold,
                    COUNT(DISTINCT t.id) as transaction_count,
                    SUM(ti.quantity)::DECIMAL / 30 as avg_daily_sales
@@ -51,21 +51,25 @@ class SmartReorderService extends BaseFeatureService
         }
 
         $supplierInfo = DB::select("
-            SELECT ps.product_id, s.name as supplier_name, ps.cost_price as supplier_cost,
-                   ps.lead_time_days, s.id as supplier_id
+            SELECT p.name as product_name, p.name_ar as product_name_ar,
+                   s.name as supplier_name, ps.cost_price as supplier_cost,
+                   ps.lead_time_days
             FROM product_suppliers ps
             JOIN suppliers s ON s.id = ps.supplier_id
+            JOIN products p ON p.id = ps.product_id
             WHERE s.organization_id = ?
             ORDER BY ps.cost_price ASC
         ", [$organizationId]);
 
         $pendingOrders = DB::select("
-            SELECT poi.product_id, SUM(poi.quantity) as pending_quantity,
+            SELECT p.name as product_name, p.name_ar as product_name_ar,
+                   SUM(poi.quantity) as pending_quantity,
                    MIN(po.expected_date) as earliest_delivery
             FROM purchase_order_items poi
             JOIN purchase_orders po ON po.id = poi.purchase_order_id
+            JOIN products p ON p.id = poi.product_id
             WHERE po.store_id = ? AND po.status IN ('pending', 'approved', 'ordered')
-            GROUP BY poi.product_id
+            GROUP BY p.id, p.name, p.name_ar
         ", [$storeId]);
 
         $context = [

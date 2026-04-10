@@ -13,7 +13,7 @@ class PersonalizedPromotionService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $customerData = DB::select("
-            SELECT c.id, c.name, c.total_spend, c.visit_count,
+            SELECT c.name, c.total_spend, c.visit_count,
                    c.last_visit_at, c.loyalty_points, c.store_credit_balance,
                    cg.name as customer_group,
                    EXTRACT(DAY FROM NOW() - c.last_visit_at) as days_since_last_visit,

@@ -23,14 +23,14 @@ class SpendingPatternService extends BaseFeatureService
         ", [$customerId]);
 
         $customerTransactions = DB::select("
-            SELECT t.id, t.total_amount, t.discount_amount, t.created_at,
+            SELECT t.total_amount, t.discount_amount, t.created_at,
                    EXTRACT(HOUR FROM t.created_at) as hour,
                    EXTRACT(DOW FROM t.created_at) as day_of_week,
                    COUNT(ti.id) as item_count
             FROM transactions t
             LEFT JOIN transaction_items ti ON ti.transaction_id = t.id
             WHERE t.customer_id = ? AND t.store_id = ? AND t.status = 'completed'
-            GROUP BY t.id, t.total_amount, t.discount_amount, t.created_at
+            GROUP BY t.total_amount, t.discount_amount, t.created_at
             ORDER BY t.created_at DESC LIMIT 100
         ", [$customerId, $storeId]);
 

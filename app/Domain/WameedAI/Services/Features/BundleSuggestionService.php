@@ -16,8 +16,7 @@ class BundleSuggestionService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $coPurchased = DB::select("
-            SELECT a.product_id as product_a, b.product_id as product_b,
-                   pa.name as name_a, pa.name_ar as name_ar_a, pa.sell_price as price_a,
+            SELECT pa.name as name_a, pa.name_ar as name_ar_a, pa.sell_price as price_a,
                    pb.name as name_b, pb.name_ar as name_ar_b, pb.sell_price as price_b,
                    ca.name as category_a, cb.name as category_b,
                    COUNT(*) as co_purchase_count
@@ -30,7 +29,7 @@ class BundleSuggestionService extends BaseFeatureService
             LEFT JOIN categories cb ON cb.id = pb.category_id
             WHERE t.store_id = ? AND t.created_at >= NOW() - INTERVAL '60 days'
               AND t.status = 'completed'
-            GROUP BY a.product_id, b.product_id, pa.name, pa.name_ar, pa.sell_price,
+            GROUP BY pa.name, pa.name_ar, pa.sell_price,
                      pb.name, pb.name_ar, pb.sell_price, ca.name, cb.name
             HAVING COUNT(*) >= 3
             ORDER BY co_purchase_count DESC

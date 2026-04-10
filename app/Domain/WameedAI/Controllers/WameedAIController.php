@@ -308,7 +308,11 @@ class WameedAIController extends BaseApiController
 
     public function productCategorization(InvokeFeatureRequest $request): JsonResponse
     {
-        return $this->invokeFeature($request, fn ($s, $o, $u) => $this->productCategorization->categorize($s, $o, $u));
+        $productName = $request->input('product_name', '');
+        $barcode = $request->input('barcode');
+        return $this->invokeFeature($request, fn ($s, $o, $u) =>
+            $this->productCategorization->categorize($s, $o, $productName, $barcode, $u)
+        );
     }
 
     public function invoiceOCR(InvoiceOCRRequest $request): JsonResponse

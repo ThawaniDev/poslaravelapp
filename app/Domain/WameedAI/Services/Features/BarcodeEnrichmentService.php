@@ -12,7 +12,7 @@ class BarcodeEnrichmentService extends BaseFeatureService
     {
         // Check internal products first
         $existing = DB::selectOne("
-            SELECT p.id, p.name, p.name_ar, p.sell_price, p.cost_price, c.name as category
+            SELECT p.name, p.name_ar, p.sell_price, p.cost_price, c.name as category
             FROM products p
             LEFT JOIN categories c ON c.id = p.category_id
             WHERE (p.barcode = ? OR EXISTS (SELECT 1 FROM product_barcodes pb WHERE pb.product_id = p.id AND pb.barcode = ?))

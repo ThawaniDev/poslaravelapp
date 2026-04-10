@@ -16,7 +16,7 @@ class ExpiryManagerService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $expiringProducts = DB::select("
-            SELECT sb.id as batch_id, sb.product_id, p.name, p.name_ar, p.sell_price, p.cost_price,
+            SELECT sb.batch_number, p.name, p.name_ar, p.sell_price, p.cost_price,
                    c.name as category,
                    sb.expiry_date, sb.quantity as batch_qty, sb.batch_number,
                    EXTRACT(DAY FROM sb.expiry_date - NOW()) as days_until_expiry,

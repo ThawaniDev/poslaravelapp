@@ -13,7 +13,7 @@ class MarginAnalyzerService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $products = DB::select("
-            SELECT p.id, p.name, p.name_ar, p.sell_price, p.cost_price,
+            SELECT p.name, p.name_ar, p.sell_price, p.cost_price,
                    c.name as category,
                    CASE WHEN p.cost_price > 0 THEN ((p.sell_price - p.cost_price) / p.cost_price * 100) ELSE 0 END as margin_pct,
                    COALESCE(pss.qty, 0) as qty_sold_30d,

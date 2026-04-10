@@ -13,7 +13,7 @@ class SeasonalPlanningService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $historicalSales = DB::select("
-            SELECT p.id, p.name, p.name_ar, c.name as category,
+            SELECT p.name, p.name_ar, c.name as category,
                    SUM(ti.quantity) as total_sold, SUM(ti.line_total) as total_revenue,
                    EXTRACT(MONTH FROM t.created_at) as month
             FROM transaction_items ti
@@ -32,7 +32,7 @@ class SeasonalPlanningService extends BaseFeatureService
         }
 
         $currentStock = DB::select("
-            SELECT p.id, p.name, p.name_ar, sl.quantity as current_stock,
+            SELECT p.name, p.name_ar, sl.quantity as current_stock,
                    p.cost_price, p.sell_price,
                    COALESCE(sl.reorder_point, 10) as reorder_point,
                    c.name as category

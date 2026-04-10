@@ -11,7 +11,7 @@ class StoreHealthService extends BaseFeatureService
     public function calculateAll(?string $userId = null): ?array
     {
         $stores = DB::select("
-            SELECT s.id, s.name, s.name_ar, o.name as org_name,
+            SELECT s.name, s.name_ar, o.name as org_name,
                    s.is_active, s.created_at,
                    (SELECT COUNT(*) FROM transactions t WHERE t.store_id = s.id AND t.created_at >= NOW() - INTERVAL '7 days' AND t.status = 'completed') as txn_7d,
                    (SELECT COALESCE(SUM(total_amount), 0) FROM transactions t WHERE t.store_id = s.id AND t.created_at >= NOW() - INTERVAL '7 days' AND t.status = 'completed') as revenue_7d,

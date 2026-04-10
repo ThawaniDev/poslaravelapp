@@ -13,7 +13,7 @@ class StaffPerformanceService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $staffStats = DB::select("
-            SELECT u.id, u.name,
+            SELECT u.name,
                    COUNT(t.id) as transaction_count,
                    COALESCE(SUM(t.total_amount), 0) as total_sales,
                    COALESCE(AVG(t.total_amount), 0) as avg_basket,

@@ -33,7 +33,7 @@ class CashFlowPredictionService extends BaseFeatureService
         ", [$storeId]);
 
         $upcomingPayments = DB::select("
-            SELECT po.id, po.total_cost as total_amount, po.expected_date,
+            SELECT po.total_cost as total_amount, po.expected_date,
                    s.name as supplier_name
             FROM purchase_orders po
             LEFT JOIN suppliers s ON s.id = po.supplier_id

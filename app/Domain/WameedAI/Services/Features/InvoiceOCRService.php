@@ -13,7 +13,7 @@ class InvoiceOCRService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $existingProducts = DB::select("
-            SELECT id, name, name_ar, barcode, sku, cost_price
+            SELECT name, name_ar, barcode, sku, cost_price
             FROM products WHERE organization_id = ? AND is_active = true
             ORDER BY name LIMIT 500
         ", [$organizationId]);

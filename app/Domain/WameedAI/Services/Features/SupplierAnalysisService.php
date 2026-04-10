@@ -13,7 +13,7 @@ class SupplierAnalysisService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $supplierMetrics = DB::select("
-            SELECT s.id, s.name, s.credit_limit, s.outstanding_balance,
+            SELECT s.name, s.credit_limit, s.outstanding_balance,
                    s.rating, s.category as supplier_category,
                    COUNT(DISTINCT gr.id) as total_deliveries,
                    AVG(EXTRACT(DAY FROM gr.received_at - po.created_at)) as avg_delivery_days,
@@ -39,23 +39,23 @@ class SupplierAnalysisService extends BaseFeatureService
         }
 
         $pendingPOs = DB::select("
-            SELECT po.supplier_id, s.name as supplier_name,
+            SELECT s.name as supplier_name,
                    COUNT(*) as pending_count,
                    SUM(po.total_cost) as pending_value,
                    MIN(po.expected_date) as earliest_expected
             FROM purchase_orders po
             JOIN suppliers s ON s.id = po.supplier_id
             WHERE po.store_id = ? AND po.status IN ('pending', 'approved', 'ordered')
-            GROUP BY po.supplier_id, s.name
+            GROUP BY s.id, s.name
         ", [$storeId]);
 
         $productPerSupplier = DB::select("
-            SELECT ps.supplier_id, COUNT(DISTINCT ps.product_id) as product_count,
+            SELECT s.name as supplier_name, COUNT(DISTINCT ps.product_id) as product_count,
                    AVG(ps.lead_time_days) as avg_lead_time
             FROM product_suppliers ps
             JOIN suppliers s ON s.id = ps.supplier_id
             WHERE s.organization_id = ?
-            GROUP BY ps.supplier_id
+            GROUP BY s.id, s.name
         ", [$organizationId]);
 
         $context = [

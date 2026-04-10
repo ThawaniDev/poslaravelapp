@@ -16,7 +16,7 @@ class DeadStockService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $deadStock = DB::select("
-            SELECT p.id, p.name, p.name_ar, p.sell_price, p.cost_price,
+            SELECT p.name, p.name_ar, p.sell_price, p.cost_price,
                    c.name as category, c.name_ar as category_ar,
                    sl.quantity as current_stock,
                    (sl.quantity * COALESCE(p.cost_price, 0)) as stock_value,

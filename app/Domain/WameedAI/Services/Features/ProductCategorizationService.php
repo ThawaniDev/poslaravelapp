@@ -11,7 +11,7 @@ class ProductCategorizationService extends BaseFeatureService
     public function categorize(string $storeId, string $organizationId, string $productName, ?string $barcode = null, ?string $userId = null): ?array
     {
         $existingCategories = DB::select("
-            SELECT id, name, name_ar FROM categories WHERE organization_id = ? AND is_active = true ORDER BY name
+            SELECT name, name_ar FROM categories WHERE organization_id = ? AND is_active = true ORDER BY name
         ", [$organizationId]);
 
         $context = [

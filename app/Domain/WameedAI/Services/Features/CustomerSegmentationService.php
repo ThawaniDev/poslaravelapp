@@ -13,7 +13,7 @@ class CustomerSegmentationService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $customers = DB::select("
-            SELECT c.id, c.name, c.phone, c.total_spend, c.visit_count,
+            SELECT c.name, c.phone, c.total_spend, c.visit_count,
                    c.last_visit_at, c.created_at, c.loyalty_points,
                    c.store_credit_balance, c.date_of_birth,
                    cg.name as customer_group,
@@ -32,7 +32,7 @@ class CustomerSegmentationService extends BaseFeatureService
         }
 
         $topCategories = DB::select("
-            SELECT c.id as customer_id, cat.name as category, SUM(ti.line_total) as spend
+            SELECT c.name as customer_name, cat.name as category, SUM(ti.line_total) as spend
             FROM customers c
             JOIN transactions t ON t.customer_id = c.id AND t.store_id = ?
             JOIN transaction_items ti ON ti.transaction_id = t.id
@@ -40,16 +40,16 @@ class CustomerSegmentationService extends BaseFeatureService
             LEFT JOIN categories cat ON cat.id = p.category_id
             WHERE c.organization_id = ? AND t.status = 'completed'
               AND t.created_at >= NOW() - INTERVAL '90 days'
-            GROUP BY c.id, cat.name
+            GROUP BY c.name, cat.name
             ORDER BY spend DESC
         ", [$storeId, $organizationId]);
 
         $loyaltyActivity = DB::select("
-            SELECT lt.customer_id, lt.type, SUM(lt.points) as total_points, COUNT(*) as count
+            SELECT c.name as customer_name, lt.type, SUM(lt.points) as total_points, COUNT(*) as count
             FROM loyalty_transactions lt
             JOIN customers c ON c.id = lt.customer_id
             WHERE c.organization_id = ? AND lt.created_at >= NOW() - INTERVAL '90 days'
-            GROUP BY lt.customer_id, lt.type
+            GROUP BY c.name, lt.type
         ", [$organizationId]);
 
         $context = [

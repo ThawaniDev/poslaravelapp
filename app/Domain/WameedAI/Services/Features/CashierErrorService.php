@@ -13,7 +13,7 @@ class CashierErrorService extends BaseFeatureService
         $currency = $this->getStoreCurrency($storeId);
 
         $cashierStats = DB::select("
-            SELECT u.id, u.name,
+            SELECT u.name,
                    COUNT(t.id) as total_transactions,
                    SUM(CASE WHEN t.status = 'voided' THEN 1 ELSE 0 END) as void_count,
                    SUM(CASE WHEN t.type = 'return' THEN 1 ELSE 0 END) as return_count,
