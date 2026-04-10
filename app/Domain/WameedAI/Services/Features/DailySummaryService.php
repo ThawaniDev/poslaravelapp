@@ -2,7 +2,7 @@
 
 namespace App\Domain\WameedAI\Services\Features;
 
-use App\Domain\Store\Models\Store;
+use App\Domain\Core\Models\Store;
 use Illuminate\Support\Facades\DB;
 
 class DailySummaryService extends BaseFeatureService
