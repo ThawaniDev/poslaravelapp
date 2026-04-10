@@ -437,34 +437,43 @@ class WameedAIController extends BaseApiController
 
     private function invokeFeature(Request $request, callable $handler): JsonResponse
     {
-        $storeId = $request->header('X-Store-Id');
-        $orgId = $request->user()->organization_id;
-        $userId = $request->user()->id;
+        try {
+            $storeId = $request->header('X-Store-Id');
+            $orgId = $request->user()->organization_id;
+            $userId = $request->user()->id;
 
-        $startTime = microtime(true);
-        $result = $handler($storeId, $orgId, $userId);
-        $processingTimeMs = (int) round((microtime(true) - $startTime) * 1000);
+            $startTime = microtime(true);
+            $result = $handler($storeId, $orgId, $userId);
+            $processingTimeMs = (int) round((microtime(true) - $startTime) * 1000);
 
-        if ($result === null) {
-            return $this->error('AI feature is unavailable or rate limited. Please try again later.', 503);
+            if ($result === null) {
+                return $this->error('AI feature is unavailable or rate limited. Please try again later.', 503);
+            }
+
+            // Derive feature slug from route URL (e.g. /inventory/smart-reorder → smart_reorder)
+            $featureSlug = str_replace('-', '_', basename($request->path()));
+
+            $tokensUsed = $result['usage']['total_tokens'] ?? 0;
+            $costEstimate = $result['usage']['estimated_cost_usd'] ?? 0.0;
+
+            event(new AIFeatureInvoked(
+                storeId: $storeId,
+                featureSlug: $featureSlug,
+                userId: $userId,
+                organizationId: $orgId,
+                tokensUsed: $tokensUsed,
+                costEstimate: $costEstimate,
+                processingTimeMs: $processingTimeMs,
+            ));
+
+            return $this->success($result);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("WameedAI invokeFeature error: {$e->getMessage()}", [
+                'path' => $request->path(),
+                'exception' => $e,
+            ]);
+
+            return $this->error('An error occurred while processing the AI request.', 500);
         }
-
-        // Derive feature slug from route URL (e.g. /inventory/smart-reorder → smart_reorder)
-        $featureSlug = str_replace('-', '_', basename($request->path()));
-
-        $tokensUsed = $result['usage']['total_tokens'] ?? 0;
-        $costEstimate = $result['usage']['estimated_cost_usd'] ?? 0.0;
-
-        event(new AIFeatureInvoked(
-            storeId: $storeId,
-            featureSlug: $featureSlug,
-            userId: $userId,
-            organizationId: $orgId,
-            tokensUsed: $tokensUsed,
-            costEstimate: $costEstimate,
-            processingTimeMs: $processingTimeMs,
-        ));
-
-        return $this->success($result);
     }
 }
