@@ -42,6 +42,8 @@ Route::prefix('installments/config')->middleware(['auth:sanctum', 'branch.scope'
         ->middleware('permission:installments.configure');
     Route::delete('{provider}', [StoreInstallmentController::class, 'destroy'])
         ->middleware('permission:installments.configure');
+    Route::post('{provider}/test', [StoreInstallmentController::class, 'testConnection'])
+        ->middleware('permission:installments.configure');
 });
 
 // ─── POS Checkout — Installment Payments ─────────────────────────

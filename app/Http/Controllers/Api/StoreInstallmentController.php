@@ -92,4 +92,21 @@ class StoreInstallmentController extends BaseApiController
         $this->installmentService->deleteStoreConfig($storeId, $provider);
         return $this->success(null, 'Configuration removed');
     }
+
+    /**
+     * Test connection for a configured provider.
+     */
+    public function testConnection(Request $request, string $provider): JsonResponse
+    {
+        $storeId = $request->attributes->get('resolved_store_id');
+
+        try {
+            $result = $this->installmentService->testConnection($storeId, $provider);
+            return $this->success($result, $result['success'] ? 'Connection successful' : 'Connection failed');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound('No configuration found for this provider');
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
 }

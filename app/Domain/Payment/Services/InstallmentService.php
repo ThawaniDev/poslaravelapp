@@ -120,6 +120,115 @@ class InstallmentService
             ->delete();
     }
 
+    /**
+     * Test the connection/credentials for a configured provider.
+     */
+    public function testConnection(string $storeId, string $provider): array
+    {
+        $providerEnum = InstallmentProvider::from($provider);
+        $storeConfig = StoreInstallmentConfig::where('store_id', $storeId)
+            ->where('provider', $provider)
+            ->firstOrFail();
+
+        if (!$storeConfig->isFullyConfigured()) {
+            return ['success' => false, 'message' => 'Provider credentials are incomplete.'];
+        }
+
+        $baseUrl = $this->getBaseUrl($providerEnum, $storeConfig->environment);
+        $startTime = microtime(true);
+
+        try {
+            $result = match ($providerEnum) {
+                InstallmentProvider::Tabby => $this->testTabbyConnection($storeConfig, $baseUrl),
+                InstallmentProvider::Tamara => $this->testTamaraConnection($storeConfig, $baseUrl),
+                InstallmentProvider::MisPay => $this->testMisPayConnection($storeConfig, $baseUrl),
+                InstallmentProvider::Madfu => $this->testMadfuConnection($storeConfig, $baseUrl),
+            };
+
+            $latencyMs = round((microtime(true) - $startTime) * 1000);
+            return array_merge($result, [
+                'environment' => $storeConfig->environment,
+                'latency_ms' => $latencyMs,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error("Installment test connection failed [{$provider}]", [
+                'store_id' => $storeId,
+                'error' => $e->getMessage(),
+            ]);
+            return [
+                'success' => false,
+                'message' => $e->getMessage(),
+                'environment' => $storeConfig->environment,
+                'latency_ms' => round((microtime(true) - $startTime) * 1000),
+            ];
+        }
+    }
+
+    private function testTabbyConnection(StoreInstallmentConfig $config, string $baseUrl): array
+    {
+        $secretKey = $config->getCredential('secret_key');
+        // Use Tabby's checkout session endpoint with a minimal payload to test auth
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$secretKey}",
+            'Content-Type' => 'application/json',
+        ])->timeout(10)->get("{$baseUrl}/checkout");
+
+        // Tabby returns 401 for invalid keys, anything else means auth succeeded
+        if ($response->status() === 401 || $response->status() === 403) {
+            return ['success' => false, 'message' => 'Invalid API credentials (authentication failed).', 'status_code' => $response->status()];
+        }
+        return ['success' => true, 'message' => 'Credentials are valid. Connection successful.', 'status_code' => $response->status()];
+    }
+
+    private function testTamaraConnection(StoreInstallmentConfig $config, string $baseUrl): array
+    {
+        $apiToken = $config->getCredential('api_token');
+        // Use Tamara's merchant config endpoint to validate token
+        $response = Http::withHeaders([
+            'Authorization' => "Bearer {$apiToken}",
+            'Content-Type' => 'application/json',
+        ])->timeout(10)->get("{$baseUrl}/merchants/configs");
+
+        if ($response->status() === 401 || $response->status() === 403) {
+            return ['success' => false, 'message' => 'Invalid API token (authentication failed).', 'status_code' => $response->status()];
+        }
+        return ['success' => true, 'message' => 'Credentials are valid. Connection successful.', 'status_code' => $response->status()];
+    }
+
+    private function testMisPayConnection(StoreInstallmentConfig $config, string $baseUrl): array
+    {
+        $appId = $config->getCredential('app_id');
+        $appSecret = $config->getCredential('app_secret');
+        // MisPay: attempt to retrieve a token
+        $response = Http::withHeaders([
+            'x-app-secret' => $appSecret,
+            'x-app-id' => $appId,
+            'Accept' => 'application/json',
+        ])->timeout(10)->get("{$baseUrl}/token");
+
+        if (!$response->successful() || !$response->json('result.token')) {
+            return ['success' => false, 'message' => 'Token retrieval failed — check App ID and App Secret.', 'status_code' => $response->status()];
+        }
+        return ['success' => true, 'message' => 'Token retrieved successfully. Credentials are valid.', 'status_code' => $response->status()];
+    }
+
+    private function testMadfuConnection(StoreInstallmentConfig $config, string $baseUrl): array
+    {
+        $apiKey = $config->getCredential('api_key');
+        $authorization = $config->getCredential('authorization');
+        // Madfu: attempt to call a lightweight endpoint with auth headers
+        $response = Http::withHeaders([
+            'api-key' => $apiKey,
+            'Authorization' => "Bearer {$authorization}",
+            'Content-Type' => 'application/json',
+        ])->timeout(10)->get("{$baseUrl}/api/merchant/info");
+
+        if ($response->status() === 401 || $response->status() === 403) {
+            return ['success' => false, 'message' => 'Invalid API credentials (authentication failed).', 'status_code' => $response->status()];
+        }
+        return ['success' => true, 'message' => 'Credentials are valid. Connection successful.', 'status_code' => $response->status()];
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // POS Checkout — Available Providers for a Store & Amount
     // ═══════════════════════════════════════════════════════════════
