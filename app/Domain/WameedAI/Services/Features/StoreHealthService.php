@@ -13,10 +13,13 @@ class StoreHealthService extends BaseFeatureService
         $stores = DB::select("
             SELECT s.id, s.name, s.name_ar, o.name as org_name,
                    s.is_active, s.created_at,
-                   (SELECT COUNT(*) FROM transactions t WHERE t.store_id = s.id AND t.created_at >= NOW() - INTERVAL '7 days') as txn_7d,
-                   (SELECT COUNT(*) FROM transactions t WHERE t.store_id = s.id AND t.created_at >= NOW() - INTERVAL '30 days') as txn_30d,
-                   (SELECT COUNT(*) FROM support_tickets st WHERE st.store_id = s.id AND st.status = 'open') as open_tickets,
-                   (SELECT MAX(r.last_sync_at) FROM registers r WHERE r.store_id = s.id) as last_sync
+                   (SELECT COUNT(*) FROM transactions t WHERE t.store_id = s.id AND t.created_at >= NOW() - INTERVAL '7 days' AND t.status = 'completed') as txn_7d,
+                   (SELECT COALESCE(SUM(total_amount), 0) FROM transactions t WHERE t.store_id = s.id AND t.created_at >= NOW() - INTERVAL '7 days' AND t.status = 'completed') as revenue_7d,
+                   (SELECT COUNT(*) FROM transactions t WHERE t.store_id = s.id AND t.created_at >= NOW() - INTERVAL '30 days' AND t.status = 'completed') as txn_30d,
+                   (SELECT COALESCE(SUM(total_amount), 0) FROM transactions t WHERE t.store_id = s.id AND t.created_at >= NOW() - INTERVAL '30 days' AND t.status = 'completed') as revenue_30d,
+                   (SELECT COUNT(*) FROM products p WHERE p.organization_id = s.organization_id AND p.is_active = true) as active_products,
+                   (SELECT COUNT(*) FROM staff_members sm WHERE sm.store_id = s.id AND sm.is_active = true) as active_staff,
+                   (SELECT MAX(t.created_at) FROM transactions t WHERE t.store_id = s.id) as last_transaction
             FROM stores s
             JOIN organizations o ON o.id = s.organization_id
             WHERE s.is_active = true
@@ -24,14 +27,16 @@ class StoreHealthService extends BaseFeatureService
             LIMIT 200
         ");
 
+        if (empty($stores)) {
+            return ['store_scores' => [], 'message' => 'No active stores found'];
+        }
+
         $context = [
             'stores' => json_encode($stores, JSON_UNESCAPED_UNICODE),
         ];
 
-        // Platform-level call — use first store as placeholder
         $storeId = $stores[0]->id ?? 'platform';
-        $orgId = 'platform';
 
-        return $this->callAI($storeId, $orgId, $context, $userId, cacheTtlMinutes: 360);
+        return $this->callAI($storeId, 'platform', $context, $userId, cacheTtlMinutes: 360);
     }
 }

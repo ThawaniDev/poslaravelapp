@@ -10,8 +10,10 @@ class ProductDescriptionService extends BaseFeatureService
 
     public function generate(string $storeId, string $organizationId, string $productId, ?string $userId = null): ?array
     {
+        $currency = $this->getStoreCurrency($storeId);
+
         $product = DB::selectOne("
-            SELECT p.name, p.name_ar, p.description, p.sell_price, p.unit,
+            SELECT p.name, p.name_ar, p.description, p.sell_price, p.unit, p.barcode,
                    c.name as category_name, c.name_ar as category_name_ar
             FROM products p
             LEFT JOIN categories c ON c.id = p.category_id
@@ -30,12 +32,13 @@ class ProductDescriptionService extends BaseFeatureService
                 'category_ar' => $product->category_name_ar ?? '',
                 'price' => $product->sell_price,
                 'unit' => $product->unit ?? '',
-                'currency' => 'SAR',
+                'barcode' => $product->barcode ?? '',
+                'currency' => $currency,
             ], JSON_UNESCAPED_UNICODE),
             'tone' => 'professional',
             'language' => 'ar',
         ];
 
-        return $this->callAI($storeId, $organizationId, $context, $userId, cacheTtlMinutes: 10080); // 7 days
+        return $this->callAI($storeId, $organizationId, $context, $userId, cacheTtlMinutes: 10080);
     }
 }

@@ -13,8 +13,11 @@ class ShrinkageDetectionService extends BaseFeatureService
 
     public function detect(string $storeId, string $organizationId, ?string $userId = null): ?array
     {
+        $currency = $this->getStoreCurrency($storeId);
+
         $shrinkageData = DB::select("
             SELECT p.id, p.name, p.name_ar, p.cost_price,
+                   c.name as category,
                    sl.quantity as actual_stock,
                    COALESCE(received.total_received, 0) as total_received,
                    COALESCE(sold.total_sold, 0) as total_sold,
@@ -23,6 +26,7 @@ class ShrinkageDetectionService extends BaseFeatureService
                    sl.quantity - (COALESCE(received.total_received, 0) - COALESCE(sold.total_sold, 0) - COALESCE(adjusted.total_adjusted, 0)) as variance
             FROM products p
             JOIN stock_levels sl ON sl.product_id = p.id AND sl.store_id = ?
+            LEFT JOIN categories c ON c.id = p.category_id
             LEFT JOIN (
                 SELECT product_id, SUM(quantity) as total_received
                 FROM goods_receipt_items gri
@@ -51,12 +55,15 @@ class ShrinkageDetectionService extends BaseFeatureService
         ", [$storeId, $storeId, $storeId, $storeId, $organizationId]);
 
         if (empty($shrinkageData)) {
-            return ['products' => [], 'message' => 'No significant shrinkage detected'];
+            return ['products' => [], 'total_shrinkage_value' => 0, 'message' => 'No significant shrinkage detected'];
         }
+
+        $totalShrinkageValue = array_sum(array_map(fn ($p) => abs((float) $p->variance) * (float) $p->cost_price, $shrinkageData));
 
         $context = [
             'discrepancies' => json_encode($shrinkageData, JSON_UNESCAPED_UNICODE),
-            'currency' => 'SAR',
+            'total_shrinkage_value' => number_format($totalShrinkageValue, 2),
+            'currency' => $currency,
         ];
 
         return $this->callAI($storeId, $organizationId, $context, $userId, cacheTtlMinutes: 720);

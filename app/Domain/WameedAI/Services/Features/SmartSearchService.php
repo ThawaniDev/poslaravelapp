@@ -8,14 +8,10 @@ class SmartSearchService extends BaseFeatureService
 {
     public function getFeatureSlug(): string { return 'smart_search'; }
 
-    /**
-     * Two-step approach:
-     * 1. AI parses user query into structured intent
-     * 2. Execute pre-built SQL for that intent type (never dynamic SQL)
-     */
     public function search(string $storeId, string $organizationId, string $query, ?string $userId = null): ?array
     {
-        // Step 1: Parse intent via AI
+        $currency = $this->getStoreCurrency($storeId);
+
         $intentContext = [
             'user_query' => $query,
             'available_intents' => json_encode([
@@ -37,15 +33,13 @@ class SmartSearchService extends BaseFeatureService
             return ['answer' => 'عذراً، لم أتمكن من فهم السؤال. حاول مرة أخرى بصياغة مختلفة.', 'intent' => 'unknown'];
         }
 
-        // Step 2: Execute predefined SQL based on intent
         $data = $this->executeIntent($intent, $storeId, $organizationId);
 
-        // Step 3: Format response
         $responseContext = [
             'user_query' => $query,
             'intent' => $intent['intent_type'],
             'raw_data' => json_encode($data, JSON_UNESCAPED_UNICODE),
-            'currency' => 'SAR',
+            'currency' => $currency,
         ];
 
         $response = $this->gateway->call(
@@ -79,6 +73,8 @@ class SmartSearchService extends BaseFeatureService
             'top_products' => $this->queryTopProducts($storeId, $sinceClause),
             'stock_check' => $this->queryStockCheck($storeId, $organizationId, $intent['product_name'] ?? ''),
             'transaction_count' => $this->queryTransactionCount($storeId, $sinceClause),
+            'expense_summary' => $this->queryExpenseSummary($storeId, $period),
+            'customer_info' => $this->queryCustomerInfo($organizationId, $intent['customer_name'] ?? ''),
             default => ['message' => 'Query type not supported for direct lookup'],
         };
     }
@@ -108,7 +104,8 @@ class SmartSearchService extends BaseFeatureService
     private function queryStockCheck(string $storeId, string $orgId, string $productName): array
     {
         return DB::select("
-            SELECT p.name, p.name_ar, sl.quantity, p.sell_price
+            SELECT p.name, p.name_ar, sl.quantity, p.sell_price, p.cost_price,
+                   COALESCE(sl.reorder_point, 5) as reorder_point
             FROM products p
             JOIN stock_levels sl ON sl.product_id = p.id AND sl.store_id = ?
             WHERE p.organization_id = ? AND (p.name ILIKE ? OR p.name_ar ILIKE ?)
@@ -122,5 +119,31 @@ class SmartSearchService extends BaseFeatureService
             FROM transactions t WHERE t.store_id = ? AND t.status = 'completed' AND {$where}
         ", [$storeId]);
         return (array) $result;
+    }
+
+    private function queryExpenseSummary(string $storeId, string $period): array
+    {
+        $interval = match ($period) {
+            'today' => '1 day',
+            'yesterday' => '2 days',
+            'last_7_days' => '7 days',
+            'last_30_days' => '30 days',
+            'this_month' => '30 days',
+            default => '7 days',
+        };
+        return DB::select("
+            SELECT category, SUM(amount) as total, COUNT(*) as count
+            FROM expenses WHERE store_id = ? AND expense_date >= NOW() - INTERVAL '{$interval}'
+            GROUP BY category ORDER BY total DESC
+        ", [$storeId]);
+    }
+
+    private function queryCustomerInfo(string $orgId, string $customerName): array
+    {
+        return DB::select("
+            SELECT name, phone, total_spend, visit_count, last_visit_at, loyalty_points
+            FROM customers WHERE organization_id = ? AND (name ILIKE ? OR phone ILIKE ?)
+            LIMIT 10
+        ", [$orgId, "%{$customerName}%", "%{$customerName}%"]);
     }
 }

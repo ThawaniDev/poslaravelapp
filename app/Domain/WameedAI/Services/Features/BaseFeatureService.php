@@ -3,6 +3,7 @@
 namespace App\Domain\WameedAI\Services\Features;
 
 use App\Domain\WameedAI\Services\AIGatewayService;
+use Illuminate\Support\Facades\DB;
 
 abstract class BaseFeatureService
 {
@@ -22,5 +23,10 @@ abstract class BaseFeatureService
             userId: $userId,
             cacheTtlMinutes: $cacheTtlMinutes,
         );
+    }
+
+    protected function getStoreCurrency(string $storeId): string
+    {
+        return DB::selectOne("SELECT currency FROM stores WHERE id = ?", [$storeId])?->currency ?? 'SAR';
     }
 }

@@ -4,6 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Domain\WameedAI\Enums\AIRequestStatus;
 use App\Domain\WameedAI\Models\AIUsageLog;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -47,6 +49,93 @@ class AIUsageLogResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make('Request Details')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('feature_slug')
+                            ->label('Feature')
+                            ->badge(),
+                        Infolists\Components\TextEntry::make('store_id')
+                            ->label('Store ID')
+                            ->copyable(),
+                        Infolists\Components\TextEntry::make('user_id')
+                            ->label('User ID')
+                            ->copyable()
+                            ->placeholder('—'),
+                        Infolists\Components\TextEntry::make('ai_feature_definition_id')
+                            ->label('Feature Definition ID')
+                            ->copyable()
+                            ->placeholder('—'),
+                        Infolists\Components\TextEntry::make('model_used')
+                            ->label('Model'),
+                        Infolists\Components\TextEntry::make('status')
+                            ->label('Status')
+                            ->badge()
+                            ->color(fn (AIRequestStatus $state): string => match ($state) {
+                                AIRequestStatus::SUCCESS => 'success',
+                                AIRequestStatus::CACHED => 'info',
+                                AIRequestStatus::ERROR => 'danger',
+                                AIRequestStatus::RATE_LIMITED => 'warning',
+                            }),
+                        Infolists\Components\IconEntry::make('response_cached')
+                            ->label('Cached')
+                            ->boolean(),
+                        Infolists\Components\TextEntry::make('created_at')
+                            ->label('Created At')
+                            ->dateTime(),
+                    ])->columns(3),
+
+                Infolists\Components\Section::make('Token Usage & Cost')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('input_tokens')
+                            ->label('Input Tokens')
+                            ->numeric(),
+                        Infolists\Components\TextEntry::make('output_tokens')
+                            ->label('Output Tokens')
+                            ->numeric(),
+                        Infolists\Components\TextEntry::make('total_tokens')
+                            ->label('Total Tokens')
+                            ->numeric()
+                            ->weight('bold'),
+                        Infolists\Components\TextEntry::make('estimated_cost_usd')
+                            ->label('Estimated Cost')
+                            ->money('usd'),
+                        Infolists\Components\TextEntry::make('latency_ms')
+                            ->label('Latency')
+                            ->suffix(' ms')
+                            ->numeric(),
+                        Infolists\Components\TextEntry::make('request_payload_hash')
+                            ->label('Payload Hash')
+                            ->copyable()
+                            ->placeholder('—'),
+                    ])->columns(3),
+
+                Infolists\Components\Section::make('Error Details')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('error_message')
+                            ->label('Error Message')
+                            ->columnSpanFull()
+                            ->placeholder('No errors'),
+                    ])
+                    ->collapsed()
+                    ->visible(fn (AIUsageLog $record): bool => ! empty($record->error_message)),
+
+                Infolists\Components\Section::make('Metadata')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('metadata_json')
+                            ->label('Metadata (JSON)')
+                            ->columnSpanFull()
+                            ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : ($state ?? '—'))
+                            ->prose()
+                            ->copyable(),
+                    ])
+                    ->collapsed(),
+            ]);
     }
 
     public static function table(Table $table): Table
