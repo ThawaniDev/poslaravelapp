@@ -61,6 +61,12 @@ return [
     'predefined_categories'       => 'Predefined Categories',
     'predefined_products'         => 'Predefined Products',
 
+    // Quick Nav
+    'quick_nav'                   => 'Quick Navigation',
+    'quick_nav_short'             => 'Quick Nav',
+    'quick_nav_close'             => 'Close Quick Navigation',
+    'ungrouped'                   => 'Other',
+
     // Wameed AI
     'ai_providers'                => 'AI Providers',
     'ai_features'                 => 'AI Features',

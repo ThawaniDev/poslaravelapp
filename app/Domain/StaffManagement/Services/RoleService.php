@@ -433,6 +433,9 @@ class RoleService
                 'restaurant.tables', 'restaurant.kds', 'restaurant.reservations', 'restaurant.tabs', 'restaurant.split_bill', 'restaurant.view',
                 // Wameed AI
                 'wameed_ai.view', 'wameed_ai.use', 'wameed_ai.manage',
+                // Cashier Gamification
+                'cashier_performance.view_leaderboard', 'cashier_performance.view_badges', 'cashier_performance.manage_badges',
+                'cashier_performance.view_anomalies', 'cashier_performance.view_reports', 'cashier_performance.manage_settings',
             ],
         ],
 
@@ -676,6 +679,9 @@ class RoleService
                 'restaurant.tables', 'restaurant.kds', 'restaurant.reservations', 'restaurant.tabs', 'restaurant.split_bill', 'restaurant.view',
                 // Wameed AI
                 'wameed_ai.view', 'wameed_ai.use', 'wameed_ai.manage',
+                // Cashier Gamification
+                'cashier_performance.view_leaderboard', 'cashier_performance.view_badges', 'cashier_performance.manage_badges',
+                'cashier_performance.view_anomalies', 'cashier_performance.view_reports', 'cashier_performance.manage_settings',
             ],
         ],
 
@@ -847,6 +853,9 @@ class RoleService
                 'support.view',
                 // Wameed AI
                 'wameed_ai.view',
+                // Cashier Gamification
+                'cashier_performance.view_leaderboard', 'cashier_performance.view_badges',
+                'cashier_performance.view_anomalies', 'cashier_performance.view_reports',
             ],
         ],
 
@@ -891,6 +900,9 @@ class RoleService
                 'support.view', 'support.create_ticket',
                 // Wameed AI
                 'wameed_ai.view', 'wameed_ai.use',
+                // Cashier Gamification
+                'cashier_performance.view_leaderboard', 'cashier_performance.view_badges',
+                'cashier_performance.view_anomalies', 'cashier_performance.view_reports',
             ],
         ],
     ];

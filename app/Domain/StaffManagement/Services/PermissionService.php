@@ -445,5 +445,15 @@ class PermissionService
             ['name' => 'wameed_ai.use',     'display_name' => 'Use AI Features',        'display_name_ar' => 'استخدام ميزات الذكاء الاصطناعي',   'requires_pin' => false, 'description' => 'Invoke AI features (reorder, OCR, analytics, etc.)',      'description_ar' => 'استخدام ميزات الذكاء الاصطناعي (إعادة الطلب، المسح الضوئي، التحليلات، إلخ)'],
             ['name' => 'wameed_ai.manage',  'display_name' => 'Manage AI Settings',     'display_name_ar' => 'إدارة إعدادات الذكاء الاصطناعي',   'requires_pin' => false, 'description' => 'Configure AI features, providers, and store settings',    'description_ar' => 'تكوين ميزات الذكاء الاصطناعي والمزودين وإعدادات المتجر'],
         ],
+
+        // ─── Cashier Gamification & Theft Deterrence ─────────────
+        'cashier_performance' => [
+            ['name' => 'cashier_performance.view_leaderboard', 'display_name' => 'View Cashier Leaderboard',   'display_name_ar' => 'عرض لوحة متصدري الصرافين',      'requires_pin' => false, 'description' => 'View cashier performance leaderboard and history',      'description_ar' => 'عرض لوحة متصدري أداء الصرافين والسجل'],
+            ['name' => 'cashier_performance.view_badges',      'display_name' => 'View Cashier Badges',        'display_name_ar' => 'عرض شارات الصرافين',             'requires_pin' => false, 'description' => 'View cashier badge definitions and awards',            'description_ar' => 'عرض تعريفات شارات الصرافين والجوائز'],
+            ['name' => 'cashier_performance.manage_badges',    'display_name' => 'Manage Cashier Badges',      'display_name_ar' => 'إدارة شارات الصرافين',           'requires_pin' => false, 'description' => 'Create, edit, delete cashier badge definitions',       'description_ar' => 'إنشاء وتعديل وحذف تعريفات شارات الصرافين'],
+            ['name' => 'cashier_performance.view_anomalies',   'display_name' => 'View Cashier Anomalies',     'display_name_ar' => 'عرض الحالات الشاذة للصرافين',     'requires_pin' => false, 'description' => 'View anomaly alerts and risk scores for cashiers',     'description_ar' => 'عرض تنبيهات الحالات الشاذة ودرجات المخاطر للصرافين'],
+            ['name' => 'cashier_performance.view_reports',     'display_name' => 'View Shift Reports',         'display_name_ar' => 'عرض تقارير الورديات',            'requires_pin' => false, 'description' => 'View cashier shift-end report cards',                  'description_ar' => 'عرض بطاقات تقارير نهاية وردية الصراف'],
+            ['name' => 'cashier_performance.manage_settings',  'display_name' => 'Manage Gamification Settings','display_name_ar' => 'إدارة إعدادات التحفيز',          'requires_pin' => false, 'description' => 'Configure gamification settings, weights, and thresholds', 'description_ar' => 'تكوين إعدادات التحفيز والأوزان والحدود'],
+        ],
     ];
 }

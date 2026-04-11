@@ -71,7 +71,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->renderHook(
                 PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
-                fn (): string => Blade::render('<livewire:admin-locale-switcher />'),
+                fn (): string => Blade::render('<livewire:admin-quick-nav /><livewire:admin-locale-switcher />'),
             )
             ->middleware([
                 EncryptCookies::class,

@@ -3821,6 +3821,162 @@ return new class extends Migration
                 $table->timestamps();
             });
         }
+
+        // ─── Cashier Gamification & Theft Deterrence ─────────────
+        Schema::create('cashier_gamification_settings', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->foreign('store_id')->references('id')->on('stores')->cascadeOnDelete();
+            $table->boolean('leaderboard_enabled')->default(true);
+            $table->boolean('badges_enabled')->default(true);
+            $table->boolean('anomaly_detection_enabled')->default(true);
+            $table->boolean('shift_reports_enabled')->default(true);
+            $table->boolean('auto_generate_on_session_close')->default(true);
+            $table->decimal('risk_score_void_weight', 5, 2)->default(30);
+            $table->decimal('risk_score_no_sale_weight', 5, 2)->default(25);
+            $table->decimal('risk_score_discount_weight', 5, 2)->default(25);
+            $table->decimal('risk_score_price_override_weight', 5, 2)->default(20);
+            $table->decimal('anomaly_z_score_threshold', 5, 2)->default(2.0);
+            $table->timestamps();
+            $table->unique('store_id');
+        });
+
+        Schema::create('cashier_performance_snapshots', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->foreign('store_id')->references('id')->on('stores')->cascadeOnDelete();
+            $table->uuid('cashier_id');
+            $table->foreign('cashier_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->uuid('pos_session_id')->nullable();
+            $table->string('period_type', 20)->default('daily');
+            $table->date('date');
+            $table->timestamp('shift_start')->nullable();
+            $table->timestamp('shift_end')->nullable();
+            $table->integer('active_minutes')->default(0);
+            $table->integer('total_transactions')->default(0);
+            $table->integer('total_items_sold')->default(0);
+            $table->decimal('total_revenue', 12, 2)->default(0);
+            $table->decimal('total_discount_given', 12, 2)->default(0);
+            $table->decimal('avg_basket_size', 12, 2)->default(0);
+            $table->decimal('items_per_minute', 8, 2)->default(0);
+            $table->integer('avg_transaction_time_seconds')->default(0);
+            $table->integer('void_count')->default(0);
+            $table->decimal('void_amount', 12, 2)->default(0);
+            $table->decimal('void_rate', 5, 4)->default(0);
+            $table->integer('return_count')->default(0);
+            $table->decimal('return_amount', 12, 2)->default(0);
+            $table->integer('discount_count')->default(0);
+            $table->decimal('discount_rate', 5, 4)->default(0);
+            $table->integer('price_override_count')->default(0);
+            $table->integer('no_sale_count')->default(0);
+            $table->integer('upsell_count')->default(0);
+            $table->decimal('upsell_rate', 5, 4)->default(0);
+            $table->decimal('cash_variance', 12, 2)->default(0);
+            $table->decimal('cash_variance_absolute', 12, 2)->default(0);
+            $table->decimal('risk_score', 5, 2)->default(0);
+            $table->json('anomaly_flags')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('cashier_badges', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->foreign('store_id')->references('id')->on('stores')->cascadeOnDelete();
+            $table->string('slug', 50);
+            $table->string('name_en', 100);
+            $table->string('name_ar', 100);
+            $table->string('description_en', 500)->nullable();
+            $table->string('description_ar', 500)->nullable();
+            $table->string('icon', 50)->default('emoji_events');
+            $table->string('color', 20)->default('#FD8209');
+            $table->string('trigger_type', 50);
+            $table->decimal('trigger_threshold', 12, 2)->default(0);
+            $table->string('period', 20)->default('daily');
+            $table->boolean('is_active')->default(true);
+            $table->integer('sort_order')->default(0);
+            $table->timestamps();
+            $table->unique(['store_id', 'slug']);
+        });
+
+        Schema::create('cashier_badge_awards', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->foreign('store_id')->references('id')->on('stores')->cascadeOnDelete();
+            $table->uuid('cashier_id');
+            $table->foreign('cashier_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->uuid('badge_id');
+            $table->foreign('badge_id')->references('id')->on('cashier_badges')->cascadeOnDelete();
+            $table->uuid('snapshot_id')->nullable();
+            $table->date('earned_date');
+            $table->string('period', 20)->default('daily');
+            $table->decimal('metric_value', 12, 2)->default(0);
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('cashier_anomalies', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->foreign('store_id')->references('id')->on('stores')->cascadeOnDelete();
+            $table->uuid('cashier_id');
+            $table->foreign('cashier_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->uuid('snapshot_id')->nullable();
+            $table->string('anomaly_type', 50);
+            $table->string('severity', 20)->default('medium');
+            $table->decimal('risk_score', 5, 2)->default(0);
+            $table->string('title_en', 255);
+            $table->string('title_ar', 255);
+            $table->text('description_en')->nullable();
+            $table->text('description_ar')->nullable();
+            $table->string('metric_name', 50);
+            $table->decimal('metric_value', 12, 2);
+            $table->decimal('store_average', 12, 2)->default(0);
+            $table->decimal('store_stddev', 12, 2)->default(0);
+            $table->decimal('z_score', 8, 2)->default(0);
+            $table->json('reference_ids')->nullable();
+            $table->boolean('is_reviewed')->default(false);
+            $table->uuid('reviewed_by')->nullable();
+            $table->timestamp('reviewed_at')->nullable();
+            $table->text('review_notes')->nullable();
+            $table->date('detected_date');
+            $table->timestamps();
+        });
+
+        Schema::create('cashier_shift_reports', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->foreign('store_id')->references('id')->on('stores')->cascadeOnDelete();
+            $table->uuid('pos_session_id')->nullable();
+            $table->uuid('cashier_id');
+            $table->foreign('cashier_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->date('report_date');
+            $table->timestamp('shift_start')->nullable();
+            $table->timestamp('shift_end')->nullable();
+            $table->integer('total_transactions')->default(0);
+            $table->decimal('total_revenue', 12, 2)->default(0);
+            $table->integer('total_items')->default(0);
+            $table->decimal('items_per_minute', 8, 2)->default(0);
+            $table->decimal('avg_basket_size', 12, 2)->default(0);
+            $table->integer('void_count')->default(0);
+            $table->decimal('void_amount', 12, 2)->default(0);
+            $table->integer('return_count')->default(0);
+            $table->decimal('return_amount', 12, 2)->default(0);
+            $table->integer('discount_count')->default(0);
+            $table->decimal('discount_amount', 12, 2)->default(0);
+            $table->integer('no_sale_count')->default(0);
+            $table->integer('price_override_count')->default(0);
+            $table->decimal('cash_variance', 12, 2)->default(0);
+            $table->integer('upsell_count')->default(0);
+            $table->decimal('upsell_rate', 5, 4)->default(0);
+            $table->decimal('risk_score', 5, 2)->default(0);
+            $table->string('risk_level', 20)->default('normal');
+            $table->integer('anomaly_count')->default(0);
+            $table->json('badges_earned')->nullable();
+            $table->text('summary_en')->nullable();
+            $table->text('summary_ar')->nullable();
+            $table->boolean('sent_to_owner')->default(false);
+            $table->timestamp('sent_at')->nullable();
+            $table->timestamps();
+        });
     }
 
     public function down(): void
@@ -3830,6 +3986,9 @@ return new class extends Migration
         }
 
         $tables = [
+            // Cashier Gamification
+            'cashier_shift_reports', 'cashier_anomalies', 'cashier_badge_awards',
+            'cashier_badges', 'cashier_performance_snapshots', 'cashier_gamification_settings',
             // ZATCA Compliance
             'zatca_certificates', 'zatca_invoices',
             // Industry: Restaurant

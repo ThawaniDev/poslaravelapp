@@ -401,7 +401,15 @@ INSERT INTO provider_permissions (name, "group", description, description_ar, is
 -- ── Wameed AI (3) ────────────────────────────────────────────────────
 ('wameed_ai.view',         'wameed_ai',   'View AI features, suggestions, and usage logs',      'عرض ميزات الذكاء الاصطناعي والاقتراحات وسجلات الاستخدام', TRUE),
 ('wameed_ai.use',          'wameed_ai',   'Invoke AI features (reorder, OCR, analytics)',       'استخدام ميزات الذكاء الاصطناعي',                  TRUE),
-('wameed_ai.manage',       'wameed_ai',   'Configure AI features and store settings',           'تكوين ميزات الذكاء الاصطناعي وإعدادات المتجر',    TRUE)
+('wameed_ai.manage',       'wameed_ai',   'Configure AI features and store settings',           'تكوين ميزات الذكاء الاصطناعي وإعدادات المتجر',    TRUE),
+
+-- ── Cashier Gamification (6) ─────────────────────────────────────────
+('cashier_performance.view_leaderboard', 'cashier_performance', 'View cashier performance leaderboard',            'عرض لوحة متصدري أداء الصرافين',                  TRUE),
+('cashier_performance.view_badges',      'cashier_performance', 'View badge definitions and awards',               'عرض تعريفات الشارات والجوائز',                   TRUE),
+('cashier_performance.manage_badges',    'cashier_performance', 'Manage badge definitions',                        'إدارة تعريفات الشارات',                          TRUE),
+('cashier_performance.view_anomalies',   'cashier_performance', 'View anomaly alerts and risk scores',             'عرض تنبيهات الحالات الشاذة ودرجات المخاطر',       TRUE),
+('cashier_performance.view_reports',     'cashier_performance', 'View shift-end report cards',                     'عرض بطاقات تقارير نهاية الوردية',                TRUE),
+('cashier_performance.manage_settings',  'cashier_performance', 'Configure gamification settings',                 'تكوين إعدادات التحفيز والأوزان والحدود',          TRUE)
 
 ON CONFLICT (name) DO NOTHING;
 
@@ -810,7 +818,15 @@ INSERT INTO permissions (name, display_name, module, guard_name, requires_pin) V
 -- ── Wameed AI (3) ────────────────────────────────────────────────────
 ('wameed_ai.view',         'View AI Features',                    'wameed_ai',   'staff', FALSE),
 ('wameed_ai.use',          'Use AI Features',                     'wameed_ai',   'staff', FALSE),
-('wameed_ai.manage',       'Manage AI Settings',                  'wameed_ai',   'staff', FALSE)
+('wameed_ai.manage',       'Manage AI Settings',                  'wameed_ai',   'staff', FALSE),
+
+-- ── Cashier Gamification (6) ─────────────────────────────────────────
+('cashier_performance.view_leaderboard', 'View Cashier Leaderboard',     'cashier_performance', 'staff', FALSE),
+('cashier_performance.view_badges',      'View Cashier Badges',          'cashier_performance', 'staff', FALSE),
+('cashier_performance.manage_badges',    'Manage Cashier Badges',        'cashier_performance', 'staff', FALSE),
+('cashier_performance.view_anomalies',   'View Cashier Anomalies',       'cashier_performance', 'staff', FALSE),
+('cashier_performance.view_reports',     'View Shift Reports',           'cashier_performance', 'staff', FALSE),
+('cashier_performance.manage_settings',  'Manage Gamification Settings', 'cashier_performance', 'staff', FALSE)
 
 ON CONFLICT (name) DO NOTHING;
 

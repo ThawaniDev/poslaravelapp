@@ -61,6 +61,12 @@ return [
     'predefined_categories'       => 'التصنيفات المحددة مسبقاً',
     'predefined_products'         => 'المنتجات المحددة مسبقاً',
 
+    // التنقل السريع
+    'quick_nav'                   => 'التنقل السريع',
+    'quick_nav_short'             => 'تنقل سريع',
+    'quick_nav_close'             => 'إغلاق التنقل السريع',
+    'ungrouped'                   => 'أخرى',
+
     // وميض الذكاء الاصطناعي
     'ai_providers'                => 'مزودو الذكاء الاصطناعي',
     'ai_features'                 => 'ميزات الذكاء الاصطناعي',
