@@ -228,8 +228,8 @@ class AIChatController extends BaseApiController
     {
         $features = \App\Domain\WameedAI\Models\AIFeatureDefinition::where('is_enabled', true)
             ->orderBy('category')
-            ->orderBy('display_name')
-            ->get(['id', 'slug', 'display_name', 'description', 'category', 'icon']);
+            ->orderBy('name')
+            ->get(['id', 'slug', 'name as display_name', 'description', 'category', 'icon']);
 
         $grouped = $features->groupBy('category')->map(function ($group, $category) {
             return [
