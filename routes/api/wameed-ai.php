@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\WameedAI\Controllers\AIChatController;
 use App\Domain\WameedAI\Controllers\WameedAIController;
 use App\Domain\WameedAI\Controllers\WameedAIAdminController;
 use Illuminate\Support\Facades\Route;
@@ -15,6 +16,20 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('wameed-ai')->middleware('auth:sanctum')->group(function () {
+
+    // ─── Chat (ChatGPT-like interface) ───────────────────────
+    Route::get('/models', [AIChatController::class, 'availableModels'])->middleware('permission:wameed_ai.view');
+    Route::get('/features/cards', [AIChatController::class, 'featureCards'])->middleware('permission:wameed_ai.view');
+
+    Route::prefix('chats')->middleware('permission:wameed_ai.use')->group(function () {
+        Route::get('/', [AIChatController::class, 'index']);
+        Route::post('/', [AIChatController::class, 'store']);
+        Route::get('/{chatId}', [AIChatController::class, 'show']);
+        Route::delete('/{chatId}', [AIChatController::class, 'destroy']);
+        Route::post('/{chatId}/messages', [AIChatController::class, 'sendMessage']);
+        Route::post('/{chatId}/feature', [AIChatController::class, 'invokeFeature']);
+        Route::put('/{chatId}/model', [AIChatController::class, 'changeModel']);
+    });
 
     // ─── Features & Config ───────────────────────────────────
     Route::get('/features', [WameedAIController::class, 'features'])->middleware('permission:wameed_ai.view');
@@ -107,4 +122,11 @@ Route::prefix('admin/wameed-ai')->middleware(['auth:sanctum'])->group(function (
 
     Route::post('/store-health', [WameedAIAdminController::class, 'storeHealth'])->middleware('permission:admin.wameed_ai.manage');
     Route::post('/platform-trends', [WameedAIAdminController::class, 'platformTrends'])->middleware('permission:admin.wameed_ai.manage');
+
+    // ─── LLM Model Management ─────────────────────────────────
+    Route::get('/llm-models', [WameedAIAdminController::class, 'llmModels'])->middleware('permission:admin.wameed_ai.manage');
+    Route::post('/llm-models', [WameedAIAdminController::class, 'createLlmModel'])->middleware('permission:admin.wameed_ai.manage');
+    Route::put('/llm-models/{id}', [WameedAIAdminController::class, 'updateLlmModel'])->middleware('permission:admin.wameed_ai.manage');
+    Route::patch('/llm-models/{id}/toggle', [WameedAIAdminController::class, 'toggleLlmModel'])->middleware('permission:admin.wameed_ai.manage');
+    Route::delete('/llm-models/{id}', [WameedAIAdminController::class, 'deleteLlmModel'])->middleware('permission:admin.wameed_ai.manage');
 });

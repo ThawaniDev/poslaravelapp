@@ -3,6 +3,7 @@
 namespace App\Domain\WameedAI\Controllers;
 
 use App\Domain\WameedAI\Models\AIFeatureDefinition;
+use App\Domain\WameedAI\Models\AILlmModel;
 use App\Domain\WameedAI\Models\AIPlatformDailySummary;
 use App\Domain\WameedAI\Models\AIProviderConfig;
 use App\Domain\WameedAI\Models\AIUsageLog;
@@ -108,5 +109,91 @@ class WameedAIAdminController extends BaseApiController
             return $this->error('AI feature unavailable', 503);
         }
         return $this->success($result);
+    }
+
+    // ─── LLM Model Management ─────────────────────────────────
+
+    public function llmModels(): JsonResponse
+    {
+        $models = AILlmModel::orderBy('provider')->orderBy('sort_order')->get();
+        return $this->success(['models' => $models]);
+    }
+
+    public function createLlmModel(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'provider' => 'required|string|in:openai,anthropic,google',
+            'model_id' => 'required|string|max:100',
+            'display_name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'api_key' => 'nullable|string',
+            'supports_vision' => 'boolean',
+            'supports_json_mode' => 'boolean',
+            'max_context_tokens' => 'nullable|integer|min:1',
+            'max_output_tokens' => 'nullable|integer|min:1',
+            'input_price_per_1m' => 'nullable|numeric|min:0',
+            'output_price_per_1m' => 'nullable|numeric|min:0',
+            'is_enabled' => 'boolean',
+            'is_default' => 'boolean',
+            'sort_order' => 'nullable|integer',
+        ]);
+
+        if (isset($data['api_key'])) {
+            $data['api_key_encrypted'] = encrypt($data['api_key']);
+            unset($data['api_key']);
+        }
+
+        if (!empty($data['is_default'])) {
+            AILlmModel::where('is_default', true)->update(['is_default' => false]);
+        }
+
+        $model = AILlmModel::create($data);
+        return $this->created($model);
+    }
+
+    public function updateLlmModel(Request $request, string $id): JsonResponse
+    {
+        $model = AILlmModel::findOrFail($id);
+
+        $data = $request->validate([
+            'display_name' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'api_key' => 'nullable|string',
+            'supports_vision' => 'boolean',
+            'supports_json_mode' => 'boolean',
+            'max_context_tokens' => 'nullable|integer|min:1',
+            'max_output_tokens' => 'nullable|integer|min:1',
+            'input_price_per_1m' => 'nullable|numeric|min:0',
+            'output_price_per_1m' => 'nullable|numeric|min:0',
+            'is_enabled' => 'boolean',
+            'is_default' => 'boolean',
+            'sort_order' => 'nullable|integer',
+        ]);
+
+        if (isset($data['api_key'])) {
+            $data['api_key_encrypted'] = encrypt($data['api_key']);
+            unset($data['api_key']);
+        }
+
+        if (!empty($data['is_default'])) {
+            AILlmModel::where('is_default', true)->where('id', '!=', $id)->update(['is_default' => false]);
+        }
+
+        $model->update($data);
+        return $this->success($model->fresh());
+    }
+
+    public function toggleLlmModel(string $id): JsonResponse
+    {
+        $model = AILlmModel::findOrFail($id);
+        $model->update(['is_enabled' => !$model->is_enabled]);
+        return $this->success($model->fresh());
+    }
+
+    public function deleteLlmModel(string $id): JsonResponse
+    {
+        $model = AILlmModel::findOrFail($id);
+        $model->delete();
+        return $this->success(null, 'Model deleted');
     }
 }

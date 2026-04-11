@@ -263,30 +263,37 @@ class TransactionService
         $taxAmount = (float) $transaction->tax_amount;
         $totalCost = $transaction->transactionItems->sum(fn ($item) => (float) $item->cost_price * (float) $item->quantity);
 
-        // Upsert daily_sales_summary
+        // Upsert daily_sales_summary atomically
         $existing = DailySalesSummary::where('store_id', $storeId)
             ->whereDate('date', $date)
             ->first();
 
         if ($existing) {
+            $query = DailySalesSummary::where('id', $existing->id);
             if ($isReturn) {
-                $existing->total_refunds = (float) $existing->total_refunds + $totalAmount;
-                $existing->net_revenue = (float) $existing->net_revenue - $totalAmount;
+                $query->update([
+                    'total_refunds' => DB::raw("total_refunds + {$totalAmount}"),
+                    'net_revenue' => DB::raw("net_revenue - {$totalAmount}"),
+                ]);
             } else {
-                $existing->total_transactions = $existing->total_transactions + 1;
-                $existing->total_revenue = (float) $existing->total_revenue + $totalAmount;
-                $existing->total_cost = (float) $existing->total_cost + $totalCost;
-                $existing->total_discount = (float) $existing->total_discount + $discountAmount;
-                $existing->total_tax = (float) $existing->total_tax + $taxAmount;
-                $existing->net_revenue = (float) $existing->net_revenue + $totalAmount;
-                $existing->cash_revenue = (float) $existing->cash_revenue + $cashRevenue;
-                $existing->card_revenue = (float) $existing->card_revenue + $cardRevenue;
-                $existing->other_revenue = (float) $existing->other_revenue + $otherRevenue;
-                $existing->avg_basket_size = $existing->total_transactions > 0
-                    ? round((float) $existing->total_revenue / $existing->total_transactions, 2)
-                    : 0;
+                $newTxCount = $existing->total_transactions + 1;
+                $newRevenue = (float) $existing->total_revenue + $totalAmount;
+                $newAvgBasket = $newTxCount > 0 ? round($newRevenue / $newTxCount, 2) : 0;
+                $customerIncrement = $transaction->customer_id ? 1 : 0;
+                $query->update([
+                    'total_transactions' => DB::raw('total_transactions + 1'),
+                    'total_revenue' => DB::raw("total_revenue + {$totalAmount}"),
+                    'total_cost' => DB::raw("total_cost + {$totalCost}"),
+                    'total_discount' => DB::raw("total_discount + {$discountAmount}"),
+                    'total_tax' => DB::raw("total_tax + {$taxAmount}"),
+                    'net_revenue' => DB::raw("net_revenue + {$totalAmount}"),
+                    'cash_revenue' => DB::raw("cash_revenue + {$cashRevenue}"),
+                    'card_revenue' => DB::raw("card_revenue + {$cardRevenue}"),
+                    'other_revenue' => DB::raw("other_revenue + {$otherRevenue}"),
+                    'avg_basket_size' => $newAvgBasket,
+                    'unique_customers' => DB::raw("unique_customers + {$customerIncrement}"),
+                ]);
             }
-            $existing->save();
         } else {
             DailySalesSummary::create([
                 'store_id' => $storeId,
@@ -306,7 +313,7 @@ class TransactionService
             ]);
         }
 
-        // Upsert product_sales_summary for each item
+        // Upsert product_sales_summary atomically for each item
         foreach ($transaction->transactionItems as $item) {
             if (! $item->product_id) {
                 continue;
@@ -324,17 +331,21 @@ class TransactionService
             $tax = (float) $item->tax_amount;
 
             if ($existingProduct) {
+                $productQuery = ProductSalesSummary::where('id', $existingProduct->id);
                 if ($isReturn || $item->is_return_item) {
-                    $existingProduct->return_quantity = (float) $existingProduct->return_quantity + $qty;
-                    $existingProduct->return_amount = (float) $existingProduct->return_amount + $revenue;
+                    $productQuery->update([
+                        'return_quantity' => DB::raw("return_quantity + {$qty}"),
+                        'return_amount' => DB::raw("return_amount + {$revenue}"),
+                    ]);
                 } else {
-                    $existingProduct->quantity_sold = (float) $existingProduct->quantity_sold + $qty;
-                    $existingProduct->revenue = (float) $existingProduct->revenue + $revenue;
-                    $existingProduct->cost = (float) $existingProduct->cost + $cost;
-                    $existingProduct->discount_amount = (float) $existingProduct->discount_amount + $discount;
-                    $existingProduct->tax_amount = (float) $existingProduct->tax_amount + $tax;
+                    $productQuery->update([
+                        'quantity_sold' => DB::raw("quantity_sold + {$qty}"),
+                        'revenue' => DB::raw("revenue + {$revenue}"),
+                        'cost' => DB::raw("cost + {$cost}"),
+                        'discount_amount' => DB::raw("discount_amount + {$discount}"),
+                        'tax_amount' => DB::raw("tax_amount + {$tax}"),
+                    ]);
                 }
-                $existingProduct->save();
             } else {
                 ProductSalesSummary::create([
                     'store_id' => $storeId,
@@ -388,24 +399,31 @@ class TransactionService
             ->first();
 
         if ($existing) {
+            $query = DailySalesSummary::where('id', $existing->id);
             if ($isReturn) {
-                $existing->total_refunds = max(0, (float) $existing->total_refunds - $totalAmount);
-                $existing->net_revenue = (float) $existing->net_revenue + $totalAmount;
+                $query->update([
+                    'total_refunds' => DB::raw("GREATEST(0, total_refunds - {$totalAmount})"),
+                    'net_revenue' => DB::raw("net_revenue + {$totalAmount}"),
+                ]);
             } else {
-                $existing->total_transactions = max(0, $existing->total_transactions - 1);
-                $existing->total_revenue = max(0, (float) $existing->total_revenue - $totalAmount);
-                $existing->total_cost = max(0, (float) $existing->total_cost - $totalCost);
-                $existing->total_discount = max(0, (float) $existing->total_discount - $discountAmount);
-                $existing->total_tax = max(0, (float) $existing->total_tax - $taxAmount);
-                $existing->net_revenue = (float) $existing->net_revenue - $totalAmount;
-                $existing->cash_revenue = max(0, (float) $existing->cash_revenue - $cashRevenue);
-                $existing->card_revenue = max(0, (float) $existing->card_revenue - $cardRevenue);
-                $existing->other_revenue = max(0, (float) $existing->other_revenue - $otherRevenue);
-                $existing->avg_basket_size = $existing->total_transactions > 0
-                    ? round((float) $existing->total_revenue / $existing->total_transactions, 2)
-                    : 0;
+                $newTxCount = max(0, $existing->total_transactions - 1);
+                $newRevenue = max(0, (float) $existing->total_revenue - $totalAmount);
+                $newAvgBasket = $newTxCount > 0 ? round($newRevenue / $newTxCount, 2) : 0;
+                $customerDecrement = $transaction->customer_id ? 1 : 0;
+                $query->update([
+                    'total_transactions' => DB::raw('GREATEST(0, total_transactions - 1)'),
+                    'total_revenue' => DB::raw("GREATEST(0, total_revenue - {$totalAmount})"),
+                    'total_cost' => DB::raw("GREATEST(0, total_cost - {$totalCost})"),
+                    'total_discount' => DB::raw("GREATEST(0, total_discount - {$discountAmount})"),
+                    'total_tax' => DB::raw("GREATEST(0, total_tax - {$taxAmount})"),
+                    'net_revenue' => DB::raw("net_revenue - {$totalAmount}"),
+                    'cash_revenue' => DB::raw("GREATEST(0, cash_revenue - {$cashRevenue})"),
+                    'card_revenue' => DB::raw("GREATEST(0, card_revenue - {$cardRevenue})"),
+                    'other_revenue' => DB::raw("GREATEST(0, other_revenue - {$otherRevenue})"),
+                    'avg_basket_size' => $newAvgBasket,
+                    'unique_customers' => DB::raw("GREATEST(0, unique_customers - {$customerDecrement})"),
+                ]);
             }
-            $existing->save();
         }
 
         // Reverse product summaries
@@ -429,17 +447,21 @@ class TransactionService
             $discount = (float) $item->discount_amount;
             $tax = (float) $item->tax_amount;
 
+            $productQuery = ProductSalesSummary::where('id', $existingProduct->id);
             if ($isReturn || $item->is_return_item) {
-                $existingProduct->return_quantity = max(0, (float) $existingProduct->return_quantity - $qty);
-                $existingProduct->return_amount = max(0, (float) $existingProduct->return_amount - $revenue);
+                $productQuery->update([
+                    'return_quantity' => DB::raw("GREATEST(0, return_quantity - {$qty})"),
+                    'return_amount' => DB::raw("GREATEST(0, return_amount - {$revenue})"),
+                ]);
             } else {
-                $existingProduct->quantity_sold = max(0, (float) $existingProduct->quantity_sold - $qty);
-                $existingProduct->revenue = max(0, (float) $existingProduct->revenue - $revenue);
-                $existingProduct->cost = max(0, (float) $existingProduct->cost - $cost);
-                $existingProduct->discount_amount = max(0, (float) $existingProduct->discount_amount - $discount);
-                $existingProduct->tax_amount = max(0, (float) $existingProduct->tax_amount - $tax);
+                $productQuery->update([
+                    'quantity_sold' => DB::raw("GREATEST(0, quantity_sold - {$qty})"),
+                    'revenue' => DB::raw("GREATEST(0, revenue - {$revenue})"),
+                    'cost' => DB::raw("GREATEST(0, cost - {$cost})"),
+                    'discount_amount' => DB::raw("GREATEST(0, discount_amount - {$discount})"),
+                    'tax_amount' => DB::raw("GREATEST(0, tax_amount - {$tax})"),
+                ]);
             }
-            $existingProduct->save();
         }
     }
 

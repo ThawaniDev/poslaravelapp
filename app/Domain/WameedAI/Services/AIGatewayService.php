@@ -4,18 +4,21 @@ namespace App\Domain\WameedAI\Services;
 
 use App\Domain\WameedAI\Enums\AIRequestStatus;
 use App\Domain\WameedAI\Models\AICache;
+use App\Domain\WameedAI\Models\AIChat;
+use App\Domain\WameedAI\Models\AIChatMessage;
 use App\Domain\WameedAI\Models\AIFeatureDefinition;
+use App\Domain\WameedAI\Models\AILlmModel;
 use App\Domain\WameedAI\Models\AIPrompt;
 use App\Domain\WameedAI\Models\AIProviderConfig;
 use App\Domain\WameedAI\Models\AIStoreFeatureConfig;
 use App\Domain\WameedAI\Models\AIUsageLog;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use OpenAI\Laravel\Facades\OpenAI;
 
 class AIGatewayService
 {
     /**
-     * Central entry point for ALL AI calls.
+     * Central entry point for ALL AI calls (feature-based).
      * Handles: rate limiting, caching, cost tracking, prompt management, retry, graceful degradation.
      */
     public function call(
@@ -26,6 +29,7 @@ class AIGatewayService
         ?string $userId = null,
         ?string $cacheKeyOverride = null,
         int $cacheTtlMinutes = 60,
+        ?string $modelOverride = null,
     ): ?array {
         $startTime = microtime(true);
 
@@ -71,27 +75,13 @@ class AIGatewayService
             $textContext = array_diff_key($contextData, ['image_base64' => true]);
             $userMessage = $this->interpolateTemplate($prompt->user_prompt_template, $textContext);
 
-            if ($imageBase64) {
-                // OpenAI Vision API: multipart content with image
-                $messages = [
-                    ['role' => 'system', 'content' => $prompt->system_prompt],
-                    ['role' => 'user', 'content' => [
-                        ['type' => 'text', 'text' => $userMessage],
-                        ['type' => 'image_url', 'image_url' => [
-                            'url' => "data:image/jpeg;base64,{$imageBase64}",
-                            'detail' => 'high',
-                        ]],
-                    ]],
-                ];
-            } else {
-                $messages = [
-                    ['role' => 'system', 'content' => $prompt->system_prompt],
-                    ['role' => 'user', 'content' => $userMessage],
-                ];
-            }
+            $messages = $this->buildMessages($prompt->system_prompt, $userMessage, $imageBase64);
 
-            // 7. Call OpenAI with retry
-            $response = $this->callWithRetry($messages, $prompt);
+            // 7. Resolve model
+            $llmModel = $this->resolveModel($modelOverride, $prompt->model, (bool) $imageBase64);
+
+            // 8. Call LLM with retry
+            $response = $this->callLlm($llmModel, $messages, $prompt);
             if (!$response) {
                 $this->logUsage($organizationId, $storeId, $userId, $feature, 'error', 0, 0, 0, 0, (int) ((microtime(true) - $startTime) * 1000), 'API call failed after retries');
                 return null;
@@ -101,14 +91,14 @@ class AIGatewayService
             $inputTokens = $response['input_tokens'];
             $outputTokens = $response['output_tokens'];
             $totalTokens = $inputTokens + $outputTokens;
-            $actualModel = $response['model'] ?? $prompt->model;
-            $cost = $this->estimateCost($actualModel, $inputTokens, $outputTokens);
+            $actualModel = $response['model'] ?? $llmModel->model_id;
+            $cost = $this->estimateCost($llmModel, $inputTokens, $outputTokens);
             $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
 
-            // 8. Parse response
+            // 9. Parse response
             $parsed = $this->parseResponse($content, $prompt->response_format->value);
 
-            // 9. Cache the response
+            // 10. Cache the response
             if ($cacheTtlMinutes > 0) {
                 AICache::updateOrCreate(
                     ['cache_key' => $cacheKey],
@@ -123,7 +113,7 @@ class AIGatewayService
                 );
             }
 
-            // 10. Log usage
+            // 11. Log usage
             $this->logUsage($organizationId, $storeId, $userId, $feature, 'success', $inputTokens, $outputTokens, $totalTokens, $cost, $latencyMs, null, false, $cacheKey);
 
             return $parsed;
@@ -137,6 +127,344 @@ class AIGatewayService
 
             return null;
         }
+    }
+
+    /**
+     * Chat-based conversation call with full message history.
+     */
+    public function chatCall(
+        AIChat $chat,
+        array $conversationMessages,
+        string $systemPrompt,
+        ?string $imageBase64 = null,
+        ?string $featureSlug = null,
+    ): ?array {
+        $startTime = microtime(true);
+
+        try {
+            $llmModel = $chat->llmModel ?? $this->resolveModel(null, 'gpt-4o-mini', (bool) $imageBase64);
+
+            // Build OpenAI-style message array from conversation history
+            $messages = [['role' => 'system', 'content' => $systemPrompt]];
+            foreach ($conversationMessages as $msg) {
+                $messages[] = ['role' => $msg['role'], 'content' => $msg['content']];
+            }
+
+            // Call LLM
+            $prompt = new \stdClass();
+            $prompt->max_tokens = $llmModel->max_output_tokens;
+            $prompt->temperature = 0.7;
+            $prompt->response_format = (object) ['value' => 'text'];
+
+            $response = $this->callLlm($llmModel, $messages, $prompt);
+            if (!$response) {
+                return null;
+            }
+
+            $cost = $this->estimateCost($llmModel, $response['input_tokens'], $response['output_tokens']);
+            $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+
+            return [
+                'content' => $response['content'],
+                'model' => $response['model'] ?? $llmModel->model_id,
+                'input_tokens' => $response['input_tokens'],
+                'output_tokens' => $response['output_tokens'],
+                'cost' => $cost,
+                'latency_ms' => $latencyMs,
+            ];
+        } catch (\Throwable $e) {
+            Log::error("WameedAI Chat Error: {$e->getMessage()}", ['chat_id' => $chat->id]);
+            return null;
+        }
+    }
+
+    // ─── Multi-LLM Dispatch ─────────────────────────────────
+
+    /**
+     * Resolve which LLM model to use.
+     */
+    public function resolveModel(?string $modelOverride, string $fallbackModelId, bool $needsVision = false): AILlmModel
+    {
+        if ($modelOverride) {
+            $model = AILlmModel::enabled()->where('model_id', $modelOverride)->first();
+            if ($model) return $model;
+        }
+
+        if ($needsVision) {
+            $model = AILlmModel::enabled()->withVision()->where('is_default', true)->first()
+                ?? AILlmModel::enabled()->withVision()->first();
+            if ($model) return $model;
+        }
+
+        $model = AILlmModel::enabled()->where('model_id', $fallbackModelId)->first();
+        if ($model) return $model;
+
+        // Global default
+        $model = AILlmModel::enabled()->where('is_default', true)->first();
+        if ($model) return $model;
+
+        // Absolute fallback — create a virtual model object for gpt-4o-mini
+        $virtual = new AILlmModel();
+        $virtual->provider = 'openai';
+        $virtual->model_id = 'gpt-4o-mini';
+        $virtual->display_name = 'GPT-4o Mini';
+        $virtual->max_output_tokens = 4096;
+        $virtual->input_price_per_1m = 0.15;
+        $virtual->output_price_per_1m = 0.60;
+        $virtual->supports_vision = false;
+        $virtual->supports_json_mode = true;
+        return $virtual;
+    }
+
+    /**
+     * Dispatch to the appropriate provider SDK.
+     */
+    private function callLlm(AILlmModel $model, array $messages, object $prompt, int $maxRetries = 2): ?array
+    {
+        $provider = is_string($model->provider) ? $model->provider : $model->provider->value;
+
+        return match ($provider) {
+            'openai' => $this->callOpenAI($model, $messages, $prompt, $maxRetries),
+            'anthropic' => $this->callAnthropic($model, $messages, $prompt, $maxRetries),
+            'google' => $this->callGemini($model, $messages, $prompt, $maxRetries),
+            default => $this->callOpenAI($model, $messages, $prompt, $maxRetries),
+        };
+    }
+
+    private function callOpenAI(AILlmModel $model, array $messages, object $prompt, int $maxRetries): ?array
+    {
+        $apiKey = $model->api_key_encrypted ?? config('openai.api_key');
+        $attempt = 0;
+        $lastException = null;
+
+        while ($attempt <= $maxRetries) {
+            try {
+                $params = [
+                    'model' => $model->model_id,
+                    'messages' => $messages,
+                    'max_tokens' => $prompt->max_tokens ?? $model->max_output_tokens,
+                    'temperature' => (float) ($prompt->temperature ?? 0.7),
+                ];
+
+                $responseFormat = $prompt->response_format->value ?? $prompt->response_format ?? 'text';
+                if ($responseFormat === 'json_object' && $model->supports_json_mode) {
+                    $params['response_format'] = ['type' => 'json_object'];
+                }
+
+                $response = Http::withHeaders([
+                    'Authorization' => "Bearer {$apiKey}",
+                    'Content-Type' => 'application/json',
+                ])->timeout(60)->post('https://api.openai.com/v1/chat/completions', $params);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    return [
+                        'content' => $data['choices'][0]['message']['content'] ?? '',
+                        'input_tokens' => $data['usage']['prompt_tokens'] ?? 0,
+                        'output_tokens' => $data['usage']['completion_tokens'] ?? 0,
+                        'model' => $data['model'] ?? $model->model_id,
+                    ];
+                }
+
+                throw new \RuntimeException("OpenAI HTTP {$response->status()}: {$response->body()}");
+            } catch (\Throwable $e) {
+                $lastException = $e;
+                $attempt++;
+                if ($attempt <= $maxRetries) {
+                    usleep($attempt * 500000);
+                }
+            }
+        }
+
+        Log::error("WameedAI OpenAI call failed after retries", ['error' => $lastException?->getMessage(), 'model' => $model->model_id]);
+        return null;
+    }
+
+    private function callAnthropic(AILlmModel $model, array $messages, object $prompt, int $maxRetries): ?array
+    {
+        $apiKey = $model->api_key_encrypted ?? config('services.anthropic.api_key');
+        $attempt = 0;
+        $lastException = null;
+
+        // Extract system message and convert to Anthropic format
+        $systemPrompt = '';
+        $anthropicMessages = [];
+        foreach ($messages as $msg) {
+            if ($msg['role'] === 'system') {
+                $systemPrompt = is_string($msg['content']) ? $msg['content'] : json_encode($msg['content']);
+                continue;
+            }
+            // Convert image content blocks to Anthropic format
+            if (is_array($msg['content'])) {
+                $blocks = [];
+                foreach ($msg['content'] as $part) {
+                    if (($part['type'] ?? '') === 'image_url') {
+                        $url = $part['image_url']['url'] ?? '';
+                        if (str_starts_with($url, 'data:')) {
+                            preg_match('/data:([^;]+);base64,(.+)/', $url, $matches);
+                            $blocks[] = [
+                                'type' => 'image',
+                                'source' => [
+                                    'type' => 'base64',
+                                    'media_type' => $matches[1] ?? 'image/jpeg',
+                                    'data' => $matches[2] ?? '',
+                                ],
+                            ];
+                        }
+                    } else {
+                        $blocks[] = ['type' => 'text', 'text' => $part['text'] ?? ''];
+                    }
+                }
+                $anthropicMessages[] = ['role' => $msg['role'], 'content' => $blocks];
+            } else {
+                $anthropicMessages[] = ['role' => $msg['role'], 'content' => $msg['content']];
+            }
+        }
+
+        while ($attempt <= $maxRetries) {
+            try {
+                $params = [
+                    'model' => $model->model_id,
+                    'max_tokens' => $prompt->max_tokens ?? $model->max_output_tokens,
+                    'messages' => $anthropicMessages,
+                ];
+
+                if ($systemPrompt) {
+                    $params['system'] = $systemPrompt;
+                }
+
+                $response = Http::withHeaders([
+                    'x-api-key' => $apiKey,
+                    'anthropic-version' => '2023-06-01',
+                    'Content-Type' => 'application/json',
+                ])->timeout(60)->post('https://api.anthropic.com/v1/messages', $params);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $content = collect($data['content'] ?? [])->where('type', 'text')->pluck('text')->implode('');
+                    return [
+                        'content' => $content,
+                        'input_tokens' => $data['usage']['input_tokens'] ?? 0,
+                        'output_tokens' => $data['usage']['output_tokens'] ?? 0,
+                        'model' => $data['model'] ?? $model->model_id,
+                    ];
+                }
+
+                throw new \RuntimeException("Anthropic HTTP {$response->status()}: {$response->body()}");
+            } catch (\Throwable $e) {
+                $lastException = $e;
+                $attempt++;
+                if ($attempt <= $maxRetries) {
+                    usleep($attempt * 500000);
+                }
+            }
+        }
+
+        Log::error("WameedAI Anthropic call failed after retries", ['error' => $lastException?->getMessage(), 'model' => $model->model_id]);
+        return null;
+    }
+
+    private function callGemini(AILlmModel $model, array $messages, object $prompt, int $maxRetries): ?array
+    {
+        $apiKey = $model->api_key_encrypted ?? config('services.google.api_key');
+        $attempt = 0;
+        $lastException = null;
+
+        // Convert to Gemini format
+        $systemInstruction = null;
+        $geminiContents = [];
+        foreach ($messages as $msg) {
+            if ($msg['role'] === 'system') {
+                $systemInstruction = is_string($msg['content']) ? $msg['content'] : json_encode($msg['content']);
+                continue;
+            }
+            $role = $msg['role'] === 'assistant' ? 'model' : 'user';
+            if (is_array($msg['content'])) {
+                $parts = [];
+                foreach ($msg['content'] as $part) {
+                    if (($part['type'] ?? '') === 'image_url') {
+                        $url = $part['image_url']['url'] ?? '';
+                        if (str_starts_with($url, 'data:')) {
+                            preg_match('/data:([^;]+);base64,(.+)/', $url, $matches);
+                            $parts[] = ['inline_data' => ['mime_type' => $matches[1] ?? 'image/jpeg', 'data' => $matches[2] ?? '']];
+                        }
+                    } else {
+                        $parts[] = ['text' => $part['text'] ?? ''];
+                    }
+                }
+                $geminiContents[] = ['role' => $role, 'parts' => $parts];
+            } else {
+                $geminiContents[] = ['role' => $role, 'parts' => [['text' => $msg['content']]]];
+            }
+        }
+
+        while ($attempt <= $maxRetries) {
+            try {
+                $params = [
+                    'contents' => $geminiContents,
+                    'generationConfig' => [
+                        'maxOutputTokens' => $prompt->max_tokens ?? $model->max_output_tokens,
+                        'temperature' => (float) ($prompt->temperature ?? 0.7),
+                    ],
+                ];
+
+                if ($systemInstruction) {
+                    $params['systemInstruction'] = ['parts' => [['text' => $systemInstruction]]];
+                }
+
+                $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model->model_id}:generateContent?key={$apiKey}";
+
+                $response = Http::withHeaders(['Content-Type' => 'application/json'])
+                    ->timeout(60)
+                    ->post($url, $params);
+
+                if ($response->successful()) {
+                    $data = $response->json();
+                    $content = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                    $usage = $data['usageMetadata'] ?? [];
+                    return [
+                        'content' => $content,
+                        'input_tokens' => $usage['promptTokenCount'] ?? 0,
+                        'output_tokens' => $usage['candidatesTokenCount'] ?? 0,
+                        'model' => $model->model_id,
+                    ];
+                }
+
+                throw new \RuntimeException("Gemini HTTP {$response->status()}: {$response->body()}");
+            } catch (\Throwable $e) {
+                $lastException = $e;
+                $attempt++;
+                if ($attempt <= $maxRetries) {
+                    usleep($attempt * 500000);
+                }
+            }
+        }
+
+        Log::error("WameedAI Gemini call failed after retries", ['error' => $lastException?->getMessage(), 'model' => $model->model_id]);
+        return null;
+    }
+
+    // ─── Helper Methods ──────────────────────────────────────
+
+    public function buildMessages(string $systemPrompt, string $userMessage, ?string $imageBase64 = null): array
+    {
+        if ($imageBase64) {
+            return [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => [
+                    ['type' => 'text', 'text' => $userMessage],
+                    ['type' => 'image_url', 'image_url' => [
+                        'url' => "data:image/jpeg;base64,{$imageBase64}",
+                        'detail' => 'high',
+                    ]],
+                ]],
+            ];
+        }
+
+        return [
+            ['role' => 'system', 'content' => $systemPrompt],
+            ['role' => 'user', 'content' => $userMessage],
+        ];
     }
 
     private function checkRateLimit(string $storeId, string $featureId, ?AIStoreFeatureConfig $config): bool
@@ -165,7 +493,6 @@ class AIGatewayService
 
     private function buildCacheKey(string $featureSlug, string $storeId, array $contextData): string
     {
-        // Exclude large binary data (images) from cache key — hash only the first 64 chars of image
         $keyData = $contextData;
         if (isset($keyData['image_base64'])) {
             $keyData['image_base64'] = substr($keyData['image_base64'], 0, 64);
@@ -186,7 +513,7 @@ class AIGatewayService
         return $prompt;
     }
 
-    private function interpolateTemplate(string $template, array $data): string
+    public function interpolateTemplate(string $template, array $data): string
     {
         foreach ($data as $key => $value) {
             if (is_array($value)) {
@@ -198,67 +525,10 @@ class AIGatewayService
         return $template;
     }
 
-    private function callWithRetry(array $messages, AIPrompt $prompt, int $maxRetries = 2): ?array
+    private function estimateCost(AILlmModel $model, int $inputTokens, int $outputTokens): float
     {
-        $attempt = 0;
-        $lastException = null;
-
-        // Auto-upgrade to vision model if messages contain image content
-        $hasImage = collect($messages)->contains(fn ($msg) =>
-            is_array($msg['content'] ?? null) &&
-            collect($msg['content'])->contains(fn ($part) => ($part['type'] ?? '') === 'image_url')
-        );
-        $model = $hasImage ? 'gpt-4o' : $prompt->model;
-
-        while ($attempt <= $maxRetries) {
-            try {
-                $params = [
-                    'model' => $model,
-                    'messages' => $messages,
-                    'max_tokens' => $hasImage ? max($prompt->max_tokens, 4096) : $prompt->max_tokens,
-                    'temperature' => (float) $prompt->temperature,
-                ];
-
-                if ($prompt->response_format->value === 'json_object') {
-                    $params['response_format'] = ['type' => 'json_object'];
-                }
-
-                $result = OpenAI::chat()->create($params);
-
-                return [
-                    'content' => $result->choices[0]->message->content ?? '',
-                    'input_tokens' => $result->usage->promptTokens ?? 0,
-                    'output_tokens' => $result->usage->completionTokens ?? 0,
-                    'model' => $model,
-                ];
-            } catch (\Throwable $e) {
-                $lastException = $e;
-                $attempt++;
-                if ($attempt <= $maxRetries) {
-                    usleep($attempt * 500000); // exponential backoff: 0.5s, 1s
-                }
-            }
-        }
-
-        Log::error("WameedAI: OpenAI call failed after {$maxRetries} retries", [
-            'error' => $lastException?->getMessage(),
-        ]);
-
-        return null;
-    }
-
-    private function estimateCost(string $model, int $inputTokens, int $outputTokens): float
-    {
-        // GPT-4o-mini pricing (per 1M tokens)
-        $pricing = [
-            'gpt-4o-mini' => ['input' => 0.15, 'output' => 0.60],
-            'gpt-4o' => ['input' => 2.50, 'output' => 10.00],
-            'gpt-4-turbo' => ['input' => 10.00, 'output' => 30.00],
-        ];
-
-        $rates = $pricing[$model] ?? $pricing['gpt-4o-mini'];
-
-        return ($inputTokens * $rates['input'] / 1_000_000) + ($outputTokens * $rates['output'] / 1_000_000);
+        return ($inputTokens * (float) $model->input_price_per_1m / 1_000_000)
+             + ($outputTokens * (float) $model->output_price_per_1m / 1_000_000);
     }
 
     private function parseResponse(string $content, string $format): array
@@ -310,3 +580,4 @@ class AIGatewayService
         }
     }
 }
+
