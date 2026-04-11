@@ -26,6 +26,7 @@ Route::prefix('wameed-ai')->middleware('auth:sanctum')->group(function () {
         Route::post('/', [AIChatController::class, 'store']);
         Route::get('/{chatId}', [AIChatController::class, 'show']);
         Route::delete('/{chatId}', [AIChatController::class, 'destroy']);
+        Route::put('/{chatId}/title', [AIChatController::class, 'renameChat']);
         Route::post('/{chatId}/messages', [AIChatController::class, 'sendMessage']);
         Route::post('/{chatId}/feature', [AIChatController::class, 'invokeFeature']);
         Route::put('/{chatId}/model', [AIChatController::class, 'changeModel']);
@@ -117,13 +118,19 @@ Route::prefix('admin/wameed-ai')->middleware(['auth:sanctum'])->group(function (
     Route::get('/features', [WameedAIAdminController::class, 'allFeatures'])->middleware('permission:admin.wameed_ai.manage');
     Route::patch('/features/{featureId}/toggle', [WameedAIAdminController::class, 'toggleFeature'])->middleware('permission:admin.wameed_ai.manage');
 
+    // ─── Comprehensive Analytics ─────────────────────────────
+    Route::get('/analytics/dashboard', [WameedAIAdminController::class, 'analyticsDashboard'])->middleware('permission:admin.wameed_ai.view');
+    Route::get('/analytics/chats', [WameedAIAdminController::class, 'analyticsChats'])->middleware('permission:admin.wameed_ai.view');
+    Route::get('/analytics/chats/{chatId}', [WameedAIAdminController::class, 'analyticsChatDetail'])->middleware('permission:admin.wameed_ai.view');
+
+    // ─── Legacy endpoints (backward compat) ─────────────────
     Route::get('/platform-usage', [WameedAIAdminController::class, 'platformUsage'])->middleware('permission:admin.wameed_ai.view');
     Route::get('/platform-logs', [WameedAIAdminController::class, 'platformLogs'])->middleware('permission:admin.wameed_ai.view');
 
     Route::post('/store-health', [WameedAIAdminController::class, 'storeHealth'])->middleware('permission:admin.wameed_ai.manage');
     Route::post('/platform-trends', [WameedAIAdminController::class, 'platformTrends'])->middleware('permission:admin.wameed_ai.manage');
 
-    // ─── LLM Model Management ─────────────────────────────────
+    // ─── LLM Model Management (with metrics) ─────────────────
     Route::get('/llm-models', [WameedAIAdminController::class, 'llmModels'])->middleware('permission:admin.wameed_ai.manage');
     Route::post('/llm-models', [WameedAIAdminController::class, 'createLlmModel'])->middleware('permission:admin.wameed_ai.manage');
     Route::put('/llm-models/{id}', [WameedAIAdminController::class, 'updateLlmModel'])->middleware('permission:admin.wameed_ai.manage');

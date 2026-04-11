@@ -105,6 +105,7 @@ class AIChatController extends BaseApiController
             // Return both the user's message and the AI response
             $lastMessages = $chat->messages()
                 ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->limit(2)
                 ->get()
                 ->reverse()
@@ -154,6 +155,7 @@ class AIChatController extends BaseApiController
 
             $lastMessages = $chat->messages()
                 ->orderByDesc('created_at')
+                ->orderByDesc('id')
                 ->limit(2)
                 ->get()
                 ->reverse()
@@ -209,6 +211,28 @@ class AIChatController extends BaseApiController
         $this->chatService->deleteChat($chat);
 
         return $this->success(null, 'Chat deleted');
+    }
+
+    /**
+     * PUT /wameed-ai/chats/{chatId}/title — Rename a chat.
+     */
+    public function renameChat(Request $request, string $chatId): JsonResponse
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+        ]);
+
+        $chat = AIChat::where('id', $chatId)
+            ->where('user_id', $request->user()->id)
+            ->first();
+
+        if (!$chat) {
+            return $this->notFound('Chat not found');
+        }
+
+        $chat->update(['title' => $request->input('title')]);
+
+        return $this->success($chat->fresh(['llmModel']));
     }
 
     /**

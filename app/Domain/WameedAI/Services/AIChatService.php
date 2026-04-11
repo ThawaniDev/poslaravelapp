@@ -31,7 +31,12 @@ class AIChatService
     ): AIChat {
         $model = $llmModelId
             ? AILlmModel::enabled()->where('id', $llmModelId)->first()
-            : AILlmModel::enabled()->where('is_default', true)->first();
+            : null;
+
+        // Fall back to default model if none found or none provided
+        if (!$model) {
+            $model = AILlmModel::enabled()->where('is_default', true)->first();
+        }
 
         return AIChat::create([
             'organization_id' => $organizationId,
@@ -144,13 +149,14 @@ class AIChatService
             'latency_ms' => $response['latency_ms'],
         ]);
 
-        // 5. Update chat stats
-        $chat->update([
+        // 5. Update chat stats (use query builder to avoid Eloquent cast issues with DB::raw)
+        DB::table('ai_chats')->where('id', $chat->id)->update([
             'message_count' => DB::raw('message_count + 2'),
             'total_tokens' => DB::raw("total_tokens + {$response['input_tokens']} + {$response['output_tokens']}"),
             'total_cost_usd' => DB::raw("total_cost_usd + {$response['cost']}"),
             'last_message_at' => now(),
         ]);
+        $chat->refresh();
 
         // 6. Auto-title on first message
         if ($chat->message_count <= 2 && $chat->title === 'New Chat') {
@@ -173,7 +179,7 @@ class AIChatService
             return null;
         }
 
-        $featureDescription = $feature->display_name ?? $featureSlug;
+        $featureDescription = $feature->name ?? $featureSlug;
         $userMessage = "Use the {$featureDescription} feature with these parameters: " . json_encode($featureParams);
 
         return $this->sendMessage(
@@ -218,29 +224,237 @@ class AIChatService
 
     private function buildSystemPrompt(AIChat $chat, ?string $featureSlug = null): string
     {
-        $storeName = DB::selectOne("SELECT name FROM stores WHERE id = ?", [$chat->store_id])?->name ?? 'your store';
-        $currency = DB::selectOne("SELECT currency FROM stores WHERE id = ?", [$chat->store_id])?->currency ?? 'OMR';
+        try {
+            return $this->buildEnrichedSystemPrompt($chat, $featureSlug);
+        } catch (\Throwable $e) {
+            Log::warning("buildSystemPrompt enrichment failed, using fallback: {$e->getMessage()}");
+            return $this->buildFallbackSystemPrompt($chat, $featureSlug);
+        }
+    }
 
+    private function buildFallbackSystemPrompt(AIChat $chat, ?string $featureSlug): string
+    {
+        $storeName = 'your store';
+        $currency = 'OMR';
+        try {
+            $store = DB::selectOne("SELECT name, currency FROM stores WHERE id = ?", [$chat->store_id]);
+            $storeName = $store->name ?? $storeName;
+            $currency = $store->currency ?? $currency;
+        } catch (\Throwable) {}
+
+        $prompt = "You are Wameed AI, an intelligent POS assistant for \"{$storeName}\". Currency: {$currency}.\n"
+            . "Respond in the same language the user writes in. Be concise and provide actionable recommendations.";
+
+        if ($featureSlug) {
+            $feature = AIFeatureDefinition::where('slug', $featureSlug)->first();
+            if ($feature) {
+                $prompt .= "\n\nThe user is using the '{$feature->name}' feature.";
+            }
+        }
+
+        return $prompt;
+    }
+
+    private function buildEnrichedSystemPrompt(AIChat $chat, ?string $featureSlug): string
+    {
+        $storeId = $chat->store_id;
+        $orgId = $chat->organization_id;
+
+        // Precompute dates for database-agnostic queries
+        $thirtyDaysAgo = now()->subDays(30)->toDateTimeString();
+        $today = now()->toDateString();
+        $thirtyDaysFromNow = now()->addDays(30)->toDateString();
+
+        // ─── Store Info ─────────────────────────────────
+        $store = DB::selectOne("SELECT name, name_ar, currency, city, timezone, is_main_branch FROM stores WHERE id = ?", [$storeId]);
+        $storeName = $store->name ?? 'your store';
+        $currency = $store->currency ?? 'OMR';
+        $city = $store->city ?? '';
+        $timezone = $store->timezone ?? 'Asia/Muscat';
+
+        // Total branches in org
+        $branchCount = DB::selectOne("SELECT COUNT(*) as cnt FROM stores WHERE organization_id = ?", [$orgId])->cnt ?? 1;
+
+        // ─── Sales Snapshot (last 30 days) ──────────────
+        $salesStats = DB::selectOne("
+            SELECT
+                COUNT(*) as total_transactions,
+                COALESCE(SUM(total_amount), 0) as total_revenue,
+                COALESCE(AVG(total_amount), 0) as avg_transaction,
+                COALESCE(MAX(total_amount), 0) as max_transaction,
+                COALESCE(SUM(discount_amount), 0) as total_discounts,
+                COALESCE(SUM(tax_amount), 0) as total_tax
+            FROM transactions
+            WHERE store_id = ? AND status = 'completed' AND created_at >= ?
+        ", [$storeId, $thirtyDaysAgo]);
+
+        // Today's sales
+        $todaySales = DB::selectOne("
+            SELECT COUNT(*) as cnt, COALESCE(SUM(total_amount), 0) as total
+            FROM transactions
+            WHERE store_id = ? AND status = 'completed' AND created_at >= ?
+        ", [$storeId, $today]);
+
+        // ─── Top 10 Products (last 30 days by revenue) ──
+        $topProducts = DB::select("
+            SELECT ti.product_name, SUM(ti.quantity) as qty_sold, SUM(ti.line_total) as revenue
+            FROM transaction_items ti
+            JOIN transactions t ON t.id = ti.transaction_id
+            WHERE t.store_id = ? AND t.status = 'completed' AND t.created_at >= ?
+            GROUP BY ti.product_name
+            ORDER BY revenue DESC
+            LIMIT 10
+        ", [$storeId, $thirtyDaysAgo]);
+
+        $topProductsText = '';
+        foreach ($topProducts as $i => $p) {
+            $n = $i + 1;
+            $qty = round($p->qty_sold, 1);
+            $rev = number_format($p->revenue, 2);
+            $topProductsText .= "  {$n}. {$p->product_name}: {$qty} units, {$currency} {$rev}\n";
+        }
+
+        // ─── Inventory Snapshot ─────────────────────────
+        $inventory = DB::selectOne("
+            SELECT
+                COUNT(*) as total_skus,
+                COALESCE(SUM(quantity), 0) as total_units,
+                COUNT(CASE WHEN quantity <= reorder_point AND reorder_point > 0 THEN 1 END) as low_stock_count,
+                COUNT(CASE WHEN quantity = 0 THEN 1 END) as out_of_stock_count
+            FROM stock_levels
+            WHERE store_id = ?
+        ", [$storeId]);
+
+        // Expiring within 30 days
+        $expiringCount = DB::selectOne("
+            SELECT COUNT(*) as cnt FROM stock_batches
+            WHERE store_id = ? AND expiry_date IS NOT NULL AND expiry_date <= ? AND expiry_date >= ? AND quantity > 0
+        ", [$storeId, $thirtyDaysFromNow, $today])->cnt ?? 0;
+
+        // ─── Categories ─────────────────────────────────
+        $categories = DB::select("
+            SELECT name FROM categories WHERE organization_id = ? AND is_active = 1 AND parent_id IS NULL ORDER BY sort_order LIMIT 20
+        ", [$orgId]);
+        $categoryNames = implode(', ', array_map(fn($c) => $c->name, $categories));
+
+        // ─── Customers ──────────────────────────────────
+        $customers = DB::selectOne("
+            SELECT
+                COUNT(*) as total_customers,
+                COALESCE(SUM(total_spend), 0) as lifetime_spend,
+                COALESCE(AVG(visit_count), 0) as avg_visits,
+                COUNT(CASE WHEN last_visit_at >= ? THEN 1 END) as active_30d
+            FROM customers
+            WHERE organization_id = ?
+        ", [$thirtyDaysAgo, $orgId]);
+
+        // ─── Staff ──────────────────────────────────────
+        $staffCount = DB::selectOne("
+            SELECT COUNT(*) as cnt FROM staff_users WHERE store_id = ? AND status = 'active'
+        ", [$storeId])->cnt ?? 0;
+
+        // ─── Products ───────────────────────────────────
+        $productStats = DB::selectOne("
+            SELECT
+                COUNT(*) as total_products,
+                COALESCE(AVG(sell_price), 0) as avg_price,
+                COUNT(CASE WHEN is_active = 0 THEN 1 END) as inactive_count
+            FROM products
+            WHERE organization_id = ?
+        ", [$orgId]);
+
+        // ─── Payment Methods (last 30 days) ─────────────
+        $paymentMethods = DB::select("
+            SELECT p.method, COUNT(*) as cnt, SUM(p.amount) as total
+            FROM payments p
+            JOIN transactions t ON t.id = p.transaction_id
+            WHERE t.store_id = ? AND t.status = 'completed' AND t.created_at >= ?
+            GROUP BY p.method ORDER BY total DESC
+        ", [$storeId, $thirtyDaysAgo]);
+        $paymentText = '';
+        foreach ($paymentMethods as $pm) {
+            $paymentText .= "  - {$pm->method}: {$pm->cnt} transactions, {$currency} " . number_format($pm->total, 2) . "\n";
+        }
+
+        // ─── Recent Expenses (last 30 days) ─────────────
+        $expenses = DB::selectOne("
+            SELECT COALESCE(SUM(amount), 0) as total_expenses, COUNT(*) as cnt
+            FROM expenses WHERE store_id = ? AND expense_date >= ?
+        ", [$storeId, $thirtyDaysAgo]);
+
+        // ─── Active Promotions ──────────────────────────
+        $activePromos = DB::selectOne("
+            SELECT COUNT(*) as cnt FROM promotions
+            WHERE organization_id = ? AND is_active = 1 AND (valid_to IS NULL OR valid_to >= ?)
+        ", [$orgId, $today])->cnt ?? 0;
+
+        // ─── Build Prompt ───────────────────────────────
         $prompt = <<<PROMPT
-You are Wameed AI, an intelligent assistant for "{$storeName}" POS system. You help store owners and managers with business insights, inventory management, sales analytics, customer intelligence, and operational efficiency.
+You are Wameed AI, an intelligent POS assistant for "{$storeName}" in {$city}. Timezone: {$timezone}. Currency: {$currency}.
+The business has {$branchCount} branch(es).
 
-Key guidelines:
-- Always respond in the same language the user writes in (Arabic or English).
-- Use {$currency} as the currency for all monetary values.
-- Be concise but thorough. Use tables, bullet points, and structured formatting when appropriate.
-- When analyzing data, provide actionable recommendations.
-- If you don't have enough data to answer, say so clearly.
-- You have access to the store's real-time data including transactions, inventory, customers, and staff metrics.
+═══ TODAY'S SNAPSHOT ═══
+- Transactions today: {$todaySales->cnt}, Revenue: {$currency} {$this->fmt($todaySales->total)}
+
+═══ LAST 30 DAYS SALES ═══
+- Total transactions: {$salesStats->total_transactions}
+- Total revenue: {$currency} {$this->fmt($salesStats->total_revenue)}
+- Average transaction: {$currency} {$this->fmt($salesStats->avg_transaction)}
+- Largest transaction: {$currency} {$this->fmt($salesStats->max_transaction)}
+- Total discounts given: {$currency} {$this->fmt($salesStats->total_discounts)}
+- Total tax collected: {$currency} {$this->fmt($salesStats->total_tax)}
+
+═══ TOP SELLING PRODUCTS (30 days) ═══
+{$topProductsText}
+═══ INVENTORY STATUS ═══
+- Total SKUs tracked: {$inventory->total_skus}
+- Total units in stock: {$this->fmt($inventory->total_units, 0)}
+- Products at/below reorder point: {$inventory->low_stock_count}
+- Out of stock: {$inventory->out_of_stock_count}
+- Expiring within 30 days: {$expiringCount}
+
+═══ PRODUCT CATALOG ═══
+- Total products: {$productStats->total_products} (inactive: {$productStats->inactive_count})
+- Average sell price: {$currency} {$this->fmt($productStats->avg_price)}
+- Categories: {$categoryNames}
+
+═══ CUSTOMERS ═══
+- Total customers: {$customers->total_customers}
+- Active in last 30 days: {$customers->active_30d}
+- Lifetime spend: {$currency} {$this->fmt($customers->lifetime_spend)}
+- Average visits per customer: {$this->fmt($customers->avg_visits, 1)}
+
+═══ STAFF & OPERATIONS ═══
+- Active staff: {$staffCount}
+- Active promotions: {$activePromos}
+
+═══ PAYMENT METHODS (30 days) ═══
+{$paymentText}
+═══ EXPENSES (30 days) ═══
+- Total expenses: {$currency} {$this->fmt($expenses->total_expenses)} ({$expenses->cnt} entries)
+
+═══ GUIDELINES ═══
+- Always respond in the SAME LANGUAGE the user writes in (Arabic or English).
+- Use {$currency} for all monetary values.
+- Be concise but thorough. Use tables, bullet points, and structured formatting.
+- Provide actionable recommendations backed by the data above.
+- If a question requires data you don't have, say so clearly.
+- When comparing periods, note that your data covers the last 30 days.
 PROMPT;
 
         if ($featureSlug) {
             $feature = AIFeatureDefinition::where('slug', $featureSlug)->first();
             if ($feature) {
-                $prompt .= "\n\nThe user is currently using the '{$feature->display_name}' feature. Focus your responses on this area.";
+                $prompt .= "\n\nThe user is using the '{$feature->name}' feature. Prioritize analysis related to this area.";
             }
         }
 
         return $prompt;
+    }
+
+    private function fmt(mixed $value, int $decimals = 2): string
+    {
+        return number_format((float) $value, $decimals);
     }
 
     private function buildConversationHistory(AIChat $chat): array
