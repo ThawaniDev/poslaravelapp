@@ -39,11 +39,11 @@
         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
         x-transition:leave-end="opacity-0 scale-95 translate-y-2"
         x-on:keydown.escape.window="open = false; $wire.close()"
-        class="fixed inset-x-4 top-16 z-50 mx-auto max-w-4xl rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 sm:inset-x-auto sm:start-auto sm:end-auto sm:w-[56rem]"
+        class="fixed inset-x-4 top-16 z-50 mx-auto flex max-h-[calc(100vh-5rem)] max-w-4xl flex-col rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 sm:inset-x-auto sm:start-auto sm:end-auto sm:w-[56rem]"
         style="display:none"
     >
         {{-- Header --}}
-        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3 dark:border-gray-700">
+        <div class="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-3 dark:border-gray-700">
             <h3 class="text-base font-bold text-gray-900 dark:text-white">
                 <x-filament::icon icon="heroicon-o-squares-2x2" class="inline-block h-5 w-5 me-1 -mt-0.5" />
                 {{ __('nav.quick_nav') }}
@@ -57,7 +57,7 @@
         </div>
 
         {{-- Body — scrollable grouped grid --}}
-        <div class="max-h-[70vh] overflow-y-auto p-5 space-y-5">
+        <div class="min-h-0 flex-1 overflow-y-auto p-5 space-y-5">
             @foreach ($this->groups as $group)
                 <div>
                     {{-- Group label --}}
