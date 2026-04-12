@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->call(ComprehensivePermissionSeeder::class);
+        $this->call(CashierGamificationPermissionSeeder::class);
         $this->call(AIFeatureDefinitionSeeder::class);
         $this->call(AIProviderConfigSeeder::class);
     }
