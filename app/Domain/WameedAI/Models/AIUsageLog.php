@@ -55,6 +55,16 @@ class AIUsageLog extends Model
         return $this->belongsTo(AIFeatureDefinition::class, 'ai_feature_definition_id');
     }
 
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(\App\Domain\Core\Models\Store::class, 'store_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(\App\Domain\Auth\Models\User::class, 'user_id');
+    }
+
     public function feedback(): HasOne
     {
         return $this->hasOne(AIFeedback::class, 'ai_usage_log_id');

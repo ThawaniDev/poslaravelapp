@@ -114,16 +114,16 @@ class WameedAIAdminController extends BaseApiController
 
         // ── Base query builder with filters ──
         $baseUsage = AIUsageLog::query()
-            ->where('created_at', '>=', "{$from} 00:00:00")
-            ->where('created_at', '<=', "{$to} 23:59:59")
-            ->when($storeId, fn ($q, $s) => $q->where('store_id', $s))
-            ->when($model, fn ($q, $m) => $q->where('model_used', $m))
-            ->when($featureSlug, fn ($q, $f) => $q->where('feature_slug', $f));
+            ->where('ai_usage_logs.created_at', '>=', "{$from} 00:00:00")
+            ->where('ai_usage_logs.created_at', '<=', "{$to} 23:59:59")
+            ->when($storeId, fn ($q, $s) => $q->where('ai_usage_logs.store_id', $s))
+            ->when($model, fn ($q, $m) => $q->where('ai_usage_logs.model_used', $m))
+            ->when($featureSlug, fn ($q, $f) => $q->where('ai_usage_logs.feature_slug', $f));
 
         $baseChats = AIChat::query()
-            ->where('created_at', '>=', "{$from} 00:00:00")
-            ->where('created_at', '<=', "{$to} 23:59:59")
-            ->when($storeId, fn ($q, $s) => $q->where('store_id', $s));
+            ->where('ai_chats.created_at', '>=', "{$from} 00:00:00")
+            ->where('ai_chats.created_at', '<=', "{$to} 23:59:59")
+            ->when($storeId, fn ($q, $s) => $q->where('ai_chats.store_id', $s));
 
         $baseMsgs = AIChatMessage::query()
             ->whereHas('chat', function ($q) use ($from, $to, $storeId) {
@@ -233,10 +233,15 @@ class WameedAIAdminController extends BaseApiController
             ->get();
 
         // ── Hourly Distribution ──
+        $driver = DB::getDriverName();
+        $hourExpr = $driver === 'sqlite'
+            ? "CAST(strftime('%H', created_at) AS INTEGER)"
+            : "EXTRACT(HOUR FROM created_at)";
+
         $hourlyDistribution = (clone $baseUsage)
-            ->selectRaw("EXTRACT(HOUR FROM created_at) as hour")
+            ->selectRaw("{$hourExpr} as hour")
             ->selectRaw('COUNT(*) as requests')
-            ->groupByRaw("EXTRACT(HOUR FROM created_at)")
+            ->groupByRaw("{$hourExpr}")
             ->orderBy('hour')
             ->get();
 
@@ -328,16 +333,86 @@ class WameedAIAdminController extends BaseApiController
 
     public function platformLogs(Request $request): JsonResponse
     {
-        $logs = AIUsageLog::when($request->query('store_id'), fn ($q, $s) => $q->where('store_id', $s))
+        $logs = AIUsageLog::with(['store:id,name', 'user:id,name'])
+            ->when($request->query('store_id'), fn ($q, $s) => $q->where('store_id', $s))
+            ->when($request->query('user_id'), fn ($q, $u) => $q->where('user_id', $u))
             ->when($request->query('feature'), fn ($q, $f) => $q->where('feature_slug', $f))
             ->when($request->query('model'), fn ($q, $m) => $q->where('model_used', $m))
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
+            ->when($request->query('cached'), fn ($q, $c) => $q->where('response_cached', filter_var($c, FILTER_VALIDATE_BOOLEAN)))
             ->when($request->query('from'), fn ($q, $f) => $q->where('created_at', '>=', "{$f} 00:00:00"))
             ->when($request->query('to'), fn ($q, $t) => $q->where('created_at', '<=', "{$t} 23:59:59"))
+            ->when($request->query('min_tokens'), fn ($q, $v) => $q->where('total_tokens', '>=', (int) $v))
+            ->when($request->query('max_tokens'), fn ($q, $v) => $q->where('total_tokens', '<=', (int) $v))
+            ->when($request->query('min_cost'), fn ($q, $v) => $q->where('estimated_cost_usd', '>=', (float) $v))
+            ->when($request->query('search'), fn ($q, $s) => $q->where(function ($qq) use ($s) {
+                $qq->where('feature_slug', 'like', "%{$s}%")
+                   ->orWhere('model_used', 'like', "%{$s}%")
+                   ->orWhere('error_message', 'like', "%{$s}%");
+            }))
             ->orderByDesc('created_at')
             ->paginate($request->query('per_page', 50));
 
         return $this->successPaginated(AIUsageLogResource::collection($logs), $logs);
+    }
+
+    /**
+     * GET /admin/wameed-ai/platform/log-stats
+     *
+     * Returns 8 statistical cards for the usage logs page.
+     */
+    public function platformLogStats(Request $request): JsonResponse
+    {
+        $from = $request->query('from', now()->subDays(30)->toDateString());
+        $to = $request->query('to', now()->toDateString());
+        $storeId = $request->query('store_id');
+
+        $base = AIUsageLog::query()
+            ->where('created_at', '>=', "{$from} 00:00:00")
+            ->where('created_at', '<=', "{$to} 23:59:59")
+            ->when($storeId, fn ($q, $s) => $q->where('store_id', $s));
+
+        $totalRequests = (clone $base)->count();
+        $successRequests = (clone $base)->where('status', 'success')->count();
+        $errorRequests = (clone $base)->where('status', 'error')->count();
+        $cachedRequests = (clone $base)->where('response_cached', true)->count();
+        $totalTokens = (int) (clone $base)->sum('total_tokens');
+        $totalCost = round((float) (clone $base)->sum('estimated_cost_usd'), 4);
+        $avgLatency = round((float) (clone $base)->where('status', 'success')->avg('latency_ms'), 0);
+        $uniqueStores = (clone $base)->distinct('store_id')->count('store_id');
+
+        // Top feature by request count
+        $topFeature = (clone $base)
+            ->select('feature_slug')
+            ->selectRaw('COUNT(*) as cnt')
+            ->groupBy('feature_slug')
+            ->orderByDesc('cnt')
+            ->first();
+
+        // Top model by cost
+        $topModel = (clone $base)
+            ->select('model_used')
+            ->selectRaw('SUM(estimated_cost_usd) as total')
+            ->groupBy('model_used')
+            ->orderByDesc('total')
+            ->first();
+
+        return $this->success([
+            'total_requests' => $totalRequests,
+            'success_requests' => $successRequests,
+            'error_requests' => $errorRequests,
+            'cached_requests' => $cachedRequests,
+            'total_tokens' => $totalTokens,
+            'total_cost_usd' => $totalCost,
+            'avg_latency_ms' => $avgLatency,
+            'unique_stores' => $uniqueStores,
+            'success_rate' => $totalRequests > 0 ? round(($successRequests / $totalRequests) * 100, 1) : 0,
+            'cache_hit_rate' => $totalRequests > 0 ? round(($cachedRequests / $totalRequests) * 100, 1) : 0,
+            'top_feature' => $topFeature?->feature_slug,
+            'top_feature_count' => (int) ($topFeature?->cnt ?? 0),
+            'top_model' => $topModel?->model_used,
+            'top_model_cost' => round((float) ($topModel?->total ?? 0), 4),
+        ]);
     }
 
     // ─── Platform AI Features ───

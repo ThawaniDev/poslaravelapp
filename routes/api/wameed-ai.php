@@ -132,6 +132,7 @@ Route::prefix('admin/wameed-ai')->middleware(['auth:sanctum'])->group(function (
     // ─── Legacy endpoints (backward compat) ─────────────────
     Route::get('/platform-usage', [WameedAIAdminController::class, 'platformUsage'])->middleware('permission:admin.wameed_ai.view');
     Route::get('/platform-logs', [WameedAIAdminController::class, 'platformLogs'])->middleware('permission:admin.wameed_ai.view');
+    Route::get('/platform-log-stats', [WameedAIAdminController::class, 'platformLogStats'])->middleware('permission:admin.wameed_ai.view');
 
     Route::post('/store-health', [WameedAIAdminController::class, 'storeHealth'])->middleware('permission:admin.wameed_ai.manage');
     Route::post('/platform-trends', [WameedAIAdminController::class, 'platformTrends'])->middleware('permission:admin.wameed_ai.manage');

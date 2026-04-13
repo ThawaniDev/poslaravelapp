@@ -12,6 +12,9 @@ class AIUsageLogResource extends JsonResource
         return [
             'id'                => $this->id,
             'store_id'          => $this->store_id,
+            'store_name'        => $this->whenLoaded('store', fn () => $this->store?->name),
+            'user_id'           => $this->user_id,
+            'user_name'         => $this->whenLoaded('user', fn () => $this->user?->name),
             'feature_slug'      => $this->feature_slug,
             'model_used'        => $this->model_used,
             'input_tokens'      => (int) $this->input_tokens,
@@ -21,6 +24,7 @@ class AIUsageLogResource extends JsonResource
             'status'            => $this->status,
             'latency_ms'        => (int) $this->latency_ms,
             'response_cached'   => (bool) $this->response_cached,
+            'error_message'     => $this->error_message,
             'request_messages'  => $this->request_messages ? json_decode($this->request_messages, true) : null,
             'created_at'        => $this->created_at,
         ];
