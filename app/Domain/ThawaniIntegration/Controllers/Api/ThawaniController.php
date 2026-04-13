@@ -56,6 +56,20 @@ class ThawaniController extends BaseApiController
     }
 
     /**
+     * POST /api/v2/thawani/test-connection
+     */
+    public function testConnection(Request $request): JsonResponse
+    {
+        $result = $this->thawaniService->testConnection($request->user()->store_id);
+
+        if ($result['success']) {
+            return $this->success($result['data'] ?? $result, __('thawani.connection_successful'));
+        }
+
+        return $this->error($result['message'] ?? __('thawani.connection_failed'), 422);
+    }
+
+    /**
      * GET /api/v2/thawani/orders
      */
     public function orders(Request $request): JsonResponse
@@ -80,6 +94,126 @@ class ThawaniController extends BaseApiController
     {
         $mappings = $this->thawaniService->getProductMappings($request->user()->store_id);
         return $this->success($mappings, __('thawani.product_mappings_retrieved'));
+    }
+
+    /**
+     * POST /api/v2/thawani/push-products
+     */
+    public function pushProducts(Request $request): JsonResponse
+    {
+        $result = $this->thawaniService->pushProductsToThawani($request->user()->store_id);
+
+        if (!($result['success'] ?? false)) {
+            return $this->error($result['message'] ?? __('thawani.sync_failed'), 422);
+        }
+
+        return $this->success($result['data'] ?? null, __('thawani.products_synced'));
+    }
+
+    /**
+     * POST /api/v2/thawani/pull-products
+     */
+    public function pullProducts(Request $request): JsonResponse
+    {
+        $result = $this->thawaniService->pullProductsFromThawani($request->user()->store_id);
+
+        if (!($result['success'] ?? false)) {
+            return $this->error($result['message'] ?? __('thawani.sync_failed'), 422);
+        }
+
+        return $this->success($result['data'] ?? null, __('thawani.products_synced'));
+    }
+
+    /**
+     * GET /api/v2/thawani/category-mappings
+     */
+    public function categoryMappings(Request $request): JsonResponse
+    {
+        $mappings = $this->thawaniService->getCategoryMappings($request->user()->store_id);
+        return $this->success($mappings, __('thawani.category_mappings_retrieved'));
+    }
+
+    /**
+     * POST /api/v2/thawani/push-categories
+     */
+    public function pushCategories(Request $request): JsonResponse
+    {
+        $result = $this->thawaniService->pushCategoriesToThawani($request->user()->store_id);
+
+        if (!($result['success'] ?? false)) {
+            return $this->error($result['message'] ?? __('thawani.sync_failed'), 422);
+        }
+
+        return $this->success($result['data'] ?? null, __('thawani.categories_synced'));
+    }
+
+    /**
+     * POST /api/v2/thawani/pull-categories
+     */
+    public function pullCategories(Request $request): JsonResponse
+    {
+        $result = $this->thawaniService->pullCategoriesFromThawani($request->user()->store_id);
+
+        if (!($result['success'] ?? false)) {
+            return $this->error($result['message'] ?? __('thawani.sync_failed'), 422);
+        }
+
+        return $this->success($result['data'] ?? null, __('thawani.categories_synced'));
+    }
+
+    /**
+     * GET /api/v2/thawani/column-mappings
+     */
+    public function columnMappings(Request $request): JsonResponse
+    {
+        $mappings = $this->thawaniService->getColumnMappings();
+        return $this->success($mappings, __('thawani.column_mappings_retrieved'));
+    }
+
+    /**
+     * POST /api/v2/thawani/column-mappings/seed-defaults
+     */
+    public function seedColumnDefaults(Request $request): JsonResponse
+    {
+        $this->thawaniService->seedDefaultColumnMappings();
+        return $this->success(null, __('thawani.defaults_seeded'));
+    }
+
+    /**
+     * GET /api/v2/thawani/sync-logs
+     */
+    public function syncLogs(Request $request): JsonResponse
+    {
+        $request->validate([
+            'per_page' => 'nullable|integer|min:1|max:100',
+            'entity_type' => 'nullable|string|in:product,category,connection',
+            'status' => 'nullable|string|in:success,failed,pending',
+        ]);
+
+        $logs = $this->thawaniService->getSyncLogs(
+            $request->user()->store_id,
+            $request->only(['per_page', 'entity_type', 'status']),
+        );
+
+        return $this->success($logs, __('thawani.sync_logs_retrieved'));
+    }
+
+    /**
+     * GET /api/v2/thawani/queue-stats
+     */
+    public function queueStats(Request $request): JsonResponse
+    {
+        $stats = $this->thawaniService->getQueueStats($request->user()->store_id);
+        return $this->success($stats, __('thawani.queue_stats_retrieved'));
+    }
+
+    /**
+     * POST /api/v2/thawani/process-queue
+     */
+    public function processQueue(Request $request): JsonResponse
+    {
+        $result = $this->thawaniService->processQueue($request->user()->store_id);
+        return $this->success($result, __('thawani.sync_completed'));
     }
 
     /**

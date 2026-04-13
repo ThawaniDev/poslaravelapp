@@ -7,6 +7,7 @@ use App\Domain\ProviderSubscription\Jobs\GenerateRenewalInvoicesJob;
 use App\Domain\ProviderSubscription\Jobs\RenewPaidSubscriptionsJob;
 use App\Domain\ProviderSubscription\Jobs\RetryFailedPaymentsJob;
 use App\Domain\Report\Jobs\RefreshDailySummariesJob;
+use App\Domain\ThawaniIntegration\Jobs\ProcessThawaniSyncQueue;
 use App\Domain\WameedAI\Jobs\CalculateEfficiencyScoreJob;
 use App\Domain\WameedAI\Jobs\DetectAnomaliesJob;
 use App\Domain\WameedAI\Jobs\DetectCashierErrorsJob;
@@ -76,6 +77,14 @@ Schedule::job(new SendPaymentReminders)
 // Check for auto-rollback of failing releases (every 30 minutes)
 Schedule::job(new CheckAutoRollback)
     ->everyThirtyMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// ─── Thawani Integration Schedules ───────────────────────────
+
+// Process Thawani sync queue (every 5 minutes)
+Schedule::job(new ProcessThawaniSyncQueue)
+    ->everyFiveMinutes()
     ->withoutOverlapping()
     ->onOneServer();
 

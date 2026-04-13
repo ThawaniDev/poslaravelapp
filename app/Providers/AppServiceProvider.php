@@ -15,8 +15,12 @@ use App\Domain\Billing\Models\HardwareSale;
 use App\Domain\Billing\Models\ImplementationFee;
 use App\Domain\Core\Services\OnboardingService;
 use App\Domain\Core\Services\StoreService;
+use App\Domain\Catalog\Models\Category;
+use App\Domain\Catalog\Models\Product;
 use App\Domain\ProviderSubscription\Observers\HardwareSaleObserver;
 use App\Domain\ProviderSubscription\Observers\ImplementationFeeObserver;
+use App\Domain\ThawaniIntegration\Observers\ThawaniCategoryObserver;
+use App\Domain\ThawaniIntegration\Observers\ThawaniProductObserver;
 use App\Domain\ProviderSubscription\Services\BillingService;
 use App\Domain\Security\Services\PinOverrideService;
 use App\Domain\StaffManagement\Services\PermissionService;
@@ -84,6 +88,10 @@ class AppServiceProvider extends ServiceProvider
         // Register model observers for auto-invoicing
         HardwareSale::observe(HardwareSaleObserver::class);
         ImplementationFee::observe(ImplementationFeeObserver::class);
+
+        // Register Thawani integration observers for auto-sync
+        Product::observe(ThawaniProductObserver::class);
+        Category::observe(ThawaniCategoryObserver::class);
 
         // Configure API rate limiters
         RateLimiter::for('api', function (Request $request) {
