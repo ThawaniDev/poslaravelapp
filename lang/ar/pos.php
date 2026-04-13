@@ -106,4 +106,10 @@ return [
     'barcode' => 'الباركود',
     'sku' => 'رمز المنتج',
     'category' => 'الفئة',
+
+    // Settings enforcement
+    'customer_required_for_sale' => 'يجب اختيار عميل لإتمام عملية البيع.',
+    'discount_exceeds_maximum' => 'لا يمكن أن يتجاوز الخصم :max%.',
+    'insufficient_stock' => 'المخزون غير كافٍ لـ :product. المتاح: :available، المطلوب: :requested.',
+    'refunds_disabled' => 'المرتجعات معطلة لهذا المتجر.',
 ];

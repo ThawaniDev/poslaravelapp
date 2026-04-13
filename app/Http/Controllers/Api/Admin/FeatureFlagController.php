@@ -13,6 +13,49 @@ use Illuminate\Http\Request;
 class FeatureFlagController extends BaseApiController
 {
     // ═══════════════════════════════════════════════════════════
+    //  Feature Flag Stats
+    // ═══════════════════════════════════════════════════════════
+
+    /**
+     * GET /admin/feature-flags/stats
+     */
+    public function flagStats(): JsonResponse
+    {
+        $totalFlags = FeatureFlag::count();
+        $enabledFlags = FeatureFlag::where('is_enabled', true)->count();
+        $disabledFlags = $totalFlags - $enabledFlags;
+        $withTargeting = FeatureFlag::where(function ($q) {
+            $q->whereNotNull('target_plan_ids')
+              ->orWhereNotNull('target_store_ids');
+        })->count();
+        $partialRollout = FeatureFlag::where('is_enabled', true)
+            ->where('rollout_percentage', '<', 100)
+            ->count();
+
+        // A/B tests
+        $totalTests = ABTest::count();
+        $runningTests = ABTest::where('status', 'running')->count();
+        $completedTests = ABTest::where('status', 'completed')->count();
+        $totalEvents = ABTestEvent::count();
+
+        return $this->success([
+            'flags' => [
+                'total' => $totalFlags,
+                'enabled' => $enabledFlags,
+                'disabled' => $disabledFlags,
+                'with_targeting' => $withTargeting,
+                'partial_rollout' => $partialRollout,
+            ],
+            'ab_tests' => [
+                'total' => $totalTests,
+                'running' => $runningTests,
+                'completed' => $completedTests,
+                'total_events' => $totalEvents,
+            ],
+        ], 'Feature flag stats retrieved');
+    }
+
+    // ═══════════════════════════════════════════════════════════
     //  Feature Flags CRUD
     // ═══════════════════════════════════════════════════════════
 

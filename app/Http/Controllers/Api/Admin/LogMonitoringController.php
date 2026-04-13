@@ -14,6 +14,67 @@ use Illuminate\Http\Request;
 
 class LogMonitoringController extends BaseApiController
 {
+    // ─── Log Stats ───────────────────────────────────────────
+
+    /**
+     * GET /admin/logs/stats
+     * Aggregate statistics for all log types.
+     */
+    public function stats(): JsonResponse
+    {
+        $now = now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $last24h = $now->copy()->subDay();
+
+        // Activity logs
+        $totalActivity = AdminActivityLog::count();
+        $activityToday = AdminActivityLog::where('created_at', '>=', $now->startOfDay())->count();
+        $activityThisMonth = AdminActivityLog::where('created_at', '>=', $startOfMonth)->count();
+        $topActions = AdminActivityLog::where('created_at', '>=', $startOfMonth)
+            ->selectRaw('action, COUNT(*) as count')
+            ->groupBy('action')
+            ->orderByDesc('count')
+            ->limit(5)
+            ->pluck('count', 'action');
+
+        // Security alerts
+        $totalAlerts = SecurityAlert::count();
+        $unresolvedAlerts = SecurityAlert::where('status', '!=', 'resolved')->count();
+        $criticalAlerts = SecurityAlert::where('severity', 'critical')
+            ->where('status', '!=', 'resolved')->count();
+        $alertsLast24h = SecurityAlert::where('created_at', '>=', $last24h)->count();
+
+        // Notification logs
+        $totalNotifications = NotificationEventLog::count();
+        $notificationsToday = NotificationEventLog::where('sent_at', '>=', $now->startOfDay())->count();
+        $failedNotifications = NotificationEventLog::where('status', 'failed')->count();
+        $channelBreakdown = NotificationEventLog::where('sent_at', '>=', $startOfMonth)
+            ->selectRaw('channel, COUNT(*) as count')
+            ->groupBy('channel')
+            ->pluck('count', 'channel');
+
+        return $this->success([
+            'activity' => [
+                'total' => $totalActivity,
+                'today' => $activityToday,
+                'this_month' => $activityThisMonth,
+                'top_actions' => $topActions,
+            ],
+            'security' => [
+                'total' => $totalAlerts,
+                'unresolved' => $unresolvedAlerts,
+                'critical' => $criticalAlerts,
+                'last_24h' => $alertsLast24h,
+            ],
+            'notifications' => [
+                'total' => $totalNotifications,
+                'today' => $notificationsToday,
+                'failed' => $failedNotifications,
+                'channel_breakdown' => $channelBreakdown,
+            ],
+        ], 'Log stats retrieved');
+    }
+
     // ─── Admin Activity Logs ─────────────────────────────────
 
     public function listActivityLogs(Request $request): JsonResponse

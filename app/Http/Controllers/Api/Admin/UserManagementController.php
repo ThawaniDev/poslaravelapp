@@ -20,6 +20,45 @@ use Illuminate\Support\Str;
 class UserManagementController extends BaseApiController
 {
     // ═══════════════════════════════════════════════════════════════
+    // User Stats
+    // ═══════════════════════════════════════════════════════════════
+
+    /**
+     * GET /admin/users/stats
+     * Aggregate user statistics for KPI cards.
+     */
+    public function stats(): JsonResponse
+    {
+        $totalProviders = User::count();
+        $activeProviders = User::where('is_active', true)->count();
+        $inactiveProviders = User::where('is_active', false)->count();
+        $newThisMonth = User::where('created_at', '>=', now()->startOfMonth())->count();
+        $totalAdmins = AdminUser::count();
+        $activeAdmins = AdminUser::where('is_active', true)->count();
+
+        $roleDistribution = User::selectRaw('role, COUNT(*) as count')
+            ->groupBy('role')
+            ->pluck('count', 'role');
+
+        $storeDistribution = User::selectRaw('store_id, COUNT(*) as user_count')
+            ->groupBy('store_id')
+            ->orderByDesc('user_count')
+            ->limit(10)
+            ->get();
+
+        return $this->success([
+            'total_provider_users' => $totalProviders,
+            'active_provider_users' => $activeProviders,
+            'inactive_provider_users' => $inactiveProviders,
+            'new_this_month' => $newThisMonth,
+            'total_admin_users' => $totalAdmins,
+            'active_admin_users' => $activeAdmins,
+            'role_distribution' => $roleDistribution,
+            'top_stores_by_users' => $storeDistribution,
+        ], 'User stats retrieved');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
     // Provider Users
     // ═══════════════════════════════════════════════════════════════
 

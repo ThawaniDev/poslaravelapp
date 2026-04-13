@@ -3,6 +3,7 @@
 namespace App\Domain\PosTerminal\Services;
 
 use App\Domain\Auth\Models\User;
+use App\Domain\Core\Models\StoreSettings;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Inventory\Enums\StockMovementType;
 use App\Domain\Inventory\Enums\StockReferenceType;
@@ -60,6 +61,42 @@ class TransactionService
     public function create(array $data, User $actor): Transaction
     {
         return DB::transaction(function () use ($data, $actor) {
+            // Load store settings for enforcement
+            $settings = StoreSettings::where('store_id', $actor->store_id)->first();
+
+            // Enforce: require_customer_for_sale
+            $isSale = ($data['type'] ?? TransactionType::Sale->value) === TransactionType::Sale->value;
+            if ($settings && $isSale && $settings->require_customer_for_sale && empty($data['customer_id'])) {
+                throw new \RuntimeException(__('pos.customer_required_for_sale'));
+            }
+
+            // Enforce: max_discount_percent
+            if ($settings && $settings->max_discount_percent !== null && $settings->max_discount_percent > 0) {
+                $maxPct = (float) $settings->max_discount_percent;
+                $subtotal = (float) ($data['subtotal'] ?? 0);
+                $discountAmount = (float) ($data['discount_amount'] ?? 0);
+                if ($subtotal > 0 && $discountAmount > 0) {
+                    $discountPct = ($discountAmount / $subtotal) * 100;
+                    if ($discountPct > $maxPct) {
+                        throw new \RuntimeException(__('pos.discount_exceeds_maximum', ['max' => $maxPct]));
+                    }
+                }
+                // Also validate per-item discounts
+                foreach ($data['items'] ?? [] as $item) {
+                    $itemTotal = (float) ($item['unit_price'] ?? 0) * (float) ($item['quantity'] ?? 1);
+                    $itemDiscount = (float) ($item['discount_amount'] ?? 0);
+                    if ($itemTotal > 0 && $itemDiscount > 0) {
+                        $itemDiscPct = ($itemDiscount / $itemTotal) * 100;
+                        if ($itemDiscPct > $maxPct) {
+                            throw new \RuntimeException(__('pos.discount_exceeds_maximum', ['max' => $maxPct]));
+                        }
+                    }
+                }
+            }
+
+            // Determine store tax_rate from settings (use as default when client doesn't provide)
+            $storeTaxRate = $settings ? (float) $settings->tax_rate : 0;
+
             // Resolve register_id from session if not provided
             $registerId = $data['register_id'] ?? null;
             $sessionId = $data['pos_session_id'] ?? null;
@@ -102,7 +139,7 @@ class TransactionService
                         'unit_price' => $item['unit_price'],
                         'cost_price' => $item['cost_price'] ?? 0,
                         'discount_amount' => $item['discount_amount'] ?? 0,
-                        'tax_rate' => $item['tax_rate'] ?? 0,
+                        'tax_rate' => $item['tax_rate'] ?? $storeTaxRate,
                         'tax_amount' => $item['tax_amount'] ?? 0,
                         'line_total' => $item['line_total'],
                         'is_return_item' => $item['is_return_item'] ?? false,
@@ -165,6 +202,12 @@ class TransactionService
 
     public function createReturn(array $data, User $actor): Transaction
     {
+        // Enforce: enable_refunds setting
+        $settings = StoreSettings::where('store_id', $actor->store_id)->first();
+        if ($settings && !$settings->enable_refunds) {
+            throw new \RuntimeException(__('pos.refunds_disabled'));
+        }
+
         $originalTransaction = $this->find($data['return_transaction_id']);
 
         if ($originalTransaction->status !== TransactionStatus::Completed) {
@@ -474,6 +517,14 @@ class TransactionService
         $isReturn = $transaction->type === TransactionType::Return
             || $transaction->type === TransactionType::Return->value;
 
+        // Load settings for allow_negative_stock and track_inventory checks
+        $settings = StoreSettings::where('store_id', $storeId)->first();
+
+        // If inventory tracking is disabled, skip all stock operations
+        if ($settings && !$settings->track_inventory) {
+            return;
+        }
+
         foreach ($transaction->transactionItems as $item) {
             if (! $item->product_id) {
                 continue;
@@ -498,7 +549,20 @@ class TransactionService
                 ->first();
 
             if ($stockLevel) {
-                $stockLevel->quantity = (float) $stockLevel->quantity + $stockChange;
+                $newQuantity = (float) $stockLevel->quantity + $stockChange;
+
+                // Enforce: allow_negative_stock — prevent stock going below zero
+                if ($settings && !$settings->allow_negative_stock && $newQuantity < 0 && !$isReturn) {
+                    throw new \RuntimeException(
+                        __('pos.insufficient_stock', [
+                            'product' => $item->product_name,
+                            'available' => $stockLevel->quantity,
+                            'requested' => $qty,
+                        ])
+                    );
+                }
+
+                $stockLevel->quantity = $newQuantity;
                 $stockLevel->sync_version = ($stockLevel->sync_version ?? 0) + 1;
                 $stockLevel->save();
             }

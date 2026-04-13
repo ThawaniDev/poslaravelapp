@@ -106,4 +106,10 @@ return [
     'barcode' => 'Barcode',
     'sku' => 'SKU',
     'category' => 'Category',
+
+    // Settings enforcement
+    'customer_required_for_sale' => 'A customer must be selected to complete this sale.',
+    'discount_exceeds_maximum' => 'Discount cannot exceed :max%.',
+    'insufficient_stock' => 'Insufficient stock for :product. Available: :available, Requested: :requested.',
+    'refunds_disabled' => 'Refunds are disabled for this store.',
 ];

@@ -101,6 +101,8 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
     // ─── User Management (P4) ───────────────────────────────────
     Route::prefix('users')->group(function () {
 
+        Route::get('stats', [UserManagementController::class, 'stats']);
+
         // Provider users (cross-store)
         Route::prefix('provider')->group(function () {
             Route::get('/', [UserManagementController::class, 'listProviderUsers']);
@@ -221,6 +223,7 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
 
     // ─── Feature Flags & A/B Testing (P7) ───────────────────
     Route::prefix('feature-flags')->group(function () {
+        Route::get('stats', [FeatureFlagController::class, 'flagStats']);
         Route::get('/', [FeatureFlagController::class, 'index']);
         Route::post('/', [FeatureFlagController::class, 'store']);
         Route::get('{flagId}', [FeatureFlagController::class, 'show']);
@@ -287,6 +290,8 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
 
     // ─── Platform Logs & Monitoring (P9) ─────────────────────
     Route::prefix('logs')->group(function () {
+
+        Route::get('stats', [LogMonitoringController::class, 'stats']);
 
         // Admin Activity Logs
         Route::prefix('activity')->group(function () {
