@@ -23,6 +23,12 @@ return new class extends Migration
                 if (! Schema::hasColumn('admin_ip_blocklist', 'source')) {
                     $table->string('source', 30)->default('manual')->after('reason'); // manual, auto_brute_force, import
                 }
+                if (! Schema::hasColumn('admin_ip_blocklist', 'expires_at')) {
+                    $table->timestamp('expires_at')->nullable()->after('source');
+                }
+                if (! Schema::hasColumn('admin_ip_blocklist', 'blocked_at')) {
+                    $table->timestamp('blocked_at')->nullable()->after('blocked_by');
+                }
             });
         }
 

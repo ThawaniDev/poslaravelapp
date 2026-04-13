@@ -39,7 +39,7 @@
         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
         x-transition:leave-end="opacity-0 scale-95 translate-y-2"
         x-on:keydown.escape.window="open = false; $wire.close()"
-        class="fixed inset-x-4 top-16 z-50 mx-auto max-w-4xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 sm:inset-x-auto sm:start-auto sm:end-auto sm:w-[56rem]"
+        class="fixed inset-x-4 top-16 z-50 mx-auto max-w-7xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 sm:inset-x-auto sm:start-auto sm:end-auto sm:w-[80rem]"
         style="display:none"
     >
         {{-- Header --}}
@@ -66,7 +66,7 @@
                     </h4>
 
                     {{-- Grid items --}}
-                    <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
+                    <div class="grid grid-cols-3 gap-2 sm:grid-cols-5 lg:grid-cols-7">
                         @foreach ($group['items'] as $item)
                             <button
                                 wire:click="navigateTo('{{ $item['url'] }}')"
