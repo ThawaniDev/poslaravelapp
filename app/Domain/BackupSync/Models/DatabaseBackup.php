@@ -20,8 +20,13 @@ class DatabaseBackup extends Model
         'backup_type',
         'file_path',
         'file_size_bytes',
+        'tables_count',
+        'rows_count',
+        'checksum',
         'status',
         'error_message',
+        'triggered_by',
+        'notes',
         'started_at',
         'completed_at',
     ];
@@ -32,5 +37,18 @@ class DatabaseBackup extends Model
         'started_at' => 'datetime',
         'completed_at' => 'datetime',
     ];
+
+    public function triggeredByAdmin(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Domain\AdminPanel\Models\AdminUser::class, 'triggered_by');
+    }
+
+    public function getDurationAttribute(): ?string
+    {
+        if (! $this->started_at || ! $this->completed_at) {
+            return null;
+        }
+        return $this->started_at->diffForHumans($this->completed_at, true);
+    }
 
 }

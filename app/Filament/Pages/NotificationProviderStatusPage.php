@@ -16,6 +16,7 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 
 class NotificationProviderStatusPage extends Page implements HasForms, HasTable
@@ -45,6 +46,17 @@ class NotificationProviderStatusPage extends Page implements HasForms, HasTable
         return __('notifications.provider_status_title');
     }
 
+    public static function getNavigationBadge(): ?string
+    {
+        $unhealthy = NotificationProviderStatus::where('is_healthy', false)->where('is_enabled', true)->count();
+        return $unhealthy > 0 ? (string) $unhealthy : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'danger';
+    }
+
     public static function canAccess(): bool
     {
         $user = auth('admin')->user();
@@ -66,9 +78,9 @@ class NotificationProviderStatusPage extends Page implements HasForms, HasTable
                     ->label(__('notifications.channel'))
                     ->badge()
                     ->color(fn ($state) => match (true) {
-                        $state === NotificationChannel::Email || ($state instanceof NotificationChannel && $state === NotificationChannel::Email) => 'primary',
-                        $state === NotificationChannel::Sms || ($state instanceof NotificationChannel && $state === NotificationChannel::Sms) => 'warning',
-                        $state === NotificationChannel::Push || ($state instanceof NotificationChannel && $state === NotificationChannel::Push) => 'success',
+                        $state instanceof NotificationChannel && $state === NotificationChannel::Email => 'primary',
+                        $state instanceof NotificationChannel && $state === NotificationChannel::Sms => 'warning',
+                        $state instanceof NotificationChannel && $state === NotificationChannel::Push => 'success',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => $state instanceof NotificationChannel ? __("notifications.channel_{$state->value}") : $state)
@@ -109,6 +121,23 @@ class NotificationProviderStatusPage extends Page implements HasForms, HasTable
                     ->suffix(' ms')
                     ->alignCenter(),
 
+                Tables\Columns\TextColumn::make('rate_limit_per_minute')
+                    ->label(__('notifications.rate_limit'))
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('cost_per_message')
+                    ->label(__('notifications.cost_per_message'))
+                    ->money('OMR')
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('last_test_at')
+                    ->label(__('notifications.last_test'))
+                    ->dateTime('M d H:i')
+                    ->placeholder(__('settings.never'))
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('last_success_at')
                     ->label(__('notifications.last_success'))
                     ->dateTime('M d H:i')
@@ -135,8 +164,52 @@ class NotificationProviderStatusPage extends Page implements HasForms, HasTable
                     ),
                 Tables\Filters\TernaryFilter::make('is_healthy')
                     ->label(__('notifications.healthy')),
+                Tables\Filters\TernaryFilter::make('is_enabled')
+                    ->label(__('notifications.enabled')),
             ])
             ->actions([
+                Tables\Actions\Action::make('test_send')
+                    ->label(__('notifications.test_send'))
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('info')
+                    ->visible(fn () => auth('admin')->user()?->hasPermissionTo('notifications.manage'))
+                    ->form([
+                        Forms\Components\TextInput::make('test_recipient')
+                            ->label(__('notifications.test_recipient'))
+                            ->required()
+                            ->helperText(__('notifications.test_recipient_helper')),
+                    ])
+                    ->action(function (NotificationProviderStatus $record, array $data) {
+                        $record->update([
+                            'last_test_at' => now(),
+                            'last_test_result' => 'pending',
+                        ]);
+
+                        AdminActivityLog::record(
+                            adminUserId: auth('admin')->id(),
+                            action: 'test_notification_provider',
+                            entityType: 'notification_provider',
+                            entityId: $record->id,
+                            details: [
+                                'provider' => $record->provider->value ?? $record->provider,
+                                'channel' => $record->channel->value ?? $record->channel,
+                                'recipient' => $data['test_recipient'],
+                            ],
+                        );
+
+                        // Mark as tested (actual delivery depends on queue workers)
+                        $record->update(['last_test_result' => 'sent']);
+
+                        Notification::make()
+                            ->title(__('notifications.test_queued'))
+                            ->body(__('notifications.test_queued_body', [
+                                'provider' => $record->provider->value ?? $record->provider,
+                                'recipient' => $data['test_recipient'],
+                            ]))
+                            ->success()
+                            ->send();
+                    }),
+
                 Tables\Actions\Action::make('toggle_enabled')
                     ->label(fn (NotificationProviderStatus $record) => $record->is_enabled ? __('notifications.disable') : __('notifications.enable'))
                     ->icon(fn (NotificationProviderStatus $record) => $record->is_enabled ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
@@ -145,7 +218,7 @@ class NotificationProviderStatusPage extends Page implements HasForms, HasTable
                     ->action(function (NotificationProviderStatus $record) {
                         $record->update([
                             'is_enabled' => !$record->is_enabled,
-                            'disabled_reason' => $record->is_enabled ? 'Manually disabled by admin' : null,
+                            'disabled_reason' => $record->is_enabled ? __('security.disabled_by_admin') : null,
                         ]);
 
                         Cache::forget("notification_providers:{$record->channel->value}");
@@ -167,6 +240,7 @@ class NotificationProviderStatusPage extends Page implements HasForms, HasTable
                 Tables\Actions\Action::make('update_priority')
                     ->label(__('notifications.update_priority'))
                     ->icon('heroicon-o-arrows-up-down')
+                    ->visible(fn () => auth('admin')->user()?->hasPermissionTo('notifications.manage'))
                     ->form([
                         Forms\Components\TextInput::make('priority')
                             ->label(__('notifications.priority'))
@@ -182,6 +256,36 @@ class NotificationProviderStatusPage extends Page implements HasForms, HasTable
 
                         Notification::make()
                             ->title(__('notifications.priority_updated'))
+                            ->success()
+                            ->send();
+                    }),
+
+                Tables\Actions\Action::make('configure_limits')
+                    ->label(__('notifications.configure_limits'))
+                    ->icon('heroicon-o-cog-6-tooth')
+                    ->visible(fn () => auth('admin')->user()?->hasPermissionTo('notifications.manage'))
+                    ->form([
+                        Forms\Components\TextInput::make('rate_limit_per_minute')
+                            ->label(__('notifications.rate_limit'))
+                            ->numeric()
+                            ->minValue(0)
+                            ->default(fn (NotificationProviderStatus $record) => $record->rate_limit_per_minute),
+                        Forms\Components\TextInput::make('cost_per_message')
+                            ->label(__('notifications.cost_per_message'))
+                            ->numeric()
+                            ->minValue(0)
+                            ->step(0.001)
+                            ->prefix('OMR')
+                            ->default(fn (NotificationProviderStatus $record) => $record->cost_per_message),
+                    ])
+                    ->action(function (NotificationProviderStatus $record, array $data) {
+                        $record->update([
+                            'rate_limit_per_minute' => $data['rate_limit_per_minute'],
+                            'cost_per_message' => $data['cost_per_message'],
+                        ]);
+
+                        Notification::make()
+                            ->title(__('notifications.limits_updated'))
                             ->success()
                             ->send();
                     }),
@@ -206,7 +310,66 @@ class NotificationProviderStatusPage extends Page implements HasForms, HasTable
                             ->send();
                     }),
             ])
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('bulk_enable')
+                    ->label(__('notifications.enable_selected'))
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(function (Collection $records) {
+                        $records->each(function (NotificationProviderStatus $record) {
+                            $record->update(['is_enabled' => true, 'disabled_reason' => null]);
+                            Cache::forget("notification_providers:{$record->channel->value}");
+                        });
+
+                        AdminActivityLog::record(
+                            adminUserId: auth('admin')->id(),
+                            action: 'bulk_enable_providers',
+                            entityType: 'notification_provider',
+                            details: ['count' => $records->count()],
+                        );
+
+                        Notification::make()->title(__('notifications.providers_enabled', ['count' => $records->count()]))->success()->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
+                Tables\Actions\BulkAction::make('bulk_disable')
+                    ->label(__('notifications.disable_selected'))
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->action(function (Collection $records) {
+                        $records->each(function (NotificationProviderStatus $record) {
+                            $record->update(['is_enabled' => false, 'disabled_reason' => __('security.bulk_disabled_by_admin')]);
+                            Cache::forget("notification_providers:{$record->channel->value}");
+                        });
+
+                        AdminActivityLog::record(
+                            adminUserId: auth('admin')->id(),
+                            action: 'bulk_disable_providers',
+                            entityType: 'notification_provider',
+                            details: ['count' => $records->count()],
+                        );
+
+                        Notification::make()->title(__('notifications.providers_disabled', ['count' => $records->count()]))->success()->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
+                Tables\Actions\BulkAction::make('bulk_reset_health')
+                    ->label(__('notifications.reset_health'))
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->action(function (Collection $records) {
+                        $records->each(function (NotificationProviderStatus $record) {
+                            $record->update(['is_healthy' => true, 'failure_count_24h' => 0, 'success_count_24h' => 0, 'disabled_reason' => null]);
+                            Cache::forget("notification_providers:{$record->channel->value}");
+                        });
+
+                        Notification::make()->title(__('notifications.health_reset'))->success()->send();
+                    })
+                    ->deselectRecordsAfterCompletion(),
+            ])
             ->defaultSort('channel')
-            ->defaultSort('priority');
+            ->defaultSort('priority')
+            ->poll('60s');
     }
 }

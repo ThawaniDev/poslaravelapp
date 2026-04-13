@@ -140,3 +140,17 @@ Schedule::job(new CalculateEfficiencyScoreJob)
     ->dailyAt('04:30')
     ->withoutOverlapping()
     ->onOneServer();
+
+// ─── Wameed AI Billing Schedules ─────────────────────────────
+
+// Generate AI billing invoices (1st of month at 01:00)
+Schedule::command('ai-billing:generate-invoices')
+    ->monthlyOn(1, '01:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Check overdue AI billing invoices (daily at 02:00)
+Schedule::command('ai-billing:check-overdue')
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->onOneServer();

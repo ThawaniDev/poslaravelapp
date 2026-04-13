@@ -12,6 +12,7 @@ use App\Domain\WameedAI\Models\AIPrompt;
 use App\Domain\WameedAI\Models\AIProviderConfig;
 use App\Domain\WameedAI\Models\AIStoreFeatureConfig;
 use App\Domain\WameedAI\Models\AIUsageLog;
+use App\Domain\WameedAI\Services\AIBillingService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -46,6 +47,14 @@ class AIGatewayService
                 ->first();
 
             if ($storeConfig && !$storeConfig->is_enabled) {
+                return null;
+            }
+
+            // 2b. Billing check — is store allowed to use AI?
+            $billingService = app(AIBillingService::class);
+            [$allowed, $billingReason] = $billingService->canStoreUseAI($storeId, $organizationId);
+            if (!$allowed) {
+                $this->logUsage($organizationId, $storeId, $userId, $feature, 'billing_blocked', 0, 0, 0, 0, (int) ((microtime(true) - $startTime) * 1000), "Billing: {$billingReason}");
                 return null;
             }
 
@@ -114,7 +123,7 @@ class AIGatewayService
             }
 
             // 11. Log usage
-            $this->logUsage($organizationId, $storeId, $userId, $feature, 'success', $inputTokens, $outputTokens, $totalTokens, $cost, $latencyMs, null, false, $cacheKey);
+            $this->logUsage($organizationId, $storeId, $userId, $feature, 'success', $inputTokens, $outputTokens, $totalTokens, $cost, $latencyMs, null, false, $cacheKey, $messages);
 
             return $parsed;
         } catch (\Throwable $e) {
@@ -555,6 +564,7 @@ class AIGatewayService
         ?string $errorMessage = null,
         bool $cached = false,
         ?string $payloadHash = null,
+        ?array $requestMessages = null,
     ): void {
         try {
             AIUsageLog::create([
@@ -573,6 +583,7 @@ class AIGatewayService
                 'latency_ms' => $latencyMs,
                 'status' => $status,
                 'error_message' => $errorMessage,
+                'request_messages' => $requestMessages ? json_encode($requestMessages, JSON_UNESCAPED_UNICODE) : null,
                 'created_at' => now(),
             ]);
         } catch (\Throwable $e) {

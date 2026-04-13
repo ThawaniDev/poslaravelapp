@@ -102,4 +102,22 @@ return [
     'priority_updated' => 'Priority updated.',
     'reset_health' => 'Reset Health',
     'health_reset' => 'Health metrics reset.',
+
+    // ─── Enhanced Provider Status ────────────────────────────
+    'test_send' => 'Test Send',
+    'test_recipient' => 'Test Recipient',
+    'test_recipient_helper' => 'Email address, phone number, or device token depending on channel.',
+    'test_queued' => 'Test notification queued.',
+    'test_queued_body' => 'A test message via :provider has been queued for :recipient.',
+    'last_test' => 'Last Test',
+    'rate_limit' => 'Rate Limit/min',
+    'cost_per_message' => 'Cost/Message',
+    'configure_limits' => 'Configure Limits',
+    'limits_updated' => 'Limits updated successfully.',
+    'enable_selected' => 'Enable Selected',
+    'disable_selected' => 'Disable Selected',
+    'providers_enabled' => ':count providers enabled.',
+    'providers_disabled' => ':count providers disabled.',
+    'reset_health_selected' => 'Reset Health Selected',
+    'providers_health_reset' => ':count providers health reset.',
 ];

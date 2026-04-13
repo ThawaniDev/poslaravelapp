@@ -18,7 +18,11 @@ class AdminIpBlocklist extends Model
 
     protected $fillable = [
         'ip_address',
+        'is_cidr',
         'reason',
+        'hit_count',
+        'last_hit_at',
+        'source',
         'blocked_by',
         'blocked_at',
         'expires_at',
@@ -26,6 +30,9 @@ class AdminIpBlocklist extends Model
     ];
 
     protected $casts = [
+        'is_cidr' => 'boolean',
+        'hit_count' => 'integer',
+        'last_hit_at' => 'datetime',
         'blocked_at' => 'datetime',
         'expires_at' => 'datetime',
         'created_at' => 'datetime',

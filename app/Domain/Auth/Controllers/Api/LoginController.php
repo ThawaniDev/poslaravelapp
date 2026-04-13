@@ -27,6 +27,8 @@ class LoginController extends BaseApiController
         $dto = LoginDTO::fromRequest($request->validated());
         $result = $this->authService->login($dto);
 
+        $result['user']->load(['store', 'organization']);
+
         return $this->success([
             'user' => new UserResource($result['user']),
             'token' => $result['token'],
@@ -46,6 +48,8 @@ class LoginController extends BaseApiController
             $validated['store_id'],
             $validated['pin'],
         );
+
+        $result['user']->load(['store', 'organization']);
 
         return $this->success([
             'user' => new UserResource($result['user']),

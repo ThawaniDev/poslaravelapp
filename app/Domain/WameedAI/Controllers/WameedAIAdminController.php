@@ -33,8 +33,33 @@ class WameedAIAdminController extends BaseApiController
 
     public function providerConfigs(): JsonResponse
     {
-        $configs = AIProviderConfig::orderBy('provider')->get();
-        return $this->success(AIProviderConfigResource::collection($configs));
+        // Aggregate provider info from the actual ai_llm_models table
+        // (AIProviderConfig is legacy and may be empty)
+        $providers = AILlmModel::query()
+            ->select('provider')
+            ->selectRaw('COUNT(*) as model_count')
+            ->selectRaw('SUM(CASE WHEN is_enabled = true THEN 1 ELSE 0 END) as enabled_count')
+            ->selectRaw('SUM(CASE WHEN is_default = true THEN 1 ELSE 0 END) as has_default')
+            ->selectRaw('SUM(CASE WHEN api_key_encrypted IS NOT NULL THEN 1 ELSE 0 END) as models_with_keys')
+            ->groupBy('provider')
+            ->orderBy('provider')
+            ->get()
+            ->map(fn ($row) => [
+                'provider' => $row->provider,
+                'model_count' => (int) $row->model_count,
+                'enabled_count' => (int) $row->enabled_count,
+                'has_default' => (int) $row->has_default > 0,
+                'models_with_keys' => (int) $row->models_with_keys,
+                'is_active' => (int) $row->enabled_count > 0,
+            ]);
+
+        // Also include any legacy AIProviderConfig entries
+        $legacyConfigs = AIProviderConfig::orderBy('provider')->get();
+
+        return $this->success([
+            'providers' => $providers,
+            'legacy_configs' => AIProviderConfigResource::collection($legacyConfigs),
+        ]);
     }
 
     public function updateProviderConfig(AdminUpdateProviderConfigRequest $request, ?string $id = null): JsonResponse

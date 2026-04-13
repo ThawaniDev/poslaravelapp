@@ -19,6 +19,8 @@ class SystemHealthCheck extends Model
         'status',
         'response_time_ms',
         'details',
+        'error_message',
+        'triggered_by',
         'checked_at',
     ];
 

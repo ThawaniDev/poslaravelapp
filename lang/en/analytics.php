@@ -124,4 +124,10 @@ return [
     'failed' => 'Failed',
     'per_template_stats' => 'Per-Template Stats',
     'event_key' => 'Event Key',
+
+    // ─── Enhanced System Health ──────────────────────────────
+    'run_health_checks' => 'Run Health Checks',
+    'health_checks_completed' => 'Health checks completed.',
+    'critical_issues_found' => ':count critical issues found.',
+    'all_services_healthy' => 'All services are healthy.',
 ];

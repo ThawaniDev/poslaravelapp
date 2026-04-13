@@ -18,14 +18,26 @@ class AdminIpAllowlist extends Model
 
     protected $fillable = [
         'ip_address',
+        'is_cidr',
         'label',
+        'description',
+        'last_used_at',
+        'expires_at',
         'added_by',
         'created_at',
     ];
 
     protected $casts = [
+        'is_cidr' => 'boolean',
+        'last_used_at' => 'datetime',
+        'expires_at' => 'datetime',
         'created_at' => 'datetime',
     ];
+
+    public function isExpired(): bool
+    {
+        return $this->expires_at && $this->expires_at->isPast();
+    }
 
     public function addedBy(): BelongsTo
     {

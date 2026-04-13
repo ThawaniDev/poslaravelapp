@@ -18,7 +18,7 @@ abstract class BaseApiController extends Controller
         ], $code);
     }
 
-    protected function successPaginated(AnonymousResourceCollection $collection, LengthAwarePaginator $paginator, string $message = 'Success'): JsonResponse
+    protected function successPaginated(mixed $collection, LengthAwarePaginator $paginator, string $message = 'Success'): JsonResponse
     {
         return response()->json([
             'success' => true,

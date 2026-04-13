@@ -357,4 +357,26 @@ return [
 
     // Flat aliases for filters.*
     'active_blocks'            => 'Active Blocks',
+
+    // ─── IP Blocklist/Allowlist flat keys ─────────────────────
+    'ip_blocklist_singular'          => 'IP Blocklist Entry',
+    'ip_allowlist_singular'          => 'IP Allowlist Entry',
+    'ip_or_cidr_helper'              => 'Enter a single IP (e.g., 192.168.1.1) or CIDR range (e.g., 192.168.1.0/24)',
+    'invalid_ip_or_cidr'             => 'Invalid IP address or CIDR range.',
+    'source'                         => 'Source',
+    'source_manual'                  => 'Manual',
+    'source_auto_brute_force'        => 'Auto-detected (Brute Force)',
+    'source_import'                  => 'Imported',
+    'hit_count'                      => 'Hit Count',
+    'last_hit_at'                    => 'Last Hit At',
+    'metadata'                       => 'Metadata',
+    'permanent'                      => 'Permanent',
+    'active_entries'                 => 'Active Entries',
+    'reset_hits'                     => 'Reset Hit Count',
+    'hits_reset'                     => 'Hit count reset successfully.',
+    'unblock_selected'               => 'Unblock Selected',
+    'remove_selected'                => 'Remove Selected',
+    'allowlist_description_placeholder' => 'e.g., Office network access',
+    'disabled_by_admin'              => 'Manually disabled by admin',
+    'bulk_disabled_by_admin'         => 'Bulk disabled by admin',
 ];

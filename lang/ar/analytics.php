@@ -124,4 +124,10 @@ return [
     'failed' => 'فاشل',
     'per_template_stats' => 'إحصائيات لكل قالب',
     'event_key' => 'مفتاح الحدث',
+
+    // ─── Enhanced Analytics Keys ─────────────────────────────
+    'run_health_checks' => 'تشغيل فحوصات الصحة',
+    'health_checks_completed' => 'اكتملت فحوصات الصحة.',
+    'critical_issues_found' => 'تم العثور على :count مشكلة حرجة.',
+    'all_services_healthy' => 'جميع الخدمات تعمل بشكل سليم.',
 ];

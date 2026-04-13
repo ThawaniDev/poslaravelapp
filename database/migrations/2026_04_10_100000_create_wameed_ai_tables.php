@@ -95,6 +95,7 @@ CREATE TABLE ai_usage_logs (
     status VARCHAR(20) NOT NULL DEFAULT 'success',
     error_message TEXT,
     metadata_json JSONB,
+    request_messages TEXT,
     created_at TIMESTAMP DEFAULT NOW()
 );
 

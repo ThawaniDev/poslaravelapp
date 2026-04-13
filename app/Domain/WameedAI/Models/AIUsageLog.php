@@ -34,6 +34,7 @@ class AIUsageLog extends Model
         'status',
         'error_message',
         'metadata_json',
+        'request_messages',
         'created_at',
     ];
 

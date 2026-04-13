@@ -26,6 +26,7 @@ use App\Domain\WameedAI\Resources\AISuggestionResource;
 use App\Domain\WameedAI\Resources\AIFeedbackResource;
 use App\Domain\WameedAI\Resources\AIUsageLogResource;
 use App\Domain\WameedAI\Resources\AIDailyUsageSummaryResource;
+use App\Domain\WameedAI\Services\AIBillingService;
 use App\Domain\WameedAI\Services\AIUsageTrackingService;
 use App\Domain\WameedAI\Services\Features\BarcodeEnrichmentService;
 use App\Domain\WameedAI\Services\Features\BundleSuggestionService;
@@ -69,6 +70,7 @@ class WameedAIController extends BaseApiController
 {
     public function __construct(
         private readonly AIUsageTrackingService $usageService,
+        private readonly AIBillingService $billingService,
         private readonly SmartReorderService $smartReorder,
         private readonly DailySummaryService $dailySummary,
         private readonly SalesForecastService $salesForecast,
@@ -238,6 +240,53 @@ class WameedAIController extends BaseApiController
             ->paginate($request->query('per_page', 20));
 
         return $this->successPaginated(AIUsageLogResource::collection($logs), $logs);
+    }
+
+    // ─── Billing ───
+
+    public function billingSummary(Request $request): JsonResponse
+    {
+        $storeId = $request->header('X-Store-Id');
+        $organizationId = $request->header('X-Organization-Id');
+
+        return $this->success($this->billingService->getStoreBillingSummary($storeId, $organizationId));
+    }
+
+    public function billingInvoices(Request $request): JsonResponse
+    {
+        $storeId = $request->header('X-Store-Id');
+        $invoices = \App\Domain\WameedAI\Models\AIBillingInvoice::forStore($storeId)
+            ->orderByDesc('year')
+            ->orderByDesc('month')
+            ->paginate($request->query('per_page', 20));
+
+        $data = $invoices->getCollection()->map(fn ($inv) => [
+            'id' => $inv->id,
+            'invoice_number' => $inv->invoice_number,
+            'year' => $inv->year,
+            'month' => $inv->month,
+            'total_requests' => $inv->total_requests,
+            'raw_cost_usd' => (float) $inv->raw_cost_usd,
+            'margin_percentage' => (float) $inv->margin_percentage,
+            'billed_amount_usd' => (float) $inv->billed_amount_usd,
+            'status' => $inv->status,
+            'due_date' => $inv->due_date->toDateString(),
+            'paid_at' => $inv->paid_at?->toIso8601String(),
+        ]);
+
+        return $this->successPaginated($data, $invoices);
+    }
+
+    public function billingInvoiceDetail(Request $request, string $invoiceId): JsonResponse
+    {
+        $storeId = $request->header('X-Store-Id');
+        $detail = $this->billingService->getInvoiceDetail($invoiceId, $storeId);
+
+        if (!$detail) {
+            return $this->notFound('Invoice not found');
+        }
+
+        return $this->success($detail);
     }
 
     // ─── AI Features — Inventory ───

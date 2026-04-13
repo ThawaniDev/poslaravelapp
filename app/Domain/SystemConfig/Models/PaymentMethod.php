@@ -19,11 +19,18 @@ class PaymentMethod extends Model
         'method_key',
         'name',
         'name_ar',
+        'description',
+        'description_ar',
         'icon',
         'category',
         'requires_terminal',
         'requires_customer_profile',
         'provider_config_schema',
+        'supported_currencies',
+        'min_amount',
+        'max_amount',
+        'processing_fee_percent',
+        'processing_fee_fixed',
         'is_active',
         'sort_order',
     ];
@@ -32,9 +39,14 @@ class PaymentMethod extends Model
         'method_key' => PaymentMethodKey::class,
         'category' => PaymentMethodCategory::class,
         'provider_config_schema' => 'array',
+        'supported_currencies' => 'array',
         'requires_terminal' => 'boolean',
         'requires_customer_profile' => 'boolean',
         'is_active' => 'boolean',
+        'min_amount' => 'decimal:2',
+        'max_amount' => 'decimal:2',
+        'processing_fee_percent' => 'decimal:2',
+        'processing_fee_fixed' => 'decimal:2',
     ];
 
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\WameedAI\Controllers\AIChatController;
+use App\Domain\WameedAI\Controllers\AIBillingAdminController;
 use App\Domain\WameedAI\Controllers\WameedAIController;
 use App\Domain\WameedAI\Controllers\WameedAIAdminController;
 use Illuminate\Support\Facades\Route;
@@ -48,6 +49,11 @@ Route::prefix('wameed-ai')->middleware('auth:sanctum')->group(function () {
     Route::get('/usage', [WameedAIController::class, 'usage'])->middleware('permission:wameed_ai.view');
     Route::get('/usage/history', [WameedAIController::class, 'usageHistory'])->middleware('permission:wameed_ai.view');
     Route::get('/usage/logs', [WameedAIController::class, 'usageLogs'])->middleware('permission:wameed_ai.manage');
+
+    // ─── Billing (store-side) ────────────────────────────────
+    Route::get('/billing/summary', [WameedAIController::class, 'billingSummary'])->middleware('permission:wameed_ai.view');
+    Route::get('/billing/invoices', [WameedAIController::class, 'billingInvoices'])->middleware('permission:wameed_ai.view');
+    Route::get('/billing/invoices/{invoiceId}', [WameedAIController::class, 'billingInvoiceDetail'])->middleware('permission:wameed_ai.view');
 
     // ─── Inventory Features ──────────────────────────────────
     Route::prefix('inventory')->middleware('permission:wameed_ai.use')->group(function () {
@@ -136,4 +142,21 @@ Route::prefix('admin/wameed-ai')->middleware(['auth:sanctum'])->group(function (
     Route::put('/llm-models/{id}', [WameedAIAdminController::class, 'updateLlmModel'])->middleware('permission:admin.wameed_ai.manage');
     Route::patch('/llm-models/{id}/toggle', [WameedAIAdminController::class, 'toggleLlmModel'])->middleware('permission:admin.wameed_ai.manage');
     Route::delete('/llm-models/{id}', [WameedAIAdminController::class, 'deleteLlmModel'])->middleware('permission:admin.wameed_ai.manage');
+
+    // ─── Billing (admin) ─────────────────────────────────────
+    Route::prefix('billing')->group(function () {
+        Route::get('/settings', [AIBillingAdminController::class, 'getSettings'])->middleware('permission:admin.wameed_ai.manage');
+        Route::put('/settings', [AIBillingAdminController::class, 'updateSettings'])->middleware('permission:admin.wameed_ai.manage');
+        Route::get('/dashboard', [AIBillingAdminController::class, 'dashboard'])->middleware('permission:admin.wameed_ai.view');
+        Route::get('/invoices', [AIBillingAdminController::class, 'invoices'])->middleware('permission:admin.wameed_ai.view');
+        Route::get('/invoices/{invoiceId}', [AIBillingAdminController::class, 'invoiceDetail'])->middleware('permission:admin.wameed_ai.view');
+        Route::post('/invoices/{invoiceId}/mark-paid', [AIBillingAdminController::class, 'markInvoicePaid'])->middleware('permission:admin.wameed_ai.manage');
+        Route::post('/invoices/{invoiceId}/record-payment', [AIBillingAdminController::class, 'recordPayment'])->middleware('permission:admin.wameed_ai.manage');
+        Route::post('/generate-invoices', [AIBillingAdminController::class, 'generateInvoices'])->middleware('permission:admin.wameed_ai.manage');
+        Route::post('/check-overdue', [AIBillingAdminController::class, 'checkOverdue'])->middleware('permission:admin.wameed_ai.manage');
+        Route::get('/stores', [AIBillingAdminController::class, 'storeConfigs'])->middleware('permission:admin.wameed_ai.view');
+        Route::get('/stores/{storeId}', [AIBillingAdminController::class, 'storeConfigDetail'])->middleware('permission:admin.wameed_ai.view');
+        Route::put('/stores/{storeId}', [AIBillingAdminController::class, 'updateStoreConfig'])->middleware('permission:admin.wameed_ai.manage');
+        Route::post('/stores/{storeId}/toggle-ai', [AIBillingAdminController::class, 'toggleStoreAI'])->middleware('permission:admin.wameed_ai.manage');
+    });
 });

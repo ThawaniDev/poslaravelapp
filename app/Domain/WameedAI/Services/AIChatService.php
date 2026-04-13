@@ -17,6 +17,7 @@ class AIChatService
 
     public function __construct(
         private readonly AIGatewayService $gateway,
+        private readonly AIStoreDataService $storeDataService,
     ) {}
 
     /**
@@ -257,190 +258,7 @@ class AIChatService
 
     private function buildEnrichedSystemPrompt(AIChat $chat, ?string $featureSlug): string
     {
-        $storeId = $chat->store_id;
-        $orgId = $chat->organization_id;
-
-        // Precompute dates for database-agnostic queries
-        $thirtyDaysAgo = now()->subDays(30)->toDateTimeString();
-        $today = now()->toDateString();
-        $thirtyDaysFromNow = now()->addDays(30)->toDateString();
-
-        // ─── Store Info ─────────────────────────────────
-        $store = DB::selectOne("SELECT name, name_ar, currency, city, timezone, is_main_branch FROM stores WHERE id = ?", [$storeId]);
-        $storeName = $store->name ?? 'your store';
-        $currency = $store->currency ?? 'OMR';
-        $city = $store->city ?? '';
-        $timezone = $store->timezone ?? 'Asia/Muscat';
-
-        // Total branches in org
-        $branchCount = DB::selectOne("SELECT COUNT(*) as cnt FROM stores WHERE organization_id = ?", [$orgId])->cnt ?? 1;
-
-        // ─── Sales Snapshot (last 30 days) ──────────────
-        $salesStats = DB::selectOne("
-            SELECT
-                COUNT(*) as total_transactions,
-                COALESCE(SUM(total_amount), 0) as total_revenue,
-                COALESCE(AVG(total_amount), 0) as avg_transaction,
-                COALESCE(MAX(total_amount), 0) as max_transaction,
-                COALESCE(SUM(discount_amount), 0) as total_discounts,
-                COALESCE(SUM(tax_amount), 0) as total_tax
-            FROM transactions
-            WHERE store_id = ? AND status = 'completed' AND created_at >= ?
-        ", [$storeId, $thirtyDaysAgo]);
-
-        // Today's sales
-        $todaySales = DB::selectOne("
-            SELECT COUNT(*) as cnt, COALESCE(SUM(total_amount), 0) as total
-            FROM transactions
-            WHERE store_id = ? AND status = 'completed' AND created_at >= ?
-        ", [$storeId, $today]);
-
-        // ─── Top 10 Products (last 30 days by revenue) ──
-        $topProducts = DB::select("
-            SELECT ti.product_name, SUM(ti.quantity) as qty_sold, SUM(ti.line_total) as revenue
-            FROM transaction_items ti
-            JOIN transactions t ON t.id = ti.transaction_id
-            WHERE t.store_id = ? AND t.status = 'completed' AND t.created_at >= ?
-            GROUP BY ti.product_name
-            ORDER BY revenue DESC
-            LIMIT 10
-        ", [$storeId, $thirtyDaysAgo]);
-
-        $topProductsText = '';
-        foreach ($topProducts as $i => $p) {
-            $n = $i + 1;
-            $qty = round($p->qty_sold, 1);
-            $rev = number_format($p->revenue, 2);
-            $topProductsText .= "  {$n}. {$p->product_name}: {$qty} units, {$currency} {$rev}\n";
-        }
-
-        // ─── Inventory Snapshot ─────────────────────────
-        $inventory = DB::selectOne("
-            SELECT
-                COUNT(*) as total_skus,
-                COALESCE(SUM(quantity), 0) as total_units,
-                COUNT(CASE WHEN quantity <= reorder_point AND reorder_point > 0 THEN 1 END) as low_stock_count,
-                COUNT(CASE WHEN quantity = 0 THEN 1 END) as out_of_stock_count
-            FROM stock_levels
-            WHERE store_id = ?
-        ", [$storeId]);
-
-        // Expiring within 30 days
-        $expiringCount = DB::selectOne("
-            SELECT COUNT(*) as cnt FROM stock_batches
-            WHERE store_id = ? AND expiry_date IS NOT NULL AND expiry_date <= ? AND expiry_date >= ? AND quantity > 0
-        ", [$storeId, $thirtyDaysFromNow, $today])->cnt ?? 0;
-
-        // ─── Categories ─────────────────────────────────
-        $categories = DB::select("
-            SELECT name FROM categories WHERE organization_id = ? AND is_active = 1 AND parent_id IS NULL ORDER BY sort_order LIMIT 20
-        ", [$orgId]);
-        $categoryNames = implode(', ', array_map(fn($c) => $c->name, $categories));
-
-        // ─── Customers ──────────────────────────────────
-        $customers = DB::selectOne("
-            SELECT
-                COUNT(*) as total_customers,
-                COALESCE(SUM(total_spend), 0) as lifetime_spend,
-                COALESCE(AVG(visit_count), 0) as avg_visits,
-                COUNT(CASE WHEN last_visit_at >= ? THEN 1 END) as active_30d
-            FROM customers
-            WHERE organization_id = ?
-        ", [$thirtyDaysAgo, $orgId]);
-
-        // ─── Staff ──────────────────────────────────────
-        $staffCount = DB::selectOne("
-            SELECT COUNT(*) as cnt FROM staff_users WHERE store_id = ? AND status = 'active'
-        ", [$storeId])->cnt ?? 0;
-
-        // ─── Products ───────────────────────────────────
-        $productStats = DB::selectOne("
-            SELECT
-                COUNT(*) as total_products,
-                COALESCE(AVG(sell_price), 0) as avg_price,
-                COUNT(CASE WHEN is_active = 0 THEN 1 END) as inactive_count
-            FROM products
-            WHERE organization_id = ?
-        ", [$orgId]);
-
-        // ─── Payment Methods (last 30 days) ─────────────
-        $paymentMethods = DB::select("
-            SELECT p.method, COUNT(*) as cnt, SUM(p.amount) as total
-            FROM payments p
-            JOIN transactions t ON t.id = p.transaction_id
-            WHERE t.store_id = ? AND t.status = 'completed' AND t.created_at >= ?
-            GROUP BY p.method ORDER BY total DESC
-        ", [$storeId, $thirtyDaysAgo]);
-        $paymentText = '';
-        foreach ($paymentMethods as $pm) {
-            $paymentText .= "  - {$pm->method}: {$pm->cnt} transactions, {$currency} " . number_format($pm->total, 2) . "\n";
-        }
-
-        // ─── Recent Expenses (last 30 days) ─────────────
-        $expenses = DB::selectOne("
-            SELECT COALESCE(SUM(amount), 0) as total_expenses, COUNT(*) as cnt
-            FROM expenses WHERE store_id = ? AND expense_date >= ?
-        ", [$storeId, $thirtyDaysAgo]);
-
-        // ─── Active Promotions ──────────────────────────
-        $activePromos = DB::selectOne("
-            SELECT COUNT(*) as cnt FROM promotions
-            WHERE organization_id = ? AND is_active = 1 AND (valid_to IS NULL OR valid_to >= ?)
-        ", [$orgId, $today])->cnt ?? 0;
-
-        // ─── Build Prompt ───────────────────────────────
-        $prompt = <<<PROMPT
-You are Wameed AI, an intelligent POS assistant for "{$storeName}" in {$city}. Timezone: {$timezone}. Currency: {$currency}.
-The business has {$branchCount} branch(es).
-
-═══ TODAY'S SNAPSHOT ═══
-- Transactions today: {$todaySales->cnt}, Revenue: {$currency} {$this->fmt($todaySales->total)}
-
-═══ LAST 30 DAYS SALES ═══
-- Total transactions: {$salesStats->total_transactions}
-- Total revenue: {$currency} {$this->fmt($salesStats->total_revenue)}
-- Average transaction: {$currency} {$this->fmt($salesStats->avg_transaction)}
-- Largest transaction: {$currency} {$this->fmt($salesStats->max_transaction)}
-- Total discounts given: {$currency} {$this->fmt($salesStats->total_discounts)}
-- Total tax collected: {$currency} {$this->fmt($salesStats->total_tax)}
-
-═══ TOP SELLING PRODUCTS (30 days) ═══
-{$topProductsText}
-═══ INVENTORY STATUS ═══
-- Total SKUs tracked: {$inventory->total_skus}
-- Total units in stock: {$this->fmt($inventory->total_units, 0)}
-- Products at/below reorder point: {$inventory->low_stock_count}
-- Out of stock: {$inventory->out_of_stock_count}
-- Expiring within 30 days: {$expiringCount}
-
-═══ PRODUCT CATALOG ═══
-- Total products: {$productStats->total_products} (inactive: {$productStats->inactive_count})
-- Average sell price: {$currency} {$this->fmt($productStats->avg_price)}
-- Categories: {$categoryNames}
-
-═══ CUSTOMERS ═══
-- Total customers: {$customers->total_customers}
-- Active in last 30 days: {$customers->active_30d}
-- Lifetime spend: {$currency} {$this->fmt($customers->lifetime_spend)}
-- Average visits per customer: {$this->fmt($customers->avg_visits, 1)}
-
-═══ STAFF & OPERATIONS ═══
-- Active staff: {$staffCount}
-- Active promotions: {$activePromos}
-
-═══ PAYMENT METHODS (30 days) ═══
-{$paymentText}
-═══ EXPENSES (30 days) ═══
-- Total expenses: {$currency} {$this->fmt($expenses->total_expenses)} ({$expenses->cnt} entries)
-
-═══ GUIDELINES ═══
-- Always respond in the SAME LANGUAGE the user writes in (Arabic or English).
-- Use {$currency} for all monetary values.
-- Be concise but thorough. Use tables, bullet points, and structured formatting.
-- Provide actionable recommendations backed by the data above.
-- If a question requires data you don't have, say so clearly.
-- When comparing periods, note that your data covers the last 30 days.
-PROMPT;
+        $prompt = $this->storeDataService->buildStoreContextPrompt($chat->store_id, $chat->organization_id);
 
         if ($featureSlug) {
             $feature = AIFeatureDefinition::where('slug', $featureSlug)->first();
@@ -450,11 +268,6 @@ PROMPT;
         }
 
         return $prompt;
-    }
-
-    private function fmt(mixed $value, int $decimals = 2): string
-    {
-        return number_format((float) $value, $decimals);
     }
 
     private function buildConversationHistory(AIChat $chat): array

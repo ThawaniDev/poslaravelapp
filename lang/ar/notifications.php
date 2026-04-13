@@ -102,4 +102,22 @@ return [
     'priority_updated' => 'تم تحديث الأولوية.',
     'reset_health' => 'إعادة تعيين الصحة',
     'health_reset' => 'تم إعادة تعيين مقاييس الصحة.',
+
+    // ─── Enhanced Notification Keys ──────────────────────────
+    'test_send' => 'إرسال تجريبي',
+    'test_recipient' => 'المستلم التجريبي',
+    'test_recipient_helper' => 'عنوان البريد الإلكتروني أو رقم الهاتف أو رمز الجهاز حسب القناة.',
+    'test_queued' => 'تم إدراج إشعار الاختبار في قائمة الانتظار.',
+    'test_queued_body' => 'تم إدراج رسالة اختبار عبر :provider في قائمة الانتظار لـ :recipient.',
+    'last_test' => 'آخر اختبار',
+    'rate_limit' => 'حد المعدل',
+    'cost_per_message' => 'التكلفة لكل رسالة',
+    'configure_limits' => 'تكوين الحدود',
+    'limits_updated' => 'تم تحديث الحدود لـ :provider.',
+    'enable_selected' => 'تفعيل المحدد',
+    'disable_selected' => 'تعطيل المحدد',
+    'reset_health_selected' => 'إعادة تعيين صحة المحدد',
+    'providers_enabled' => 'تم تفعيل :count مزود(مزودين).',
+    'providers_disabled' => 'تم تعطيل :count مزود(مزودين).',
+    'providers_health_reset' => 'تم إعادة تعيين صحة :count مزود(مزودين).',
 ];

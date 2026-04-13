@@ -355,4 +355,26 @@ return [
 
     // Flat aliases for filters.*
     'active_blocks'            => 'عمليات الحظر النشطة',
+
+    // ─── IP Blocklist/Allowlist flat keys ─────────────────────
+    'ip_blocklist_singular'          => 'إدخال قائمة الحظر',
+    'ip_allowlist_singular'          => 'إدخال قائمة السماح',
+    'ip_or_cidr_helper'              => 'أدخل عنوان IP واحد (مثل 192.168.1.1) أو نطاق CIDR (مثل 192.168.1.0/24)',
+    'invalid_ip_or_cidr'             => 'عنوان IP أو نطاق CIDR غير صالح.',
+    'source'                         => 'المصدر',
+    'source_manual'                  => 'يدوي',
+    'source_auto_brute_force'        => 'اكتشاف تلقائي (محاولات اختراق)',
+    'source_import'                  => 'مستورد',
+    'hit_count'                      => 'عدد المحاولات',
+    'last_hit_at'                    => 'آخر محاولة',
+    'metadata'                       => 'البيانات الوصفية',
+    'permanent'                      => 'دائم',
+    'active_entries'                 => 'الإدخالات النشطة',
+    'reset_hits'                     => 'إعادة تعيين عدد المحاولات',
+    'hits_reset'                     => 'تم إعادة تعيين عدد المحاولات بنجاح.',
+    'unblock_selected'               => 'إلغاء حظر المحدد',
+    'remove_selected'                => 'إزالة المحدد',
+    'allowlist_description_placeholder' => 'مثال: الوصول من شبكة المكتب',
+    'disabled_by_admin'              => 'تم التعطيل يدوياً بواسطة المشرف',
+    'bulk_disabled_by_admin'         => 'تم التعطيل الجماعي بواسطة المشرف',
 ];

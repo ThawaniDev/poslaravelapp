@@ -28,6 +28,11 @@ class NotificationProviderStatus extends Model
         'success_count_24h',
         'avg_latency_ms',
         'disabled_reason',
+        'last_test_at',
+        'last_test_result',
+        'configuration',
+        'rate_limit_per_minute',
+        'cost_per_message',
     ];
 
     protected $casts = [
@@ -37,6 +42,9 @@ class NotificationProviderStatus extends Model
         'is_healthy' => 'boolean',
         'last_success_at' => 'datetime',
         'last_failure_at' => 'datetime',
+        'last_test_at' => 'datetime',
+        'configuration' => 'array',
+        'cost_per_message' => 'decimal:4',
     ];
 
 }

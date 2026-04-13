@@ -1,22 +1,22 @@
 <?php
 
-namespace App\Filament\Resources\AdminIpAllowlistResource\Pages;
+namespace App\Filament\Resources\AdminIpBlocklistResource\Pages;
 
 use App\Domain\AdminPanel\Models\AdminActivityLog;
-use App\Filament\Resources\AdminIpAllowlistResource;
+use App\Filament\Resources\AdminIpBlocklistResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
-class EditAdminIpAllowlist extends EditRecord
+class EditAdminIpBlocklist extends EditRecord
 {
-    protected static string $resource = AdminIpAllowlistResource::class;
+    protected static string $resource = AdminIpBlocklistResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
             Actions\ViewAction::make(),
             Actions\DeleteAction::make()
-                ->label(__('security.remove_selected')),
+                ->label(__('security.unblock')),
         ];
     }
 
@@ -24,8 +24,8 @@ class EditAdminIpAllowlist extends EditRecord
     {
         AdminActivityLog::record(
             adminUserId: auth('admin')->id(),
-            action: 'update_ip_allowlist',
-            entityType: 'admin_ip_allowlist',
+            action: 'update_ip_blocklist',
+            entityType: 'admin_ip_blocklist',
             entityId: $this->record->id,
             details: ['ip_address' => $this->record->ip_address],
         );
