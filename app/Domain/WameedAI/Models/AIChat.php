@@ -44,4 +44,14 @@ class AIChat extends Model
     {
         return $this->belongsTo(AILlmModel::class, 'llm_model_id');
     }
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(\App\Domain\Core\Models\Store::class, 'store_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(\App\Domain\Core\Models\User::class, 'user_id');
+    }
 }
