@@ -23,7 +23,7 @@ class ShrinkageDetectionService extends BaseFeatureService
                    COALESCE(sold.total_sold, 0) as total_sold,
                    COALESCE(adjusted.total_adjusted, 0) as total_adjusted,
                    (COALESCE(received.total_received, 0) - COALESCE(sold.total_sold, 0) - COALESCE(adjusted.total_adjusted, 0)) as expected_stock,
-                   sl.quantity - (COALESCE(received.total_received, 0) - COALESCE(sold.total_sold, 0) - COALESCE(adjusted.total_adjusted, 0)) as variance
+                   sl.quantity - (COALESCE(received.total_received, 0) - COALESCE(sold.total_sold, 0) - COALESCE(adjusted.total_adjusted, 0)) as stock_variance
             FROM products p
             JOIN stock_levels sl ON sl.product_id = p.id AND sl.store_id = ?
             LEFT JOIN categories c ON c.id = p.category_id
@@ -49,8 +49,8 @@ class ShrinkageDetectionService extends BaseFeatureService
                 GROUP BY sai.product_id
             ) adjusted ON adjusted.product_id = p.id
             WHERE p.organization_id = ? AND p.is_active = true
-            HAVING ABS(sl.quantity - (COALESCE(received.total_received, 0) - COALESCE(sold.total_sold, 0) - COALESCE(adjusted.total_adjusted, 0))) > 2
-            ORDER BY ABS(variance) DESC
+              AND ABS(sl.quantity - (COALESCE(received.total_received, 0) - COALESCE(sold.total_sold, 0) - COALESCE(adjusted.total_adjusted, 0))) > 2
+            ORDER BY ABS(stock_variance) DESC
             LIMIT 50
         ", [$storeId, $storeId, $storeId, $storeId, $organizationId]);
 
@@ -58,7 +58,7 @@ class ShrinkageDetectionService extends BaseFeatureService
             return ['products' => [], 'total_shrinkage_value' => 0, 'message' => 'No significant shrinkage detected'];
         }
 
-        $totalShrinkageValue = array_sum(array_map(fn ($p) => abs((float) $p->variance) * (float) $p->cost_price, $shrinkageData));
+        $totalShrinkageValue = array_sum(array_map(fn ($p) => abs((float) $p->stock_variance) * (float) $p->cost_price, $shrinkageData));
 
         $context = [
             'discrepancies' => json_encode($shrinkageData, JSON_UNESCAPED_UNICODE),

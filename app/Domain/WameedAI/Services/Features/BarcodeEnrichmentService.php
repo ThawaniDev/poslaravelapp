@@ -25,7 +25,10 @@ class BarcodeEnrichmentService extends BaseFeatureService
 
         // Check predefined catalog
         $predefined = DB::selectOne("
-            SELECT name, name_ar, barcode, category, suggested_price FROM predefined_products WHERE barcode = ?
+            SELECT pp.name, pp.name_ar, pp.barcode, pc.name as category, pp.sell_price as suggested_price
+            FROM predefined_products pp
+            LEFT JOIN predefined_categories pc ON pc.id = pp.predefined_category_id
+            WHERE pp.barcode = ?
         ", [$barcode]);
 
         $context = [
