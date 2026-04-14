@@ -20,7 +20,7 @@ class AIChatController extends BaseApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $storeId = $request->header('X-Store-Id');
+        $storeId = $this->resolveStoreId($request);
         $userId = $request->user()->id;
         $perPage = (int) $request->query('per_page', 20);
 
@@ -46,7 +46,7 @@ class AIChatController extends BaseApiController
 
         $chat = $this->chatService->createChat(
             organizationId: $request->user()->organization_id,
-            storeId: $request->header('X-Store-Id'),
+            storeId: $this->resolveStoreId($request),
             userId: $request->user()->id,
             llmModelId: $request->input('llm_model_id'),
             title: $request->input('title'),
