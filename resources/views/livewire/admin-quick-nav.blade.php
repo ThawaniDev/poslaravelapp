@@ -73,7 +73,7 @@
                                 @class([
                                     'group flex flex-col items-center gap-2 rounded-xl p-3 text-center transition',
                                     'bg-primary-50 ring-1 ring-primary-200 dark:bg-primary-500/10 dark:ring-primary-500/30' => $item['isActive'],
-                                    'hover:bg-gray-50 dark:hover:bg-white/5' => ! $item['isActive'],
+                                    'bg-gray-50 hover:bg-gray-100 dark:bg-white/5 dark:hover:bg-white/10' => ! $item['isActive'],
                                 ])
                             >
                                 @if ($item['icon'])
