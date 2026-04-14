@@ -52,6 +52,6 @@ class AIChat extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\Core\Models\User::class, 'user_id');
+        return $this->belongsTo(\App\Domain\Auth\Models\User::class, 'user_id');
     }
 }

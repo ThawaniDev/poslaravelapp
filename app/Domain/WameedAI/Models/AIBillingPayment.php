@@ -37,6 +37,6 @@ class AIBillingPayment extends Model
 
     public function recordedByUser(): BelongsTo
     {
-        return $this->belongsTo(\App\Domain\Core\Models\User::class, 'recorded_by');
+        return $this->belongsTo(\App\Domain\Auth\Models\User::class, 'recorded_by');
     }
 }

@@ -66,7 +66,7 @@ class AIUsageLogResource extends Resource
                         Infolists\Components\TextEntry::make('store_id')
                             ->label('Store ID')
                             ->copyable()
-                            ->toggleable(isToggledHiddenByDefault: true),
+                            ->hidden(),
                         Infolists\Components\TextEntry::make('user_id')
                             ->label('User ID')
                             ->copyable()
