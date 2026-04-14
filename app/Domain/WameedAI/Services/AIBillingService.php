@@ -448,7 +448,6 @@ class AIBillingService
                 'feature_slug' => $row->feature_slug,
                 'request_count' => (int) $row->request_count,
                 'total_tokens' => (int) $row->total_tokens,
-                'raw_cost_usd' => round((float) $row->raw_cost, 5),
                 'billed_cost_usd' => round((float) $row->raw_cost * (1 + $marginPercentage / 100), 5),
             ]);
 
@@ -470,7 +469,6 @@ class AIBillingService
                 'is_ai_enabled' => $config->is_ai_enabled,
                 'monthly_limit_usd' => (float) $config->monthly_limit_usd,
                 'effective_limit_usd' => $effectiveLimit,
-                'margin_percentage' => $marginPercentage,
                 'disabled_reason' => $config->disabled_reason,
                 'disabled_at' => $config->disabled_at?->toIso8601String(),
             ],
@@ -479,9 +477,6 @@ class AIBillingService
                 'month' => now()->month,
                 'total_requests' => (int) ($currentUsage->total_requests ?? 0),
                 'total_tokens' => (int) ($currentUsage->total_tokens ?? 0),
-                'raw_cost_usd' => $rawCost,
-                'margin_percentage' => $marginPercentage,
-                'margin_amount_usd' => $marginAmount,
                 'billed_cost_usd' => $billedCost,
                 'limit_usd' => $effectiveLimit,
                 'limit_percentage' => $limitPercentage,
@@ -521,9 +516,6 @@ class AIBillingService
             'period_end' => $invoice->period_end->toDateString(),
             'total_requests' => $invoice->total_requests,
             'total_tokens' => $invoice->total_tokens,
-            'raw_cost_usd' => (float) $invoice->raw_cost_usd,
-            'margin_percentage' => (float) $invoice->margin_percentage,
-            'margin_amount_usd' => (float) $invoice->margin_amount_usd,
             'billed_amount_usd' => (float) $invoice->billed_amount_usd,
             'status' => $invoice->status,
             'due_date' => $invoice->due_date->toDateString(),
@@ -535,7 +527,6 @@ class AIBillingService
                 'feature_name_ar' => $item->feature_name_ar,
                 'request_count' => $item->request_count,
                 'total_tokens' => $item->total_tokens,
-                'raw_cost_usd' => (float) $item->raw_cost_usd,
                 'billed_cost_usd' => (float) $item->billed_cost_usd,
             ]),
             'payments' => $invoice->payments->map(fn ($p) => [

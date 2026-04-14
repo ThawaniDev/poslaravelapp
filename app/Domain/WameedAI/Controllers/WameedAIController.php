@@ -267,8 +267,6 @@ class WameedAIController extends BaseApiController
             'year' => $inv->year,
             'month' => $inv->month,
             'total_requests' => $inv->total_requests,
-            'raw_cost_usd' => (float) $inv->raw_cost_usd,
-            'margin_percentage' => (float) $inv->margin_percentage,
             'billed_amount_usd' => (float) $inv->billed_amount_usd,
             'status' => $inv->status,
             'due_date' => $inv->due_date->toDateString(),
