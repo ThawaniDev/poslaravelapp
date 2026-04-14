@@ -59,10 +59,15 @@ class WameedAIBilling extends Page
         $overdueInvoices = AIBillingInvoice::where('status', 'overdue')->count();
 
         $totalRevenue = AIBillingInvoice::where('status', 'paid')->sum('billed_amount_usd');
+        $totalRawCost = AIBillingInvoice::where('status', 'paid')->sum('raw_cost_usd');
+        $totalMargin = AIBillingInvoice::where('status', 'paid')->sum('margin_amount_usd');
         $pendingRevenue = AIBillingInvoice::where('status', 'pending')->sum('billed_amount_usd');
         $currentMonthRevenue = AIBillingInvoice::where('year', $currentYear)
             ->where('month', $currentMonth)
             ->sum('billed_amount_usd');
+        $currentMonthRawCost = AIBillingInvoice::where('year', $currentYear)
+            ->where('month', $currentMonth)
+            ->sum('raw_cost_usd');
 
         // Store configs
         $totalStores = AIStoreBillingConfig::count();
@@ -86,7 +91,8 @@ class WameedAIBilling extends Page
 
         return compact(
             'totalInvoices', 'pendingInvoices', 'paidInvoices', 'overdueInvoices',
-            'totalRevenue', 'pendingRevenue', 'currentMonthRevenue',
+            'totalRevenue', 'totalRawCost', 'totalMargin', 'pendingRevenue',
+            'currentMonthRevenue', 'currentMonthRawCost',
             'totalStores', 'enabledStores', 'disabledStores',
             'recentInvoices', 'storeConfigs', 'settings',
         );

@@ -48,7 +48,9 @@ class WameedAIDashboard extends Page
         $totalRequests = AIUsageLog::count();
         $todayRequests = AIUsageLog::whereDate('created_at', today())->count();
         $totalCost = AIUsageLog::sum('estimated_cost_usd');
+        $totalBilledCost = AIUsageLog::sum(\Illuminate\Support\Facades\DB::raw('CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd END'));
         $todayCost = AIUsageLog::whereDate('created_at', today())->sum('estimated_cost_usd');
+        $todayBilledCost = AIUsageLog::whereDate('created_at', today())->sum(\Illuminate\Support\Facades\DB::raw('CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd END'));
         $avgLatency = round(AIUsageLog::avg('latency_ms') ?? 0);
         $cacheHitRate = $totalRequests > 0
             ? round(AIUsageLog::where('response_cached', true)->count() / $totalRequests * 100, 1)
@@ -65,7 +67,7 @@ class WameedAIDashboard extends Page
 
         // Top features by usage (last 30 days)
         $topFeatures = AIUsageLog::where('created_at', '>=', now()->subDays(30))
-            ->select('feature_slug', DB::raw('COUNT(*) as total_requests'), DB::raw('SUM(estimated_cost_usd) as total_cost'))
+            ->select('feature_slug', DB::raw('COUNT(*) as total_requests'), DB::raw('SUM(estimated_cost_usd) as total_cost'), DB::raw('SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd END) as total_billed_cost'))
             ->groupBy('feature_slug')
             ->orderByDesc('total_requests')
             ->limit(10)
@@ -80,7 +82,7 @@ class WameedAIDashboard extends Page
 
         // Daily trend (last 14 days)
         $dailyTrend = AIUsageLog::where('created_at', '>=', now()->subDays(14))
-            ->select(DB::raw('DATE(created_at) as date'), DB::raw('COUNT(*) as requests'), DB::raw('SUM(estimated_cost_usd) as cost'))
+            ->select(DB::raw('DATE(created_at) as date'), DB::raw('COUNT(*) as requests'), DB::raw('SUM(estimated_cost_usd) as cost'), DB::raw('SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd END) as billed_cost'))
             ->groupBy(DB::raw('DATE(created_at)'))
             ->orderBy('date')
             ->get();
@@ -89,7 +91,9 @@ class WameedAIDashboard extends Page
             'totalRequests' => $totalRequests,
             'todayRequests' => $todayRequests,
             'totalCost' => number_format($totalCost, 4),
+            'totalBilledCost' => number_format($totalBilledCost, 4),
             'todayCost' => number_format($todayCost, 4),
+            'todayBilledCost' => number_format($todayBilledCost, 4),
             'avgLatency' => $avgLatency,
             'cacheHitRate' => $cacheHitRate,
             'totalFeatures' => $totalFeatures,

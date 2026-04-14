@@ -49,13 +49,14 @@ class AIBillingService
     public function getCurrentMonthBilledCost(string $storeId): float
     {
         $monthStart = now()->startOfMonth();
-        $rawCost = (float) AIUsageLog::where('store_id', $storeId)
+
+        // Use pre-calculated billed_cost_usd from logs (margin applied at save time)
+        $billedCost = (float) AIUsageLog::where('store_id', $storeId)
             ->where('created_at', '>=', $monthStart)
             ->where('status', 'success')
-            ->sum('estimated_cost_usd');
+            ->sum(DB::raw('CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd END'));
 
-        $marginPercentage = $this->getEffectiveMarginForStore($storeId);
-        return round($rawCost * (1 + $marginPercentage / 100), 5);
+        return round($billedCost, 5);
     }
 
     /**
@@ -423,13 +424,14 @@ class AIBillingService
             ->selectRaw("
                 COUNT(*) as total_requests,
                 SUM(total_tokens) as total_tokens,
-                SUM(estimated_cost_usd) as raw_cost
-            ")
+                SUM(estimated_cost_usd) as raw_cost,
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * (1 + ? / 100) END) as billed_cost
+            ", [$marginPercentage])
             ->first();
 
         $rawCost = round((float) ($currentUsage->raw_cost ?? 0), 5);
-        $marginAmount = round($rawCost * ($marginPercentage / 100), 5);
-        $billedCost = round($rawCost + $marginAmount, 5);
+        $billedCost = round((float) ($currentUsage->billed_cost ?? 0), 5);
+        $marginAmount = round($billedCost - $rawCost, 5);
 
         // Current month by feature
         $byFeature = AIUsageLog::where('store_id', $storeId)
@@ -440,15 +442,15 @@ class AIBillingService
                 feature_slug,
                 COUNT(*) as request_count,
                 SUM(total_tokens) as total_tokens,
-                SUM(estimated_cost_usd) as raw_cost
-            ")
-            ->orderByDesc('raw_cost')
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * (1 + ? / 100) END) as billed_cost
+            ", [$marginPercentage])
+            ->orderByDesc('billed_cost')
             ->get()
             ->map(fn ($row) => [
                 'feature_slug' => $row->feature_slug,
                 'request_count' => (int) $row->request_count,
                 'total_tokens' => (int) $row->total_tokens,
-                'billed_cost_usd' => round((float) $row->raw_cost * (1 + $marginPercentage / 100), 5),
+                'billed_cost_usd' => round((float) $row->billed_cost, 5),
             ]);
 
         // Monthly limit info

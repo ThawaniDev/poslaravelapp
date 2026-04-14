@@ -12,6 +12,8 @@ use App\Domain\WameedAI\Models\AIPrompt;
 use App\Domain\WameedAI\Models\AIProviderConfig;
 use App\Domain\WameedAI\Models\AIStoreFeatureConfig;
 use App\Domain\WameedAI\Models\AIUsageLog;
+use App\Domain\WameedAI\Models\AIBillingSetting;
+use App\Domain\WameedAI\Models\AIStoreBillingConfig;
 use App\Domain\WameedAI\Services\AIBillingService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -567,6 +569,13 @@ class AIGatewayService
         ?array $requestMessages = null,
     ): void {
         try {
+            // Apply margin from settings to get billed cost
+            $config = AIStoreBillingConfig::where('store_id', $storeId)->first();
+            $marginPercentage = ($config && $config->custom_margin_percentage !== null)
+                ? (float) $config->custom_margin_percentage
+                : AIBillingSetting::getFloat('margin_percentage', 20.0);
+            $billedCost = round($cost * (1 + $marginPercentage / 100), 6);
+
             AIUsageLog::create([
                 'organization_id' => $organizationId,
                 'store_id' => $storeId,
@@ -578,6 +587,8 @@ class AIGatewayService
                 'output_tokens' => $outputTokens,
                 'total_tokens' => $totalTokens,
                 'estimated_cost_usd' => $cost,
+                'billed_cost_usd' => $billedCost,
+                'margin_percentage_applied' => $marginPercentage,
                 'request_payload_hash' => $payloadHash,
                 'response_cached' => $cached,
                 'latency_ms' => $latencyMs,

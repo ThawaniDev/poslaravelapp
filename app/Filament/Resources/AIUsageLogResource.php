@@ -103,8 +103,16 @@ class AIUsageLogResource extends Resource
                             ->numeric()
                             ->weight('bold'),
                         Infolists\Components\TextEntry::make('estimated_cost_usd')
-                            ->label('Estimated Cost')
+                            ->label('Raw Cost (OpenAI)')
                             ->money('usd'),
+                        Infolists\Components\TextEntry::make('margin_percentage_applied')
+                            ->label('Margin %')
+                            ->suffix('%')
+                            ->placeholder('—'),
+                        Infolists\Components\TextEntry::make('billed_cost_usd')
+                            ->label('Billed Cost')
+                            ->money('usd')
+                            ->weight('bold'),
                         Infolists\Components\TextEntry::make('latency_ms')
                             ->label('Latency')
                             ->suffix(' ms')
@@ -161,9 +169,20 @@ class AIUsageLogResource extends Resource
                     ->numeric()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('estimated_cost_usd')
-                    ->label('Cost (USD)')
+                    ->label('Raw Cost')
                     ->money('usd')
-                    ->sortable(),
+                    ->sortable()
+                    ->description('OpenAI price'),
+                Tables\Columns\TextColumn::make('margin_percentage_applied')
+                    ->label('Margin')
+                    ->suffix('%')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('billed_cost_usd')
+                    ->label('Billed Cost')
+                    ->money('usd')
+                    ->sortable()
+                    ->weight('bold'),
                 Tables\Columns\TextColumn::make('latency_ms')
                     ->label('Latency')
                     ->suffix('ms')

@@ -21,7 +21,7 @@ class AIUsageTrackingService
                 SUM(CASE WHEN response_cached = true THEN 1 ELSE 0 END) as cached_requests,
                 SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as failed_requests,
                 SUM(total_tokens) as total_tokens,
-                SUM(estimated_cost_usd) as total_cost
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd END) as total_cost
             ")
             ->first();
 
@@ -66,7 +66,7 @@ class AIUsageTrackingService
                 SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as failed_requests,
                 SUM(input_tokens) as total_input_tokens,
                 SUM(output_tokens) as total_output_tokens,
-                SUM(estimated_cost_usd) as total_estimated_cost_usd
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd END) as total_estimated_cost_usd
             ")
             ->first();
 
@@ -98,7 +98,7 @@ class AIUsageTrackingService
                 COUNT(*) as total_requests,
                 SUM(CASE WHEN response_cached = true THEN 1 ELSE 0 END) as cached_requests,
                 SUM(total_tokens) as total_tokens,
-                SUM(estimated_cost_usd) as total_cost,
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd END) as total_cost,
                 AVG(latency_ms) as avg_latency_ms
             ")
             ->orderByDesc('total_requests')

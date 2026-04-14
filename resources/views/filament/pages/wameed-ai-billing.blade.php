@@ -17,29 +17,51 @@
 
     {{-- Overview Tab --}}
     @if ($activeTab === 'overview')
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Revenue</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Revenue (Billed)</p>
                     <p class="text-3xl font-bold text-success-600">${{ number_format($totalRevenue, 2) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Pending Revenue</p>
-                    <p class="text-3xl font-bold text-warning-600">${{ number_format($pendingRevenue, 2) }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Raw Cost (OpenAI)</p>
+                    <p class="text-3xl font-bold text-warning-600">${{ number_format($totalRawCost, 2) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">This Month</p>
-                    <p class="text-3xl font-bold text-primary-600">${{ number_format($currentMonthRevenue, 2) }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Platform Margin</p>
+                    <p class="text-3xl font-bold text-primary-600">${{ number_format($totalMargin, 2) }}</p>
+                </div>
+            </x-filament::section>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 mt-4">
+            <x-filament::section>
+                <div class="text-center">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Pending Revenue</p>
+                    <p class="text-2xl font-bold text-warning-600">${{ number_format($pendingRevenue, 2) }}</p>
+                </div>
+            </x-filament::section>
+            <x-filament::section>
+                <div class="text-center">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">This Month (Billed)</p>
+                    <p class="text-2xl font-bold text-primary-600">${{ number_format($currentMonthRevenue, 2) }}</p>
+                    <p class="text-xs text-gray-400">Raw: ${{ number_format($currentMonthRawCost, 2) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
                     <p class="text-sm text-gray-500 dark:text-gray-400">AI-Enabled Stores</p>
-                    <p class="text-3xl font-bold text-info-600">{{ $enabledStores }}/{{ $totalStores }}</p>
+                    <p class="text-2xl font-bold text-info-600">{{ $enabledStores }}/{{ $totalStores }}</p>
+                </div>
+            </x-filament::section>
+            <x-filament::section>
+                <div class="text-center">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Overdue</p>
+                    <p class="text-2xl font-bold text-danger-600">{{ number_format($overdueInvoices) }}</p>
                 </div>
             </x-filament::section>
         </div>
@@ -83,7 +105,10 @@
                             <th class="px-3 py-2 text-start font-medium text-gray-500">Store</th>
                             <th class="px-3 py-2 text-start font-medium text-gray-500">Period</th>
                             <th class="px-3 py-2 text-end font-medium text-gray-500">Requests</th>
-                            <th class="px-3 py-2 text-end font-medium text-gray-500">Amount</th>
+                            <th class="px-3 py-2 text-end font-medium text-gray-500">Raw Cost</th>
+                            <th class="px-3 py-2 text-end font-medium text-gray-500">Margin %</th>
+                            <th class="px-3 py-2 text-end font-medium text-gray-500">Margin $</th>
+                            <th class="px-3 py-2 text-end font-medium text-gray-500">Billed</th>
                             <th class="px-3 py-2 text-center font-medium text-gray-500">Status</th>
                             <th class="px-3 py-2 text-start font-medium text-gray-500">Due Date</th>
                         </tr>
@@ -95,6 +120,9 @@
                                 <td class="px-3 py-2">{{ $invoice->store?->business_name ?? '—' }}</td>
                                 <td class="px-3 py-2">{{ $invoice->year }}-{{ str_pad($invoice->month, 2, '0', STR_PAD_LEFT) }}</td>
                                 <td class="px-3 py-2 text-end">{{ number_format($invoice->total_requests) }}</td>
+                                <td class="px-3 py-2 text-end font-mono text-xs text-gray-500">${{ number_format($invoice->raw_cost_usd, 4) }}</td>
+                                <td class="px-3 py-2 text-end font-mono text-xs">{{ number_format($invoice->margin_percentage, 1) }}%</td>
+                                <td class="px-3 py-2 text-end font-mono text-xs text-success-600">${{ number_format($invoice->margin_amount_usd, 4) }}</td>
                                 <td class="px-3 py-2 text-end font-medium">${{ number_format($invoice->billed_amount_usd, 4) }}</td>
                                 <td class="px-3 py-2 text-center">
                                     <span @class([
@@ -108,7 +136,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="px-3 py-8 text-center text-gray-400">No invoices yet</td>
+                                <td colspan="10" class="px-3 py-8 text-center text-gray-400">No invoices yet</td>
                             </tr>
                         @endforelse
                     </tbody>

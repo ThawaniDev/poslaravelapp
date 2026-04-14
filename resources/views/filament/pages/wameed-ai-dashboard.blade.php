@@ -11,9 +11,17 @@
 
         <x-filament::section>
             <div class="text-center">
-                <p class="text-sm text-gray-500 dark:text-gray-400">Today's Cost</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Today's Raw Cost</p>
                 <p class="text-3xl font-bold text-warning-600">${{ $todayCost }}</p>
                 <p class="text-xs text-gray-400">Total: ${{ $totalCost }}</p>
+            </div>
+        </x-filament::section>
+
+        <x-filament::section>
+            <div class="text-center">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Today's Billed</p>
+                <p class="text-3xl font-bold text-success-600">${{ $todayBilledCost }}</p>
+                <p class="text-xs text-gray-400">Total: ${{ $totalBilledCost }}</p>
             </div>
         </x-filament::section>
 
@@ -33,7 +41,17 @@
     </div>
 
     {{-- Secondary Stats --}}
-    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-5">
+        <x-filament::section>
+            <div class="text-center">
+                <p class="text-sm text-gray-500 dark:text-gray-400">Platform Margin</p>
+                <p class="text-2xl font-bold text-success-600">
+                    ${{ $totalRequests > 0 ? number_format((float) str_replace(',', '', $totalBilledCost) - (float) str_replace(',', '', $totalCost), 4) : '0.0000' }}
+                </p>
+                <p class="text-xs text-gray-400">Billed - Raw</p>
+            </div>
+        </x-filament::section>
+
         <x-filament::section>
             <div class="text-center">
                 <p class="text-sm text-gray-500 dark:text-gray-400">Features</p>
@@ -78,7 +96,8 @@
                             <tr class="border-b dark:border-gray-700">
                                 <th class="pb-2 text-left font-medium text-gray-500 dark:text-gray-400">Feature</th>
                                 <th class="pb-2 text-right font-medium text-gray-500 dark:text-gray-400">Requests</th>
-                                <th class="pb-2 text-right font-medium text-gray-500 dark:text-gray-400">Cost</th>
+                                <th class="pb-2 text-right font-medium text-gray-500 dark:text-gray-400">Raw Cost</th>
+                                <th class="pb-2 text-right font-medium text-gray-500 dark:text-gray-400">Billed</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -91,6 +110,7 @@
                                     </td>
                                     <td class="py-2 text-right font-mono">{{ number_format($feature->total_requests) }}</td>
                                     <td class="py-2 text-right font-mono">${{ number_format($feature->total_cost, 4) }}</td>
+                                    <td class="py-2 text-right font-mono font-bold">${{ number_format($feature->total_billed_cost ?? $feature->total_cost, 4) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -119,6 +139,7 @@
                             </div>
                             <span class="w-16 text-right text-xs font-mono text-gray-600 dark:text-gray-300">{{ number_format($day->requests) }}</span>
                             <span class="w-20 text-right text-xs font-mono text-gray-400">${{ number_format($day->cost, 2) }}</span>
+                            <span class="w-20 text-right text-xs font-mono text-success-600">${{ number_format($day->billed_cost ?? $day->cost, 2) }}</span>
                         </div>
                     @endforeach
                 </div>
