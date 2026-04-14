@@ -37,7 +37,7 @@ class WameedAIChats extends Page
 
     public function getTitle(): string
     {
-        return 'AI Chat Analytics';
+        return __('ai.ai_chat_analytics_title');
     }
 
     public static function canAccess(): bool

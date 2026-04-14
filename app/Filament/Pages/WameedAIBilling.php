@@ -54,7 +54,7 @@ class WameedAIBilling extends Page
 
     public function getTitle(): string
     {
-        return 'AI Billing';
+        return __('ai.ai_billing_title');
     }
 
     public static function canAccess(): bool

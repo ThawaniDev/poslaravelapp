@@ -1,7 +1,7 @@
 <x-filament-panels::page>
     {{-- Tab Navigation --}}
     <div class="flex gap-2 border-b border-gray-200 dark:border-gray-700 mb-4">
-        @foreach (['overview' => 'Overview', 'invoices' => 'Invoices', 'stores' => 'Store Configs', 'settings' => 'Settings'] as $tab => $label)
+        @foreach (['overview' => __(\'ai.overview\'), 'invoices' => __(\'ai.invoices\'), 'stores' => __(\'ai.store_configs\'), 'settings' => __(\'ai.settings\')] as $tab => $label)
             <button
                 wire:click="setTab('{{ $tab }}')"
                 @class([
@@ -20,19 +20,19 @@
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Revenue (Billed)</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.total_revenue_billed') }}</p>
                     <p class="text-3xl font-bold text-success-600">${{ number_format($totalRevenue, 2) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Raw Cost (OpenAI)</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.raw_cost_openai') }}</p>
                     <p class="text-3xl font-bold text-warning-600">${{ number_format($totalRawCost, 2) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Platform Margin</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.platform_margin') }}</p>
                     <p class="text-3xl font-bold text-primary-600">${{ number_format($totalMargin, 2) }}</p>
                 </div>
             </x-filament::section>
@@ -41,20 +41,20 @@
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 mt-4">
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Pending Revenue</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.pending_revenue') }}</p>
                     <p class="text-2xl font-bold text-warning-600">${{ number_format($pendingRevenue, 2) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">This Month (Billed)</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.this_month_billed') }}</p>
                     <p class="text-2xl font-bold text-primary-600">${{ number_format($currentMonthRevenue, 2) }}</p>
-                    <p class="text-xs text-gray-400">Raw: ${{ number_format($currentMonthRawCost, 2) }}</p>
+                    <p class="text-xs text-gray-400">{{ __('ai.raw_label') }}\${{ number_format($currentMonthRawCost, 2) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">AI-Enabled Stores</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.ai_enabled_stores') }}</p>
                     <p class="text-2xl font-bold text-info-600">{{ $enabledStores }}/{{ $totalStores }}</p>
                 </div>
             </x-filament::section>
@@ -69,19 +69,19 @@
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 mt-4">
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Invoices</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.total_invoices') }}</p>
                     <p class="text-2xl font-bold">{{ number_format($totalInvoices) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Paid</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.paid') }}</p>
                     <p class="text-2xl font-bold text-success-600">{{ number_format($paidInvoices) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Pending</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.pending') }}</p>
                     <p class="text-2xl font-bold text-warning-600">{{ number_format($pendingInvoices) }}</p>
                 </div>
             </x-filament::section>
@@ -96,7 +96,7 @@
         @if ($canManage)
             <div class="mt-4">
                 <x-filament::button wire:click="generateInvoices" color="primary" icon="heroicon-o-document-plus">
-                    Generate Last Month Invoices
+                    {{ __('ai.generate_last_month_invoices') }}
                 </x-filament::button>
             </div>
         @endif
@@ -109,18 +109,18 @@
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-gray-700">
-                            <th class="px-3 py-2 text-start font-medium text-gray-500">Invoice #</th>
-                            <th class="px-3 py-2 text-start font-medium text-gray-500">Store</th>
-                            <th class="px-3 py-2 text-start font-medium text-gray-500">Period</th>
+                            <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.invoice_number') }}</th>
+                            <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.store') }}</th>
+                            <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.period') }}</th>
                             <th class="px-3 py-2 text-end font-medium text-gray-500">Requests</th>
                             <th class="px-3 py-2 text-end font-medium text-gray-500">Raw Cost</th>
-                            <th class="px-3 py-2 text-end font-medium text-gray-500">Margin %</th>
-                            <th class="px-3 py-2 text-end font-medium text-gray-500">Margin $</th>
+                            <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.margin_percentage') }}</th>
+                            <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.margin_dollar') }}</th>
                             <th class="px-3 py-2 text-end font-medium text-gray-500">Billed</th>
-                            <th class="px-3 py-2 text-center font-medium text-gray-500">Status</th>
-                            <th class="px-3 py-2 text-start font-medium text-gray-500">Due Date</th>
+                            <th class="px-3 py-2 text-center font-medium text-gray-500">{{ __('ai.status') }}</th>
+                            <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.due_date') }}</th>
                             @if ($canManage)
-                                <th class="px-3 py-2 text-center font-medium text-gray-500">Actions</th>
+                                <th class="px-3 py-2 text-center font-medium text-gray-500">{{ __('ai.actions') }}</th>
                             @endif
                         </tr>
                     </thead>
@@ -148,12 +148,12 @@
                                     <td class="px-3 py-2 text-center">
                                         @if ($invoice->status === 'pending')
                                             <div class="flex items-center justify-center gap-1">
-                                                <button wire:click="startMarkPaid('{{ $invoice->id }}')" class="text-xs text-success-600 hover:text-success-800 font-medium">Pay</button>
+                                                <button wire:click="startMarkPaid('{{ $invoice->id }}')" class="text-xs text-success-600 hover:text-success-800 font-medium">{{ __('ai.pay') }}</button>
                                                 <span class="text-gray-300">|</span>
-                                                <button wire:click="markInvoiceOverdue('{{ $invoice->id }}')" class="text-xs text-danger-600 hover:text-danger-800 font-medium">Overdue</button>
+                                                <button wire:click="markInvoiceOverdue('{{ $invoice->id }}')" class="text-xs text-danger-600 hover:text-danger-800 font-medium">{{ __('ai.overdue') }}</button>
                                             </div>
                                         @elseif ($invoice->status === 'overdue')
-                                            <button wire:click="startMarkPaid('{{ $invoice->id }}')" class="text-xs text-success-600 hover:text-success-800 font-medium">Mark Paid</button>
+                                            <button wire:click="startMarkPaid('{{ $invoice->id }}')" class="text-xs text-success-600 hover:text-success-800 font-medium">{{ __('ai.mark_paid') }}</button>
                                         @elseif ($invoice->status === 'paid')
                                             <span class="text-xs text-gray-400">{{ $invoice->paid_at?->format('M d') }}</span>
                                         @endif
@@ -167,22 +167,22 @@
                                     <td colspan="{{ $canManage ? 11 : 10 }}" class="px-3 py-3">
                                         <div class="flex items-end gap-3">
                                             <div class="flex-1">
-                                                <label class="text-xs font-medium text-gray-600">Payment Reference</label>
+                                                <label class="text-xs font-medium text-gray-600">{{ __('ai.payment_reference') }}</label>
                                                 <input wire:model="paymentReference" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="e.g. bank transfer #123">
                                             </div>
                                             <div class="flex-1">
-                                                <label class="text-xs font-medium text-gray-600">Notes</label>
-                                                <input wire:model="paymentNotes" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="Optional notes">
+                                                <label class="text-xs font-medium text-gray-600">{{ __('ai.notes') }}</label>
+                                                <input wire:model="paymentNotes" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="{{ __(\'ai.optional_notes\') }}">
                                             </div>
-                                            <x-filament::button wire:click="markInvoicePaid" size="sm" color="success">Confirm Paid</x-filament::button>
-                                            <x-filament::button wire:click="cancelMarkPaid" size="sm" color="gray">Cancel</x-filament::button>
+                                            <x-filament::button wire:click="markInvoicePaid" size="sm" color="success">{{ __('ai.confirm_paid') }}</x-filament::button>
+                                            <x-filament::button wire:click="cancelMarkPaid" size="sm" color="gray">{{ __('ai.cancel') }}</x-filament::button>
                                         </div>
                                     </td>
                                 </tr>
                             @endif
                         @empty
                             <tr>
-                                <td colspan="{{ $canManage ? 11 : 10 }}" class="px-3 py-8 text-center text-gray-400">No invoices yet</td>
+                                <td colspan="{{ $canManage ? 11 : 10 }}" class="px-3 py-8 text-center text-gray-400">{{ __('ai.no_invoices_yet') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -193,19 +193,19 @@
 
     {{-- Store Configs Tab --}}
     @if ($activeTab === 'stores')
-        <x-filament::section heading="Store AI Configurations">
+        <x-filament::section heading="{{ __('ai.store_ai_configurations') }}">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-gray-700">
-                            <th class="px-3 py-2 text-start font-medium text-gray-500">Store</th>
-                            <th class="px-3 py-2 text-center font-medium text-gray-500">AI Enabled</th>
-                            <th class="px-3 py-2 text-end font-medium text-gray-500">Monthly Limit</th>
-                            <th class="px-3 py-2 text-end font-medium text-gray-500">Custom Margin</th>
+                            <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.store') }}</th>
+                            <th class="px-3 py-2 text-center font-medium text-gray-500">{{ __('ai.ai_enabled') }}</th>
+                            <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.monthly_limit') }}</th>
+                            <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.custom_margin') }}</th>
                             <th class="px-3 py-2 text-start font-medium text-gray-500">Notes</th>
-                            <th class="px-3 py-2 text-start font-medium text-gray-500">Updated</th>
+                            <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.updated') }}</th>
                             @if ($canManage)
-                                <th class="px-3 py-2 text-center font-medium text-gray-500">Actions</th>
+                                <th class="px-3 py-2 text-center font-medium text-gray-500">{{ __('ai.actions') }}</th>
                             @endif
                         </tr>
                     </thead>
@@ -241,9 +241,9 @@
                                     <td class="px-3 py-2 font-medium">{{ $config->store?->name ?? $config->store_id }}</td>
                                     <td class="px-3 py-2 text-center">
                                         @if ($config->is_ai_enabled)
-                                            <span class="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">Enabled</span>
+                                            <span class="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">{{ __('ai.enabled') }}</span>
                                         @else
-                                            <span class="inline-flex items-center rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-500/10 dark:text-danger-400">Disabled</span>
+                                            <span class="inline-flex items-center rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-500/10 dark:text-danger-400">{{ __('ai.ai_disabled') }}</span>
                                         @endif
                                     </td>
                                     <td class="px-3 py-2 text-end">{{ $config->monthly_limit_usd > 0 ? '$'.number_format($config->monthly_limit_usd, 2) : 'No limit' }}</td>
@@ -253,7 +253,7 @@
                                     @if ($canManage)
                                         <td class="px-3 py-2 text-center">
                                             <div class="flex items-center justify-center gap-1">
-                                                <button wire:click="editStoreConfig('{{ $config->id }}')" class="text-xs text-primary-600 hover:text-primary-800 font-medium">Edit</button>
+                                                <button wire:click="editStoreConfig('{{ $config->id }}')" class="text-xs text-primary-600 hover:text-primary-800 font-medium">{{ __('ai.edit') }}</button>
                                                 <span class="text-gray-300">|</span>
                                                 <button wire:click="toggleStoreAI('{{ $config->id }}')" class="text-xs {{ $config->is_ai_enabled ? 'text-danger-600 hover:text-danger-800' : 'text-success-600 hover:text-success-800' }} font-medium">
                                                     {{ $config->is_ai_enabled ? 'Disable' : 'Enable' }}
@@ -265,7 +265,7 @@
                             @endif
                         @empty
                             <tr>
-                                <td colspan="{{ $canManage ? 7 : 6 }}" class="px-3 py-8 text-center text-gray-400">No store configurations yet</td>
+                                <td colspan="{{ $canManage ? 7 : 6 }}" class="px-3 py-8 text-center text-gray-400">{{ __('ai.no_store_configs') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -276,16 +276,16 @@
 
     {{-- Settings Tab --}}
     @if ($activeTab === 'settings')
-        <x-filament::section heading="Billing Settings">
+        <x-filament::section heading="{{ __('ai.billing_settings') }}">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-gray-700">
-                            <th class="px-3 py-2 text-start font-medium text-gray-500">Key</th>
-                            <th class="px-3 py-2 text-start font-medium text-gray-500">Value</th>
-                            <th class="px-3 py-2 text-start font-medium text-gray-500">Description</th>
+                            <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.key') }}</th>
+                            <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.value') }}</th>
+                            <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.description') }}</th>
                             @if ($canManage)
-                                <th class="px-3 py-2 text-center font-medium text-gray-500">Actions</th>
+                                <th class="px-3 py-2 text-center font-medium text-gray-500">{{ __('ai.actions') }}</th>
                             @endif
                         </tr>
                     </thead>
@@ -304,16 +304,16 @@
                                 @if ($canManage)
                                     <td class="px-3 py-2 text-center">
                                         <div class="flex items-center justify-center gap-1">
-                                            <button wire:click="saveSetting('{{ $key }}')" class="text-xs text-primary-600 hover:text-primary-800 font-medium">Save</button>
+                                            <button wire:click="saveSetting('{{ $key }}')" class="text-xs text-primary-600 hover:text-primary-800 font-medium">{{ __('ai.save') }}</button>
                                             <span class="text-gray-300">|</span>
-                                            <button wire:click="deleteSetting('{{ $key }}')" wire:confirm="Delete setting '{{ $key }}'?" class="text-xs text-danger-600 hover:text-danger-800 font-medium">Delete</button>
+                                            <button wire:click="deleteSetting('{{ $key }}')" wire:confirm="Delete setting '{{ $key }}'?" class="text-xs text-danger-600 hover:text-danger-800 font-medium">{{ __('ai.delete') }}</button>
                                         </div>
                                     </td>
                                 @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ $canManage ? 4 : 3 }}" class="px-3 py-8 text-center text-gray-400">No settings configured</td>
+                                <td colspan="{{ $canManage ? 4 : 3 }}" class="px-3 py-8 text-center text-gray-400">{{ __('ai.no_settings_configured') }}</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -322,7 +322,7 @@
 
             @if ($canManage)
                 <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Add New Setting</p>
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">{{ __('ai.add_new_setting') }}</p>
                     <div class="flex items-end gap-3">
                         <div class="flex-1">
                             <label class="text-xs font-medium text-gray-600">Key</label>

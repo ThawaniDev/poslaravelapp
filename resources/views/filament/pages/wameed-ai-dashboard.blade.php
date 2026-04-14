@@ -3,7 +3,7 @@
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <x-filament::section>
             <div class="text-center">
-                <p class="text-sm text-gray-500 dark:text-gray-400">Today's Requests</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.todays_requests') }}</p>
                 <p class="text-3xl font-bold text-primary-600">{{ number_format($todayRequests) }}</p>
                 <p class="text-xs text-gray-400">Total: {{ number_format($totalRequests) }}</p>
             </div>
@@ -11,7 +11,7 @@
 
         <x-filament::section>
             <div class="text-center">
-                <p class="text-sm text-gray-500 dark:text-gray-400">Today's Raw Cost</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.todays_raw_cost') }}</p>
                 <p class="text-3xl font-bold text-warning-600">${{ $todayCost }}</p>
                 <p class="text-xs text-gray-400">Total: ${{ $totalCost }}</p>
             </div>
@@ -19,7 +19,7 @@
 
         <x-filament::section>
             <div class="text-center">
-                <p class="text-sm text-gray-500 dark:text-gray-400">Today's Billed</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.todays_billed') }}</p>
                 <p class="text-3xl font-bold text-success-600">${{ $todayBilledCost }}</p>
                 <p class="text-xs text-gray-400">Total: ${{ $totalBilledCost }}</p>
             </div>
@@ -27,14 +27,14 @@
 
         <x-filament::section>
             <div class="text-center">
-                <p class="text-sm text-gray-500 dark:text-gray-400">Avg Latency</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.avg_latency') }}</p>
                 <p class="text-3xl font-bold {{ $avgLatency > 5000 ? 'text-danger-600' : 'text-success-600' }}">{{ number_format($avgLatency) }}ms</p>
             </div>
         </x-filament::section>
 
         <x-filament::section>
             <div class="text-center">
-                <p class="text-sm text-gray-500 dark:text-gray-400">Cache Hit Rate</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.cache_hit_rate') }}</p>
                 <p class="text-3xl font-bold text-info-600">{{ $cacheHitRate }}%</p>
             </div>
         </x-filament::section>
@@ -44,39 +44,39 @@
     <div class="grid grid-cols-2 gap-4 sm:grid-cols-5">
         <x-filament::section>
             <div class="text-center">
-                <p class="text-sm text-gray-500 dark:text-gray-400">Platform Margin</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.platform_margin') }}</p>
                 <p class="text-2xl font-bold text-success-600">
                     ${{ $totalRequests > 0 ? number_format((float) str_replace(',', '', $totalBilledCost) - (float) str_replace(',', '', $totalCost), 4) : '0.0000' }}
                 </p>
-                <p class="text-xs text-gray-400">Billed - Raw</p>
+                <p class="text-xs text-gray-400">{{ __('ai.billed_raw') }}</p>
             </div>
         </x-filament::section>
 
         <x-filament::section>
             <div class="text-center">
-                <p class="text-sm text-gray-500 dark:text-gray-400">Features</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.features') }}</p>
                 <p class="text-2xl font-bold text-primary-600">{{ $enabledFeatures }}/{{ $totalFeatures }}</p>
-                <p class="text-xs text-gray-400">Enabled</p>
+                <p class="text-xs text-gray-400">{{ __('ai.enabled') }}</p>
             </div>
         </x-filament::section>
 
         <x-filament::section>
             <div class="text-center">
-                <p class="text-sm text-gray-500 dark:text-gray-400">Active Stores (30d)</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.active_stores_30d') }}</p>
                 <p class="text-2xl font-bold text-success-600">{{ number_format($activeStores) }}</p>
             </div>
         </x-filament::section>
 
         <x-filament::section>
             <div class="text-center">
-                <p class="text-sm text-gray-500 dark:text-gray-400">Error Rate (7d)</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.error_rate_7d') }}</p>
                 <p class="text-2xl font-bold {{ $errorRate > 5 ? 'text-danger-600' : 'text-success-600' }}">{{ $errorRate }}%</p>
             </div>
         </x-filament::section>
 
         <x-filament::section>
             <div class="text-center">
-                <p class="text-sm text-gray-500 dark:text-gray-400">Avg Cost/Request</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.avg_cost_per_request') }}</p>
                 <p class="text-2xl font-bold text-gray-600 dark:text-gray-300">
                     ${{ $totalRequests > 0 ? number_format((float) str_replace(',', '', $totalCost) / $totalRequests, 4) : '0.0000' }}
                 </p>
@@ -86,18 +86,18 @@
 
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {{-- Top Features --}}
-        <x-filament::section heading="Top Features (Last 30 Days)">
+        <x-filament::section heading="{{ __('ai.top_features_30d') }}">
             @if($topFeatures->isEmpty())
-                <p class="text-sm text-gray-400">No usage data yet.</p>
+                <p class="text-sm text-gray-400">{{ __('ai.no_usage_data') }}</p>
             @else
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="border-b dark:border-gray-700">
-                                <th class="pb-2 text-left font-medium text-gray-500 dark:text-gray-400">Feature</th>
-                                <th class="pb-2 text-right font-medium text-gray-500 dark:text-gray-400">Requests</th>
-                                <th class="pb-2 text-right font-medium text-gray-500 dark:text-gray-400">Raw Cost</th>
-                                <th class="pb-2 text-right font-medium text-gray-500 dark:text-gray-400">Billed</th>
+                                <th class="pb-2 text-left font-medium text-gray-500 dark:text-gray-400">{{ __('ai.feature') }}</th>
+                                <th class="pb-2 text-right font-medium text-gray-500 dark:text-gray-400">{{ __('ai.requests') }}</th>
+                                <th class="pb-2 text-right font-medium text-gray-500 dark:text-gray-400">{{ __('ai.raw_cost') }}</th>
+                                <th class="pb-2 text-right font-medium text-gray-500 dark:text-gray-400">{{ __('ai.billed') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -120,9 +120,9 @@
         </x-filament::section>
 
         {{-- Daily Trend --}}
-        <x-filament::section heading="Daily Trend (Last 14 Days)">
+        <x-filament::section heading="{{ __('ai.daily_trend_14d') }}">
             @if($dailyTrend->isEmpty())
-                <p class="text-sm text-gray-400">No usage data yet.</p>
+                <p class="text-sm text-gray-400">{{ __('ai.no_usage_data') }}</p>
             @else
                 <div class="space-y-2">
                     @foreach($dailyTrend as $day)

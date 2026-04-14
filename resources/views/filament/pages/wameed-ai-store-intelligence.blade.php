@@ -8,34 +8,34 @@
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-5">
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">AI-Active Stores</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.ai_active_stores') }}</p>
                     <p class="text-3xl font-bold text-primary-600">{{ number_format($platformTotals['total_stores']) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Requests</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.total_requests') }}</p>
                     <p class="text-3xl font-bold text-info-600">{{ number_format($platformTotals['total_requests']) }}</p>
                     <p class="text-xs text-gray-400">Last {{ $dateRange }}d: {{ number_format($platformTotals['recent_requests']) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Raw Cost</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.total_raw_cost') }}</p>
                     <p class="text-3xl font-bold text-warning-600">${{ number_format($platformTotals['total_raw_cost'], 4) }}</p>
                     <p class="text-xs text-gray-400">Last {{ $dateRange }}d: ${{ number_format($platformTotals['recent_raw_cost'], 4) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Total Billed</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.total_billed') }}</p>
                     <p class="text-3xl font-bold text-success-600">${{ number_format($platformTotals['total_billed_cost'], 4) }}</p>
                     <p class="text-xs text-gray-400">Last {{ $dateRange }}d: ${{ number_format($platformTotals['recent_billed_cost'], 4) }}</p>
                 </div>
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Platform Margin</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.platform_margin') }}</p>
                     <p class="text-3xl font-bold text-success-600">${{ number_format($platformTotals['total_margin'], 4) }}</p>
                     <p class="text-xs text-gray-400">{{ number_format($platformTotals['total_chats']) }} chats · {{ number_format($platformTotals['total_errors']) }} errors</p>
                 </div>
@@ -49,26 +49,26 @@
                     type="text"
                     wire:model.live.debounce.300ms="searchQuery"
                     class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm"
-                    placeholder="Search stores by name, Arabic name, or slug..."
+                    placeholder="{{ __('ai.search_stores') }}"
                 />
             </div>
             <select wire:model.live="dateRange" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm">
-                <option value="7">Last 7 days</option>
-                <option value="14">Last 14 days</option>
-                <option value="30">Last 30 days</option>
-                <option value="60">Last 60 days</option>
-                <option value="90">Last 90 days</option>
-                <option value="365">Last year</option>
+                <option value="7">{{ __('ai.last_7_days') }}</option>
+                <option value="14">{{ __('ai.last_14_days') }}</option>
+                <option value="30">{{ __('ai.last_30_days') }}</option>
+                <option value="60">{{ __('ai.last_60_days') }}</option>
+                <option value="90">{{ __('ai.last_90_days') }}</option>
+                <option value="365">{{ __('ai.last_year') }}</option>
             </select>
         </div>
 
         {{-- Store Table --}}
-        <x-filament::section heading="Stores with AI Activity" class="mt-4">
+        <x-filament::section heading="{{ __('ai.stores_with_ai_activity') }}" class="mt-4">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-gray-200 dark:border-gray-700">
-                            <th class="px-3 py-2 text-start font-medium text-gray-500">Store</th>
+                            <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.store') }}</th>
                             <th class="px-3 py-2 text-end font-medium text-gray-500">Requests ({{ $dateRange }}d)</th>
                             <th class="px-3 py-2 text-end font-medium text-gray-500">All-Time Requests</th>
                             <th class="px-3 py-2 text-end font-medium text-gray-500">Raw Cost</th>
@@ -109,31 +109,9 @@
                                     {{ $store->last_ai_activity ? \Carbon\Carbon::parse($store->last_ai_activity)->diffForHumans() : 'Never' }}
                                 </td>
                                 <td class="px-3 py-2 text-center">
-                                    <button wire:click.stop="selectStore('{{ $store->id }}')" class="text-xs text-primary-600 hover:text-primary-800 font-medium">
-                                        View →
-                                    </button>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="11" class="px-3 py-8 text-center text-gray-400">No stores with AI activity found</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-        </x-filament::section>
-
-    @else
-    {{-- ═══════════════════════════════════════════════════════════ --}}
-    {{-- STORE DETAIL VIEW --}}
-    {{-- ═══════════════════════════════════════════════════════════ --}}
-
-        {{-- Back Button & Store Header --}}
-        <div class="flex items-center gap-3 mb-4">
-            <button wire:click="clearStore" class="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition">
+                                    <button wire:click="clearStore" class="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition">
                 <x-heroicon-o-arrow-left class="w-4 h-4" />
-                Back to Stores
+                {{ __('ai.back_to_stores') }}
             </button>
             <span class="text-gray-300 dark:text-gray-600">|</span>
             <h2 class="text-lg font-bold text-gray-900 dark:text-white">{{ $detail['store']->name }}</h2>
@@ -142,26 +120,26 @@
             @endif
             @if ($detail['billingConfig'])
                 @if ($detail['billingConfig']->is_ai_enabled)
-                    <span class="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">AI Enabled</span>
+                    <span class="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">{{ __('ai.ai_enabled') }}</span>
                 @else
-                    <span class="inline-flex items-center rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-500/10 dark:text-danger-400">AI Disabled</span>
+                    <span class="inline-flex items-center rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-500/10 dark:text-danger-400">{{ __('ai.ai_disabled') }}</span>
                 @endif
             @endif
             <div class="ms-auto">
                 <select wire:model.live="dateRange" class="rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm">
-                    <option value="7">Last 7 days</option>
-                    <option value="14">Last 14 days</option>
-                    <option value="30">Last 30 days</option>
-                    <option value="60">Last 60 days</option>
-                    <option value="90">Last 90 days</option>
-                    <option value="365">Last year</option>
+                    <option value="7">{{ __('ai.last_7_days') }}</option>
+                    <option value="14">{{ __('ai.last_14_days') }}</option>
+                    <option value="30">{{ __('ai.last_30_days') }}</option>
+                    <option value="60">{{ __('ai.last_60_days') }}</option>
+                    <option value="90">{{ __('ai.last_90_days') }}</option>
+                    <option value="365">{{ __('ai.last_year') }}</option>
                 </select>
             </div>
         </div>
 
         {{-- Tab Navigation --}}
         <div class="flex gap-2 border-b border-gray-200 dark:border-gray-700 mb-4">
-            @foreach (['overview' => 'Overview', 'features' => 'Features', 'billing' => 'Billing', 'trends' => 'Trends', 'chats' => 'Chats', 'logs' => 'Logs'] as $tab => $label)
+            @foreach (['overview' => __(\'ai.overview\'), 'features' => 'Features', 'billing' => 'Billing', 'trends' => 'Trends', 'chats' => 'Chats', 'logs' => 'Logs'] as $tab => $label)
                 <button
                     wire:click="setTab('{{ $tab }}')"
                     @class([
@@ -181,7 +159,7 @@
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Requests</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.total_requests') }}</p>
                         <p class="text-3xl font-bold text-primary-600">{{ number_format($detail['totalRequests']) }}</p>
                         <p class="text-xs text-gray-400">Today: {{ number_format($detail['todayRequests']) }} · Last {{ $dateRange }}d: {{ number_format($detail['recentRequests']) }}</p>
                     </div>
@@ -202,7 +180,7 @@
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Platform Margin</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.platform_margin') }}</p>
                         <p class="text-3xl font-bold text-success-600">${{ number_format($detail['totalMargin'], 4) }}</p>
                         @php $marginPct = $detail['totalRawCost'] > 0 ? round($detail['totalMargin'] / $detail['totalRawCost'] * 100, 1) : 0; @endphp
                         <p class="text-xs text-gray-400">{{ $marginPct }}% markup</p>
@@ -220,13 +198,13 @@
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Avg Latency</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.avg_latency') }}</p>
                         <p class="text-2xl font-bold {{ $detail['avgLatency'] > 5000 ? 'text-danger-600' : 'text-success-600' }}">{{ number_format($detail['avgLatency']) }}ms</p>
                     </div>
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Cache Hit Rate</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.cache_hit_rate') }}</p>
                         <p class="text-2xl font-bold text-info-600">{{ $detail['cacheHitRate'] }}%</p>
                     </div>
                 </x-filament::section>
@@ -299,9 +277,9 @@
                                 <span class="text-gray-500 dark:text-gray-400">AI Status</span>
                                 <p>
                                     @if ($bc->is_ai_enabled)
-                                        <span class="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">Enabled</span>
+                                        <span class="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">{{ __('ai.enabled') }}</span>
                                     @else
-                                        <span class="inline-flex items-center rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-500/10 dark:text-danger-400">Disabled</span>
+                                        <span class="inline-flex items-center rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-500/10 dark:text-danger-400">{{ __('ai.ai_disabled') }}</span>
                                     @endif
                                 </p>
                             </div>
@@ -471,7 +449,7 @@
                                     <th class="px-3 py-2 text-start font-medium text-gray-500">Feature</th>
                                     <th class="px-3 py-2 text-center font-medium text-gray-500">Enabled</th>
                                     <th class="px-3 py-2 text-end font-medium text-gray-500">Daily Limit</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Monthly Limit</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.monthly_limit') }}</th>
                                     <th class="px-3 py-2 text-start font-medium text-gray-500">Custom Prompt</th>
                                 </tr>
                             </thead>
@@ -516,7 +494,7 @@
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Pending</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.pending') }}</p>
                         <p class="text-3xl font-bold text-warning-600">${{ number_format($billing['totalPending'], 4) }}</p>
                     </div>
                 </x-filament::section>
@@ -597,16 +575,16 @@
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="border-b border-gray-200 dark:border-gray-700">
-                                    <th class="px-3 py-2 text-start font-medium text-gray-500">Invoice #</th>
-                                    <th class="px-3 py-2 text-start font-medium text-gray-500">Period</th>
+                                    <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.invoice_number') }}</th>
+                                    <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.period') }}</th>
                                     <th class="px-3 py-2 text-end font-medium text-gray-500">Requests</th>
                                     <th class="px-3 py-2 text-end font-medium text-gray-500">Tokens</th>
                                     <th class="px-3 py-2 text-end font-medium text-gray-500">Raw Cost</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Margin %</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Margin $</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.margin_percentage') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.margin_dollar') }}</th>
                                     <th class="px-3 py-2 text-end font-medium text-gray-500">Billed</th>
-                                    <th class="px-3 py-2 text-center font-medium text-gray-500">Status</th>
-                                    <th class="px-3 py-2 text-start font-medium text-gray-500">Due Date</th>
+                                    <th class="px-3 py-2 text-center font-medium text-gray-500">{{ __('ai.status') }}</th>
+                                    <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.due_date') }}</th>
                                     <th class="px-3 py-2 text-start font-medium text-gray-500">Paid At</th>
                                 </tr>
                             </thead>
@@ -864,13 +842,13 @@
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-5">
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Chats</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.total_chats') }}</p>
                         <p class="text-2xl font-bold text-primary-600">{{ number_format($chatData['chatStats']['totalChats']) }}</p>
                     </div>
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Messages</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.total_messages') }}</p>
                         <p class="text-2xl font-bold text-info-600">{{ number_format($chatData['chatStats']['totalMessages']) }}</p>
                     </div>
                 </x-filament::section>
@@ -896,7 +874,7 @@
 
             <div class="grid grid-cols-1 gap-4 mt-4 lg:grid-cols-2">
                 {{-- Chat List --}}
-                <x-filament::section heading="Chats">
+                <x-filament::section heading="{{ __('ai.chats') }}">
                     <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-[32rem] overflow-y-auto">
                         @forelse ($chatData['chats'] as $chat)
                             <button
@@ -911,7 +889,7 @@
                                     <span class="text-xs text-gray-400">{{ $chat->created_at->diffForHumans() }}</span>
                                 </div>
                                 <div class="flex items-center gap-2 mt-0.5">
-                                    <span class="text-xs text-gray-400">{{ $chat->messages_count }} msg{{ $chat->messages_count !== 1 ? 's' : '' }}</span>
+                                    <span class="text-xs text-gray-400">{{ $chat->messages_count }} msg{{ $chat->messages_count !== 1 ? __('ai.msgs') : __('ai.msg') }}</span>
                                     @if ($chat->total_tokens)
                                         <span class="text-xs text-gray-400">· {{ number_format($chat->total_tokens) }} tokens</span>
                                     @endif
@@ -947,18 +925,18 @@
                                     'bg-warning-50 dark:bg-warning-500/10 text-xs italic' => $msg->role === 'system',
                                 ])>
                                     <div class="flex items-center justify-between mb-1">
-                                        <span class="text-xs font-medium text-gray-500">{{ ucfirst($msg->role) }}</span>
+                                        <span class="text-xs font-medium text-gray-500">{{ __('ai.' . $msg->role) }}</span>
                                         <span class="text-xs text-gray-400">{{ $msg->created_at->format('H:i:s') }}</span>
                                     </div>
                                     <div class="prose prose-sm dark:prose-invert max-w-none">{!! nl2br(e($msg->content)) !!}</div>
                                     @if ($msg->input_tokens || $msg->output_tokens)
-                                        <p class="text-xs text-gray-400 mt-1">{{ number_format(($msg->input_tokens ?? 0) + ($msg->output_tokens ?? 0)) }} tokens</p>
+                                        <p class="text-xs text-gray-400 mt-1">{{ number_format(($msg->input_tokens ?? 0) + ($msg->output_tokens ?? 0)) }} {{ __('ai.tokens') }}</p>
                                     @endif
                                 </div>
                             @endforeach
                         </div>
                     @else
-                        <p class="text-center text-sm text-gray-400 py-12">Select a chat from the list to view messages</p>
+                        <p class="text-center text-sm text-gray-400 py-12">{{ __('ai.select_chat_list') }}</p>
                     @endif
                 </x-filament::section>
             </div>
@@ -979,7 +957,7 @@
                                 <th class="px-3 py-2 text-end font-medium text-gray-500">Raw Cost</th>
                                 <th class="px-3 py-2 text-end font-medium text-gray-500">Billed</th>
                                 <th class="px-3 py-2 text-end font-medium text-gray-500">Latency</th>
-                                <th class="px-3 py-2 text-center font-medium text-gray-500">Status</th>
+                                <th class="px-3 py-2 text-center font-medium text-gray-500">{{ __('ai.status') }}</th>
                                 <th class="px-3 py-2 text-center font-medium text-gray-500">Cached</th>
                             </tr>
                         </thead>

@@ -33,7 +33,7 @@ class WameedAIDashboard extends Page
 
     public function getTitle(): string
     {
-        return 'Wameed AI Dashboard';
+        return __('ai.wameed_ai_dashboard_title');
     }
 
     public static function canAccess(): bool
