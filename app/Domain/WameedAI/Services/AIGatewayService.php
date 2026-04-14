@@ -169,22 +169,48 @@ class AIGatewayService
 
             $response = $this->callLlm($llmModel, $messages, $prompt);
             if (!$response) {
+                $this->logUsage($chat->store->organization_id ?? '', $chat->store_id, $chat->user_id, null, 'error', 0, 0, 0, 0, (int) ((microtime(true) - $startTime) * 1000), 'API call failed after retries');
                 return null;
             }
 
-            $cost = $this->estimateCost($llmModel, $response['input_tokens'], $response['output_tokens']);
+            $inputTokens = $response['input_tokens'];
+            $outputTokens = $response['output_tokens'];
+            $totalTokens = $inputTokens + $outputTokens;
+            $cost = $this->estimateCost($llmModel, $inputTokens, $outputTokens);
             $latencyMs = (int) ((microtime(true) - $startTime) * 1000);
+
+            // Log usage for chat calls
+            $feature = $featureSlug ? AIFeatureDefinition::where('slug', $featureSlug)->first() : null;
+            $this->logUsage(
+                $chat->store->organization_id ?? '',
+                $chat->store_id,
+                $chat->user_id,
+                $feature,
+                'success',
+                $inputTokens,
+                $outputTokens,
+                $totalTokens,
+                $cost,
+                $latencyMs,
+                null,
+                false,
+                null,
+                $messages,
+                $featureSlug ?? 'wameed_chat',
+                $llmModel->model_id,
+            );
 
             return [
                 'content' => $response['content'],
                 'model' => $response['model'] ?? $llmModel->model_id,
-                'input_tokens' => $response['input_tokens'],
-                'output_tokens' => $response['output_tokens'],
+                'input_tokens' => $inputTokens,
+                'output_tokens' => $outputTokens,
                 'cost' => $cost,
                 'latency_ms' => $latencyMs,
             ];
         } catch (\Throwable $e) {
             Log::error("WameedAI Chat Error: {$e->getMessage()}", ['chat_id' => $chat->id]);
+            $this->logUsage($chat->store->organization_id ?? '', $chat->store_id, $chat->user_id, null, 'error', 0, 0, 0, 0, (int) ((microtime(true) - $startTime) * 1000), $e->getMessage());
             return null;
         }
     }
@@ -567,6 +593,8 @@ class AIGatewayService
         bool $cached = false,
         ?string $payloadHash = null,
         ?array $requestMessages = null,
+        ?string $featureSlugOverride = null,
+        ?string $modelOverride = null,
     ): void {
         try {
             // Apply margin from settings to get billed cost
@@ -581,8 +609,8 @@ class AIGatewayService
                 'store_id' => $storeId,
                 'user_id' => $userId,
                 'ai_feature_definition_id' => $feature?->id,
-                'feature_slug' => $feature?->slug ?? 'unknown',
-                'model_used' => $feature?->default_model ?? 'gpt-4o-mini',
+                'feature_slug' => $featureSlugOverride ?? $feature?->slug ?? 'unknown',
+                'model_used' => $modelOverride ?? $feature?->default_model ?? 'gpt-4o-mini',
                 'input_tokens' => $inputTokens,
                 'output_tokens' => $outputTokens,
                 'total_tokens' => $totalTokens,
