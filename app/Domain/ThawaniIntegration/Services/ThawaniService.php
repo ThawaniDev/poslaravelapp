@@ -778,7 +778,7 @@ class ThawaniService
         $query = ThawaniOrderMapping::where('store_id', $storeId);
 
         if (!empty($filters['status'])) {
-            $query->where('thawani_order_status', $filters['status']);
+            $query->where('status', $filters['status']);
         }
 
         return $query->orderByDesc('created_at')
@@ -808,7 +808,7 @@ class ThawaniService
             'total_products_mapped' => ThawaniProductMapping::where('store_id', $storeId)->count(),
             'total_categories_mapped' => ThawaniCategoryMapping::where('store_id', $storeId)->count(),
             'total_settlements' => (clone $settlements)->count(),
-            'pending_orders' => (clone $orders)->where('thawani_order_status', 'pending')->count(),
+            'pending_orders' => (clone $orders)->where('status', 'pending')->count(),
             'pending_sync_items' => ThawaniSyncQueue::pending()->forStore($storeId)->count(),
             'sync_logs_today' => ThawaniSyncLog::where('store_id', $storeId)
                 ->whereDate('created_at', today())->count(),

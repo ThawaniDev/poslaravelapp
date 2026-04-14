@@ -33,7 +33,7 @@ class ThawaniSyncLogs extends Page
     public static function canAccess(): bool
     {
         $user = auth('admin')->user();
-        return $user && $user->hasAnyPermission(['integrations.view', 'integrations.manage']);
+        return $user && $user->hasAnyPermission(['thawani.view_sync_logs', 'thawani.view_dashboard', 'integrations.view', 'integrations.manage']);
     }
 
     public ?string $selectedStore = null;
