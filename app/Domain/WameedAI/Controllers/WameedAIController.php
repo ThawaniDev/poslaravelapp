@@ -247,7 +247,8 @@ class WameedAIController extends BaseApiController
     public function billingSummary(Request $request): JsonResponse
     {
         $storeId = $request->header('X-Store-Id');
-        $organizationId = $request->header('X-Organization-Id');
+        $organizationId = $request->header('X-Organization-Id')
+            ?? \App\Domain\Core\Models\Store::where('id', $storeId)->value('organization_id');
 
         return $this->success($this->billingService->getStoreBillingSummary($storeId, $organizationId));
     }
