@@ -39,8 +39,8 @@
         x-transition:leave-start="opacity-100 scale-100 translate-y-0"
         x-transition:leave-end="opacity-0 scale-95 translate-y-2"
         x-on:keydown.escape.window="open = false; $wire.close()"
-        class="fixed inset-x-4 top-16 z-50 mx-auto overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 sm:inset-x-auto sm:start-auto sm:end-auto"
-        style="display:none; max-width:180rem; width:180rem"
+        class="fixed inset-x-4 top-16 z-50 mx-auto max-w-6xl overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900"
+        style="display:none"
     >
         {{-- Header --}}
         <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3 dark:border-gray-700">
