@@ -189,6 +189,15 @@ class ThawaniService
             }
         }
 
+        $this->logSync(
+            $storeId, 'category', null, 'push_batch', 'outgoing',
+            $result['success'] ? 'success' : 'failed',
+            null,
+            ['count' => count($mappedCategories)],
+            $result['success'] ? null : ($result['message'] ?? 'Push categories failed'),
+            $result['http_status'] ?? null,
+        );
+
         return $result;
     }
 

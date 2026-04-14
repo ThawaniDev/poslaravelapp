@@ -66,7 +66,7 @@ class ThawaniSyncLogs extends Page
             $query->whereDate('created_at', '<=', $this->filterDateTo);
         }
 
-        $stores = ThawaniStoreConfig::where('is_connected', true)->get();
+        $stores = ThawaniStoreConfig::where('is_connected', true)->with('store')->get();
 
         return [
             'logs' => $query->paginate(25),

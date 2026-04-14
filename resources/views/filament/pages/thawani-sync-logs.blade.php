@@ -36,7 +36,7 @@
                 <select wire:model.live="selectedStore" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                     <option value="">{{ __('thawani.all_stores') }}</option>
                     @foreach($stores as $store)
-                        <option value="{{ $store->store_id }}">{{ $store->store_name ?? $store->store_id }}</option>
+                        <option value="{{ $store->store_id }}">{{ $store->store?->name ?? $store->thawani_store_id ?? $store->store_id }}</option>
                     @endforeach
                 </select>
             </div>
@@ -62,8 +62,8 @@
                 <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('thawani.direction') }}</label>
                 <select wire:model.live="filterDirection" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                     <option value="">{{ __('thawani.all') }}</option>
-                    <option value="push">{{ __('thawani.push') }}</option>
-                    <option value="pull">{{ __('thawani.pull') }}</option>
+                    <option value="outgoing">{{ __('thawani.outgoing') }} (↑ Push)</option>
+                    <option value="incoming">{{ __('thawani.incoming') }} (↓ Pull)</option>
                 </select>
             </div>
             <div>
@@ -112,10 +112,10 @@
                             <td class="py-2 px-3 font-mono text-xs">{{ Str::limit($log->entity_id, 12) }}</td>
                             <td class="py-2 px-3 text-center text-xs">{{ $log->action }}</td>
                             <td class="py-2 px-3 text-center">
-                                @if($log->direction === 'push')
-                                    <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600 dark:bg-blue-400/10 dark:text-blue-400">↑ {{ __('thawani.push') }}</span>
+                                @if($log->direction === 'outgoing')
+                                    <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-600 dark:bg-blue-400/10 dark:text-blue-400">↑ {{ __('thawani.outgoing') }}</span>
                                 @else
-                                    <span class="inline-flex items-center rounded-full bg-purple-50 px-2 py-1 text-xs font-medium text-purple-600 dark:bg-purple-400/10 dark:text-purple-400">↓ {{ __('thawani.pull') }}</span>
+                                    <span class="inline-flex items-center rounded-full bg-purple-50 px-2 py-1 text-xs font-medium text-purple-600 dark:bg-purple-400/10 dark:text-purple-400">↓ {{ __('thawani.incoming') }}</span>
                                 @endif
                             </td>
                             <td class="py-2 px-3 text-center">

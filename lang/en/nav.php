@@ -74,4 +74,5 @@ return [
     'ai_dashboard'                => 'AI Dashboard',
     'ai_billing'                  => 'AI Billing',
     'ai_chats'                    => 'AI Chats',
+    'ai_store_intelligence'       => 'Store AI Intelligence',
 ];
