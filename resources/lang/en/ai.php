@@ -148,4 +148,8 @@ return [
     'wameed_ai_dashboard_title' => 'Wameed AI Dashboard',
     'ai_billing_title' => 'AI Billing',
     'ai_chat_analytics_title' => 'AI Chat Analytics',
+    'billing' => 'Billing',
+    'trends' => 'Trends',
+    'logs' => 'Logs',
+    'view' => 'View',
 ];

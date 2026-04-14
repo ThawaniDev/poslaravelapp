@@ -148,4 +148,8 @@ return [
     'wameed_ai_dashboard_title' => 'لوحة تحكم Wameed الذكاء الاصطناعي',
     'ai_billing_title' => 'فواتير الذكاء الاصطناعي',
     'ai_chat_analytics_title' => 'تحليلات محادثات الذكاء الاصطناعي',
+    'billing' => 'الفواتير',
+    'trends' => 'الاتجاهات',
+    'logs' => 'السجلات',
+    'view' => 'عرض',
 ];
