@@ -50,7 +50,7 @@ class ShrinkageDetectionService extends BaseFeatureService
             ) adjusted ON adjusted.product_id = p.id
             WHERE p.organization_id = ? AND p.is_active = true
               AND ABS(sl.quantity - (COALESCE(received.total_received, 0) - COALESCE(sold.total_sold, 0) - COALESCE(adjusted.total_adjusted, 0))) > 2
-            ORDER BY ABS(stock_variance) DESC
+            ORDER BY ABS(sl.quantity - (COALESCE(received.total_received, 0) - COALESCE(sold.total_sold, 0) - COALESCE(adjusted.total_adjusted, 0))) DESC
             LIMIT 50
         ", [$storeId, $storeId, $storeId, $storeId, $organizationId]);
 
