@@ -23,7 +23,7 @@ class ReportController extends BaseApiController
      * - If user is organization-scoped and branch_id is provided & valid, use it.
      * - Otherwise, fall back to the authenticated user's store_id.
      */
-    private function resolveStoreId(Request $request): string
+    protected function resolveStoreId(Request $request): string
     {
         $user = $request->user();
         $requestedBranch = $request->input('branch_id');
