@@ -65,7 +65,7 @@ class WameedAIChats extends Page
         $avgMessagesPerChat = $totalChats > 0 ? round($totalMessages / $totalChats, 1) : 0;
 
         // Chat list
-        $chatsQuery = AIChat::with(['store:id,business_name', 'user:id,name'])
+        $chatsQuery = AIChat::with(['store:id,name', 'user:id,name'])
             ->withCount('messages')
             ->latest();
 
@@ -85,7 +85,7 @@ class WameedAIChats extends Page
         $selectedChat = null;
         $chatMessages = collect();
         if ($this->selectedChatId) {
-            $selectedChat = AIChat::with(['store:id,business_name', 'user:id,name'])
+            $selectedChat = AIChat::with(['store:id,name', 'user:id,name'])
                 ->find($this->selectedChatId);
             if ($selectedChat) {
                 $chatMessages = AIChatMessage::where('chat_id', $this->selectedChatId)

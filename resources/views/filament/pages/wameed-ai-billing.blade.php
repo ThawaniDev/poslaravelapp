@@ -92,11 +92,19 @@
                 </div>
             </x-filament::section>
         </div>
+
+        @if ($canManage)
+            <div class="mt-4">
+                <x-filament::button wire:click="generateInvoices" color="primary" icon="heroicon-o-document-plus">
+                    Generate Last Month Invoices
+                </x-filament::button>
+            </div>
+        @endif
     @endif
 
     {{-- Invoices Tab --}}
     @if ($activeTab === 'invoices')
-        <x-filament::section heading="Recent Invoices">
+        <x-filament::section heading="Invoices">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
@@ -111,13 +119,16 @@
                             <th class="px-3 py-2 text-end font-medium text-gray-500">Billed</th>
                             <th class="px-3 py-2 text-center font-medium text-gray-500">Status</th>
                             <th class="px-3 py-2 text-start font-medium text-gray-500">Due Date</th>
+                            @if ($canManage)
+                                <th class="px-3 py-2 text-center font-medium text-gray-500">Actions</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($recentInvoices as $invoice)
                             <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/5">
                                 <td class="px-3 py-2 font-mono text-xs">{{ $invoice->invoice_number }}</td>
-                                <td class="px-3 py-2">{{ $invoice->store?->business_name ?? '—' }}</td>
+                                <td class="px-3 py-2">{{ $invoice->store?->name ?? '—' }}</td>
                                 <td class="px-3 py-2">{{ $invoice->year }}-{{ str_pad($invoice->month, 2, '0', STR_PAD_LEFT) }}</td>
                                 <td class="px-3 py-2 text-end">{{ number_format($invoice->total_requests) }}</td>
                                 <td class="px-3 py-2 text-end font-mono text-xs text-gray-500">${{ number_format($invoice->raw_cost_usd, 4) }}</td>
@@ -133,10 +144,45 @@
                                     ])>{{ ucfirst($invoice->status) }}</span>
                                 </td>
                                 <td class="px-3 py-2 text-xs text-gray-500">{{ $invoice->due_date?->format('M d, Y') ?? '—' }}</td>
+                                @if ($canManage)
+                                    <td class="px-3 py-2 text-center">
+                                        @if ($invoice->status === 'pending')
+                                            <div class="flex items-center justify-center gap-1">
+                                                <button wire:click="startMarkPaid('{{ $invoice->id }}')" class="text-xs text-success-600 hover:text-success-800 font-medium">Pay</button>
+                                                <span class="text-gray-300">|</span>
+                                                <button wire:click="markInvoiceOverdue('{{ $invoice->id }}')" class="text-xs text-danger-600 hover:text-danger-800 font-medium">Overdue</button>
+                                            </div>
+                                        @elseif ($invoice->status === 'overdue')
+                                            <button wire:click="startMarkPaid('{{ $invoice->id }}')" class="text-xs text-success-600 hover:text-success-800 font-medium">Mark Paid</button>
+                                        @elseif ($invoice->status === 'paid')
+                                            <span class="text-xs text-gray-400">{{ $invoice->paid_at?->format('M d') }}</span>
+                                        @endif
+                                    </td>
+                                @endif
                             </tr>
+
+                            {{-- Mark Paid Form --}}
+                            @if ($markingInvoiceId === $invoice->id)
+                                <tr class="bg-success-50 dark:bg-success-500/5">
+                                    <td colspan="{{ $canManage ? 11 : 10 }}" class="px-3 py-3">
+                                        <div class="flex items-end gap-3">
+                                            <div class="flex-1">
+                                                <label class="text-xs font-medium text-gray-600">Payment Reference</label>
+                                                <input wire:model="paymentReference" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="e.g. bank transfer #123">
+                                            </div>
+                                            <div class="flex-1">
+                                                <label class="text-xs font-medium text-gray-600">Notes</label>
+                                                <input wire:model="paymentNotes" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="Optional notes">
+                                            </div>
+                                            <x-filament::button wire:click="markInvoicePaid" size="sm" color="success">Confirm Paid</x-filament::button>
+                                            <x-filament::button wire:click="cancelMarkPaid" size="sm" color="gray">Cancel</x-filament::button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endif
                         @empty
                             <tr>
-                                <td colspan="10" class="px-3 py-8 text-center text-gray-400">No invoices yet</td>
+                                <td colspan="{{ $canManage ? 11 : 10 }}" class="px-3 py-8 text-center text-gray-400">No invoices yet</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -158,27 +204,68 @@
                             <th class="px-3 py-2 text-end font-medium text-gray-500">Custom Margin</th>
                             <th class="px-3 py-2 text-start font-medium text-gray-500">Notes</th>
                             <th class="px-3 py-2 text-start font-medium text-gray-500">Updated</th>
+                            @if ($canManage)
+                                <th class="px-3 py-2 text-center font-medium text-gray-500">Actions</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($storeConfigs as $config)
-                            <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/5">
-                                <td class="px-3 py-2 font-medium">{{ $config->store?->business_name ?? $config->store_id }}</td>
-                                <td class="px-3 py-2 text-center">
-                                    @if ($config->is_ai_enabled)
-                                        <span class="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">Enabled</span>
-                                    @else
-                                        <span class="inline-flex items-center rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-500/10 dark:text-danger-400">Disabled</span>
+                            @if ($editingConfigId === $config->id)
+                                {{-- Inline Edit Row --}}
+                                <tr class="border-b border-primary-100 dark:border-primary-800 bg-primary-50 dark:bg-primary-500/5">
+                                    <td class="px-3 py-2 font-medium">{{ $config->store?->name ?? $config->store_id }}</td>
+                                    <td class="px-3 py-2 text-center">
+                                        <input wire:model="editConfigAiEnabled" type="checkbox" class="rounded border-gray-300 text-primary-600">
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <input wire:model="editConfigMonthlyLimit" type="number" step="0.01" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm text-end" placeholder="0 = no limit">
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <input wire:model="editConfigCustomMargin" type="number" step="0.1" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm text-end" placeholder="Default">
+                                    </td>
+                                    <td class="px-3 py-2">
+                                        <input wire:model="editConfigNotes" type="text" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="Notes...">
+                                    </td>
+                                    <td class="px-3 py-2 text-xs text-gray-500">{{ $config->updated_at?->diffForHumans() }}</td>
+                                    <td class="px-3 py-2 text-center">
+                                        <div class="flex items-center justify-center gap-1">
+                                            <x-filament::button wire:click="saveStoreConfig" size="xs" color="success">Save</x-filament::button>
+                                            <x-filament::button wire:click="cancelEditConfig" size="xs" color="gray">Cancel</x-filament::button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @else
+                                {{-- Display Row --}}
+                                <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/5">
+                                    <td class="px-3 py-2 font-medium">{{ $config->store?->name ?? $config->store_id }}</td>
+                                    <td class="px-3 py-2 text-center">
+                                        @if ($config->is_ai_enabled)
+                                            <span class="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">Enabled</span>
+                                        @else
+                                            <span class="inline-flex items-center rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-500/10 dark:text-danger-400">Disabled</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-3 py-2 text-end">{{ $config->monthly_limit_usd > 0 ? '$'.number_format($config->monthly_limit_usd, 2) : 'No limit' }}</td>
+                                    <td class="px-3 py-2 text-end">{{ $config->custom_margin_percentage !== null ? $config->custom_margin_percentage.'%' : 'Default' }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-500 max-w-48 truncate">{{ $config->notes ?? '—' }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-500">{{ $config->updated_at?->diffForHumans() }}</td>
+                                    @if ($canManage)
+                                        <td class="px-3 py-2 text-center">
+                                            <div class="flex items-center justify-center gap-1">
+                                                <button wire:click="editStoreConfig('{{ $config->id }}')" class="text-xs text-primary-600 hover:text-primary-800 font-medium">Edit</button>
+                                                <span class="text-gray-300">|</span>
+                                                <button wire:click="toggleStoreAI('{{ $config->id }}')" class="text-xs {{ $config->is_ai_enabled ? 'text-danger-600 hover:text-danger-800' : 'text-success-600 hover:text-success-800' }} font-medium">
+                                                    {{ $config->is_ai_enabled ? 'Disable' : 'Enable' }}
+                                                </button>
+                                            </div>
+                                        </td>
                                     @endif
-                                </td>
-                                <td class="px-3 py-2 text-end">{{ $config->monthly_limit_usd ? '$'.number_format($config->monthly_limit_usd, 2) : 'No limit' }}</td>
-                                <td class="px-3 py-2 text-end">{{ $config->custom_margin_percentage ? $config->custom_margin_percentage.'%' : 'Default' }}</td>
-                                <td class="px-3 py-2 text-xs text-gray-500 max-w-48 truncate">{{ $config->notes ?? '—' }}</td>
-                                <td class="px-3 py-2 text-xs text-gray-500">{{ $config->updated_at?->diffForHumans() }}</td>
-                            </tr>
+                                </tr>
+                            @endif
                         @empty
                             <tr>
-                                <td colspan="6" class="px-3 py-8 text-center text-gray-400">No store configurations yet</td>
+                                <td colspan="{{ $canManage ? 7 : 6 }}" class="px-3 py-8 text-center text-gray-400">No store configurations yet</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -196,22 +283,63 @@
                         <tr class="border-b border-gray-200 dark:border-gray-700">
                             <th class="px-3 py-2 text-start font-medium text-gray-500">Key</th>
                             <th class="px-3 py-2 text-start font-medium text-gray-500">Value</th>
+                            <th class="px-3 py-2 text-start font-medium text-gray-500">Description</th>
+                            @if ($canManage)
+                                <th class="px-3 py-2 text-center font-medium text-gray-500">Actions</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
                         @forelse ($settings as $key => $value)
                             <tr class="border-b border-gray-100 dark:border-gray-800">
                                 <td class="px-3 py-2 font-mono text-xs">{{ $key }}</td>
-                                <td class="px-3 py-2">{{ $value }}</td>
+                                @if ($canManage)
+                                    <td class="px-3 py-2">
+                                        <input wire:model="editingSettings.{{ $key }}" type="text" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" />
+                                    </td>
+                                @else
+                                    <td class="px-3 py-2">{{ $value }}</td>
+                                @endif
+                                <td class="px-3 py-2 text-xs text-gray-500">{{ $settingDescriptions[$key] ?? '—' }}</td>
+                                @if ($canManage)
+                                    <td class="px-3 py-2 text-center">
+                                        <div class="flex items-center justify-center gap-1">
+                                            <button wire:click="saveSetting('{{ $key }}')" class="text-xs text-primary-600 hover:text-primary-800 font-medium">Save</button>
+                                            <span class="text-gray-300">|</span>
+                                            <button wire:click="deleteSetting('{{ $key }}')" wire:confirm="Delete setting '{{ $key }}'?" class="text-xs text-danger-600 hover:text-danger-800 font-medium">Delete</button>
+                                        </div>
+                                    </td>
+                                @endif
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="2" class="px-3 py-8 text-center text-gray-400">No settings configured</td>
+                                <td colspan="{{ $canManage ? 4 : 3 }}" class="px-3 py-8 text-center text-gray-400">No settings configured</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
+
+            @if ($canManage)
+                <div class="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Add New Setting</p>
+                    <div class="flex items-end gap-3">
+                        <div class="flex-1">
+                            <label class="text-xs font-medium text-gray-600">Key</label>
+                            <input wire:model="newSettingKey" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="e.g. margin_percentage">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-xs font-medium text-gray-600">Value</label>
+                            <input wire:model="newSettingValue" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="e.g. 20">
+                        </div>
+                        <div class="flex-1">
+                            <label class="text-xs font-medium text-gray-600">Description</label>
+                            <input wire:model="newSettingDesc" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="Optional description">
+                        </div>
+                        <x-filament::button wire:click="addNewSetting" size="sm" color="primary" icon="heroicon-o-plus">Add</x-filament::button>
+                    </div>
+                </div>
+            @endif
         </x-filament::section>
     @endif
 </x-filament-panels::page>

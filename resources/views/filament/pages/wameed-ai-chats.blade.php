@@ -46,7 +46,7 @@
                         ])
                     >
                         <div class="flex items-center justify-between">
-                            <span class="font-medium text-sm">{{ $chat->store?->business_name ?? 'Unknown' }}</span>
+                            <span class="font-medium text-sm">{{ $chat->store?->name ?? 'Unknown' }}</span>
                             <span class="text-xs text-gray-400">{{ $chat->created_at->diffForHumans() }}</span>
                         </div>
                         <div class="flex items-center gap-2 mt-0.5">
@@ -68,7 +68,7 @@
         <x-filament::section heading="{{ $selectedChat ? ($selectedChat->title ?? 'Chat Detail') : 'Select a chat' }}">
             @if ($selectedChat)
                 <div class="mb-3 flex items-center gap-3 text-xs text-gray-500">
-                    <span>{{ $selectedChat->store?->business_name }}</span>
+                    <span>{{ $selectedChat->store?->name }}</span>
                     <span>·</span>
                     <span>{{ $selectedChat->user?->name }}</span>
                     <span>·</span>
@@ -89,8 +89,8 @@
                                 <span class="text-xs text-gray-400">{{ $msg->created_at->format('H:i:s') }}</span>
                             </div>
                             <div class="prose prose-sm dark:prose-invert max-w-none">{!! nl2br(e($msg->content)) !!}</div>
-                            @if ($msg->tokens_used)
-                                <p class="text-xs text-gray-400 mt-1">{{ number_format($msg->tokens_used) }} tokens</p>
+                            @if ($msg->input_tokens || $msg->output_tokens)
+                                <p class="text-xs text-gray-400 mt-1">{{ number_format(($msg->input_tokens ?? 0) + ($msg->output_tokens ?? 0)) }} tokens</p>
                             @endif
                         </div>
                     @endforeach

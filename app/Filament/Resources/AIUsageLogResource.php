@@ -60,9 +60,13 @@ class AIUsageLogResource extends Resource
                         Infolists\Components\TextEntry::make('feature_slug')
                             ->label('Feature')
                             ->badge(),
+                        Infolists\Components\TextEntry::make('store.name')
+                            ->label('Store')
+                            ->placeholder('—'),
                         Infolists\Components\TextEntry::make('store_id')
                             ->label('Store ID')
-                            ->copyable(),
+                            ->copyable()
+                            ->toggleable(isToggledHiddenByDefault: true),
                         Infolists\Components\TextEntry::make('user_id')
                             ->label('User ID')
                             ->copyable()
@@ -133,6 +137,31 @@ class AIUsageLogResource extends Resource
                     ->collapsed()
                     ->visible(fn (AIUsageLog $record): bool => ! empty($record->error_message)),
 
+                Infolists\Components\Section::make('Request Messages (Prompt)')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('request_messages')
+                            ->label('Messages Sent to Model')
+                            ->columnSpanFull()
+                            ->formatStateUsing(function ($state) {
+                                if (empty($state)) return '—';
+                                $messages = is_string($state) ? json_decode($state, true) : $state;
+                                if (!is_array($messages)) return (string) $state;
+                                $output = '';
+                                foreach ($messages as $msg) {
+                                    $role = strtoupper($msg['role'] ?? 'unknown');
+                                    $content = $msg['content'] ?? '';
+                                    if (is_array($content)) {
+                                        $content = json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+                                    }
+                                    $output .= "[{$role}]\n{$content}\n\n";
+                                }
+                                return rtrim($output);
+                            })
+                            ->prose()
+                            ->copyable(),
+                    ])
+                    ->collapsed(),
+
                 Infolists\Components\Section::make('Metadata')
                     ->schema([
                         Infolists\Components\TextEntry::make('metadata_json')
@@ -155,11 +184,11 @@ class AIUsageLogResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->badge(),
-                Tables\Columns\TextColumn::make('store_id')
+                Tables\Columns\TextColumn::make('store.name')
                     ->label('Store')
                     ->searchable()
-                    ->limit(8)
-                    ->toggleable(),
+                    ->sortable()
+                    ->placeholder('—'),
                 Tables\Columns\TextColumn::make('model_used')
                     ->label('Model')
                     ->searchable()
@@ -212,6 +241,11 @@ class AIUsageLogResource extends Resource
                     ->options(collect(AIRequestStatus::cases())->mapWithKeys(fn ($s) => [$s->value => ucfirst($s->value)])),
                 Tables\Filters\SelectFilter::make('feature_slug')
                     ->label('Feature')
+                    ->searchable()
+                    ->preload(),
+                Tables\Filters\SelectFilter::make('store_id')
+                    ->label('Store')
+                    ->relationship('store', 'name')
                     ->searchable()
                     ->preload(),
                 Tables\Filters\TernaryFilter::make('response_cached')
