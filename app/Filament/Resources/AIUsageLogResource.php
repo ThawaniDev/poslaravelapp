@@ -108,14 +108,16 @@ class AIUsageLogResource extends Resource
                             ->weight('bold'),
                         Infolists\Components\TextEntry::make('estimated_cost_usd')
                             ->label('Raw Cost (OpenAI)')
-                            ->money('usd'),
+                            ->formatStateUsing(fn ($state) => '$' . number_format((float) $state, 4))
+                            ->prefix('USD '),
                         Infolists\Components\TextEntry::make('margin_percentage_applied')
                             ->label('Margin %')
                             ->suffix('%')
                             ->placeholder('—'),
                         Infolists\Components\TextEntry::make('billed_cost_usd')
                             ->label('Billed Cost')
-                            ->money('usd')
+                            ->formatStateUsing(fn ($state) => '$' . number_format((float) $state, 4))
+                            ->prefix('USD ')
                             ->weight('bold'),
                         Infolists\Components\TextEntry::make('latency_ms')
                             ->label('Latency')
@@ -142,8 +144,9 @@ class AIUsageLogResource extends Resource
                         Infolists\Components\TextEntry::make('request_messages')
                             ->label('Messages Sent to Model')
                             ->columnSpanFull()
+                            ->default('Not recorded for this log entry. Newer logs will include the full prompt.')
                             ->formatStateUsing(function ($state) {
-                                if (empty($state)) return '—';
+                                if (empty($state)) return 'Not recorded for this log entry. Newer logs will include the full prompt.';
                                 $messages = is_string($state) ? json_decode($state, true) : $state;
                                 if (!is_array($messages)) return (string) $state;
                                 $output = '';
@@ -199,7 +202,7 @@ class AIUsageLogResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('estimated_cost_usd')
                     ->label('Raw Cost')
-                    ->money('usd')
+                    ->formatStateUsing(fn ($state) => '$' . number_format((float) $state, 4))
                     ->sortable()
                     ->description('OpenAI price'),
                 Tables\Columns\TextColumn::make('margin_percentage_applied')
@@ -209,7 +212,7 @@ class AIUsageLogResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('billed_cost_usd')
                     ->label('Billed Cost')
-                    ->money('usd')
+                    ->formatStateUsing(fn ($state) => '$' . number_format((float) $state, 4))
                     ->sortable()
                     ->weight('bold'),
                 Tables\Columns\TextColumn::make('latency_ms')
