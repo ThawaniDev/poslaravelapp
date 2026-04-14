@@ -91,7 +91,7 @@ class AIStoreDataService
 
         // ─── Categories ─────────────────────────────────
         $categories = DB::select("
-            SELECT name FROM categories WHERE organization_id = ? AND is_active = 1 AND parent_id IS NULL ORDER BY sort_order LIMIT 20
+            SELECT name FROM categories WHERE organization_id = ? AND is_active = true AND parent_id IS NULL ORDER BY sort_order LIMIT 20
         ", [$organizationId]);
         $categoryNames = implode(', ', array_map(fn ($c) => $c->name, $categories));
 
@@ -116,7 +116,7 @@ class AIStoreDataService
             SELECT
                 COUNT(*) as total_products,
                 COALESCE(AVG(sell_price), 0) as avg_price,
-                COUNT(CASE WHEN is_active = 0 THEN 1 END) as inactive_count
+                COUNT(CASE WHEN is_active = false THEN 1 END) as inactive_count
             FROM products
             WHERE organization_id = ?
         ", [$organizationId]);
@@ -143,7 +143,7 @@ class AIStoreDataService
         // ─── Active Promotions ──────────────────────────
         $activePromos = (int) (DB::selectOne("
             SELECT COUNT(*) as cnt FROM promotions
-            WHERE organization_id = ? AND is_active = 1 AND (valid_to IS NULL OR valid_to >= ?)
+            WHERE organization_id = ? AND is_active = true AND (valid_to IS NULL OR valid_to >= ?)
         ", [$organizationId, $today])->cnt ?? 0);
 
         // ─── Build context for template interpolation ───
