@@ -237,7 +237,8 @@ class PaymentEmailService
         $org = $payment->organization;
         $customerDetails = $payment->customer_details;
 
-        return $customerDetails['email'] ?? $org?->email ?? $org?->owner_email ?? null;
+        // Prefer the organization's current email over stale customer_details snapshot
+        return $org?->email ?? $org?->owner_email ?? $customerDetails['email'] ?? null;
     }
 
     private function buildPaymentConfirmationBody(ProviderPayment $payment): string
