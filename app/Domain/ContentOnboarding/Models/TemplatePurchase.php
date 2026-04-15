@@ -3,6 +3,7 @@
 namespace App\Domain\ContentOnboarding\Models;
 
 use App\Domain\ContentOnboarding\Enums\PurchaseType;
+use App\Domain\ProviderPayment\Models\ProviderPayment;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,7 @@ class TemplatePurchase extends Model
         'amount_paid', 'currency', 'payment_reference', 'payment_gateway',
         'subscription_starts_at', 'subscription_expires_at', 'auto_renew',
         'is_active', 'cancelled_at', 'refunded_at', 'invoice_id',
+        'provider_payment_id',
     ];
 
     protected $casts = [
@@ -48,5 +50,10 @@ class TemplatePurchase extends Model
     public function invoice(): BelongsTo
     {
         return $this->belongsTo(MarketplacePurchaseInvoice::class, 'invoice_id');
+    }
+
+    public function providerPayment(): BelongsTo
+    {
+        return $this->belongsTo(ProviderPayment::class, 'provider_payment_id');
     }
 }

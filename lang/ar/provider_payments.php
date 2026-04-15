@@ -121,6 +121,7 @@ return [
     'purpose_ai_billing'         => 'فوترة الذكاء الاصطناعي',
     'purpose_hardware'           => 'أجهزة',
     'purpose_implementation_fee' => 'رسوم التطبيق',
+    'purpose_marketplace_purchase' => 'شراء من المتجر',
     'purpose_other'              => 'أخرى',
 
     // Enums - Email Type

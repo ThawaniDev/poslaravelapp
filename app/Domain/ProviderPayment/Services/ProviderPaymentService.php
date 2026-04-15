@@ -555,6 +555,7 @@ class ProviderPaymentService
         match ($payment->purpose) {
             PaymentPurpose::Subscription => $this->activateSubscription($payment),
             PaymentPurpose::PlanAddon => $this->activateAddon($payment),
+            PaymentPurpose::MarketplacePurchase => $this->activateMarketplacePurchase($payment),
             default => null, // Other purposes don't need activation
         };
     }
@@ -581,5 +582,11 @@ class ProviderPaymentService
         DB::table('store_add_ons')
             ->where('id', $payment->purpose_reference_id)
             ->update(['is_active' => true, 'activated_at' => now()]);
+    }
+
+    private function activateMarketplacePurchase(ProviderPayment $payment): void
+    {
+        app(\App\Domain\ContentOnboarding\Services\MarketplaceService::class)
+            ->activatePurchaseByPayment($payment->id);
     }
 }

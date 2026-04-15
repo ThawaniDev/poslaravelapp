@@ -121,6 +121,7 @@ return [
     'purpose_ai_billing'         => 'AI Billing',
     'purpose_hardware'           => 'Hardware',
     'purpose_implementation_fee' => 'Implementation Fee',
+    'purpose_marketplace_purchase' => 'Marketplace Purchase',
     'purpose_other'              => 'Other',
 
     // Enums - Email Type

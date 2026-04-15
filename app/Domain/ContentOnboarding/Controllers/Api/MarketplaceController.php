@@ -2,14 +2,22 @@
 
 namespace App\Domain\ContentOnboarding\Controllers\Api;
 
+use App\Domain\ContentOnboarding\Enums\MarketplacePricingType;
+use App\Domain\ContentOnboarding\Models\TemplateMarketplaceListing;
 use App\Domain\ContentOnboarding\Services\MarketplaceService;
+use App\Domain\ProviderPayment\Enums\PaymentPurpose;
+use App\Domain\ProviderPayment\Resources\ProviderPaymentResource;
+use App\Domain\ProviderPayment\Services\ProviderPaymentService;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class MarketplaceController extends BaseApiController
 {
-    public function __construct(private readonly MarketplaceService $service) {}
+    public function __construct(
+        private readonly MarketplaceService $service,
+        private readonly ProviderPaymentService $paymentService,
+    ) {}
 
     // ─── Browse ──────────────────────────────────────────
 
@@ -66,24 +74,88 @@ class MarketplaceController extends BaseApiController
     public function purchase(Request $request, string $listingId): JsonResponse
     {
         $validated = $request->validate([
-            'payment_reference' => ['nullable', 'string', 'max:100'],
-            'payment_gateway' => ['nullable', 'string', 'max:30'],
             'auto_renew' => ['sometimes', 'boolean'],
         ]);
 
-        $storeId = $request->user()->store_id;
+        $user = $request->user();
+        $storeId = $user->store_id;
 
         if (! $storeId) {
             return $this->error(__('ui.no_store_associated'), 403);
         }
 
-        $purchase = $this->service->purchaseTemplate($storeId, $listingId, $validated);
+        $listing = TemplateMarketplaceListing::find($listingId);
+        if (! $listing) {
+            return $this->notFound(__('ui.marketplace_listing_not_found'));
+        }
+
+        $isPaid = $listing->pricing_type !== MarketplacePricingType::Free && (float) $listing->price_amount > 0;
+
+        // ── Free listing: instant purchase ──
+        if (! $isPaid) {
+            $purchase = $this->service->purchaseTemplate($storeId, $listingId, $validated);
+
+            if (! $purchase) {
+                return $this->error(__('ui.purchase_failed'), 422);
+            }
+
+            return $this->created($purchase, __('ui.purchase_completed'));
+        }
+
+        // ── Paid listing: initiate PayTabs payment + pending purchase ──
+        $org = $user->organization;
+        $customerDetails = [
+            'name' => $org?->name ?? $user->name ?? 'Provider',
+            'email' => $org?->email ?? $user->email ?? '',
+            'phone' => $org?->phone ?? $user->phone ?? '',
+            'street' => $org?->address ?? '',
+            'city' => $org?->city ?? 'Riyadh',
+            'state' => $org?->state ?? 'RI',
+            'country' => 'SA',
+            'zip' => $org?->zip ?? '00000',
+            'ip' => $request->ip(),
+        ];
+
+        $returnUrl = url('/payment/result');
+        $amount = (float) $listing->price_amount;
+        $currency = $listing->price_currency ?? 'SAR';
+
+        $result = $this->paymentService->initiatePayment(
+            organizationId: $user->organization_id,
+            purpose: PaymentPurpose::MarketplacePurchase,
+            purposeLabel: 'Marketplace: ' . $listing->title,
+            amount: $amount,
+            customerDetails: $customerDetails,
+            returnUrl: $returnUrl,
+            purposeReferenceId: $listingId,
+            initiatedBy: $user->id,
+            notes: 'Marketplace listing: ' . $listing->title,
+            currency: $currency,
+        );
+
+        if (! $result['success']) {
+            return $this->error($result['error'] ?? 'Failed to initiate payment.', 422);
+        }
+
+        // Create pending (inactive) purchase linked to the payment
+        $purchase = $this->service->purchaseTemplate($storeId, $listingId, [
+            'provider_payment_id' => $result['payment_id'],
+            'payment_gateway' => 'paytabs',
+            'payment_reference' => $result['cart_id'],
+            'auto_renew' => $validated['auto_renew'] ?? true,
+        ]);
 
         if (! $purchase) {
             return $this->error(__('ui.purchase_failed'), 422);
         }
 
-        return $this->created($purchase, __('ui.purchase_completed'));
+        // Return payment info with redirect URL so Flutter can open WebView
+        $payment = $this->paymentService->find($result['payment_id']);
+        $data = (new ProviderPaymentResource($payment))->resolve();
+        $data['redirect_url'] = $result['redirect_url'];
+        $data['purchase_id'] = $purchase->id;
+
+        return $this->success($data, __('ui.payment_initiated'));
     }
 
     public function myPurchases(Request $request): JsonResponse

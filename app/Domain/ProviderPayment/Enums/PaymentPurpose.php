@@ -9,6 +9,7 @@ enum PaymentPurpose: string
     case AiBilling = 'ai_billing';
     case Hardware = 'hardware';
     case ImplementationFee = 'implementation_fee';
+    case MarketplacePurchase = 'marketplace_purchase';
     case Other = 'other';
 
     public function label(): string
@@ -19,6 +20,7 @@ enum PaymentPurpose: string
             self::AiBilling => __('provider_payments.purpose_ai_billing'),
             self::Hardware => __('provider_payments.purpose_hardware'),
             self::ImplementationFee => __('provider_payments.purpose_implementation_fee'),
+            self::MarketplacePurchase => __('provider_payments.purpose_marketplace_purchase'),
             self::Other => __('provider_payments.purpose_other'),
         };
     }

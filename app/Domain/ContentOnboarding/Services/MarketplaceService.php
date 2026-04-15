@@ -198,7 +198,14 @@ class MarketplaceService
             return null;
         }
 
-        return DB::transaction(function () use ($storeId, $listingId, $listing, $paymentData) {
+        // For paid listings without a provider_payment_id, don't activate yet
+        $isPaid = $listing->pricing_type !== MarketplacePricingType::Free && (float) $listing->price_amount > 0;
+        $hasPayment = ! empty($paymentData['provider_payment_id']);
+
+        // If paid listing and no payment provided, create inactive purchase (pending payment)
+        $shouldActivate = ! $isPaid || $hasPayment;
+
+        return DB::transaction(function () use ($storeId, $listingId, $listing, $paymentData, $shouldActivate) {
             $purchaseType = $listing->pricing_type === MarketplacePricingType::Subscription
                 ? PurchaseType::Subscription
                 : PurchaseType::OneTime;
@@ -211,7 +218,8 @@ class MarketplaceService
                 'currency' => $listing->price_currency ?? 'SAR',
                 'payment_reference' => $paymentData['payment_reference'] ?? null,
                 'payment_gateway' => $paymentData['payment_gateway'] ?? null,
-                'is_active' => true,
+                'provider_payment_id' => $paymentData['provider_payment_id'] ?? null,
+                'is_active' => $shouldActivate,
             ];
 
             if ($purchaseType === PurchaseType::Subscription) {
@@ -441,5 +449,36 @@ class MarketplaceService
             'average_rating' => round($stats->avg_rating, 1),
             'review_count' => $stats->review_count,
         ]);
+    }
+
+    // ─── Payment Activation ─────────────────────────────
+
+    /**
+     * Activate a pending marketplace purchase after payment confirmation.
+     * Called from ProviderPaymentService::activatePurpose() on IPN success.
+     */
+    public function activatePurchaseByPayment(string $providerPaymentId): void
+    {
+        $purchase = TemplatePurchase::where('provider_payment_id', $providerPaymentId)
+            ->where('is_active', false)
+            ->first();
+
+        if (! $purchase) {
+            return;
+        }
+
+        $purchase->update([
+            'is_active' => true,
+            'payment_gateway' => 'paytabs',
+        ]);
+
+        // Update invoice status
+        if ($purchase->invoice_id) {
+            MarketplacePurchaseInvoice::where('id', $purchase->invoice_id)->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+                'payment_method' => 'paytabs',
+            ]);
+        }
     }
 }

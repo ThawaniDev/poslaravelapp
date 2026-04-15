@@ -68,7 +68,7 @@ class ProviderPaymentController extends BaseApiController
     public function initiate(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'purpose' => 'required|string|in:subscription,plan_addon,ai_billing,hardware,implementation_fee,other',
+            'purpose' => 'required|string|in:subscription,plan_addon,ai_billing,hardware,implementation_fee,marketplace_purchase,other',
             'purpose_label' => 'required|string|max:200',
             'amount' => 'required|numeric|min:0.01',
             'currency' => 'sometimes|string|in:SAR,USD',

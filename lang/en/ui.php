@@ -400,6 +400,7 @@ return [
     'no_store_associated'             => 'No store associated with your account.',
     'purchase_failed'                 => 'Purchase failed. Listing may be unavailable or already purchased.',
     'purchase_completed'              => 'Purchase completed successfully.',
+    'payment_initiated'               => 'Payment initiated. Complete checkout to activate your purchase.',
     'purchases_loaded'                => 'Purchases loaded successfully.',
     'access_checked'                  => 'Access status checked.',
     'cancel_subscription_failed'      => 'Failed to cancel subscription.',
