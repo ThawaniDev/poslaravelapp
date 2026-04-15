@@ -43,6 +43,7 @@ class PayTabsService
                 ->shipping_same_billing()
                 ->sendURLs($returnUrl, $callbackUrl)
                 ->sendLanguage($language)
+                ->sendFramed(true)
                 ->sendUserDefined([
                     'udf1' => $payment->id,
                     'udf2' => $payment->organization_id,
@@ -50,32 +51,49 @@ class PayTabsService
                 ])
                 ->create_pay_page();
 
-            if (is_object($response) || is_array($response)) {
-                $data = is_object($response) ? json_decode(json_encode($response), true) : $response;
+            // SDK returns a URL string in framed mode, a Redirect response otherwise
+            $redirectUrl = null;
+            $tranRef = null;
 
+            if (is_string($response)) {
+                // Framed mode: SDK returns the redirect URL directly
+                $redirectUrl = $response;
+            } elseif ($response instanceof \Illuminate\Http\RedirectResponse) {
+                // Non-framed mode fallback: extract URL from Redirect response
+                $redirectUrl = $response->getTargetUrl();
+            } elseif (is_object($response) || is_array($response)) {
+                $data = is_object($response) ? json_decode(json_encode($response), true) : $response;
                 $tranRef = $data['tran_ref'] ?? null;
                 $redirectUrl = $data['redirect_url'] ?? null;
-
-                if ($tranRef) {
-                    $payment->update([
-                        'tran_ref' => $tranRef,
-                        'status' => ProviderPaymentStatus::Processing,
-                        'gateway_response' => $data,
-                    ]);
-                }
-
-                Log::channel('PayTabs')->info('Payment page created', [
-                    'payment_id' => $payment->id,
-                    'tran_ref' => $tranRef,
-                ]);
-
-                return [
-                    'success' => (bool) $redirectUrl,
-                    'redirect_url' => $redirectUrl,
-                    'tran_ref' => $tranRef,
-                    'error' => null,
-                ];
             }
+
+            // Extract tran_ref from redirect URL if not set (e.g. https://secure.paytabs.sa/payment/page/XXXX)
+            if ($redirectUrl && ! $tranRef) {
+                // Query PayTabs to get the tran_ref for this cart
+                $payment->update([
+                    'status' => ProviderPaymentStatus::Processing,
+                    'gateway_response' => ['redirect_url' => $redirectUrl],
+                ]);
+            } elseif ($tranRef) {
+                $payment->update([
+                    'tran_ref' => $tranRef,
+                    'status' => ProviderPaymentStatus::Processing,
+                    'gateway_response' => ['redirect_url' => $redirectUrl, 'tran_ref' => $tranRef],
+                ]);
+            }
+
+            Log::channel('PayTabs')->info('Payment page created', [
+                'payment_id' => $payment->id,
+                'tran_ref' => $tranRef,
+                'redirect_url' => $redirectUrl,
+            ]);
+
+            return [
+                'success' => (bool) $redirectUrl,
+                'redirect_url' => $redirectUrl,
+                'tran_ref' => $tranRef,
+                'error' => null,
+            ];
 
             Log::channel('PayTabs')->error('Unexpected response creating payment page', [
                 'payment_id' => $payment->id,
