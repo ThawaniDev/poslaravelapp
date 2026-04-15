@@ -1,11 +1,16 @@
 <?php
 
+use App\Domain\ProviderPayment\Controllers\Api\ProviderPaymentController;
 use App\Http\Controllers\TemplatePreviewController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect('/admin');
 });
+
+// ─── Public Payment Result Page ──────────────
+Route::match(['get', 'post'], '/payment/result', [ProviderPaymentController::class, 'paymentReturn'])
+    ->name('payment.result');
 
 // ─── Public Template Previews (signed URLs) ──────────────
 Route::get('preview/receipt-template/{id}', [TemplatePreviewController::class, 'receiptTemplate'])

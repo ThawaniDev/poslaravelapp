@@ -98,7 +98,7 @@ class ProviderPaymentController extends BaseApiController
             'ip' => $request->ip(),
         ];
 
-        $returnUrl = $validated['return_url'] ?? url('/api/v2/provider-payments/return');
+        $returnUrl = $validated['return_url'] ?? url('/payment/result');
 
         $result = $this->paymentService->initiatePayment(
             organizationId: $user->organization_id,
@@ -155,17 +155,20 @@ class ProviderPaymentController extends BaseApiController
     /**
      * Handle the return URL after PayTabs redirect.
      */
-    public function paymentReturn(Request $request): \Illuminate\Http\RedirectResponse|JsonResponse
+    public function paymentReturn(Request $request): \Illuminate\View\View|\Illuminate\Http\RedirectResponse|JsonResponse
     {
         $tranRef = $request->input('tranRef') ?? $request->input('tran_ref');
-        $adminUrl = config('app.url') . '/admin/provider-payments';
 
         if (! $tranRef) {
             if ($request->expectsJson()) {
                 return $this->error('Transaction reference is required.', 422);
             }
 
-            return redirect($adminUrl);
+            return view('payment.result', [
+                'payment' => null,
+                'isSuccess' => false,
+                'isPending' => false,
+            ]);
         }
 
         try {
@@ -175,13 +178,21 @@ class ProviderPaymentController extends BaseApiController
                 return $this->success(new ProviderPaymentResource($payment));
             }
 
-            return redirect($adminUrl . '/' . $payment->id);
+            return view('payment.result', [
+                'payment' => $payment,
+                'isSuccess' => $payment->isSuccessful(),
+                'isPending' => $payment->isPending(),
+            ]);
         } catch (\RuntimeException $e) {
             if ($request->expectsJson()) {
                 return $this->error($e->getMessage(), 404);
             }
 
-            return redirect($adminUrl);
+            return view('payment.result', [
+                'payment' => null,
+                'isSuccess' => false,
+                'isPending' => false,
+            ]);
         }
     }
 
