@@ -66,10 +66,10 @@ class TestDataSeeder extends Seeder
 
         // ── Admin User ─────────────────────────────────────────
         $admin = AdminUser::firstOrCreate(
-            ['email' => 'admin@thawani.om'],
+            ['email' => 'dev@wameedpos.com'],
             [
                 'name' => 'Thawani Super Admin',
-                'email' => 'admin@thawani.om',
+                'email' => 'dev@wameedpos.com',
                 'password_hash' => Hash::make('Admin@2026'),
                 'phone' => '+96890000001',
                 'is_active' => true,
@@ -85,7 +85,7 @@ class TestDataSeeder extends Seeder
             'assigned_at' => now(),
         ]);
 
-        $this->command->info("  ✓ Super Admin: admin@thawani.om / Admin@2026");
+        $this->command->info("  ✓ Super Admin: dev@wameedpos.com / Admin@2026");
         $this->command->info("  ✓ Role: super_admin with {$this->countNewPerms($superRole)} permissions");
     }
 

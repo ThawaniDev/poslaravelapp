@@ -45,7 +45,7 @@ class ComprehensiveTestDataSeeder extends Seeder
         $org = DB::table('organizations')->where('slug', 'ostora-supermarket')->first();
         $store = DB::table('stores')->where('slug', 'ostora-main')->first();
         $owner = DB::table('users')->where('email', 'owner@ostora.sa')->first();
-        $admin = DB::table('admin_users')->where('email', 'admin@thawani.om')->first();
+        $admin = DB::table('admin_users')->where('email', 'dev@wameedpos.com')->first();
         $proPlan = DB::table('subscription_plans')->where('slug', 'professional')->first();
 
         if (!$org || !$store || !$owner || !$admin || !$proPlan) {

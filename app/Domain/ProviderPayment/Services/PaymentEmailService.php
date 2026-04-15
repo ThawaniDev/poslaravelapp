@@ -50,7 +50,7 @@ class PaymentEmailService
             return false;
         }
 
-        $subject = __('provider_payments.email_subject_payment_confirmation') . ' - #' . ($payment->cart_id ?? $payment->id);
+        $subject = __('provider_payments.email_payment_confirmation_subject', ['cart_id' => $payment->cart_id ?? $payment->id]);
 
         $body = $this->buildPaymentConfirmationBody($payment);
 
@@ -78,7 +78,7 @@ class PaymentEmailService
             return false;
         }
 
-        $subject = __('provider_payments.email_subject_invoice') . ' - ' . $invoice->invoice_number;
+        $subject = __('provider_payments.email_invoice_subject', ['invoice_number' => $invoice->invoice_number]);
 
         $body = $this->buildInvoiceEmailBody($invoice);
 
@@ -103,7 +103,7 @@ class PaymentEmailService
             return false;
         }
 
-        $subject = __('provider_payments.email_subject_payment_failed') . ' - #' . ($payment->cart_id ?? $payment->id);
+        $subject = __('provider_payments.email_payment_failed_subject', ['cart_id' => $payment->cart_id ?? $payment->id]);
 
         $body = $this->buildPaymentFailedBody($payment);
 
@@ -127,7 +127,7 @@ class PaymentEmailService
             return false;
         }
 
-        $subject = __('provider_payments.email_subject_refund_confirmation') . ' - #' . ($payment->cart_id ?? $payment->id);
+        $subject = __('provider_payments.email_refund_subject', ['cart_id' => $payment->cart_id ?? $payment->id]);
 
         $body = $this->buildRefundConfirmationBody($payment);
 
