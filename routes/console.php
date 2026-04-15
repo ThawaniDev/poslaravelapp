@@ -2,6 +2,7 @@
 
 use App\Domain\Announcement\Jobs\SendPaymentReminders;
 use App\Domain\AppUpdateManagement\Jobs\CheckAutoRollback;
+use App\Domain\Notification\Jobs\ProcessScheduledNotificationsJob;
 use App\Domain\ProviderSubscription\Jobs\ExpireSubscriptionsJob;
 use App\Domain\ProviderSubscription\Jobs\GenerateRenewalInvoicesJob;
 use App\Domain\ProviderSubscription\Jobs\RenewPaidSubscriptionsJob;
@@ -161,5 +162,13 @@ Schedule::command('ai-billing:generate-invoices')
 // Check overdue AI billing invoices (daily at 02:00)
 Schedule::command('ai-billing:check-overdue')
     ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// ─── Notification Schedules ──────────────────────────────────
+
+// Process due scheduled notifications (every minute)
+Schedule::job(new ProcessScheduledNotificationsJob)
+    ->everyMinute()
     ->withoutOverlapping()
     ->onOneServer();

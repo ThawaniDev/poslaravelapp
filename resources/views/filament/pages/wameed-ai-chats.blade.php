@@ -32,8 +32,8 @@
         <x-filament::section heading="{{ __('ai.chats') }}">
             {{-- Filters --}}
             <div class="flex gap-2 mb-3">
-                <input type="date" wire:model.live="filterDateFrom" class="rounded-lg border-gray-300 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" placeholder="{{ __(\'ai.from\') }}" />
-                <input type="date" wire:model.live="filterDateTo" class="rounded-lg border-gray-300 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" placeholder="{{ __(\'ai.to\') }}" />
+                <input type="date" wire:model.live="filterDateFrom" class="rounded-lg border-gray-300 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" placeholder="{{ __('ai.from') }}" />
+                <input type="date" wire:model.live="filterDateTo" class="rounded-lg border-gray-300 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200" placeholder="{{ __('ai.to') }}" />
             </div>
 
             <div class="divide-y divide-gray-100 dark:divide-gray-800 max-h-[32rem] overflow-y-auto">

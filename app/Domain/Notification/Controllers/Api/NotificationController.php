@@ -292,15 +292,22 @@ class NotificationController extends BaseApiController
     public function createSchedule(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'event_key' => 'required|string',
-            'channel' => 'required|string',
+            // Template-based schedule fields
+            'event_key' => 'nullable|string',
             'recipient_user_id' => 'nullable|string|uuid',
             'recipient_group' => 'nullable|string',
             'variables' => 'nullable|array',
-            'schedule_type' => 'required|string|in:once,recurring',
-            'scheduled_at' => 'required|date|after:now',
             'cron_expression' => 'nullable|string',
             'timezone' => 'nullable|string',
+            // Message-based schedule fields
+            'category' => 'nullable|string|max:30',
+            'title' => 'nullable|string|max:255',
+            'message' => 'nullable|string|max:2000',
+            'priority' => 'nullable|string|in:low,normal,high,urgent',
+            // Common fields
+            'channel' => 'required|string',
+            'schedule_type' => 'nullable|string|in:once,recurring',
+            'scheduled_at' => 'required|date|after:now',
         ]);
 
         $storeId = $request->user()->store_id;
@@ -313,6 +320,7 @@ class NotificationController extends BaseApiController
                 'store_id' => $storeId,
                 'created_by' => $request->user()->id,
                 'is_active' => true,
+                'schedule_type' => $validated['schedule_type'] ?? 'once',
             ]),
         );
 

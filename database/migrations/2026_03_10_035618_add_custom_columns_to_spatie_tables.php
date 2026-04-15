@@ -47,6 +47,8 @@ return new class extends Migration
         // Replace the Spatie unique index on roles (name, guard_name)
         // with one that includes store_id, so the same role name can
         // exist in different stores.
+        // PostgreSQL: must drop the constraint (which owns the index), not the index directly.
+        DB::statement('ALTER TABLE roles DROP CONSTRAINT IF EXISTS roles_name_guard_name_unique');
         DB::statement('DROP INDEX IF EXISTS roles_name_guard_name_unique');
         DB::statement('CREATE UNIQUE INDEX roles_name_guard_name_store_id_unique ON roles (name, guard_name, store_id)');
     }

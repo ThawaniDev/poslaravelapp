@@ -16,11 +16,14 @@
         "league/flysystem-aws-s3-v3": "^3.0",
         "maatwebsite/excel": "^3.1",
         "openai-php/laravel": "^0.19",
+        "paytabscom/laravel_paytabs": "^1.10",
+        "railsware/mailtrap-php": "^3.11",
         "sentry/sentry-laravel": "^4.0",
         "spatie/laravel-activitylog": "^4.0",
         "spatie/laravel-backup": "^9.0",
         "spatie/laravel-medialibrary": "^11.0",
-        "spatie/laravel-permission": "^6.0"
+        "spatie/laravel-permission": "^6.0",
+        "symfony/mime": "^7.4"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

@@ -294,9 +294,9 @@ class TestDataSeeder extends Seeder
 
         // ── Store Subscription (trial on Pro plan) ─────────────
         StoreSubscription::firstOrCreate(
-            ['store_id' => $store->id],
+            ['organization_id' => $org->id],
             [
-                'store_id' => $store->id,
+                'organization_id' => $org->id,
                 'subscription_plan_id' => $proPlan->id,
                 'status' => 'trial',
                 'billing_cycle' => 'monthly',

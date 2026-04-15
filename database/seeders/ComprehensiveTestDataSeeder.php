@@ -149,7 +149,7 @@ class ComprehensiveTestDataSeeder extends Seeder
         DB::table('app_releases')->where('version_number', '1.0.0')->where('platform', 'android')->delete();
 
         // ── Announcements ───────────────────────────────────────
-        $subId = DB::table('store_subscriptions')->where('store_id', $storeId)->value('id');
+        $subId = DB::table('store_subscriptions')->where('organization_id', $this->orgId)->value('id');
         if ($subId) {
             DB::table('payment_reminders')->where('store_subscription_id', $subId)->delete();
         }
@@ -2230,7 +2230,7 @@ class ComprehensiveTestDataSeeder extends Seeder
         ]);
 
         // Payment Reminders
-        $subId = DB::table('store_subscriptions')->where('store_id', $this->storeId)->value('id');
+        $subId = DB::table('store_subscriptions')->where('organization_id', $this->orgId)->value('id');
         if ($subId) {
             DB::table('payment_reminders')->insert([
                 'store_subscription_id' => $subId, 'reminder_type' => 'trial_ending',

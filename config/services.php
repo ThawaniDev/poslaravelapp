@@ -44,4 +44,8 @@ return [
         'api_key' => env('GOOGLE_AI_API_KEY'),
     ],
 
+    'mailtrap' => [
+        'token' => env('MAILTRAP_API_TOKEN'),
+    ],
+
 ];

@@ -108,7 +108,9 @@ INSERT INTO admin_permissions (name, "group", description) VALUES
 ('content.pricing',        'content',        'Manage public pricing page content'),
 
 -- ── Notifications ────────────────────────────────────────────────────
-('notifications.manage',   'notifications',  'Manage notification templates for all channels'),
+('notifications.view',      'notifications',  'View notifications and unread counts'),
+('notifications.manage',    'notifications',  'Manage notification templates for all channels'),
+('notifications.schedules', 'notifications',  'Create and manage scheduled notifications'),
 
 -- ── UI / Layout ──────────────────────────────────────────────────────
 ('ui.manage',              'ui',             'Manage POS layout templates, themes, and receipt layouts'),
@@ -828,7 +830,7 @@ INSERT INTO permissions (name, display_name, module, guard_name, requires_pin) V
 ('cashier_performance.view_reports',     'View Shift Reports',           'cashier_performance', 'staff', FALSE),
 ('cashier_performance.manage_settings',  'Manage Gamification Settings', 'cashier_performance', 'staff', FALSE)
 
-ON CONFLICT (name) DO NOTHING;
+ON CONFLICT (name, guard_name) DO NOTHING;
 
 -- NOTE: `role_has_permissions` is NOT seeded here.
 -- It is populated dynamically when a store is created:

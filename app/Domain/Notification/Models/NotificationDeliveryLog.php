@@ -46,6 +46,6 @@ class NotificationDeliveryLog extends Model
 
     public function notification(): BelongsTo
     {
-        return $this->belongsTo(Notification::class);
+        return $this->belongsTo(NotificationCustom::class, 'notification_id');
     }
 }

@@ -11,9 +11,9 @@ class NotificationPermissionSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-            'notification_view',
-            'notification_create',
-            'notification_send_broadcast',
+            'notifications.view',
+            'notifications.manage',
+            'notifications.schedules',
         ];
 
         foreach ($permissions as $permission) {
@@ -28,19 +28,19 @@ class NotificationPermissionSeeder extends Seeder
             $ownerRole->givePermissionTo($permissions);
         }
 
-        // Branch Manager gets view + create
+        // Branch Manager gets view + manage
         $branchManager = Role::where('name', 'branch_manager')->first();
         if ($branchManager) {
             $branchManager->givePermissionTo([
-                'notification_view', 'notification_create',
+                'notifications.view', 'notifications.manage',
             ]);
         }
 
-        // Cashier gets view
+        // Cashier gets view only
         $cashier = Role::where('name', 'cashier')->first();
         if ($cashier) {
             $cashier->givePermissionTo([
-                'notification_view',
+                'notifications.view',
             ]);
         }
     }

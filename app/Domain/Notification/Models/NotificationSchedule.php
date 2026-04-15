@@ -28,6 +28,10 @@ class NotificationSchedule extends Model
         'last_sent_at',
         'next_run_at',
         'created_by',
+        'category',
+        'title',
+        'message',
+        'priority',
     ];
 
     protected $casts = [

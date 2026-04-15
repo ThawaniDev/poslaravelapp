@@ -455,5 +455,14 @@ class PermissionService
             ['name' => 'cashier_performance.view_reports',     'display_name' => 'View Shift Reports',         'display_name_ar' => 'عرض تقارير الورديات',            'requires_pin' => false, 'description' => 'View cashier shift-end report cards',                  'description_ar' => 'عرض بطاقات تقارير نهاية وردية الصراف'],
             ['name' => 'cashier_performance.manage_settings',  'display_name' => 'Manage Gamification Settings','display_name_ar' => 'إدارة إعدادات التحفيز',          'requires_pin' => false, 'description' => 'Configure gamification settings, weights, and thresholds', 'description_ar' => 'تكوين إعدادات التحفيز والأوزان والحدود'],
         ],
+
+        // ─── Provider Payments (PayTabs) ─────────────────────────
+        'provider_payments' => [
+            ['name' => 'provider_payments.view',           'display_name' => 'View Provider Payments',       'display_name_ar' => 'عرض مدفوعات المزودين',         'requires_pin' => false, 'description' => 'View provider payment history and details',              'description_ar' => 'عرض سجل مدفوعات المزودين والتفاصيل'],
+            ['name' => 'provider_payments.create',         'display_name' => 'Initiate Provider Payment',    'display_name_ar' => 'بدء دفعة مزود',                'requires_pin' => false, 'description' => 'Initiate new provider payments via PayTabs',             'description_ar' => 'بدء مدفوعات جديدة للمزودين عبر بيتابز'],
+            ['name' => 'provider_payments.manage',         'display_name' => 'Manage Provider Payments',     'display_name_ar' => 'إدارة مدفوعات المزودين',       'requires_pin' => true,  'description' => 'Manage payments, resend emails, query gateway',          'description_ar' => 'إدارة المدفوعات، إعادة إرسال البريد، استعلام البوابة'],
+            ['name' => 'provider_payments.refund',         'display_name' => 'Refund Provider Payment',      'display_name_ar' => 'استرداد دفعة مزود',             'requires_pin' => true,  'description' => 'Process refunds for provider payments',                  'description_ar' => 'معالجة استرداد مدفوعات المزودين'],
+            ['name' => 'provider_payments.view_statistics','display_name' => 'View Payment Statistics',      'display_name_ar' => 'عرض إحصائيات المدفوعات',       'requires_pin' => false, 'description' => 'View payment statistics and summaries',                  'description_ar' => 'عرض إحصائيات المدفوعات والملخصات'],
+        ],
     ];
 }
