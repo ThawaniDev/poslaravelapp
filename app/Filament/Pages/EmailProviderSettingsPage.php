@@ -150,9 +150,14 @@ class EmailProviderSettingsPage extends Page implements HasForms
         $data = $this->form->getState();
 
         foreach ($data as $key => $value) {
+            if ($value === null || $value === '') {
+                SystemSetting::where('key', $key)->where('group', 'email')->delete();
+                continue;
+            }
+
             SystemSetting::updateOrCreate(
-                ['key' => $key],
-                ['value' => $value, 'group' => 'email', 'updated_by' => auth('admin')->id()],
+                ['key' => $key, 'group' => 'email'],
+                ['value' => $value, 'updated_by' => auth('admin')->id()],
             );
         }
 
