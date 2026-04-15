@@ -72,6 +72,14 @@ class AdminActivityLog extends Model
         ?string $ipAddress = null,
         ?string $userAgent = null,
     ): static {
+        // entity_id is uuid in DB — pass null for non-UUID identifiers and store in details instead
+        $isValidUuid = $entityId && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $entityId);
+
+        if ($entityId && ! $isValidUuid) {
+            $details = array_merge($details ?? [], ['entity_ref' => $entityId]);
+            $entityId = null;
+        }
+
         return static::create([
             'admin_user_id' => $adminUserId,
             'action' => $action,
