@@ -187,6 +187,10 @@ class ProviderPaymentResource extends Resource
                     ->money('SAR')
                     ->sortable()
                     ->weight('bold'),
+                Tables\Columns\TextColumn::make('original_amount')
+                    ->label(__('provider_payments.col_original_amount'))
+                    ->formatStateUsing(fn ($state, $record) => $record->original_currency ? number_format((float) $state, 2) . ' ' . $record->original_currency : '-')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('provider_payments.col_status'))
                     ->badge()
@@ -281,14 +285,12 @@ class ProviderPaymentResource extends Resource
                         ->visible(fn (ProviderPayment $record) => $record->tran_ref && auth('admin')->user()?->hasPermission('provider_payments.manage'))
                         ->requiresConfirmation()
                         ->action(function (ProviderPayment $record) {
-                            $payTabsService = app(\App\Domain\ProviderPayment\Services\PayTabsService::class);
-                            $txnData = $payTabsService->queryTransaction($record->tran_ref);
-
-                            if ($txnData) {
-                                $record->update(['gateway_response' => $txnData]);
+                            try {
+                                $service = app(ProviderPaymentService::class);
+                                $service->syncFromGateway($record->id);
                                 Notification::make()->title(__('provider_payments.gateway_query_success'))->success()->send();
-                            } else {
-                                Notification::make()->title(__('provider_payments.gateway_query_failed'))->danger()->send();
+                            } catch (\RuntimeException $e) {
+                                Notification::make()->title($e->getMessage())->danger()->send();
                             }
                         }),
                     Tables\Actions\Action::make('process_refund')
@@ -370,6 +372,19 @@ class ProviderPaymentResource extends Resource
                         Infolists\Components\TextEntry::make('currency')
                             ->label(__('provider_payments.field_currency')),
                     ]),
+                    Infolists\Components\Grid::make(3)
+                        ->schema([
+                            Infolists\Components\TextEntry::make('original_amount')
+                                ->label(__('provider_payments.field_original_amount'))
+                                ->formatStateUsing(fn ($state, $record) => number_format((float) $state, 2) . ' ' . $record->original_currency),
+                            Infolists\Components\TextEntry::make('exchange_rate_used')
+                                ->label(__('provider_payments.field_exchange_rate'))
+                                ->formatStateUsing(fn ($state) => '1 USD = ' . number_format((float) $state, 4) . ' SAR'),
+                            Infolists\Components\TextEntry::make('amount')
+                                ->label(__('provider_payments.field_converted_amount'))
+                                ->formatStateUsing(fn ($state, $record) => number_format((float) $record->original_amount, 2) . ' USD × ' . number_format((float) $record->exchange_rate_used, 4) . ' = ' . number_format((float) $state, 2) . ' SAR'),
+                        ])
+                        ->visible(fn ($record) => $record->original_currency !== null),
                 ]),
             Infolists\Components\Section::make(__('provider_payments.section_gateway_response'))
                 ->schema([

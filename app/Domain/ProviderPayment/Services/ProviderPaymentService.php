@@ -8,6 +8,7 @@ use App\Domain\ProviderPayment\Models\ProviderPayment;
 use App\Domain\ProviderSubscription\Models\Invoice;
 use App\Domain\ProviderSubscription\Models\InvoiceLineItem;
 use App\Domain\ProviderSubscription\Models\StoreSubscription;
+use App\Domain\SystemConfig\Models\SystemSetting;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -97,7 +98,21 @@ class ProviderPaymentService
         ?string $initiatedBy = null,
         ?string $notes = null,
         float $taxRate = 15.0,
+        string $currency = 'SAR',
     ): array {
+        // ─── USD→SAR Conversion ─────────────────────────────
+        $originalCurrency = null;
+        $originalAmount = null;
+        $exchangeRateUsed = null;
+
+        if (strtoupper($currency) === 'USD') {
+            $exchangeRate = (float) (SystemSetting::where('key', 'payment_usd_exchange_rate')->value('value') ?? 3.75);
+            $originalCurrency = 'USD';
+            $originalAmount = $amount;
+            $exchangeRateUsed = $exchangeRate;
+            $amount = round($amount * $exchangeRate, 2);
+        }
+
         $taxAmount = round($amount * ($taxRate / 100), 2);
         $totalAmount = round($amount + $taxAmount, 2);
         $cartId = 'WP-' . strtoupper(Str::random(8)) . '-' . time();
@@ -114,6 +129,9 @@ class ProviderPaymentService
             'tax_amount' => $taxAmount,
             'total_amount' => $totalAmount,
             'currency' => 'SAR',
+            'original_currency' => $originalCurrency,
+            'original_amount' => $originalAmount,
+            'exchange_rate_used' => $exchangeRateUsed,
             'gateway' => 'paytabs',
             'tran_type' => 'sale',
             'cart_id' => $cartId,
@@ -164,20 +182,33 @@ class ProviderPaymentService
 
         $tranRef = $data['tran_ref'] ?? null;
         $cartId = $data['cart_id'] ?? null;
+        $previousTranRef = $data['previous_tran_ref'] ?? null;
+        $tranType = strtolower($data['tran_type'] ?? 'sale');
 
         if (! $tranRef) {
             Log::channel('PayTabs')->error('IPN missing tran_ref');
             return false;
         }
 
-        $payment = $this->findByTranRef($tranRef) ?? $this->findByCartId($cartId);
+        // For refunds, look up by previous_tran_ref or cart_id
+        if ($tranType === 'refund' && $previousTranRef) {
+            $payment = $this->findByTranRef($previousTranRef) ?? $this->findByCartId($cartId);
+        } else {
+            $payment = $this->findByTranRef($tranRef) ?? $this->findByCartId($cartId);
+        }
 
         if (! $payment) {
             Log::channel('PayTabs')->error('IPN payment not found', [
                 'tran_ref' => $tranRef,
                 'cart_id' => $cartId,
+                'tran_type' => $tranType,
             ]);
             return false;
+        }
+
+        // Handle refund IPN for completed payments
+        if ($tranType === 'refund' && $payment->status === ProviderPaymentStatus::Completed) {
+            return $this->handleRefundIpn($payment, $data, $tranRef);
         }
 
         // If already processed terminal state, skip
@@ -193,8 +224,9 @@ class ProviderPaymentService
         $paymentInfo = $data['payment_info'] ?? [];
         $responseStatus = $paymentResult['response_status'] ?? $data['response_status'] ?? null;
 
-        return DB::transaction(function () use ($payment, $data, $responseStatus, $paymentResult, $paymentInfo) {
+        return DB::transaction(function () use ($payment, $data, $tranRef, $responseStatus, $paymentResult, $paymentInfo) {
             $payment->update([
+                'tran_ref' => $payment->tran_ref ?? $tranRef,
                 'ipn_received' => true,
                 'ipn_received_at' => now(),
                 'ipn_payload' => $data,
@@ -307,6 +339,48 @@ class ProviderPaymentService
         return $payment->fresh();
     }
 
+    /**
+     * Sync a payment's status from PayTabs gateway.
+     * Useful for detecting refunds made from the PayTabs dashboard.
+     */
+    public function syncFromGateway(string $paymentId): ProviderPayment
+    {
+        $payment = $this->find($paymentId);
+
+        if (! $payment->tran_ref) {
+            throw new \RuntimeException('Payment has no transaction reference to query.');
+        }
+
+        $txnData = $this->payTabsService->queryTransaction($payment->tran_ref);
+
+        if (! $txnData) {
+            throw new \RuntimeException('Failed to query payment gateway.');
+        }
+
+        $payment->update(['gateway_response' => $txnData]);
+
+        // Check if the transaction has been refunded by looking for refund info
+        // PayTabs query returns the original transaction — we need to check transaction history
+        // If the payment is completed but PayTabs shows a different status, update accordingly
+        $responseStatus = $txnData['payment_result']['response_status'] ?? null;
+
+        // If the gateway no longer shows 'A' (approved) and payment is completed, it may have been voided
+        if ($responseStatus !== 'A' && $payment->status === ProviderPaymentStatus::Completed) {
+            $payment->update([
+                'status' => ProviderPaymentStatus::Voided,
+                'response_status' => $responseStatus,
+                'response_message' => $txnData['payment_result']['response_message'] ?? null,
+            ]);
+        }
+
+        Log::channel('PayTabs')->info('Payment synced from gateway', [
+            'payment_id' => $payment->id,
+            'gateway_status' => $responseStatus,
+        ]);
+
+        return $payment->fresh();
+    }
+
     // ─── Statistics ─────────────────────────────────────────
 
     /**
@@ -385,6 +459,51 @@ class ProviderPaymentService
         ]);
 
         return true;
+    }
+
+    /**
+     * Handle a refund IPN from PayTabs (dashboard or API refund).
+     */
+    private function handleRefundIpn(ProviderPayment $payment, array $data, string $refundTranRef): bool
+    {
+        $paymentResult = $data['payment_result'] ?? [];
+        $responseStatus = $paymentResult['response_status'] ?? $data['response_status'] ?? null;
+        $refundAmount = (float) ($data['cart_amount'] ?? $data['tran_total'] ?? $payment->total_amount);
+
+        return DB::transaction(function () use ($payment, $data, $refundTranRef, $responseStatus, $refundAmount) {
+            if ($responseStatus === 'A') {
+                $payment->update([
+                    'status' => ProviderPaymentStatus::Refunded,
+                    'refund_amount' => $refundAmount,
+                    'refund_tran_ref' => $refundTranRef,
+                    'refunded_at' => now(),
+                    'refund_reason' => 'Refunded via PayTabs dashboard',
+                    'gateway_response' => $data,
+                ]);
+
+                // Update linked invoice
+                if ($payment->invoice_id) {
+                    $payment->invoice->update(['status' => 'refunded']);
+                }
+
+                // Send refund email
+                $this->emailService->sendRefundConfirmation($payment);
+
+                Log::channel('PayTabs')->info('Refund IPN processed successfully', [
+                    'payment_id' => $payment->id,
+                    'refund_tran_ref' => $refundTranRef,
+                    'refund_amount' => $refundAmount,
+                ]);
+            } else {
+                Log::channel('PayTabs')->warning('Refund IPN with non-approved status', [
+                    'payment_id' => $payment->id,
+                    'refund_tran_ref' => $refundTranRef,
+                    'response_status' => $responseStatus,
+                ]);
+            }
+
+            return true;
+        });
     }
 
     private function generateInvoiceForPayment(ProviderPayment $payment): void

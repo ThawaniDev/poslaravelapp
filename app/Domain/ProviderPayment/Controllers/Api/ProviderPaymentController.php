@@ -71,6 +71,7 @@ class ProviderPaymentController extends BaseApiController
             'purpose' => 'required|string|in:subscription,plan_addon,ai_billing,hardware,implementation_fee,other',
             'purpose_label' => 'required|string|max:200',
             'amount' => 'required|numeric|min:0.01',
+            'currency' => 'sometimes|string|in:SAR,USD',
             'purpose_reference_id' => 'sometimes|nullable|uuid',
             'invoice_id' => 'sometimes|nullable|uuid',
             'return_url' => 'sometimes|nullable|url|max:500',
@@ -110,6 +111,7 @@ class ProviderPaymentController extends BaseApiController
             invoiceId: $validated['invoice_id'] ?? null,
             initiatedBy: $user->id,
             notes: $validated['notes'] ?? null,
+            currency: $validated['currency'] ?? 'SAR',
         );
 
         if (! $result['success']) {
@@ -138,6 +140,7 @@ class ProviderPaymentController extends BaseApiController
         Log::channel('PayTabs')->info('IPN received', [
             'tran_ref' => $data['tran_ref'] ?? null,
             'cart_id' => $data['cart_id'] ?? null,
+            'tran_type' => $data['tran_type'] ?? null,
         ]);
 
         $success = $this->paymentService->handleIpn($data, $rawBody, $signature);

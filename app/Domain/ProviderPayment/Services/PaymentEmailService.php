@@ -249,6 +249,16 @@ class PaymentEmailService
         $cardInfo = $payment->payment_description ?? '-';
         $orgName = $payment->organization?->name ?? '-';
 
+        $conversionRow = '';
+        if ($payment->hasOriginalCurrency()) {
+            $origAmount = number_format((float) $payment->original_amount, 2);
+            $rate = number_format((float) $payment->exchange_rate_used, 4);
+            $sarAmount = number_format((float) $payment->amount, 2);
+            $conversionRow = <<<HTML
+                    <tr><td style="padding:12px;border-bottom:1px solid #F1F5F9;color:#64748B;font-size:13px;">التحويل / Conversion</td><td style="padding:12px;border-bottom:1px solid #F1F5F9;color:#6366F1;font-size:14px;text-align:left;">\${$origAmount} USD × {$rate} = {$sarAmount} SAR</td></tr>
+            HTML;
+        }
+
         return <<<HTML
         <!DOCTYPE html>
         <html dir="rtl" lang="ar">
@@ -265,6 +275,7 @@ class PaymentEmailService
                 <table style="width:100%;border-collapse:collapse;margin:24px 0;">
                     <tr><td style="padding:12px;border-bottom:1px solid #F1F5F9;color:#64748B;font-size:13px;">الغرض / Purpose</td><td style="padding:12px;border-bottom:1px solid #F1F5F9;color:#0F172A;font-weight:600;text-align:left;">{$purpose}</td></tr>
                     <tr><td style="padding:12px;border-bottom:1px solid #F1F5F9;color:#64748B;font-size:13px;">المبلغ / Amount</td><td style="padding:12px;border-bottom:1px solid #F1F5F9;color:#10B981;font-weight:700;font-size:18px;text-align:left;">{$amount}</td></tr>
+                    {$conversionRow}
                     <tr><td style="padding:12px;border-bottom:1px solid #F1F5F9;color:#64748B;font-size:13px;">رقم المرجع / Reference</td><td style="padding:12px;border-bottom:1px solid #F1F5F9;color:#0F172A;font-family:monospace;text-align:left;">{$ref}</td></tr>
                     <tr><td style="padding:12px;border-bottom:1px solid #F1F5F9;color:#64748B;font-size:13px;">البطاقة / Card</td><td style="padding:12px;border-bottom:1px solid #F1F5F9;color:#0F172A;text-align:left;">{$cardInfo}</td></tr>
                     <tr><td style="padding:12px;color:#64748B;font-size:13px;">التاريخ / Date</td><td style="padding:12px;color:#0F172A;text-align:left;">{$date}</td></tr>

@@ -65,6 +65,9 @@ class SystemSettingSeeder extends Seeder
             ['key' => 'whatsapp_business_account_id', 'value' => '', 'group' => SystemSettingsGroup::Whatsapp, 'description' => 'WhatsApp business account ID'],
             ['key' => 'whatsapp_webhook_verify_token', 'value' => '', 'group' => SystemSettingsGroup::Whatsapp, 'description' => 'Webhook verify token'],
 
+            // ─── Payment ─────────────────────────────────────────
+            ['key' => 'payment_usd_exchange_rate', 'value' => '3.75', 'group' => SystemSettingsGroup::Payment, 'description' => 'USD to SAR exchange rate for AI billing'],
+
             // ─── Maintenance ─────────────────────────────────────
             ['key' => 'maintenance_enabled', 'value' => false, 'group' => SystemSettingsGroup::Maintenance, 'description' => 'Maintenance mode toggle'],
             ['key' => 'maintenance_banner_en', 'value' => 'System is under maintenance. We will be back shortly.', 'group' => SystemSettingsGroup::Maintenance, 'description' => 'Maintenance banner (English)'],

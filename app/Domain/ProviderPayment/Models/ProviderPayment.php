@@ -29,6 +29,9 @@ class ProviderPayment extends Model
         'tax_amount',
         'total_amount',
         'currency',
+        'original_currency',
+        'original_amount',
+        'exchange_rate_used',
         'gateway',
         'tran_ref',
         'tran_type',
@@ -67,6 +70,8 @@ class ProviderPayment extends Model
         'amount' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'original_amount' => 'decimal:2',
+        'exchange_rate_used' => 'decimal:6',
         'refund_amount' => 'decimal:2',
         'confirmation_email_sent' => 'boolean',
         'confirmation_email_sent_at' => 'datetime',
@@ -122,5 +127,19 @@ class ProviderPayment extends Model
     public function getFormattedAmount(): string
     {
         return number_format((float) $this->total_amount, 2) . ' ' . $this->currency;
+    }
+
+    public function hasOriginalCurrency(): bool
+    {
+        return $this->original_currency !== null && $this->original_currency !== $this->currency;
+    }
+
+    public function getFormattedOriginalAmount(): ?string
+    {
+        if (! $this->hasOriginalCurrency()) {
+            return null;
+        }
+
+        return number_format((float) $this->original_amount, 2) . ' ' . $this->original_currency;
     }
 }
