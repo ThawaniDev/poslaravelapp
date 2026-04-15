@@ -152,20 +152,33 @@ class ProviderPaymentController extends BaseApiController
     /**
      * Handle the return URL after PayTabs redirect.
      */
-    public function paymentReturn(Request $request): JsonResponse
+    public function paymentReturn(Request $request): \Illuminate\Http\RedirectResponse|JsonResponse
     {
         $tranRef = $request->input('tranRef') ?? $request->input('tran_ref');
+        $adminUrl = config('app.url') . '/admin/provider-payments';
 
         if (! $tranRef) {
-            return $this->error('Transaction reference is required.', 422);
+            if ($request->expectsJson()) {
+                return $this->error('Transaction reference is required.', 422);
+            }
+
+            return redirect($adminUrl);
         }
 
         try {
             $payment = $this->paymentService->handlePaymentReturn($tranRef);
 
-            return $this->success(new ProviderPaymentResource($payment));
+            if ($request->expectsJson()) {
+                return $this->success(new ProviderPaymentResource($payment));
+            }
+
+            return redirect($adminUrl . '/' . $payment->id);
         } catch (\RuntimeException $e) {
-            return $this->error($e->getMessage(), 404);
+            if ($request->expectsJson()) {
+                return $this->error($e->getMessage(), 404);
+            }
+
+            return redirect($adminUrl);
         }
     }
 
