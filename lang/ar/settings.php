@@ -385,6 +385,7 @@ return [
     'processing_fee_percent_helper' => 'نسبة الرسوم المفروضة على كل معاملة (مثال: 2.5 لـ 2.5%).',
     'supported_currencies_helper' => 'اكتب واضغط Enter لإضافة رموز العملات المدعومة (مثال: OMR، USD).',
     'email_provider_smtp' => 'SMTP',
+    'email_provider_mailtrap' => 'Mailtrap',
     'email_provider_mailgun' => 'Mailgun',
     'email_provider_ses' => 'Amazon SES',
     'email_provider_postmark' => 'Postmark',

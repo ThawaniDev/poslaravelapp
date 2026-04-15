@@ -383,6 +383,7 @@ return [
     'processing_fee_percent_helper' => 'Percentage fee charged per transaction (e.g., 2.5 for 2.5%).',
     'supported_currencies_helper' => 'Type and press Enter to add supported currency codes (e.g., OMR, USD).',
     'email_provider_smtp' => 'SMTP',
+    'email_provider_mailtrap' => 'Mailtrap',
     'email_provider_mailgun' => 'Mailgun',
     'email_provider_ses' => 'Amazon SES',
     'email_provider_postmark' => 'Postmark',

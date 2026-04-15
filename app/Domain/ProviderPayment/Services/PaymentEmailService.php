@@ -6,6 +6,7 @@ use App\Domain\ProviderPayment\Enums\PaymentEmailType;
 use App\Domain\ProviderPayment\Models\PaymentEmailLog;
 use App\Domain\ProviderPayment\Models\ProviderPayment;
 use App\Domain\ProviderSubscription\Models\Invoice;
+use App\Domain\SystemConfig\Models\SystemSetting;
 use Illuminate\Support\Facades\Log;
 use Mailtrap\Helper\ResponseHelper;
 use Mailtrap\MailtrapClient;
@@ -20,9 +21,20 @@ class PaymentEmailService
 
     public function __construct()
     {
-        $this->apiToken = config('services.mailtrap.token', env('MAILTRAP_API_TOKEN', ''));
-        $this->fromAddress = env('MAIL_FROM_ADDRESS_TRANSACTIONAL', 'hello@wameedpos.com');
-        $this->fromName = env('MAIL_FROM_NAME_TRANSACTIONAL', 'Wameed POS');
+        $dbSettings = SystemSetting::where('group', 'email')
+            ->get()
+            ->pluck('value', 'key')
+            ->toArray();
+
+        $this->apiToken = $dbSettings['email_api_key']
+            ?? config('services.mailtrap.token')
+            ?? env('MAILTRAP_API_TOKEN', '');
+
+        $this->fromAddress = $dbSettings['email_from_address']
+            ?? env('MAIL_FROM_ADDRESS_TRANSACTIONAL', 'hello@wameedpos.com');
+
+        $this->fromName = $dbSettings['email_from_name']
+            ?? env('MAIL_FROM_NAME_TRANSACTIONAL', 'Wameed POS');
     }
 
     /**

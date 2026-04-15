@@ -64,6 +64,7 @@ class EmailProviderSettingsPage extends Page implements HasForms
                             ->label(__('settings.email_provider'))
                             ->options([
                                 'smtp' => __('settings.email_provider_smtp'),
+                                'mailtrap' => __('settings.email_provider_mailtrap'),
                                 'mailgun' => __('settings.email_provider_mailgun'),
                                 'ses' => __('settings.email_provider_ses'),
                                 'postmark' => __('settings.email_provider_postmark'),
@@ -110,7 +111,7 @@ class EmailProviderSettingsPage extends Page implements HasForms
                             ->password()
                             ->revealable()
                             ->maxLength(500)
-                            ->visible(fn (Forms\Get $get) => in_array($get('email_provider'), ['mailgun', 'ses', 'postmark', 'resend'])),
+                            ->visible(fn (Forms\Get $get) => in_array($get('email_provider'), ['mailtrap', 'mailgun', 'ses', 'postmark', 'resend'])),
                         Forms\Components\TextInput::make('email_api_domain')
                             ->label(__('settings.email_api_domain'))
                             ->maxLength(255)

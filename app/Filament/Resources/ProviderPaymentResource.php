@@ -25,7 +25,7 @@ class ProviderPaymentResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('provider_payments.nav_group');
+        return __('nav.group_subscription_billing');
     }
 
     public static function getNavigationLabel(): string
