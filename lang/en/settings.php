@@ -448,4 +448,60 @@ return [
     // ─── Common ──────────────────────────────────────────────
     'created_at' => 'Created At',
     'updated_at' => 'Updated At',
+
+    // ── Enum labels ──────────────────────────────────────────
+    'enums' => [
+        'expense_category' => [
+            'supplies' => 'Supplies',
+            'food' => 'Food',
+            'transport' => 'Transport',
+            'maintenance' => 'Maintenance',
+            'utility' => 'Utility',
+            'cleaning' => 'Cleaning',
+            'rent' => 'Rent',
+            'salary' => 'Salary',
+            'marketing' => 'Marketing',
+            'other' => 'Other',
+        ],
+        'gift_card_transaction_type' => [
+            'redemption' => 'Redemption',
+            'redeem' => 'Redeem',
+            'top_up' => 'Top Up',
+            'refund' => 'Refund',
+            'activation' => 'Activation',
+            'void' => 'Void',
+        ],
+        'payment_method_category' => [
+            'cash' => 'Cash',
+            'card' => 'Card',
+            'digital' => 'Digital',
+            'electronic' => 'Electronic',
+            'credit' => 'Credit',
+            'bank_transfer' => 'Bank Transfer',
+            'installment' => 'Installment',
+        ],
+        'user_theme' => [
+            'default' => 'System Default',
+            'light_classic' => 'Light Classic',
+            'dark_mode' => 'Dark Mode',
+            'high_contrast' => 'High Contrast',
+            'thawani_brand' => 'Thawani Brand',
+            'custom' => 'Custom',
+        ],
+        'accounting_export_status' => [
+            'pending' => 'Pending',
+            'processing' => 'Processing',
+            'success' => 'Success',
+            'completed' => 'Completed',
+            'failed' => 'Failed',
+        ],
+        'store_health_sync_status' => [
+            'ok' => 'OK',
+            'healthy' => 'Healthy',
+            'error' => 'Error',
+            'pending' => 'Pending',
+            'warning' => 'Warning',
+            'critical' => 'Critical',
+        ],
+    ],
 ];

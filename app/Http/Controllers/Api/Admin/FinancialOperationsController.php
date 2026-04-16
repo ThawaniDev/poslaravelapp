@@ -130,7 +130,7 @@ class FinancialOperationsController extends BaseApiController
     // ── Cash Sessions ────────────────────────────────────────
     public function cashSessions(Request $request): JsonResponse
     {
-        $q = CashSession::query()->latest();
+        $q = CashSession::query()->latest('opened_at');
 
         if ($request->filled('status')) {
             $q->where('status', $request->status);

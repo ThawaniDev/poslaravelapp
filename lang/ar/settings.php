@@ -450,4 +450,60 @@ return [
     // ─── Common ──────────────────────────────────────────────
     'created_at' => 'تاريخ الإنشاء',
     'updated_at' => 'تاريخ التحديث',
+
+    // ── تسميات التعدادات ──────────────────────────────────
+    'enums' => [
+        'expense_category' => [
+            'supplies' => 'مستلزمات',
+            'food' => 'طعام',
+            'transport' => 'نقل',
+            'maintenance' => 'صيانة',
+            'utility' => 'مرافق',
+            'cleaning' => 'تنظيف',
+            'rent' => 'إيجار',
+            'salary' => 'رواتب',
+            'marketing' => 'تسويق',
+            'other' => 'أخرى',
+        ],
+        'gift_card_transaction_type' => [
+            'redemption' => 'استرداد',
+            'redeem' => 'صرف',
+            'top_up' => 'شحن',
+            'refund' => 'استرجاع',
+            'activation' => 'تفعيل',
+            'void' => 'إلغاء',
+        ],
+        'payment_method_category' => [
+            'cash' => 'نقد',
+            'card' => 'بطاقة',
+            'digital' => 'رقمي',
+            'electronic' => 'إلكتروني',
+            'credit' => 'ائتمان',
+            'bank_transfer' => 'تحويل بنكي',
+            'installment' => 'تقسيط',
+        ],
+        'user_theme' => [
+            'default' => 'افتراضي النظام',
+            'light_classic' => 'فاتح كلاسيكي',
+            'dark_mode' => 'الوضع الداكن',
+            'high_contrast' => 'تباين عالي',
+            'thawani_brand' => 'ثواني الرسمي',
+            'custom' => 'مخصص',
+        ],
+        'accounting_export_status' => [
+            'pending' => 'قيد الانتظار',
+            'processing' => 'قيد المعالجة',
+            'success' => 'نجح',
+            'completed' => 'مكتمل',
+            'failed' => 'فشل',
+        ],
+        'store_health_sync_status' => [
+            'ok' => 'جيد',
+            'healthy' => 'صحي',
+            'error' => 'خطأ',
+            'pending' => 'قيد الانتظار',
+            'warning' => 'تحذير',
+            'critical' => 'حرج',
+        ],
+    ],
 ];

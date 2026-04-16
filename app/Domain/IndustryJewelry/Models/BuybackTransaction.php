@@ -36,6 +36,7 @@ class BuybackTransaction extends Model
         'weight_g' => 'decimal:2',
         'rate_per_gram' => 'decimal:2',
         'total_amount' => 'decimal:2',
+        'created_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

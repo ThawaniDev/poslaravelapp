@@ -17,7 +17,6 @@ class FlowerArrangementResource extends JsonResource
             'total_price' => $this->total_price,
             'is_template' => $this->is_template,
             'created_at'  => $this->created_at?->toIso8601String(),
-            'updated_at'  => $this->updated_at?->toIso8601String(),
         ];
     }
 }

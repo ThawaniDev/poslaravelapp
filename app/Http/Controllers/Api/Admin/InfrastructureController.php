@@ -71,13 +71,13 @@ class InfrastructureController extends BaseApiController
         );
     }
 
-    public function showFailedJob(int $id): JsonResponse
+    public function showFailedJob(string $id): JsonResponse
     {
         $job = FailedJob::findOrFail($id);
         return $this->success($job, 'Failed job details');
     }
 
-    public function retryFailedJob(int $id): JsonResponse
+    public function retryFailedJob(string $id): JsonResponse
     {
         $job = FailedJob::findOrFail($id);
 
@@ -87,7 +87,7 @@ class InfrastructureController extends BaseApiController
         return $this->success(null, 'Failed job retried');
     }
 
-    public function deleteFailedJob(int $id): JsonResponse
+    public function deleteFailedJob(string $id): JsonResponse
     {
         FailedJob::findOrFail($id);
         DB::table('failed_jobs')->where('id', $id)->delete();

@@ -28,6 +28,7 @@ class TradeInRecord extends Model
 
     protected $casts = [
         'assessed_value' => 'decimal:2',
+        'created_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

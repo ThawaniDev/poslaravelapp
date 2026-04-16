@@ -30,6 +30,7 @@ class DailyMetalRate extends Model
         'rate_per_gram' => 'decimal:2',
         'buyback_rate_per_gram' => 'decimal:2',
         'effective_date' => 'date',
+        'created_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

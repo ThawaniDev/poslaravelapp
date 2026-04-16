@@ -71,4 +71,53 @@ return [
     'tabs_retrieved' => 'تم استرجاع الفواتير المفتوحة بنجاح.',
     'tab_opened' => 'تم فتح الفاتورة بنجاح.',
     'tab_closed' => 'تم إغلاق الفاتورة بنجاح.',
+
+    // ── تسميات التعدادات ──────────────────────────────────
+    'enums' => [
+        'custom_cake_order_status' => [
+            'ordered' => 'تم الطلب',
+            'in_progress' => 'قيد التنفيذ',
+            'in_production' => 'قيد الإنتاج',
+            'ready' => 'جاهز',
+            'delivered' => 'تم التوصيل',
+            'cancelled' => 'ملغي',
+        ],
+        'production_schedule_status' => [
+            'scheduled' => 'مجدول',
+            'planned' => 'مخطط',
+            'in_progress' => 'قيد التنفيذ',
+            'completed' => 'مكتمل',
+            'cancelled' => 'ملغي',
+        ],
+        'repair_job_status' => [
+            'received' => 'مستلم',
+            'diagnosing' => 'قيد التشخيص',
+            'in_progress' => 'قيد التنفيذ',
+            'repairing' => 'قيد الإصلاح',
+            'testing' => 'قيد الاختبار',
+            'ready' => 'جاهز',
+            'collected' => 'تم الاستلام',
+            'cancelled' => 'ملغي',
+        ],
+        'kitchen_ticket_status' => [
+            'pending' => 'قيد الانتظار',
+            'in_progress' => 'قيد التنفيذ',
+            'preparing' => 'قيد التحضير',
+            'ready' => 'جاهز',
+            'served' => 'تم التقديم',
+            'cancelled' => 'ملغي',
+        ],
+        'condition_grade' => [
+            'new' => 'جديد',
+            'A' => 'الدرجة أ',
+            'B' => 'الدرجة ب',
+            'C' => 'الدرجة ج',
+            'D' => 'الدرجة د',
+        ],
+        'flower_freshness_status' => [
+            'fresh' => 'طازج',
+            'markdown' => 'تخفيض',
+            'disposed' => 'تم التخلص',
+        ],
+    ],
 ];

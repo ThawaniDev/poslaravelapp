@@ -20,7 +20,6 @@ class FlowerSubscriptionResource extends JsonResource
             'is_active'               => $this->is_active,
             'next_delivery_date'      => $this->next_delivery_date?->toDateString(),
             'created_at'              => $this->created_at?->toIso8601String(),
-            'updated_at'              => $this->updated_at?->toIso8601String(),
         ];
     }
 }

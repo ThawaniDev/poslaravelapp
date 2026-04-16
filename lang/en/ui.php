@@ -230,11 +230,13 @@ return [
     'label_business_types_help' => 'Which business types can use this label template.',
 
     // Label Type enum
-    'label_type_barcode'  => 'Barcode',
-    'label_type_price'    => 'Price',
-    'label_type_shelf'    => 'Shelf',
-    'label_type_jewelry'  => 'Jewellery',
-    'label_type_pharmacy' => 'Pharmacy',
+    'label_type_barcode'   => 'Barcode',
+    'label_type_price'     => 'Price',
+    'label_type_price_tag' => 'Price Tag',
+    'label_type_shelf'     => 'Shelf',
+    'label_type_jewelry'   => 'Jewellery',
+    'label_type_pharmacy'  => 'Pharmacy',
+    'label_type_custom'    => 'Custom',
 
     // Border Style enum
     'border_solid'  => 'Solid',

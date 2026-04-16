@@ -6,6 +6,7 @@ enum RepairJobStatus: string
 {
     case Received = 'received';
     case Diagnosing = 'diagnosing';
+    case InProgress = 'in_progress';
     case Repairing = 'repairing';
     case Testing = 'testing';
     case Ready = 'ready';

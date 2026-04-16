@@ -33,6 +33,7 @@ class FlowerSubscription extends Model
         'is_active' => 'boolean',
         'price_per_delivery' => 'decimal:2',
         'next_delivery_date' => 'date',
+        'created_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

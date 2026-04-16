@@ -30,6 +30,7 @@ class Prescription extends Model
 
     protected $casts = [
         'insurance_claim_amount' => 'decimal:2',
+        'created_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

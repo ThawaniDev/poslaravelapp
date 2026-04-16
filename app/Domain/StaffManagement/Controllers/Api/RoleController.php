@@ -32,7 +32,7 @@ class RoleController extends BaseApiController
     /**
      * GET /api/v2/staff/roles/{role}
      */
-    public function show(int $role)
+    public function show(string $role)
     {
         $found = $this->roleService->find($role);
 
@@ -55,7 +55,7 @@ class RoleController extends BaseApiController
     /**
      * PUT /api/v2/staff/roles/{role}
      */
-    public function update(UpdateRoleRequest $request, int $role)
+    public function update(UpdateRoleRequest $request, string $role)
     {
         $found = $this->roleService->find($role);
 
@@ -71,7 +71,7 @@ class RoleController extends BaseApiController
     /**
      * DELETE /api/v2/staff/roles/{role}
      */
-    public function destroy(Request $request, int $role)
+    public function destroy(Request $request, string $role)
     {
         $found = $this->roleService->find($role);
 
@@ -83,7 +83,7 @@ class RoleController extends BaseApiController
     /**
      * POST /api/v2/staff/roles/{role}/assign
      */
-    public function assign(AssignRoleRequest $request, int $role)
+    public function assign(AssignRoleRequest $request, string $role)
     {
         $found = $this->roleService->find($role);
         $user = User::findOrFail($request->user_id);
@@ -96,7 +96,7 @@ class RoleController extends BaseApiController
     /**
      * POST /api/v2/staff/roles/{role}/unassign
      */
-    public function unassign(AssignRoleRequest $request, int $role)
+    public function unassign(AssignRoleRequest $request, string $role)
     {
         $found = $this->roleService->find($role);
         $user = User::findOrFail($request->user_id);

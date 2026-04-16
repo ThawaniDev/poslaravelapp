@@ -120,8 +120,8 @@ class AnalyticsReportingController extends BaseApiController
         $revenueByPlan = $planStats->get()->map(fn ($ps) => [
             'plan_id' => $ps->subscription_plan_id,
             'plan_name' => $ps->plan?->name ?? 'Unknown',
-            'active_count' => $ps->active_stores,
-            'mrr' => (float) $ps->revenue,
+            'active_count' => $ps->active_count,
+            'mrr' => (float) $ps->mrr,
         ])->toArray();
 
         // Failed payments count
@@ -177,21 +177,21 @@ class AnalyticsReportingController extends BaseApiController
             ->groupBy(fn ($ps) => $ps->date->format('Y-m-d'))
             ->map(fn ($group, $date) => [
                 'date' => $date,
-                'active' => $group->sum('active_stores'),
-                'trial' => $group->sum('trial_stores'),
-                'churned' => $group->sum('churned_stores'),
+                'active' => $group->sum('active_count'),
+                'trial' => $group->sum('trial_count'),
+                'churned' => $group->sum('churned_count'),
             ])
             ->values()
             ->toArray();
 
         // Average subscription age (days)
         $avgAge = StoreSubscription::where('status', 'active')
-            ->selectRaw('AVG(JULIANDAY(CURRENT_DATE) - JULIANDAY(created_at)) as avg_days')
+            ->selectRaw('AVG(EXTRACT(EPOCH FROM (CURRENT_DATE - created_at::date)) / 86400) as avg_days')
             ->value('avg_days');
 
         // Total churn in period
         $totalChurn = PlatformPlanStat::whereBetween('date', [$dateFrom, $dateTo])
-            ->sum('churned_stores');
+            ->sum('churned_count');
 
         // Trial-to-paid conversion: trials that became active / total trials
         $totalTrials = StoreSubscription::where('status', 'trial')->count();
@@ -274,14 +274,14 @@ class AnalyticsReportingController extends BaseApiController
         if ($latestDate) {
             $totalStores = Store::count();
             $features = FeatureAdoptionStat::whereDate('date', $latestDate)
-                ->orderByDesc('stores_using')
+                ->orderByDesc('stores_using_count')
                 ->get()
                 ->map(fn ($f) => [
                     'feature_key' => $f->feature_key,
-                    'stores_using' => $f->stores_using,
-                    'total_eligible' => $f->total_eligible,
+                    'stores_using' => $f->stores_using_count,
+                    'total_eligible' => $f->total_events,
                     'adoption_percentage' => $totalStores > 0
-                        ? round(($f->stores_using / $totalStores) * 100, 2)
+                        ? round(($f->stores_using_count / $totalStores) * 100, 2)
                         : 0,
                 ])
                 ->toArray();
@@ -289,7 +289,7 @@ class AnalyticsReportingController extends BaseApiController
 
         // Trend data (total usage events per day)
         $trend = FeatureAdoptionStat::whereBetween('date', [$dateFrom, $dateTo])
-            ->selectRaw('date, SUM(stores_using) as total_stores, SUM(total_eligible) as total_eligible')
+            ->selectRaw('date, SUM(stores_using_count) as total_stores, SUM(total_events) as total_eligible')
             ->groupBy('date')
             ->orderBy('date')
             ->get()
@@ -555,10 +555,10 @@ class AnalyticsReportingController extends BaseApiController
                 'plan_id' => $ps->subscription_plan_id,
                 'plan_name' => $ps->plan?->name ?? 'Unknown',
                 'date' => $ps->date->format('Y-m-d'),
-                'active_stores' => $ps->active_stores,
-                'trial_stores' => $ps->trial_stores,
-                'churned_stores' => $ps->churned_stores,
-                'revenue' => (float) $ps->revenue,
+                'active_stores' => $ps->active_count,
+                'trial_stores' => $ps->trial_count,
+                'churned_stores' => $ps->churned_count,
+                'revenue' => (float) $ps->mrr,
             ])
             ->toArray();
 
@@ -581,8 +581,8 @@ class AnalyticsReportingController extends BaseApiController
                 'id' => $f->id,
                 'feature_key' => $f->feature_key,
                 'date' => $f->date->format('Y-m-d'),
-                'stores_using' => $f->stores_using,
-                'total_eligible' => $f->total_eligible,
+                'stores_using' => $f->stores_using_count,
+                'total_eligible' => $f->total_events,
             ])
             ->toArray();
 

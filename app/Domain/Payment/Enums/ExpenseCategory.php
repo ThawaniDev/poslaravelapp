@@ -9,5 +9,9 @@ enum ExpenseCategory: string
     case Transport = 'transport';
     case Maintenance = 'maintenance';
     case Utility = 'utility';
+    case Cleaning = 'cleaning';
+    case Rent = 'rent';
+    case Salary = 'salary';
+    case Marketing = 'marketing';
     case Other = 'other';
 }

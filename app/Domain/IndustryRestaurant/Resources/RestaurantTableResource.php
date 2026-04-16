@@ -21,7 +21,6 @@ class RestaurantTableResource extends JsonResource
             'current_order_id' => $this->current_order_id,
             'is_active'        => $this->is_active,
             'created_at'       => $this->created_at?->toIso8601String(),
-            'updated_at'       => $this->updated_at?->toIso8601String(),
         ];
     }
 }

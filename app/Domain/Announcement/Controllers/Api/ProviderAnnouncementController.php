@@ -2,6 +2,7 @@
 
 namespace App\Domain\Announcement\Controllers\Api;
 
+use App\Domain\Announcement\Models\Announcement;
 use App\Domain\Announcement\Services\AnnouncementService;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
@@ -56,6 +57,10 @@ class ProviderAnnouncementController extends BaseApiController
 
         if (!$storeId) {
             return $this->error('Store ID is required', 400);
+        }
+
+        if (!Announcement::find($id)) {
+            return $this->notFound('Announcement not found');
         }
 
         $this->announcementService->dismiss($id, $storeId);

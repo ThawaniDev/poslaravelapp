@@ -230,11 +230,13 @@ return [
     'label_business_types_help' => 'أنواع الأنشطة التجارية التي يمكنها استخدام قالب الملصق.',
 
     // Label Type enum
-    'label_type_barcode'  => 'باركود',
-    'label_type_price'    => 'سعر',
-    'label_type_shelf'    => 'رف',
-    'label_type_jewelry'  => 'مجوهرات',
-    'label_type_pharmacy' => 'صيدلية',
+    'label_type_barcode'   => 'باركود',
+    'label_type_price'     => 'سعر',
+    'label_type_price_tag' => 'بطاقة سعر',
+    'label_type_shelf'     => 'رف',
+    'label_type_jewelry'   => 'مجوهرات',
+    'label_type_pharmacy'  => 'صيدلية',
+    'label_type_custom'    => 'مخصص',
 
     // Border Style enum
     'border_solid'  => 'متصل',

@@ -71,4 +71,53 @@ return [
     'tabs_retrieved' => 'Open tabs retrieved successfully.',
     'tab_opened' => 'Tab opened successfully.',
     'tab_closed' => 'Tab closed successfully.',
+
+    // ── Enum labels ──────────────────────────────────────────
+    'enums' => [
+        'custom_cake_order_status' => [
+            'ordered' => 'Ordered',
+            'in_progress' => 'In Progress',
+            'in_production' => 'In Production',
+            'ready' => 'Ready',
+            'delivered' => 'Delivered',
+            'cancelled' => 'Cancelled',
+        ],
+        'production_schedule_status' => [
+            'scheduled' => 'Scheduled',
+            'planned' => 'Planned',
+            'in_progress' => 'In Progress',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+        ],
+        'repair_job_status' => [
+            'received' => 'Received',
+            'diagnosing' => 'Diagnosing',
+            'in_progress' => 'In Progress',
+            'repairing' => 'Repairing',
+            'testing' => 'Testing',
+            'ready' => 'Ready',
+            'collected' => 'Collected',
+            'cancelled' => 'Cancelled',
+        ],
+        'kitchen_ticket_status' => [
+            'pending' => 'Pending',
+            'in_progress' => 'In Progress',
+            'preparing' => 'Preparing',
+            'ready' => 'Ready',
+            'served' => 'Served',
+            'cancelled' => 'Cancelled',
+        ],
+        'condition_grade' => [
+            'new' => 'New',
+            'A' => 'Grade A',
+            'B' => 'Grade B',
+            'C' => 'Grade C',
+            'D' => 'Grade D',
+        ],
+        'flower_freshness_status' => [
+            'fresh' => 'Fresh',
+            'markdown' => 'Markdown',
+            'disposed' => 'Disposed',
+        ],
+    ],
 ];

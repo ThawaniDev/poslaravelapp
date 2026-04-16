@@ -3763,9 +3763,9 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('store_id');
             $table->foreign('store_id')->references('id')->on('stores');
-            $table->uuid('order_id');
+            $table->uuid('order_id')->nullable();
             $table->foreign('order_id')->references('id')->on('orders');
-            $table->string('customer_name', 200);
+            $table->string('customer_name', 200)->nullable();
             $table->uuid('table_id')->nullable();
             $table->timestamp('opened_at')->nullable();
             $table->timestamp('closed_at')->nullable();

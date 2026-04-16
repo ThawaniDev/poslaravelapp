@@ -29,6 +29,7 @@ class FlowerArrangement extends Model
         'items_json' => 'array',
         'is_template' => 'boolean',
         'total_price' => 'decimal:2',
+        'created_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

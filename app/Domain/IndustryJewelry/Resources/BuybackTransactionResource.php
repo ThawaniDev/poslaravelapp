@@ -21,7 +21,6 @@ class BuybackTransactionResource extends JsonResource
             'staff_user_id'  => $this->staff_user_id,
             'notes'          => $this->notes,
             'created_at'     => $this->created_at?->toIso8601String(),
-            'updated_at'     => $this->updated_at?->toIso8601String(),
         ];
     }
 }

@@ -419,20 +419,28 @@ class WameedAIAdminController extends BaseApiController
 
     public function storeHealth(Request $request): JsonResponse
     {
-        $result = $this->storeHealth->calculateAll($request->user()?->id);
-        if ($result === null) {
-            return $this->error('AI feature unavailable', 503);
+        try {
+            $result = $this->storeHealth->calculateAll($request->user()?->id);
+            if ($result === null) {
+                return $this->error('AI feature unavailable', 503);
+            }
+            return $this->success($result);
+        } catch (\Throwable $e) {
+            return $this->error('Store health analysis failed: ' . $e->getMessage(), 500);
         }
-        return $this->success($result);
     }
 
     public function platformTrends(Request $request): JsonResponse
     {
-        $result = $this->platformTrend->analyze($request->user()?->id);
-        if ($result === null) {
-            return $this->error('AI feature unavailable', 503);
+        try {
+            $result = $this->platformTrend->analyze($request->user()?->id);
+            if ($result === null) {
+                return $this->error('AI feature unavailable', 503);
+            }
+            return $this->success($result);
+        } catch (\Throwable $e) {
+            return $this->error('Platform trends analysis failed: ' . $e->getMessage(), 500);
         }
-        return $this->success($result);
     }
 
     // ═══════════════════════════════════════════════════════════

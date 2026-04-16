@@ -157,15 +157,20 @@ class LocalizationService
     /**
      * Publish a new translation version snapshot.
      */
-    public function publishVersion(string $publishedBy, ?string $notes = null): TranslationVersion
+    public function publishVersion(?string $publishedBy, ?string $notes = null): TranslationVersion
     {
         $allStrings = MasterTranslationString::orderBy('string_key')->get(['string_key', 'value_en', 'value_ar']);
         $hash = hash('sha256', $allStrings->toJson());
 
+        // Verify published_by exists in admin_users to satisfy FK constraint
+        $validPublisher = $publishedBy
+            ? \Illuminate\Support\Facades\DB::table('admin_users')->where('id', $publishedBy)->exists()
+            : false;
+
         return TranslationVersion::create([
             'version_hash' => $hash,
             'published_at' => now(),
-            'published_by' => $publishedBy,
+            'published_by' => $validPublisher ? $publishedBy : null,
             'notes' => $notes,
         ]);
     }

@@ -39,6 +39,7 @@ class JewelryProductDetail extends Model
         'net_weight_g' => 'decimal:2',
         'making_charges_value' => 'decimal:2',
         'stone_weight_carat' => 'decimal:2',
+        'created_at' => 'datetime',
     ];
 
     public function product(): BelongsTo

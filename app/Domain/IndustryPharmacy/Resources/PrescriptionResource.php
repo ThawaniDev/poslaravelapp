@@ -21,7 +21,6 @@ class PrescriptionResource extends JsonResource
             'insurance_claim_amount' => $this->insurance_claim_amount,
             'notes'                  => $this->notes,
             'created_at'             => $this->created_at?->toIso8601String(),
-            'updated_at'             => $this->updated_at?->toIso8601String(),
         ];
     }
 }

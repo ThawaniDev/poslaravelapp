@@ -14,4 +14,22 @@ return [
     'deleted' => 'Backup deleted successfully.',
     'export_created' => 'Data export created.',
     'provider_status_retrieved' => 'Provider backup status retrieved.',
+
+    // ── Enum labels ──────────────────────────────────────────
+    'enums' => [
+        'backup_type' => [
+            'auto' => 'Automatic',
+            'manual' => 'Manual',
+            'pre_update' => 'Pre-Update',
+            'full' => 'Full',
+            'incremental' => 'Incremental',
+        ],
+        'sync_direction' => [
+            'push' => 'Push',
+            'pull' => 'Pull',
+            'full' => 'Full Sync',
+            'upload' => 'Upload',
+            'download' => 'Download',
+        ],
+    ],
 ];

@@ -17,7 +17,6 @@ class DailyMetalRateResource extends JsonResource
             'buyback_rate_per_gram' => $this->buyback_rate_per_gram,
             'effective_date'        => $this->effective_date?->toDateString(),
             'created_at'            => $this->created_at?->toIso8601String(),
-            'updated_at'            => $this->updated_at?->toIso8601String(),
         ];
     }
 }

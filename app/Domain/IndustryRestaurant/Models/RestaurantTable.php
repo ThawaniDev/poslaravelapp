@@ -33,6 +33,7 @@ class RestaurantTable extends Model
     protected $casts = [
         'status' => RestaurantTableStatus::class,
         'is_active' => 'boolean',
+        'created_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

@@ -18,8 +18,6 @@ class FlowerFreshnessLogResource extends JsonResource
             'dispose_date'            => $this->dispose_date?->toDateString(),
             'quantity'                => $this->quantity,
             'status'                  => $this->status?->value,
-            'created_at'              => $this->created_at?->toIso8601String(),
-            'updated_at'              => $this->updated_at?->toIso8601String(),
         ];
     }
 }

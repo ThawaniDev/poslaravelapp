@@ -32,6 +32,7 @@ class TableReservation extends Model
     protected $casts = [
         'status' => TableReservationStatus::class,
         'reservation_date' => 'date',
+        'created_at' => 'datetime',
     ];
 
     public function store(): BelongsTo
