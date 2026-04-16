@@ -27,6 +27,6 @@ class FcmToken extends Model
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(\App\Domain\Auth\Models\User::class);
     }
 }

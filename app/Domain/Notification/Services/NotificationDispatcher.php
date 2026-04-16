@@ -193,12 +193,18 @@ class NotificationDispatcher
         string $priority = 'normal',
         array $data = [],
     ): NotificationCustom {
+        // Resolve store_id from the user so store-scoped queries work
+        $storeId = \App\Domain\Auth\Models\User::where('id', $userId)->value('store_id');
+
         return NotificationCustom::create([
             'user_id' => $userId,
+            'store_id' => $storeId,
             'category' => $category,
             'title' => $title,
             'message' => $body,
             'priority' => $priority,
+            'reference_id' => $referenceId,
+            'reference_type' => $referenceType,
             'metadata' => array_filter([
                 'event_key' => $eventKey,
                 'reference_id' => $referenceId,

@@ -17,9 +17,10 @@ class OrderNotificationObserver
     {
         try {
             $store = $order->store;
+            $currency = $store?->currency ?? 'OMR';
             $vars = [
                 'order_id' => $order->order_number ?? $order->id,
-                'total' => number_format((float) $order->total, 2) . ' OMR',
+                'total' => number_format((float) $order->total, 2) . ' ' . $currency,
                 'store_name' => $store?->name ?? '',
             ];
 
@@ -54,12 +55,13 @@ class OrderNotificationObserver
 
         try {
             $store = $order->store;
+            $currency = $store?->currency ?? 'OMR';
             $oldStatus = $order->getOriginal('status');
             $newStatus = $order->status;
 
             $vars = [
                 'order_id' => $order->order_number ?? $order->id,
-                'total' => number_format((float) $order->total, 2) . ' OMR',
+                'total' => number_format((float) $order->total, 2) . ' ' . $currency,
                 'store_name' => $store?->name ?? '',
                 'old_status' => $oldStatus instanceof OrderStatus ? $oldStatus->value : (string) $oldStatus,
                 'new_status' => $newStatus instanceof OrderStatus ? $newStatus->value : (string) $newStatus,

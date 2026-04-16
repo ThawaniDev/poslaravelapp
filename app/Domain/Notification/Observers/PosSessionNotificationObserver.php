@@ -31,6 +31,7 @@ class PosSessionNotificationObserver
             $cashier = $session->cashier;
             $cashierName = $cashier?->name ?? 'Unknown';
             $storeName = $store?->name ?? '';
+            $currency = $store?->currency ?? 'OMR';
 
             $openingCash = (float) ($session->opening_cash ?? 0);
             $closingCash = (float) ($session->closing_cash ?? 0);
@@ -42,9 +43,9 @@ class PosSessionNotificationObserver
                 eventKey: 'finance.shift_closed',
                 variables: [
                     'cashier_name' => $cashierName,
-                    'total_sales' => number_format((float) ($session->total_sales ?? 0), 2) . ' OMR',
-                    'cash_expected' => number_format($openingCash, 2) . ' OMR',
-                    'cash_actual' => number_format($closingCash, 2) . ' OMR',
+                    'total_sales' => number_format((float) ($session->total_sales ?? 0), 2) . ' ' . $currency,
+                    'cash_expected' => number_format($openingCash, 2) . ' ' . $currency,
+                    'cash_actual' => number_format($closingCash, 2) . ' ' . $currency,
                     'store_name' => $storeName,
                 ],
                 category: 'finance',
@@ -63,9 +64,9 @@ class PosSessionNotificationObserver
                     eventKey: 'finance.cash_discrepancy',
                     variables: [
                         'cashier_name' => $cashierName,
-                        'expected' => number_format($expectedCash, 2) . ' OMR',
-                        'actual' => number_format($actualCash, 2) . ' OMR',
-                        'difference' => number_format($discrepancy, 2) . ' OMR',
+                        'expected' => number_format($expectedCash, 2) . ' ' . $currency,
+                        'actual' => number_format($actualCash, 2) . ' ' . $currency,
+                        'difference' => number_format($discrepancy, 2) . ' ' . $currency,
                         'store_name' => $storeName,
                     ],
                     category: 'finance',
