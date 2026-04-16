@@ -37,6 +37,10 @@ return [
 
     'mailers' => [
 
+        'mailtrap' => [
+            'transport' => 'mailtrap-sdk',
+        ],
+
         'smtp' => [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),
@@ -113,6 +117,8 @@ return [
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
         'name' => env('MAIL_FROM_NAME', 'Example'),
+        'address_transactional' => env('MAIL_FROM_ADDRESS_TRANSACTIONAL', env('MAIL_FROM_ADDRESS', 'hello@example.com')),
+        'name_transactional' => env('MAIL_FROM_NAME_TRANSACTIONAL', env('MAIL_FROM_NAME', 'Example')),
     ],
 
 ];

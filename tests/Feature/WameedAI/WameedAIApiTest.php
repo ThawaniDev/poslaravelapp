@@ -42,7 +42,7 @@ class WameedAIApiTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'Main Store',
             'business_type' => 'grocery',
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);

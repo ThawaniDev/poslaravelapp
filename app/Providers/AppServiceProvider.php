@@ -27,6 +27,8 @@ use App\Domain\PosTerminal\Models\PosSession;
 use App\Domain\Notification\Observers\OrderNotificationObserver;
 use App\Domain\Notification\Observers\StockLevelNotificationObserver;
 use App\Domain\Notification\Observers\PosSessionNotificationObserver;
+use App\Domain\Announcement\Models\PlatformAnnouncement;
+use App\Domain\Announcement\Observers\PlatformAnnouncementObserver;
 use App\Domain\ProviderSubscription\Services\BillingService;
 use App\Domain\Security\Services\PinOverrideService;
 use App\Domain\StaffManagement\Services\PermissionService;
@@ -103,6 +105,9 @@ class AppServiceProvider extends ServiceProvider
         Order::observe(OrderNotificationObserver::class);
         StockLevel::observe(StockLevelNotificationObserver::class);
         PosSession::observe(PosSessionNotificationObserver::class);
+
+        // Register announcement observer for push + email dispatch
+        PlatformAnnouncement::observe(PlatformAnnouncementObserver::class);
 
         // Configure API rate limiters
         RateLimiter::for('api', function (Request $request) {

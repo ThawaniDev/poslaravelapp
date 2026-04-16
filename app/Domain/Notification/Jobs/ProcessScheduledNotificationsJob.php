@@ -4,6 +4,7 @@ namespace App\Domain\Notification\Jobs;
 
 use App\Domain\Notification\Models\NotificationCustom;
 use App\Domain\Notification\Models\NotificationSchedule;
+use App\Domain\Notification\Services\FcmService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -80,17 +81,37 @@ class ProcessScheduledNotificationsJob implements ShouldQueue
 
     private function createNotification(NotificationSchedule $schedule, string $userId): void
     {
+        $title = $schedule->title ?? 'Scheduled Notification';
+        $message = $schedule->message ?? '';
+        $category = $schedule->category ?? 'system';
+
         NotificationCustom::create([
             'user_id' => $userId,
             'store_id' => $schedule->store_id,
-            'category' => $schedule->category ?? 'system',
-            'title' => $schedule->title ?? 'Scheduled Notification',
-            'message' => $schedule->message ?? '',
+            'category' => $category,
+            'title' => $title,
+            'message' => $message,
             'priority' => $schedule->priority ?? 'normal',
             'channel' => $schedule->channel ?? 'in_app',
             'is_read' => false,
             'created_at' => Carbon::now(),
         ]);
+
+        // Also send FCM push notification
+        try {
+            $fcm = app(FcmService::class);
+            $fcm->sendToUser($userId, $title, $message, [
+                'category' => $category,
+                'schedule_id' => $schedule->id,
+                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('ProcessScheduledNotifications: FCM push failed', [
+                'user_id' => $userId,
+                'schedule_id' => $schedule->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function calculateNextRun(string $cronExpression, string $timezone): Carbon

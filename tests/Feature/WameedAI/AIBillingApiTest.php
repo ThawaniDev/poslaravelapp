@@ -1004,7 +1004,7 @@ class AIBillingApiTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'Billing Test Store',
             'business_type' => 'grocery',
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -1013,7 +1013,7 @@ class AIBillingApiTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'Second Store',
             'business_type' => 'grocery',
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => false,
         ]);

@@ -236,7 +236,7 @@ class AIChatService
     private function buildFallbackSystemPrompt(AIChat $chat, ?string $featureSlug): string
     {
         $storeName = 'your store';
-        $currency = 'OMR';
+        $currency = 'SAR';
         try {
             $store = DB::selectOne("SELECT name, currency FROM stores WHERE id = ?", [$chat->store_id]);
             $storeName = $store->name ?? $storeName;

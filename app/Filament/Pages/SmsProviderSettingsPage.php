@@ -115,7 +115,7 @@ class SmsProviderSettingsPage extends Page implements HasForms
                             ->numeric()
                             ->minValue(0)
                             ->step(0.001)
-                            ->prefix('OMR'),
+                            ->prefix('SAR'),
                     ])->columns(3),
             ])
             ->statePath('data');

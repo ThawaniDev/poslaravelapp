@@ -5,6 +5,7 @@ namespace App\Domain\Notification\Services;
 use App\Domain\Notification\Enums\NotificationChannel;
 use App\Domain\Notification\Enums\NotificationDeliveryStatus;
 use App\Domain\Notification\Enums\NotificationProvider;
+use App\Domain\Notification\Mail\NotificationMail;
 use App\Domain\Notification\Models\NotificationDeliveryLog;
 use App\Domain\Notification\Models\NotificationProviderStatus;
 use App\Domain\Notification\Models\NotificationTemplate;
@@ -527,6 +528,7 @@ class NotificationTemplateService
     ): ?string {
         return match ($provider) {
             'firebase' => $this->sendViaFirebase($recipient, $title, $body),
+            'smtp', 'mailgun', 'ses', 'sendgrid' => $this->sendViaEmail($provider, $recipient, $title, $body),
             default => $this->sendViaGenericLog($provider, $channel, $recipient, $title),
         };
     }
@@ -560,6 +562,27 @@ class NotificationTemplateService
         ]);
 
         return "fcm_ok_{$result['success']}";
+    }
+
+    /**
+     * Send email notification via a mail provider (smtp, mailgun, ses, sendgrid).
+     *
+     * $recipient is an email address.
+     */
+    private function sendViaEmail(string $provider, string $recipient, string $title, string $body): string
+    {
+        EmailService::send($recipient, new NotificationMail(
+            subject: $title,
+            heading: $title,
+            body: $body,
+        ));
+
+        Log::info('Email: Delivered', [
+            'provider' => $provider,
+            'recipient' => $recipient,
+        ]);
+
+        return 'email_' . $provider . '_' . bin2hex(random_bytes(4));
     }
 
     /**

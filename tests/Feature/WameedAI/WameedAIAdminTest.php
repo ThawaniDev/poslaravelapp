@@ -51,7 +51,7 @@ class WameedAIAdminTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'Alpha Store',
             'business_type' => 'grocery',
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
@@ -60,7 +60,7 @@ class WameedAIAdminTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'Beta Store',
             'business_type' => 'grocery',
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => false,
         ]);

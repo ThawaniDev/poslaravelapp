@@ -44,7 +44,7 @@ class GamificationWorkflowTest extends WorkflowTestCase
             'name' => 'Gamification Store',
             'name_ar' => 'متجر الألعاب',
             'business_type' => 'grocery',
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'locale' => 'en',
             'timezone' => 'Asia/Muscat',
             'is_active' => true,

@@ -17,7 +17,7 @@ class OrderNotificationObserver
     {
         try {
             $store = $order->store;
-            $currency = $store?->currency ?? 'OMR';
+            $currency = $store?->currency ?? 'SAR';
             $vars = [
                 'order_id' => $order->order_number ?? $order->id,
                 'total' => number_format((float) $order->total, 2) . ' ' . $currency,
@@ -55,7 +55,7 @@ class OrderNotificationObserver
 
         try {
             $store = $order->store;
-            $currency = $store?->currency ?? 'OMR';
+            $currency = $store?->currency ?? 'SAR';
             $oldStatus = $order->getOriginal('status');
             $newStatus = $order->status;
 

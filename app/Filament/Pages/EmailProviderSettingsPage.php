@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Domain\AdminPanel\Models\AdminActivityLog;
+use App\Domain\Notification\Services\EmailService;
 use App\Domain\SystemConfig\Models\SystemSetting;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -168,6 +169,9 @@ class EmailProviderSettingsPage extends Page implements HasForms
             entityId: 'email',
             details: ['provider' => $data['email_provider'] ?? null],
         );
+
+        // Flush cached email settings so new config takes effect immediately
+        EmailService::flushCache();
 
         Notification::make()->title(__('settings.config_saved'))->success()->send();
     }

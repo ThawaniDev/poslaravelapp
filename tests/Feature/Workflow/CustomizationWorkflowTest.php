@@ -44,7 +44,7 @@ class CustomizationWorkflowTest extends WorkflowTestCase
             'name' => 'Customization Store',
             'name_ar' => 'متجر التخصيص',
             'business_type' => 'grocery',
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'locale' => 'en',
             'timezone' => 'Asia/Muscat',
             'is_active' => true,

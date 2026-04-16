@@ -3,6 +3,7 @@
 namespace App\Domain\Notification\Services;
 
 use App\Domain\Notification\Enums\NotificationChannel;
+use App\Domain\Notification\Mail\NotificationMail;
 use App\Domain\Notification\Models\NotificationCustom;
 use App\Domain\Notification\Models\FcmToken;
 use Illuminate\Support\Facades\Log;
@@ -36,6 +37,7 @@ class NotificationDispatcher
         ?string $referenceType = null,
         string $locale = 'en',
         string $priority = 'normal',
+        bool $alsoEmail = false,
     ): void {
         $rendered = $this->templates->render($eventKey, NotificationChannel::Push, $variables, $locale);
 
@@ -52,6 +54,11 @@ class NotificationDispatcher
         $title = $rendered['title'];
         $body = $rendered['body'];
         $resolvedCategory = $category ?? explode('.', $eventKey)[0] ?? 'system';
+
+        // Auto-enable email for critical events
+        $events = NotificationTemplateService::allEvents();
+        $isCritical = $events[$eventKey]['is_critical'] ?? false;
+        $shouldEmail = $alsoEmail || $isCritical;
 
         // 1. Create in-app notification
         $this->createInAppNotification(
@@ -74,6 +81,33 @@ class NotificationDispatcher
             'reference_type' => $referenceType ?? '',
             'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
         ]);
+
+        // 3. Send email for critical events or when explicitly requested
+        if ($shouldEmail) {
+            $this->sendEmailToUser($userId, $title, $body);
+        }
+    }
+
+    // ─── Send Email to User ──────────────────────────────
+
+    private function sendEmailToUser(string $userId, string $title, string $body): void
+    {
+        try {
+            $email = \App\Domain\Auth\Models\User::where('id', $userId)->value('email');
+
+            if ($email) {
+                EmailService::queue($email, new NotificationMail(
+                    subject: $title,
+                    heading: $title,
+                    body: $body,
+                ));
+            }
+        } catch (\Throwable $e) {
+            Log::warning('NotificationDispatcher: Email failed', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     // ─── Dispatch to Store ───────────────────────────────

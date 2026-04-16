@@ -128,7 +128,7 @@ class NotificationProviderStatusPage extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('cost_per_message')
                     ->label(__('notifications.cost_per_message'))
-                    ->money('OMR')
+                    ->money('SAR')
                     ->placeholder('-')
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -197,8 +197,27 @@ class NotificationProviderStatusPage extends Page implements HasForms, HasTable
                             ],
                         );
 
-                        // Mark as tested (actual delivery depends on queue workers)
-                        $record->update(['last_test_result' => 'sent']);
+                        // Actually dispatch a test notification via the template service
+                        try {
+                            $service = app(\App\Domain\Notification\Services\NotificationTemplateService::class);
+                            $channelEnum = $record->channel instanceof \App\Domain\Notification\Enums\NotificationChannel
+                                ? $record->channel
+                                : \App\Domain\Notification\Enums\NotificationChannel::from($record->channel);
+
+                            $service->dispatch(
+                                eventKey: 'system.update_available',
+                                channel: $channelEnum,
+                                recipient: $data['test_recipient'],
+                                variables: [
+                                    'version' => 'Test v1.0',
+                                    'release_notes_summary' => 'This is a test notification from the admin panel.',
+                                ],
+                            );
+
+                            $record->update(['last_test_result' => 'sent']);
+                        } catch (\Throwable $e) {
+                            $record->update(['last_test_result' => 'failed: ' . mb_substr($e->getMessage(), 0, 100)]);
+                        }
 
                         Notification::make()
                             ->title(__('notifications.test_queued'))
@@ -275,7 +294,7 @@ class NotificationProviderStatusPage extends Page implements HasForms, HasTable
                             ->numeric()
                             ->minValue(0)
                             ->step(0.001)
-                            ->prefix('OMR')
+                            ->prefix('SAR')
                             ->default(fn (NotificationProviderStatus $record) => $record->cost_per_message),
                     ])
                     ->action(function (NotificationProviderStatus $record, array $data) {

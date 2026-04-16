@@ -20,7 +20,7 @@ class AIStoreDataService
         $store = DB::selectOne("SELECT name, name_ar, currency, city, timezone, is_main_branch FROM stores WHERE id = ?", [$storeId]);
         $storeName = $store->name ?? 'Unknown Store';
         $storeNameAr = $store->name_ar ?? '';
-        $currency = $store->currency ?? 'OMR';
+        $currency = $store->currency ?? 'SAR';
         $city = $store->city ?? '';
         $timezone = $store->timezone ?? 'Asia/Muscat';
         $isMainBranch = $store->is_main_branch ?? false;

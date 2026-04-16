@@ -31,7 +31,7 @@ class PosSessionNotificationObserver
             $cashier = $session->cashier;
             $cashierName = $cashier?->name ?? 'Unknown';
             $storeName = $store?->name ?? '';
-            $currency = $store?->currency ?? 'OMR';
+            $currency = $store?->currency ?? 'SAR';
 
             $openingCash = (float) ($session->opening_cash ?? 0);
             $closingCash = (float) ($session->closing_cash ?? 0);
@@ -58,7 +58,7 @@ class PosSessionNotificationObserver
             $actualCash = $closingCash;
             $discrepancy = abs($actualCash - $expectedCash);
 
-            if ($discrepancy > 1) { // More than 1 OMR discrepancy
+            if ($discrepancy > 1) { // More than 1 SAR discrepancy
                 $this->dispatcher->toStoreOwner(
                     storeId: $session->store_id,
                     eventKey: 'finance.cash_discrepancy',

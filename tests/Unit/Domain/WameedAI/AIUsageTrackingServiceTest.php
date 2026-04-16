@@ -37,7 +37,7 @@ class AIUsageTrackingServiceTest extends TestCase
             'organization_id' => $this->org->id,
             'name' => 'Test Store',
             'business_type' => 'grocery',
-            'currency' => 'OMR',
+            'currency' => 'SAR',
             'is_active' => true,
             'is_main_branch' => true,
         ]);
