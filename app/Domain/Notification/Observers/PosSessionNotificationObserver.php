@@ -3,6 +3,7 @@
 namespace App\Domain\Notification\Observers;
 
 use App\Domain\Notification\Services\NotificationDispatcher;
+use App\Domain\Payment\Enums\CashSessionStatus;
 use App\Domain\PosTerminal\Models\PosSession;
 use Illuminate\Support\Facades\Log;
 
@@ -21,8 +22,8 @@ class PosSessionNotificationObserver
         try {
             $newStatus = $session->status;
 
-            // Only notify on session close
-            if (! in_array($newStatus, ['closed', 'ended'], true)) {
+            // Only notify on session close (status is CashSessionStatus enum)
+            if ($newStatus !== CashSessionStatus::Closed) {
                 return;
             }
 

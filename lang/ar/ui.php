@@ -400,7 +400,7 @@ return [
     'no_store_associated'             => 'لا يوجد متجر مرتبط بحسابك.',
     'purchase_failed'                 => 'فشل الشراء. قد تكون القائمة غير متاحة أو تم شراؤها بالفعل.',
     'purchase_completed'              => 'تم الشراء بنجاح.',
-    'payment_initiated'               => 'تم بدء عملية الدفع. أكمل الدفع لتفعيل عملية الشراء.
+    'payment_initiated'               => 'تم بدء عملية الدفع. أكمل الدفع لتفعيل عملية الشراء.',
     'purchases_loaded'                => 'تم تحميل المشتريات بنجاح.',
     'access_checked'                  => 'تم التحقق من حالة الوصول.',
     'cancel_subscription_failed'      => 'فشل إلغاء الاشتراك.',
