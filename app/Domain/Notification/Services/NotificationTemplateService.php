@@ -515,7 +515,7 @@ class NotificationTemplateService
     }
 
     /**
-     * Attempt to deliver via a specific provider. Placeholder implementations.
+     * Attempt to deliver via a specific provider.
      * Returns the provider message ID on success or throws on failure.
      */
     private function sendViaProvider(
@@ -525,16 +525,56 @@ class NotificationTemplateService
         string $title,
         string $body,
     ): ?string {
-        // In production these would integrate with actual SDKs.
-        // For now, log the attempt and return a synthetic message ID.
-        Log::info("Notification dispatched", [
+        return match ($provider) {
+            'firebase' => $this->sendViaFirebase($recipient, $title, $body),
+            default => $this->sendViaGenericLog($provider, $channel, $recipient, $title),
+        };
+    }
+
+    /**
+     * Send push notification via Firebase Cloud Messaging.
+     *
+     * $recipient is a user_id — FCM tokens are resolved internally.
+     */
+    private function sendViaFirebase(string $recipient, string $title, string $body): ?string
+    {
+        $fcm = app(FcmService::class);
+        $result = $fcm->sendToUser($recipient, $title, $body, [
+            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+        ]);
+
+        if ($result['success'] === 0 && $result['failure'] === 0) {
+            // No tokens registered — not an error, just nothing to send
+            Log::info('FCM: No tokens for user', ['user_id' => $recipient]);
+            return 'no_tokens';
+        }
+
+        if ($result['success'] === 0) {
+            throw new \RuntimeException("FCM delivery failed for all {$result['failure']} tokens");
+        }
+
+        Log::info('FCM: Delivered', [
+            'user_id' => $recipient,
+            'success' => $result['success'],
+            'failure' => $result['failure'],
+        ]);
+
+        return "fcm_ok_{$result['success']}";
+    }
+
+    /**
+     * Fallback: log-only provider (for channels not yet integrated).
+     */
+    private function sendViaGenericLog(string $provider, NotificationChannel $channel, string $recipient, string $title): string
+    {
+        Log::info("Notification dispatched (log-only)", [
             'provider' => $provider,
             'channel' => $channel->value,
             'recipient' => $recipient,
             'title' => mb_substr($title, 0, 50),
         ]);
 
-        return 'msg_' . bin2hex(random_bytes(8));
+        return 'log_' . bin2hex(random_bytes(8));
     }
 
     /**

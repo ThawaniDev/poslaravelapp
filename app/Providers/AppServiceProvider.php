@@ -21,6 +21,12 @@ use App\Domain\ProviderSubscription\Observers\HardwareSaleObserver;
 use App\Domain\ProviderSubscription\Observers\ImplementationFeeObserver;
 use App\Domain\ThawaniIntegration\Observers\ThawaniCategoryObserver;
 use App\Domain\ThawaniIntegration\Observers\ThawaniProductObserver;
+use App\Domain\Inventory\Models\StockLevel;
+use App\Domain\Order\Models\Order;
+use App\Domain\PosTerminal\Models\PosSession;
+use App\Domain\Notification\Observers\OrderNotificationObserver;
+use App\Domain\Notification\Observers\StockLevelNotificationObserver;
+use App\Domain\Notification\Observers\PosSessionNotificationObserver;
 use App\Domain\ProviderSubscription\Services\BillingService;
 use App\Domain\Security\Services\PinOverrideService;
 use App\Domain\StaffManagement\Services\PermissionService;
@@ -92,6 +98,11 @@ class AppServiceProvider extends ServiceProvider
         // Register Thawani integration observers for auto-sync
         Product::observe(ThawaniProductObserver::class);
         Category::observe(ThawaniCategoryObserver::class);
+
+        // Register notification observers for FCM push
+        Order::observe(OrderNotificationObserver::class);
+        StockLevel::observe(StockLevelNotificationObserver::class);
+        PosSession::observe(PosSessionNotificationObserver::class);
 
         // Configure API rate limiters
         RateLimiter::for('api', function (Request $request) {

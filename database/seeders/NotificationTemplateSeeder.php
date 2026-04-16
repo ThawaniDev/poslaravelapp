@@ -62,6 +62,8 @@ class NotificationTemplateSeeder extends Seeder
     private function seedProviderStatuses(): void
     {
         $providerChannels = [
+            // Push provider (Firebase)
+            ['provider' => NotificationProvider::Firebase, 'channel' => NotificationChannel::Push, 'priority' => 1],
             // SMS providers
             ['provider' => NotificationProvider::Unifonic, 'channel' => NotificationChannel::Sms, 'priority' => 1],
             ['provider' => NotificationProvider::Taqnyat, 'channel' => NotificationChannel::Sms, 'priority' => 2],
