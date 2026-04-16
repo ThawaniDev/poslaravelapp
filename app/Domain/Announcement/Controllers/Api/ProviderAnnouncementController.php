@@ -2,11 +2,12 @@
 
 namespace App\Domain\Announcement\Controllers\Api;
 
-use App\Domain\Announcement\Models\Announcement;
+use App\Domain\Announcement\Models\PlatformAnnouncement;
 use App\Domain\Announcement\Services\AnnouncementService;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class ProviderAnnouncementController extends BaseApiController
 {
@@ -59,7 +60,7 @@ class ProviderAnnouncementController extends BaseApiController
             return $this->error('Store ID is required', 400);
         }
 
-        if (!Announcement::find($id)) {
+        if (!Str::isUuid($id) || !PlatformAnnouncement::find($id)) {
             return $this->notFound('Announcement not found');
         }
 

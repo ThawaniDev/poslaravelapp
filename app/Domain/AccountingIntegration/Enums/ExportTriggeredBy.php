@@ -6,4 +6,5 @@ enum ExportTriggeredBy: string
 {
     case Manual = 'manual';
     case Scheduled = 'scheduled';
+    case Admin = 'admin';
 }
