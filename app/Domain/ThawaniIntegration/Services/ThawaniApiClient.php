@@ -16,10 +16,20 @@ class ThawaniApiClient
 
     public function __construct(?string $storeId = null)
     {
-        $this->baseUrl = rtrim(config('thawani.marketplace_url', ''), '/');
-        $this->apiKey = config('thawani.api_key', '');
-        $this->apiSecret = config('thawani.api_secret', '');
         $this->storeId = $storeId;
+
+        // Load credentials from per-store config (DB) first, then fall back to global config (env)
+        $storeConfig = null;
+        if ($storeId) {
+            $storeConfig = \App\Domain\ThawaniIntegration\Models\ThawaniStoreConfig::where('store_id', $storeId)->first();
+        }
+
+        $this->baseUrl = rtrim(
+            $storeConfig?->marketplace_url ?: config('thawani.marketplace_url', ''),
+            '/'
+        );
+        $this->apiKey = $storeConfig?->api_key ?: config('thawani.api_key') ?: '';
+        $this->apiSecret = $storeConfig?->api_secret ?: config('thawani.api_secret') ?: '';
     }
 
     public function get(string $path, array $query = []): array

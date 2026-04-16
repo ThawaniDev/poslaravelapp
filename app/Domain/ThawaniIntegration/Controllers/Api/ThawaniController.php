@@ -29,6 +29,9 @@ class ThawaniController extends BaseApiController
     {
         $validated = $request->validate([
             'thawani_store_id' => 'nullable|string|max:255',
+            'marketplace_url' => 'nullable|url|max:500',
+            'api_key' => 'nullable|string|max:255',
+            'api_secret' => 'nullable|string|max:255',
             'is_connected' => 'nullable|boolean',
             'auto_sync_products' => 'nullable|boolean',
             'auto_sync_inventory' => 'nullable|boolean',

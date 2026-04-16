@@ -18,6 +18,9 @@ class ThawaniStoreConfig extends Model
     protected $fillable = [
         'store_id',
         'thawani_store_id',
+        'marketplace_url',
+        'api_key',
+        'api_secret',
         'is_connected',
         'auto_sync_products',
         'auto_sync_inventory',
@@ -35,6 +38,10 @@ class ThawaniStoreConfig extends Model
         'auto_accept_orders' => 'boolean',
         'commission_rate' => 'decimal:2',
         'connected_at' => 'datetime',
+    ];
+
+    protected $hidden = [
+        'api_secret',
     ];
 
     public function store(): BelongsTo

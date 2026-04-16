@@ -3,6 +3,7 @@
 namespace App\Domain\ThawaniIntegration\Observers;
 
 use App\Domain\Catalog\Models\Category;
+use App\Domain\ThawaniIntegration\Jobs\ProcessThawaniSyncQueue;
 use App\Domain\ThawaniIntegration\Models\ThawaniCategoryMapping;
 use App\Domain\ThawaniIntegration\Models\ThawaniStoreConfig;
 use App\Domain\ThawaniIntegration\Models\ThawaniSyncQueue;
@@ -61,6 +62,9 @@ class ThawaniCategoryObserver
                         'status' => 'pending',
                         'scheduled_at' => now(),
                     ]);
+
+                    // Dispatch immediately for real-time sync
+                    ProcessThawaniSyncQueue::dispatch($config->store_id, 1);
                 }
             }
         } catch (\Exception $e) {

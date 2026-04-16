@@ -3,6 +3,7 @@
 namespace App\Domain\ThawaniIntegration\Observers;
 
 use App\Domain\Catalog\Models\Product;
+use App\Domain\ThawaniIntegration\Jobs\ProcessThawaniSyncQueue;
 use App\Domain\ThawaniIntegration\Models\ThawaniProductMapping;
 use App\Domain\ThawaniIntegration\Models\ThawaniStoreConfig;
 use App\Domain\ThawaniIntegration\Models\ThawaniSyncQueue;
@@ -60,10 +61,13 @@ class ThawaniProductObserver
                         'entity_type' => 'product',
                         'entity_id' => $product->id,
                         'action' => $action,
-                        'payload' => $product->only(['name', 'sell_price', 'sku', 'barcode', 'image_url']),
+                        'payload' => $product->only(['name', 'name_ar', 'sell_price', 'sku', 'barcode', 'image_url', 'is_active', 'category_id', 'description', 'description_ar', 'offer_price']),
                         'status' => 'pending',
                         'scheduled_at' => now(),
                     ]);
+
+                    // Dispatch immediately for real-time sync
+                    ProcessThawaniSyncQueue::dispatch($config->store_id, 1);
                 }
             }
         } catch (\Exception $e) {

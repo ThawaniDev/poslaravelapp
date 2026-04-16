@@ -72,6 +72,15 @@ class ThawaniService
         if (!empty($data['thawani_store_id'])) {
             $attributes['thawani_store_id'] = $data['thawani_store_id'];
         }
+        if (!empty($data['marketplace_url'])) {
+            $attributes['marketplace_url'] = $data['marketplace_url'];
+        }
+        if (!empty($data['api_key'])) {
+            $attributes['api_key'] = $data['api_key'];
+        }
+        if (!empty($data['api_secret'])) {
+            $attributes['api_secret'] = $data['api_secret'];
+        }
 
         $existing = ThawaniStoreConfig::where('store_id', $storeId)->first();
 
@@ -488,7 +497,46 @@ class ThawaniService
 
     private function syncSingleProduct(ThawaniApiClient $client, ThawaniSyncQueue $item, array $columnMappings, string $storeId): bool
     {
-        $product = Product::find($item->entity_id);
+        // For delete actions, the product may already be soft-deleted
+        $product = Product::withTrashed()->find($item->entity_id);
+
+        // Handle delete action — product may not exist at all
+        if ($item->action === 'delete') {
+            $existingMapping = ThawaniProductMapping::where('store_id', $storeId)
+                ->where('product_id', $item->entity_id)
+                ->first();
+
+            if (!$existingMapping) {
+                // No mapping exists, nothing to delete on Thawani side
+                return true;
+            }
+
+            $productPayload = [
+                'wameed_product_id' => $item->entity_id,
+                'name' => $product->name ?? ($item->payload['name'] ?? 'deleted'),
+                'action' => 'delete',
+            ];
+
+            $result = $client->post('products/sync', [
+                'products' => [$productPayload],
+            ]);
+
+            if ($result['success']) {
+                $existingMapping->delete();
+            }
+
+            $this->logSync(
+                $storeId, 'product', $item->entity_id, 'delete', 'outgoing',
+                $result['success'] ? 'success' : 'failed',
+                ['product_id' => $item->entity_id, 'action' => 'delete'],
+                $result['data'] ?? null,
+                $result['success'] ? null : ($result['message'] ?? 'Product delete sync failed'),
+                $result['http_status'] ?? null,
+            );
+
+            return $result['success'];
+        }
+
         if (!$product) return false;
 
         $mapped = $this->applyColumnMappingsOutgoing($product->toArray(), $columnMappings);
@@ -507,7 +555,13 @@ class ThawaniService
             'wameed_product_id' => $product->id,
             'name' => $product->name,
             'name_ar' => $product->name_ar ?? $product->name,
+            'description' => $product->description ?? '',
+            'description_ar' => $product->description_ar ?? '',
             'price' => (float) ($product->sell_price ?? $product->price ?? 0),
+            'offer_price' => $product->offer_price ? (float) $product->offer_price : null,
+            'quantity' => $product->quantity ?? 0,
+            'barcode' => $product->barcode,
+            'is_active' => (bool) ($product->is_active ?? true),
             'action' => $existingMapping ? 'update' : 'create',
         ]);
         if ($catMapping) {
@@ -525,7 +579,7 @@ class ThawaniService
                     ['store_id' => $storeId, 'product_id' => $product->id],
                     [
                         'thawani_product_id' => $syncResult['thawani_product_id'] ?? null,
-                        'is_published' => true,
+                        'is_published' => (bool) ($product->is_active ?? true),
                         'last_synced_at' => now(),
                     ]
                 );
@@ -547,6 +601,43 @@ class ThawaniService
     private function syncSingleCategory(ThawaniApiClient $client, ThawaniSyncQueue $item, array $columnMappings, string $storeId): bool
     {
         $category = Category::find($item->entity_id);
+
+        // Handle delete action — category may already be hard-deleted
+        if ($item->action === 'delete') {
+            $existingMapping = ThawaniCategoryMapping::where('store_id', $storeId)
+                ->where('category_id', $item->entity_id)
+                ->first();
+
+            if (!$existingMapping) {
+                return true;
+            }
+
+            $categoryPayload = [
+                'wameed_category_id' => $item->entity_id,
+                'name' => $category->name ?? ($item->payload['name'] ?? 'deleted'),
+                'action' => 'delete',
+            ];
+
+            $result = $client->post('categories/sync', [
+                'categories' => [$categoryPayload],
+            ]);
+
+            if ($result['success']) {
+                $existingMapping->delete();
+            }
+
+            $this->logSync(
+                $storeId, 'category', $item->entity_id, 'delete', 'outgoing',
+                $result['success'] ? 'success' : 'failed',
+                ['category_id' => $item->entity_id, 'action' => 'delete'],
+                $result['data'] ?? null,
+                $result['success'] ? null : ($result['message'] ?? 'Category delete sync failed'),
+                $result['http_status'] ?? null,
+            );
+
+            return $result['success'];
+        }
+
         if (!$category) return false;
 
         $mapped = $this->applyColumnMappingsOutgoing($category->toArray(), $columnMappings);
@@ -713,14 +804,22 @@ class ThawaniService
     {
         $defaults = [
             // Product mappings (Thawani field => Wameed field)
-            ['entity_type' => 'product', 'thawani_field' => 'name', 'wameed_field' => 'name', 'transform_type' => 'json_extract', 'transform_config' => ['locale' => 'en']],
+            ['entity_type' => 'product', 'thawani_field' => 'name', 'wameed_field' => 'name', 'transform_type' => 'direct', 'transform_config' => null],
+            ['entity_type' => 'product', 'thawani_field' => 'name_ar', 'wameed_field' => 'name_ar', 'transform_type' => 'direct', 'transform_config' => null],
             ['entity_type' => 'product', 'thawani_field' => 'price', 'wameed_field' => 'sell_price', 'transform_type' => 'direct', 'transform_config' => null],
             ['entity_type' => 'product', 'thawani_field' => 'image', 'wameed_field' => 'image_url', 'transform_type' => 'direct', 'transform_config' => null],
-            ['entity_type' => 'product', 'thawani_field' => 'description', 'wameed_field' => 'description', 'transform_type' => 'json_extract', 'transform_config' => ['locale' => 'en']],
+            ['entity_type' => 'product', 'thawani_field' => 'description', 'wameed_field' => 'description', 'transform_type' => 'direct', 'transform_config' => null],
+            ['entity_type' => 'product', 'thawani_field' => 'description_ar', 'wameed_field' => 'description_ar', 'transform_type' => 'direct', 'transform_config' => null],
             ['entity_type' => 'product', 'thawani_field' => 'sku', 'wameed_field' => 'sku', 'transform_type' => 'direct', 'transform_config' => null],
             ['entity_type' => 'product', 'thawani_field' => 'barcode', 'wameed_field' => 'barcode', 'transform_type' => 'direct', 'transform_config' => null],
+            ['entity_type' => 'product', 'thawani_field' => 'offer_price', 'wameed_field' => 'offer_price', 'transform_type' => 'direct', 'transform_config' => null],
+            ['entity_type' => 'product', 'thawani_field' => 'offer_start', 'wameed_field' => 'offer_start', 'transform_type' => 'direct', 'transform_config' => null],
+            ['entity_type' => 'product', 'thawani_field' => 'offer_end', 'wameed_field' => 'offer_end', 'transform_type' => 'direct', 'transform_config' => null],
+            ['entity_type' => 'product', 'thawani_field' => 'is_active', 'wameed_field' => 'is_active', 'transform_type' => 'direct', 'transform_config' => null],
+            ['entity_type' => 'product', 'thawani_field' => 'quantity', 'wameed_field' => 'min_order_qty', 'transform_type' => 'direct', 'transform_config' => null],
             // Category mappings
-            ['entity_type' => 'category', 'thawani_field' => 'name', 'wameed_field' => 'name', 'transform_type' => 'json_extract', 'transform_config' => ['locale' => 'en']],
+            ['entity_type' => 'category', 'thawani_field' => 'name', 'wameed_field' => 'name', 'transform_type' => 'direct', 'transform_config' => null],
+            ['entity_type' => 'category', 'thawani_field' => 'name_ar', 'wameed_field' => 'name_ar', 'transform_type' => 'direct', 'transform_config' => null],
             ['entity_type' => 'category', 'thawani_field' => 'image', 'wameed_field' => 'image_url', 'transform_type' => 'direct', 'transform_config' => null],
         ];
 
