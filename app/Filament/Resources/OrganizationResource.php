@@ -6,6 +6,7 @@ use App\Domain\Core\Enums\BusinessType;
 use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
 use App\Domain\Core\Services\StoreService;
+use App\Services\SupabaseStorageService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists;
@@ -82,10 +83,17 @@ class OrganizationResource extends Resource
                                         ->options(BusinessType::class)
                                         ->native(false)
                                         ->searchable(),
-                                    Forms\Components\TextInput::make('logo_url')
-                                        ->label(__('Logo URL'))
-                                        ->url()
-                                        ->maxLength(500),
+                                    Forms\Components\FileUpload::make('logo_url')
+                                        ->label(__('Logo'))
+                                        ->image()
+                                        ->imageEditor()
+                                        ->maxSize(5120)
+                                        ->saveUploadedFileUsing(function ($file) {
+                                            return app(SupabaseStorageService::class)->upload($file, 'OrganizationsLogos');
+                                        })
+                                        ->deleteUploadedFileUsing(function ($file) {
+                                            app(SupabaseStorageService::class)->delete($file);
+                                        }),
                                 ])
                                 ->columns(2),
 
@@ -379,11 +387,10 @@ class OrganizationResource extends Resource
                                             'jewelry' => 'info', 'fashion' => 'primary',
                                             default => 'gray',
                                         }),
-                                    Infolists\Components\TextEntry::make('logo_url')
-                                        ->label(__('Logo URL'))
-                                        ->placeholder(__('N/A'))
-                                        ->url(fn ($state) => $state)
-                                        ->openUrlInNewTab(),
+                                    Infolists\Components\ImageEntry::make('logo_url')
+                                        ->label(__('Logo'))
+                                        ->getStateUsing(fn ($record) => SupabaseStorageService::resolveUrl($record->logo_url))
+                                        ->placeholder(__('N/A')),
                                 ])
                                 ->columns(3),
 
