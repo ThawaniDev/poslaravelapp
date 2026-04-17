@@ -21,6 +21,30 @@ abstract class BaseApiController extends Controller
         return $request->header('X-Store-Id') ?? $request->user()?->store_id;
     }
 
+    /**
+     * Resolve the business_types.id (UUID) for the authenticated store.
+     *
+     * The Store model stores business_type as an enum slug (grocery, pharmacy, etc.),
+     * while the business_types table uses UUIDs. This bridges the two by looking up
+     * the matching row by slug.
+     */
+    protected function resolveStoreBusinessTypeId(Request $request): ?string
+    {
+        $storeId = $this->resolveStoreId($request);
+        if (! $storeId) {
+            return null;
+        }
+
+        $slug = \App\Domain\Core\Models\Store::where('id', $storeId)->value('business_type');
+        if (! $slug) {
+            return null;
+        }
+
+        $slugValue = $slug instanceof \BackedEnum ? $slug->value : (string) $slug;
+
+        return \App\Domain\ContentOnboarding\Models\BusinessType::where('slug', $slugValue)->value('id');
+    }
+
     protected function success(mixed $data = null, string $message = 'Success', int $code = 200): JsonResponse
     {
         return response()->json([

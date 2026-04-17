@@ -19,12 +19,11 @@ class PredefinedProductController extends BaseApiController
     ) {}
 
     /**
-     * GET /predefined-catalog/products — Paginated list.
+     * GET /predefined-catalog/products — Paginated list (auto-scoped to store's business type).
      */
     public function index(Request $request): JsonResponse
     {
         $request->validate([
-            'business_type_id' => 'nullable|uuid',
             'predefined_category_id' => 'nullable|uuid',
             'search' => 'nullable|string|max:100',
             'is_active' => 'nullable|boolean',
@@ -33,11 +32,18 @@ class PredefinedProductController extends BaseApiController
             'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
+        $businessTypeId = $this->resolveStoreBusinessTypeId($request);
+
+        $filters = $request->only([
+            'predefined_category_id', 'search',
+            'is_active', 'sort_by', 'sort_dir',
+        ]);
+        if ($businessTypeId) {
+            $filters['business_type_id'] = $businessTypeId;
+        }
+
         $paginator = $this->service->listProducts(
-            filters: $request->only([
-                'business_type_id', 'predefined_category_id', 'search',
-                'is_active', 'sort_by', 'sort_dir',
-            ]),
+            filters: $filters,
             perPage: $request->integer('per_page', 25),
         );
 
@@ -154,18 +160,20 @@ class PredefinedProductController extends BaseApiController
     }
 
     /**
-     * POST /predefined-catalog/clone-all — Clone entire predefined catalog for a business type.
+     * POST /predefined-catalog/clone-all — Clone entire predefined catalog for the store's business type.
      */
     public function cloneAll(Request $request): JsonResponse
     {
-        $request->validate([
-            'business_type_id' => 'required|uuid|exists:business_types,id',
-        ]);
+        $businessTypeId = $this->resolveStoreBusinessTypeId($request);
+
+        if (! $businessTypeId) {
+            return $this->error('No business type configured for this store.', 422);
+        }
 
         $user = $request->user();
 
         $result = $this->service->cloneAllForBusinessType(
-            $request->input('business_type_id'),
+            $businessTypeId,
             $user->organization_id,
         );
 

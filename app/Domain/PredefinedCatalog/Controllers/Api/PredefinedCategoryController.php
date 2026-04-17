@@ -19,20 +19,26 @@ class PredefinedCategoryController extends BaseApiController
     ) {}
 
     /**
-     * GET /predefined-catalog/categories — Paginated list.
+     * GET /predefined-catalog/categories — Paginated list (auto-scoped to store's business type).
      */
     public function index(Request $request): JsonResponse
     {
         $request->validate([
-            'business_type_id' => 'nullable|uuid',
             'search' => 'nullable|string|max:100',
             'is_active' => 'nullable|boolean',
             'parent_only' => 'nullable|boolean',
             'per_page' => 'nullable|integer|min:1|max:100',
         ]);
 
+        $businessTypeId = $this->resolveStoreBusinessTypeId($request);
+
+        $filters = $request->only(['search', 'is_active', 'parent_only']);
+        if ($businessTypeId) {
+            $filters['business_type_id'] = $businessTypeId;
+        }
+
         $paginator = $this->service->listCategories(
-            filters: $request->only(['business_type_id', 'search', 'is_active', 'parent_only']),
+            filters: $filters,
             perPage: $request->integer('per_page', 25),
         );
 
@@ -46,15 +52,17 @@ class PredefinedCategoryController extends BaseApiController
     }
 
     /**
-     * GET /predefined-catalog/categories/tree?business_type_id=X — Tree for a business type.
+     * GET /predefined-catalog/categories/tree — Tree for the authenticated store's business type.
      */
     public function tree(Request $request): JsonResponse
     {
-        $request->validate([
-            'business_type_id' => 'required|uuid|exists:business_types,id',
-        ]);
+        $businessTypeId = $this->resolveStoreBusinessTypeId($request);
 
-        $categories = $this->service->categoryTree($request->input('business_type_id'));
+        if (! $businessTypeId) {
+            return $this->success([]);
+        }
+
+        $categories = $this->service->categoryTree($businessTypeId);
 
         return $this->success(PredefinedCategoryResource::collection($categories));
     }
