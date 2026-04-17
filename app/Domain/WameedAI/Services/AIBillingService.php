@@ -158,7 +158,7 @@ class AIBillingService
             return null;
         }
 
-        // Get usage breakdown by feature
+        // Get usage breakdown by feature — use billed_cost_usd (margin already applied per-request)
         $featureBreakdown = AIUsageLog::where('store_id', $storeId)
             ->where('created_at', '>=', $monthStart)
             ->where('created_at', '<=', $monthEnd)
@@ -168,21 +168,23 @@ class AIBillingService
                 feature_slug,
                 COUNT(*) as request_count,
                 SUM(total_tokens) as total_tokens,
-                SUM(estimated_cost_usd) as raw_cost
+                SUM(estimated_cost_usd) as raw_cost,
+                SUM(billed_cost_usd) as billed_cost
             ")
             ->get();
 
         $totalRequests = $featureBreakdown->sum('request_count');
         $totalTokens = $featureBreakdown->sum('total_tokens');
         $totalRawCost = (float) $featureBreakdown->sum('raw_cost');
+        $totalBilledCost = (float) $featureBreakdown->sum('billed_cost');
 
         if ($totalRawCost <= 0) {
             return null;
         }
 
         $marginPercentage = $this->getEffectiveMarginForStore($storeId);
-        $marginAmount = round($totalRawCost * ($marginPercentage / 100), 5);
-        $billedAmount = round($totalRawCost + $marginAmount, 5);
+        $marginAmount = round($totalBilledCost - $totalRawCost, 5);
+        $billedAmount = round($totalBilledCost, 5);
 
         if ($billedAmount < $minBillable) {
             return null;
@@ -221,7 +223,7 @@ class AIBillingService
 
             foreach ($featureBreakdown as $row) {
                 $featureRawCost = (float) $row->raw_cost;
-                $featureBilledCost = round($featureRawCost * (1 + $marginPercentage / 100), 5);
+                $featureBilledCost = (float) $row->billed_cost;
 
                 AIBillingInvoiceItem::create([
                     'ai_billing_invoice_id' => $invoice->id,
