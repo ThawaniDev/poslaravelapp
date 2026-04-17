@@ -2,6 +2,7 @@
 
 namespace App\Domain\StaffManagement\Services;
 
+use App\Domain\Auth\Enums\UserRole;
 use App\Domain\Auth\Models\User;
 use App\Domain\Security\Enums\RoleAuditAction;
 use App\Domain\Security\Models\RoleAuditLog;
@@ -194,6 +195,11 @@ class RoleService
      */
     public function getEffectivePermissions(User $user, string $storeId): array
     {
+        // Owner role gets all permissions
+        if ($user->role === UserRole::Owner) {
+            return Permission::pluck('name')->unique()->values()->toArray();
+        }
+
         $roleIds = DB::table('model_has_roles')
             ->where('model_id', $user->id)
             ->where('model_type', get_class($user))
@@ -250,6 +256,11 @@ class RoleService
      */
     public function getUserBranchScope(User $user, string $storeId): string
     {
+        // Owner always has organization scope
+        if ($user->role === UserRole::Owner) {
+            return 'organization';
+        }
+
         $hasOrgRole = DB::table('model_has_roles')
             ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
             ->where('model_has_roles.model_id', $user->id)

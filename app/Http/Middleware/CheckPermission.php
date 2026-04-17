@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Auth\Enums\UserRole;
 use App\Domain\StaffManagement\Services\RoleService;
 use Closure;
 use Illuminate\Http\Request;
@@ -64,6 +65,11 @@ class CheckPermission
 
     private function isOwner($user, string $storeId): bool
     {
+        // Check the user's role enum field first (covers all owners)
+        if ($user->role === UserRole::Owner) {
+            return true;
+        }
+
         return \DB::table('model_has_roles')
             ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
             ->where('model_has_roles.model_id', $user->id)
