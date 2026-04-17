@@ -556,6 +556,7 @@ class ProviderPaymentService
             PaymentPurpose::Subscription => $this->activateSubscription($payment),
             PaymentPurpose::PlanAddon => $this->activateAddon($payment),
             PaymentPurpose::MarketplacePurchase => $this->activateMarketplacePurchase($payment),
+            PaymentPurpose::AiBilling => $this->activateAiBillingPayment($payment),
             default => null, // Other purposes don't need activation
         };
     }
@@ -588,5 +589,34 @@ class ProviderPaymentService
     {
         app(\App\Domain\ContentOnboarding\Services\MarketplaceService::class)
             ->activatePurchaseByPayment($payment->id);
+    }
+
+    private function activateAiBillingPayment(ProviderPayment $payment): void
+    {
+        if (! $payment->purpose_reference_id) {
+            return;
+        }
+
+        try {
+            // original_amount is in USD when currency was converted from USD→SAR
+            $amountUsd = $payment->original_currency === 'USD'
+                ? (float) $payment->original_amount
+                : (float) $payment->amount;
+
+            app(\App\Domain\WameedAI\Services\AIBillingService::class)->recordPayment(
+                invoiceId: $payment->purpose_reference_id,
+                amountUsd: $amountUsd,
+                paymentMethod: 'paytabs',
+                reference: $payment->tran_ref,
+                notes: "PayTabs payment #{$payment->id}",
+                recordedBy: $payment->initiated_by,
+            );
+        } catch (\Throwable $e) {
+            Log::error('Failed to record AI billing payment', [
+                'payment_id' => $payment->id,
+                'invoice_id' => $payment->purpose_reference_id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }
