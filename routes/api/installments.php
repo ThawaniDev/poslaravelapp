@@ -29,7 +29,7 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
 });
 
 // ─── Store Admin — Installment Config ────────────────────────────
-Route::prefix('installments/config')->middleware(['auth:sanctum', 'branch.scope'])->group(function () {
+Route::prefix('installments/config')->middleware(['auth:sanctum', 'branch.scope', 'plan.feature:installments'])->group(function () {
     Route::get('available', [StoreInstallmentController::class, 'available'])
         ->middleware('permission:installments.configure');
     Route::get('/', [StoreInstallmentController::class, 'index'])

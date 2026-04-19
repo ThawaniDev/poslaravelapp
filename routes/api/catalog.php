@@ -20,7 +20,7 @@ Route::prefix('catalog')->middleware('auth:sanctum')->group(function () {
     // ─── Products ────────────────────────────────────────────
     Route::prefix('products')->group(function () {
         Route::get('/', [ProductController::class, 'index'])->middleware('permission:products.view');
-        Route::post('/', [ProductController::class, 'store'])->middleware('permission:products.manage');
+        Route::post('/', [ProductController::class, 'store'])->middleware(['permission:products.manage', 'plan.limit:products']);
         Route::get('/catalog', [ProductController::class, 'catalog'])->middleware('permission:products.view');
         Route::get('/changes', [ProductController::class, 'changes'])->middleware('permission:products.view');
         Route::post('/bulk-action', [ProductController::class, 'bulkAction'])->middleware('permission:products.manage');

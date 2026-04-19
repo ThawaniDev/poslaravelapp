@@ -29,12 +29,17 @@ class SubscriptionPlan extends Model
         'grace_period_days',
         'is_active',
         'is_highlighted',
+        'softpos_free_eligible',
+        'softpos_free_threshold',
+        'softpos_free_threshold_period',
         'sort_order',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_highlighted' => 'boolean',
+        'softpos_free_eligible' => 'boolean',
+        'softpos_free_threshold' => 'integer',
         'monthly_price' => 'decimal:2',
         'annual_price' => 'decimal:2',
     ];

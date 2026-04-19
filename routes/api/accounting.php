@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('accounting')->middleware('auth:sanctum')->group(function () {
+Route::prefix('accounting')->middleware(['auth:sanctum', 'plan.feature:accounting'])->group(function () {
     // Connection
     Route::get('status', [AccountingController::class, 'status'])->middleware('permission:accounting.view_history');
     Route::post('connect', [AccountingController::class, 'connect'])->middleware('permission:accounting.connect');

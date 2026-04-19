@@ -8,12 +8,14 @@ use App\Domain\Order\Resources\OrderResource;
 use App\Domain\Order\Resources\SaleReturnResource;
 use App\Domain\Order\Services\OrderService;
 use App\Domain\Order\Services\ReturnService;
+use App\Domain\Subscription\Traits\TracksSubscriptionUsage;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class OrderController extends BaseApiController
 {
+    use TracksSubscriptionUsage;
     public function __construct(
         private readonly OrderService $orderService,
         private readonly ReturnService $returnService,
@@ -36,11 +38,26 @@ class OrderController extends BaseApiController
 
     public function store(CreateOrderRequest $request): JsonResponse
     {
+        // Check transaction limit before creating order
+        $orgId = $this->resolveOrganizationId($request);
+        if ($orgId) {
+            $limitResponse = $this->checkLimitOrFail($orgId, 'transactions_per_month');
+            if ($limitResponse) {
+                return $limitResponse;
+            }
+        }
+
         try {
             $order = $this->orderService->create(
                 $request->validated(),
                 $request->user(),
             );
+
+            // Refresh transaction usage snapshot after creation
+            if ($orgId) {
+                $this->refreshUsageFor($orgId, 'transactions_per_month');
+            }
+
             return $this->created(new OrderResource($order));
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);

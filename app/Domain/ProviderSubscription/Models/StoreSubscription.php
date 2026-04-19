@@ -31,6 +31,11 @@ class StoreSubscription extends Model
         'trial_ends_at',
         'payment_method',
         'cancelled_at',
+        'is_softpos_free',
+        'softpos_transaction_count',
+        'softpos_count_reset_at',
+        'original_amount',
+        'discount_reason',
     ];
 
     protected $casts = [
@@ -41,6 +46,10 @@ class StoreSubscription extends Model
         'current_period_end' => 'datetime',
         'trial_ends_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'is_softpos_free' => 'boolean',
+        'softpos_transaction_count' => 'integer',
+        'softpos_count_reset_at' => 'datetime',
+        'original_amount' => 'decimal:2',
     ];
 
     public function organization(): BelongsTo

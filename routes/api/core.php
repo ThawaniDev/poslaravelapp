@@ -25,7 +25,7 @@ Route::prefix('core')->group(function () {
         Route::get('stores/managers', [StoreController::class, 'managers'])->middleware('permission:branches.view');
         Route::put('stores/sort-order', [StoreController::class, 'updateSortOrder'])->middleware('permission:branches.manage');
         Route::get('stores', [StoreController::class, 'index'])->middleware('permission:branches.view');
-        Route::post('stores', [StoreController::class, 'store'])->middleware('permission:branches.manage');
+        Route::post('stores', [StoreController::class, 'store'])->middleware(['permission:branches.manage', 'plan.limit:branches']);
         Route::get('stores/{id}', [StoreController::class, 'show'])->middleware('permission:branches.view');
         Route::put('stores/{id}', [StoreController::class, 'update'])->middleware('permission:branches.manage');
         Route::delete('stores/{id}', [StoreController::class, 'destroy'])->middleware('permission:branches.manage');

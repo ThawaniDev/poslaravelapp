@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('cashier-gamification')->middleware('auth:sanctum')->group(function () {
+Route::prefix('cashier-gamification')->middleware(['auth:sanctum', 'plan.feature:cashier_gamification'])->group(function () {
     // Leaderboard
     Route::get('/leaderboard', [CashierGamificationController::class, 'leaderboard'])->middleware('permission:cashier_performance.view_leaderboard');
     Route::get('/cashier/{cashierId}/history', [CashierGamificationController::class, 'cashierHistory'])->middleware('permission:cashier_performance.view_leaderboard');

@@ -6,6 +6,7 @@ use App\Domain\Notification\Jobs\ProcessScheduledNotificationsJob;
 use App\Domain\ProviderSubscription\Jobs\ExpireSubscriptionsJob;
 use App\Domain\ProviderSubscription\Jobs\GenerateRenewalInvoicesJob;
 use App\Domain\ProviderSubscription\Jobs\RenewPaidSubscriptionsJob;
+use App\Domain\ProviderSubscription\Jobs\ResetSoftPosCountersJob;
 use App\Domain\ProviderSubscription\Jobs\RetryFailedPaymentsJob;
 use App\Domain\Report\Jobs\RefreshDailySummariesJob;
 use App\Domain\ThawaniIntegration\Jobs\ProcessThawaniSyncQueue;
@@ -46,6 +47,12 @@ Schedule::job(new RetryFailedPaymentsJob)
 // Expire grace & trial subscriptions past their end date (daily at midnight)
 Schedule::job(new ExpireSubscriptionsJob)
     ->dailyAt('00:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Reset SoftPOS transaction counters on the 1st of each month
+Schedule::job(new ResetSoftPosCountersJob)
+    ->monthlyOn(1, '00:30')
     ->withoutOverlapping()
     ->onOneServer();
 

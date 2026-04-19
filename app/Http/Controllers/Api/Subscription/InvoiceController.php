@@ -42,10 +42,17 @@ class InvoiceController extends BaseApiController
     /**
      * GET /subscription/invoices/{invoiceId} — Get a single invoice.
      */
-    public function show(string $invoiceId): JsonResponse
+    public function show(Request $request, string $invoiceId): JsonResponse
     {
         try {
+            $organizationId = $request->user()->organization_id;
             $invoice = $this->billingService->getInvoice($invoiceId);
+
+            // Verify the invoice belongs to this organization
+            $subscription = $invoice->storeSubscription;
+            if (! $subscription || $subscription->organization_id !== $organizationId) {
+                return $this->error('You do not have access to this invoice.', 403);
+            }
 
             return $this->success(new InvoiceResource($invoice));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {

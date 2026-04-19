@@ -28,13 +28,13 @@ class SubscriptionController extends BaseApiController
         $organizationId = $request->user()->organization_id;
 
         if (! $organizationId) {
-            return $this->error('No organization assigned to this user.', 404);
+            return $this->error(__('subscription.no_organization'), 404);
         }
 
         $subscription = $this->billingService->getCurrentSubscription($organizationId);
 
         if (! $subscription) {
-            return $this->success(null, 'No active subscription.');
+            return $this->success(null, __('subscription.no_active_subscription'));
         }
 
         return $this->success(new StoreSubscriptionResource($subscription));
@@ -48,7 +48,7 @@ class SubscriptionController extends BaseApiController
         $organizationId = $request->user()->organization_id;
 
         if (! $organizationId) {
-            return $this->error('No organization assigned to this user.', 404);
+            return $this->error(__('subscription.no_organization'), 404);
         }
 
         try {
@@ -63,9 +63,9 @@ class SubscriptionController extends BaseApiController
                 paymentMethod: $request->input('payment_method'),
             );
 
-            return $this->created(new StoreSubscriptionResource($subscription), 'Subscribed successfully.');
+            return $this->created(new StoreSubscriptionResource($subscription), __('subscription.subscribed_successfully'));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return $this->notFound('Selected plan not found.');
+            return $this->notFound(__('subscription.plan_not_found'));
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 409);
         }
@@ -79,7 +79,7 @@ class SubscriptionController extends BaseApiController
         $organizationId = $request->user()->organization_id;
 
         if (! $organizationId) {
-            return $this->error('No organization assigned to this user.', 404);
+            return $this->error(__('subscription.no_organization'), 404);
         }
 
         try {
@@ -93,9 +93,9 @@ class SubscriptionController extends BaseApiController
                 billingCycle: $billingCycle,
             );
 
-            return $this->success(new StoreSubscriptionResource($subscription), 'Plan changed successfully.');
+            return $this->success(new StoreSubscriptionResource($subscription), __('subscription.plan_changed'));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return $this->notFound('Active subscription or target plan not found.');
+            return $this->notFound(__('subscription.plan_or_subscription_not_found'));
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 409);
         }
@@ -109,7 +109,7 @@ class SubscriptionController extends BaseApiController
         $organizationId = $request->user()->organization_id;
 
         if (! $organizationId) {
-            return $this->error('No organization assigned to this user.', 404);
+            return $this->error(__('subscription.no_organization'), 404);
         }
 
         try {
@@ -118,9 +118,9 @@ class SubscriptionController extends BaseApiController
                 reason: $request->input('reason'),
             );
 
-            return $this->success(new StoreSubscriptionResource($subscription), 'Subscription cancelled.');
+            return $this->success(new StoreSubscriptionResource($subscription), __('subscription.subscription_cancelled'));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return $this->notFound('No active subscription found to cancel.');
+            return $this->notFound(__('subscription.no_active_to_cancel'));
         }
     }
 
@@ -132,15 +132,15 @@ class SubscriptionController extends BaseApiController
         $organizationId = $request->user()->organization_id;
 
         if (! $organizationId) {
-            return $this->error('No organization assigned to this user.', 404);
+            return $this->error(__('subscription.no_organization'), 404);
         }
 
         try {
             $subscription = $this->billingService->resumeSubscription($organizationId);
 
-            return $this->success(new StoreSubscriptionResource($subscription), 'Subscription resumed.');
+            return $this->success(new StoreSubscriptionResource($subscription), __('subscription.subscription_resumed'));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return $this->notFound('No cancelled subscription found to resume.');
+            return $this->notFound(__('subscription.no_cancelled_to_resume'));
         }
     }
 
@@ -152,7 +152,7 @@ class SubscriptionController extends BaseApiController
         $organizationId = $request->user()->organization_id;
 
         if (! $organizationId) {
-            return $this->error('No organization assigned to this user.', 404);
+            return $this->error(__('subscription.no_organization'), 404);
         }
 
         $summary = $this->enforcementService->getUsageSummary($organizationId);
@@ -168,7 +168,7 @@ class SubscriptionController extends BaseApiController
         $organizationId = $request->user()->organization_id;
 
         if (! $organizationId) {
-            return $this->error('No organization assigned to this user.', 404);
+            return $this->error(__('subscription.no_organization'), 404);
         }
 
         $enabled = $this->enforcementService->isFeatureEnabled($organizationId, $featureKey);
@@ -187,7 +187,7 @@ class SubscriptionController extends BaseApiController
         $organizationId = $request->user()->organization_id;
 
         if (! $organizationId) {
-            return $this->error('No organization assigned to this user.', 404);
+            return $this->error(__('subscription.no_organization'), 404);
         }
 
         $remaining = $this->enforcementService->getRemainingQuota($organizationId, $limitKey);
@@ -207,67 +207,153 @@ class SubscriptionController extends BaseApiController
         $organizationId = $request->user()->organization_id;
 
         if (! $organizationId) {
-            return $this->error('No organization assigned to this user.', 404);
+            return $this->error(__('subscription.no_organization'), 404);
         }
 
-        $subscription = $this->billingService->getCurrentSubscription($organizationId);
+        $payload = $this->enforcementService->buildEntitlementsPayload($organizationId);
+        $payload['synced_at'] = now()->toIso8601String();
+        $payload['feature_route_mapping'] = PlanEnforcementService::featureRouteMapping();
 
-        if (! $subscription) {
+        return $this->success($payload);
+    }
+
+    /**
+     * GET /subscription/softpos/info — Get SoftPOS threshold info.
+     */
+    public function softPosInfo(Request $request): JsonResponse
+    {
+        $organizationId = $request->user()->organization_id;
+
+        if (! $organizationId) {
+            return $this->error(__('subscription.no_organization'), 404);
+        }
+
+        $softPosService = app(\App\Domain\ProviderSubscription\Services\SoftPosService::class);
+        $info = $softPosService->getThresholdInfo($organizationId);
+
+        if (! $info) {
             return $this->success([
-                'has_subscription' => false,
-                'plan_code' => null,
-                'plan_name' => null,
-                'plan_name_ar' => null,
-                'status' => null,
-                'features' => [],
-                'limits' => [],
-                'expires_at' => null,
-                'grace_period_ends_at' => null,
-                'synced_at' => now()->toIso8601String(),
+                'is_eligible' => false,
+                'message' => __('subscription.softpos_not_available'),
             ]);
         }
 
-        $plan = $subscription->subscriptionPlan;
-        $features = [];
-        $limits = [];
+        return $this->success($info);
+    }
 
-        if ($plan) {
-            foreach ($plan->planFeatureToggles as $toggle) {
-                $features[$toggle->feature_key] = $toggle->is_enabled ?? false;
-            }
-            foreach ($plan->planLimits as $limit) {
-                $effectiveLimit = $this->enforcementService->getEffectiveLimit($organizationId, $limit->limit_key);
-                $currentUsage = $this->enforcementService->getCurrentUsage($organizationId, $limit->limit_key);
-                $limits[$limit->limit_key] = [
-                    'limit' => $effectiveLimit,
-                    'current' => $currentUsage,
-                ];
-            }
+    /**
+     * GET /subscription/softpos/statistics — Get SoftPOS transaction statistics.
+     */
+    public function softPosStatistics(Request $request): JsonResponse
+    {
+        $organizationId = $request->user()->organization_id;
+
+        if (! $organizationId) {
+            return $this->error(__('subscription.no_organization'), 404);
         }
 
-        $gracePeriodEndsAt = null;
-        if ($subscription->status === \App\Domain\Subscription\Enums\SubscriptionStatus::Grace->value
-            || (is_string($subscription->status) && $subscription->status === 'grace')
-        ) {
-            $gracePeriodEndsAt = $subscription->current_period_end?->toIso8601String();
-        }
+        $softPosService = app(\App\Domain\ProviderSubscription\Services\SoftPosService::class);
+        $stats = $softPosService->getStatistics($organizationId);
 
-        return $this->success([
-            'has_subscription' => true,
-            'plan_code' => $plan?->slug,
-            'plan_name' => $plan?->name,
-            'plan_name_ar' => $plan?->name_ar,
-            'status' => is_string($subscription->status) ? $subscription->status : $subscription->status->value,
-            'billing_cycle' => is_string($subscription->billing_cycle)
-                ? $subscription->billing_cycle
-                : $subscription->billing_cycle?->value,
-            'features' => $features,
-            'limits' => $limits,
-            'expires_at' => $subscription->current_period_end?->toIso8601String(),
-            'trial_ends_at' => $subscription->trial_ends_at?->toIso8601String(),
-            'grace_period_ends_at' => $gracePeriodEndsAt,
-            'synced_at' => now()->toIso8601String(),
+        return $this->success($stats);
+    }
+
+    /**
+     * POST /subscription/softpos/record — Record a SoftPOS transaction.
+     */
+    public function recordSoftPosTransaction(Request $request): JsonResponse
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.001',
+            'store_id' => 'nullable|uuid|exists:stores,id',
+            'order_id' => 'nullable|uuid',
+            'transaction_ref' => 'nullable|string|max:255',
+            'payment_method' => 'nullable|string|max:50',
+            'terminal_id' => 'nullable|string|max:100',
+            'metadata' => 'nullable|array',
         ]);
+
+        $organizationId = $request->user()->organization_id;
+
+        if (! $organizationId) {
+            return $this->error(__('subscription.no_organization'), 404);
+        }
+
+        // Verify store belongs to user's organization
+        if ($request->filled('store_id')) {
+            $store = \App\Domain\Store\Models\Store::where('id', $request->input('store_id'))
+                ->where('organization_id', $organizationId)
+                ->first();
+            if (! $store) {
+                return $this->error(__('subscription.store_not_in_organization'), 403);
+            }
+        }
+
+        $softPosService = app(\App\Domain\ProviderSubscription\Services\SoftPosService::class);
+        $transaction = $softPosService->recordTransaction(
+            organizationId: $organizationId,
+            amount: (float) $request->input('amount'),
+            storeId: $request->input('store_id'),
+            orderId: $request->input('order_id'),
+            transactionRef: $request->input('transaction_ref'),
+            paymentMethod: $request->input('payment_method'),
+            terminalId: $request->input('terminal_id'),
+            metadata: $request->input('metadata', []),
+        );
+
+        // Return updated threshold info
+        $thresholdInfo = $softPosService->getThresholdInfo($organizationId);
+
+        return $this->created([
+            'transaction_id' => $transaction->id,
+            'threshold_info' => $thresholdInfo,
+        ], __('subscription.softpos_transaction_recorded'));
+    }
+
+    /**
+     * GET /subscription/softpos/transactions — Get SoftPOS transaction history.
+     */
+    public function softPosTransactions(Request $request): JsonResponse
+    {
+        $organizationId = $request->user()->organization_id;
+
+        if (! $organizationId) {
+            return $this->error(__('subscription.no_organization'), 404);
+        }
+
+        $softPosService = app(\App\Domain\ProviderSubscription\Services\SoftPosService::class);
+        $transactions = $softPosService->getTransactionHistory(
+            organizationId: $organizationId,
+            perPage: $request->integer('per_page', 25),
+            startDate: $request->input('start_date'),
+            endDate: $request->input('end_date'),
+        );
+
+        return $this->success($transactions);
+    }
+
+    /**
+     * GET /subscription/features — Get all feature toggles for the current plan.
+     */
+    public function allFeatures(Request $request): JsonResponse
+    {
+        $organizationId = $request->user()->organization_id;
+
+        if (! $organizationId) {
+            return $this->error(__('subscription.no_organization'), 404);
+        }
+
+        $features = $this->enforcementService->getAllFeatureToggles($organizationId);
+
+        return $this->success($features);
+    }
+
+    /**
+     * GET /subscription/feature-route-mapping — Get the feature-to-route mapping for sidebar gating.
+     */
+    public function featureRouteMapping(): JsonResponse
+    {
+        return $this->success(PlanEnforcementService::featureRouteMapping());
     }
 
     /**
@@ -279,7 +365,7 @@ class SubscriptionController extends BaseApiController
         $storeId = $user->store_id;
 
         if (! $storeId) {
-            return $this->error('No store assigned to this user.', 404);
+            return $this->error(__('subscription.no_store'), 404);
         }
 
         $addOns = \App\Domain\ProviderSubscription\Models\StoreAddOn::where('store_id', $storeId)
@@ -306,5 +392,37 @@ class SubscriptionController extends BaseApiController
             });
 
         return $this->success($addOns);
+    }
+
+    /**
+     * DELETE /subscription/store-add-ons/{addOnId} — Deactivate (remove) an add-on from the current store.
+     */
+    public function removeAddOn(Request $request, string $addOnId): JsonResponse
+    {
+        $user = $request->user();
+        $storeId = $user->store_id;
+
+        if (! $storeId) {
+            return $this->error(__('subscription.no_store'), 404);
+        }
+
+        $storeAddOn = \App\Domain\ProviderSubscription\Models\StoreAddOn::where('store_id', $storeId)
+            ->where('plan_add_on_id', $addOnId)
+            ->first();
+
+        if (! $storeAddOn) {
+            return $this->error(__('subscription.addon_not_found'), 404);
+        }
+
+        if (! $storeAddOn->is_active) {
+            return $this->error(__('subscription.addon_already_deactivated'), 422);
+        }
+
+        $storeAddOn->update([
+            'is_active' => false,
+            'deactivated_at' => now(),
+        ]);
+
+        return $this->success(null, __('subscription.addon_removed'));
     }
 }

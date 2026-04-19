@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('reports')->middleware('auth:sanctum')->group(function () {
+Route::prefix('reports')->middleware(['auth:sanctum', 'plan.feature:reports_basic'])->group(function () {
     // Dashboard
     Route::get('dashboard', [ReportController::class, 'dashboard'])->middleware('permission:reports.view');
 
@@ -37,8 +37,8 @@ Route::prefix('reports')->middleware('auth:sanctum')->group(function () {
     Route::get('inventory/shrinkage', [ReportController::class, 'inventoryShrinkage'])->middleware('permission:reports.inventory');
     Route::get('inventory/low-stock', [ReportController::class, 'inventoryLowStock'])->middleware('permission:reports.inventory');
 
-    // Financial
-    Route::get('financial/daily-pl', [ReportController::class, 'financialDailyPL'])->middleware('permission:reports.view_financial');
+    // Financial (requires advanced reports feature)
+    Route::get('financial/daily-pl', [ReportController::class, 'financialDailyPL'])->middleware(['permission:reports.view_financial', 'plan.feature:reports_advanced']);
     Route::get('financial/expenses', [ReportController::class, 'financialExpenses'])->middleware('permission:reports.view_financial');
     Route::get('financial/cash-variance', [ReportController::class, 'financialCashVariance'])->middleware('permission:reports.view_financial');
 

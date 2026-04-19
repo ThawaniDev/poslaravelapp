@@ -257,12 +257,27 @@ class BillingService
             ? (float) $plan->annual_price
             : (float) $plan->monthly_price;
 
+        // Check if subscription is free due to SoftPOS threshold
+        $isSoftPosFree = $subscription->is_softpos_free
+            && $plan->softpos_free_eligible
+            && $subscription->softpos_transaction_count >= ($plan->softpos_free_threshold ?? 0);
+
         $lineItems[] = [
             'description' => $description ?? "{$plan->name} — {$billingCycle->value} subscription",
             'quantity' => 1,
             'unit_price' => $planAmount,
             'total' => $planAmount,
         ];
+
+        // Apply SoftPOS free discount
+        if ($isSoftPosFree && $planAmount > 0) {
+            $lineItems[] = [
+                'description' => "SoftPOS Free Tier Discount (Reached {$subscription->softpos_transaction_count}/{$plan->softpos_free_threshold} transactions)",
+                'quantity' => 1,
+                'unit_price' => -$planAmount,
+                'total' => -$planAmount,
+            ];
+        }
 
         // ── 2. Active add-ons across all stores in the organization ──
         $storeIds = Store::where('organization_id', $subscription->organization_id)->pluck('id');

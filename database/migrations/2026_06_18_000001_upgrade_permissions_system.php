@@ -152,6 +152,7 @@ return new class extends Migration
                 ['name' => 'customers.manage_loyalty',  'display_name' => 'Manage Loyalty Points',       'display_name_ar' => 'إدارة نقاط الولاء',            'requires_pin' => false, 'description' => 'Manage customer loyalty programs',        'description_ar' => 'إدارة برامج ولاء العملاء'],
                 ['name' => 'customers.manage_credit',   'display_name' => 'Manage Store Credit',         'display_name_ar' => 'إدارة رصيد المتجر',            'requires_pin' => true,  'description' => 'Manage customer store credit',            'description_ar' => 'إدارة رصيد العملاء في المتجر'],
                 ['name' => 'customers.manage_debits',   'display_name' => 'Manage Customer Debits',      'display_name_ar' => 'إدارة ديون العملاء',            'requires_pin' => false, 'description' => 'Manage customer debits and dues',         'description_ar' => 'إدارة ديون ومستحقات العملاء'],
+                ['name' => 'customers.manage_receivables', 'display_name' => 'Manage Customer Receivables', 'display_name_ar' => 'إدارة مستحقات العملاء',       'requires_pin' => false, 'description' => 'Manage receivables owed by customers',    'description_ar' => 'إدارة الأموال المستحقة من العملاء'],
             ],
 
             // ─── Payments & Cash ─────────────────────────────────────

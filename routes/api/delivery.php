@@ -19,7 +19,7 @@ Route::post('delivery/webhook/{platform}/{storeId}', [DeliveryWebhookController:
     ->name('delivery.webhook');
 
 // Authenticated endpoints
-Route::prefix('delivery')->middleware('auth:sanctum')->group(function () {
+Route::prefix('delivery')->middleware(['auth:sanctum', 'plan.feature:delivery_integration'])->group(function () {
     // Dashboard & stats
     Route::get('stats', [DeliveryController::class, 'stats'])->middleware('permission:delivery.view_dashboard');
     Route::get('platforms', [DeliveryController::class, 'platforms'])->middleware('permission:delivery.view_dashboard');

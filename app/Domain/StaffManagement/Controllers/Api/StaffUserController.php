@@ -13,11 +13,13 @@ use App\Domain\StaffManagement\Resources\StaffActivityLogResource;
 use App\Domain\StaffManagement\Resources\StaffBranchAssignmentResource;
 use App\Domain\StaffManagement\Resources\StaffUserResource;
 use App\Domain\StaffManagement\Services\StaffService;
+use App\Domain\Subscription\Traits\TracksSubscriptionUsage;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\Request;
 
 class StaffUserController extends BaseApiController
 {
+    use TracksSubscriptionUsage;
     public function __construct(
         private readonly StaffService $staffService,
     ) {}
@@ -51,6 +53,12 @@ class StaffUserController extends BaseApiController
 
         // Ensure store_id belongs to user's org
         $staff = $this->staffService->create($data);
+
+        // Refresh staff usage snapshot after creation
+        $orgId = $this->resolveOrganizationId($request);
+        if ($orgId) {
+            $this->refreshUsageFor($orgId, 'staff_members');
+        }
 
         return $this->created(new StaffUserResource($staff));
     }
@@ -88,6 +96,12 @@ class StaffUserController extends BaseApiController
         }
 
         $this->staffService->delete($staff);
+
+        // Refresh staff usage snapshot after deletion
+        $orgId = $this->resolveOrganizationId($request);
+        if ($orgId) {
+            $this->refreshUsageFor($orgId, 'staff_members');
+        }
 
         return $this->success(null, 'Staff deleted');
     }

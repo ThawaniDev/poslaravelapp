@@ -1,0 +1,122 @@
+{
+  "timestamp": "2026-04-16T22:45:53.544255",
+  "base_url": "http://127.0.0.1:8001/api/v2",
+  "total_routes": 12,
+  "status_counts": {
+    "200": 2,
+    "422": 3,
+    "401": 6,
+    "201": 1
+  },
+  "results": [
+    {
+      "method": "POST",
+      "uri": "api/v2/auth/login",
+      "url": "http://127.0.0.1:8001/api/v2/auth/login",
+      "status": 200,
+      "body": "{\"success\": true, \"message\": \"Login successful.\", \"data\": {\"user\": {\"id\": \"019d90a8-0928-714c-846e-2995a6d36000\", \"name\": \"Mohammed Al-Ostora\", \"email\": \"owner@ostora.sa\", \"phone\": \"+966501234567\", \"role\": \"owner\", \"locale\": \"ar\", \"is_active\": true, \"email_verified_at\": \"2026-04-15T10:20:24+00:00\", \"last_login_at\": \"2026-04-16T19:45:34+00:00\", \"store\": {\"id\": \"019d90a8-0571-725b-8191-7d38ceef0154\", \"name\": \"Ostora Main Branch\", \"name_ar\": \"أستورا - الفرع الرئيسي\", \"slug\": \"ostora-main\", \"currenc...",
+      "category": "auth",
+      "time_ms": 3658.823
+    },
+    {
+      "method": "POST",
+      "uri": "api/v2/auth/login/pin",
+      "url": "http://127.0.0.1:8001/api/v2/auth/login/pin",
+      "status": 422,
+      "body": "{\"message\": \"validation.exists\", \"errors\": {\"store_id\": [\"validation.exists\"]}}",
+      "category": "auth",
+      "time_ms": 1231.289
+    },
+    {
+      "method": "POST",
+      "uri": "api/v2/auth/logout",
+      "url": "http://127.0.0.1:8001/api/v2/auth/logout",
+      "status": 200,
+      "body": "{\"success\": true, \"message\": \"Logged out successfully.\", \"data\": null}",
+      "category": "auth",
+      "time_ms": 3376.534
+    },
+    {
+      "method": "POST",
+      "uri": "api/v2/auth/logout-all",
+      "url": "http://127.0.0.1:8001/api/v2/auth/logout-all",
+      "status": 401,
+      "body": "{\"message\": \"Unauthenticated.\"}",
+      "category": "auth",
+      "time_ms": 1360.567
+    },
+    {
+      "method": "GET",
+      "uri": "api/v2/auth/me",
+      "url": "http://127.0.0.1:8001/api/v2/auth/me",
+      "status": 401,
+      "body": "{\"message\": \"Unauthenticated.\"}",
+      "category": "auth",
+      "time_ms": 1590.767
+    },
+    {
+      "method": "POST",
+      "uri": "api/v2/auth/otp/send",
+      "url": "http://127.0.0.1:8001/api/v2/auth/otp/send",
+      "status": 422,
+      "body": "{\"message\": \"validation.required\", \"errors\": {\"email\": [\"validation.required\"]}}",
+      "category": "auth",
+      "time_ms": 34.701
+    },
+    {
+      "method": "POST",
+      "uri": "api/v2/auth/otp/verify",
+      "url": "http://127.0.0.1:8001/api/v2/auth/otp/verify",
+      "status": 422,
+      "body": "{\"message\": \"validation.required (and 1 more error)\", \"errors\": {\"otp_id\": [\"validation.required\"], \"otp\": [\"validation.required\"]}}",
+      "category": "auth",
+      "time_ms": 18.858
+    },
+    {
+      "method": "PUT",
+      "uri": "api/v2/auth/password",
+      "url": "http://127.0.0.1:8001/api/v2/auth/password",
+      "status": 401,
+      "body": "{\"message\": \"Unauthenticated.\"}",
+      "category": "auth",
+      "time_ms": 1574.737
+    },
+    {
+      "method": "PUT",
+      "uri": "api/v2/auth/pin",
+      "url": "http://127.0.0.1:8001/api/v2/auth/pin",
+      "status": 401,
+      "body": "{\"message\": \"Unauthenticated.\"}",
+      "category": "auth",
+      "time_ms": 1279.375
+    },
+    {
+      "method": "PUT",
+      "uri": "api/v2/auth/profile",
+      "url": "http://127.0.0.1:8001/api/v2/auth/profile",
+      "status": 401,
+      "body": "{\"message\": \"Unauthenticated.\"}",
+      "category": "auth",
+      "time_ms": 1235.166
+    },
+    {
+      "method": "POST",
+      "uri": "api/v2/auth/refresh",
+      "url": "http://127.0.0.1:8001/api/v2/auth/refresh",
+      "status": 401,
+      "body": "{\"message\": \"Unauthenticated.\"}",
+      "category": "auth",
+      "time_ms": 1237.3799999999999
+    },
+    {
+      "method": "POST",
+      "uri": "api/v2/auth/register",
+      "url": "http://127.0.0.1:8001/api/v2/auth/register",
+      "status": 201,
+      "body": "{\"success\": true, \"message\": \"Account registered successfully.\", \"data\": {\"user\": {\"id\": \"019d97d4-1629-71c7-9a0a-791a50bff8bd\", \"name\": \"Test\", \"email\": \"test-api-script@test.com\", \"phone\": \"+96899999999\", \"role\": \"owner\", \"locale\": \"ar\", \"is_active\": true, \"email_verified_at\": null, \"last_login_at\": \"2026-04-16T19:45:52+00:00\", \"store\": {\"id\": \"019d97d4-1436-720c-910a-2d426a7f52d3\", \"name\": \"Test's Business\", \"name_ar\": \"Test's Business\", \"slug\": \"tests-business-e0H3tx\", \"currency\": \"SAR\", \"lo...",
+      "category": "auth",
+      "time_ms": 3592.0969999999998
+    }
+  ],
+  "errors_500": []
+}

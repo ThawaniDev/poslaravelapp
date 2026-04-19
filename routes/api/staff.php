@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('staff')->middleware('auth:sanctum')->group(function () {
     // ─── Staff Members ──────────────────────────────────────
     Route::get('members', [StaffUserController::class, 'index'])->middleware('permission:staff.view');
-    Route::post('members', [StaffUserController::class, 'store'])->middleware('permission:staff.create');
+    Route::post('members', [StaffUserController::class, 'store'])->middleware(['permission:staff.create', 'plan.limit:staff_members']);
     Route::get('members/stats', [StaffUserController::class, 'stats'])->middleware('permission:staff.view');
     Route::get('members/linkable-users', [StaffUserController::class, 'linkableUsers'])->middleware('permission:staff.view');
     Route::get('members/{id}', [StaffUserController::class, 'show'])->middleware('permission:staff.view');

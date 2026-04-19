@@ -64,13 +64,17 @@ class SubscriptionPlanSeeder extends Seeder
                 'description'       => 'Perfect for single-location boutiques and small shops just getting started.',
                 'description_ar'    => 'مثالي للمتاجر الصغيرة ذات الموقع الواحد التي تبدأ للتو.',
                 'monthly_price'     => 99.00,
-                'annual_price'      => 950.00,  // ~20% annual discount
+                'annual_price'      => 950.00,
                 'trial_days'        => 14,
                 'grace_period_days' => 3,
                 'is_active'         => true,
                 'is_highlighted'    => false,
+                'softpos_free_eligible'       => true,
+                'softpos_free_threshold'      => 500,
+                'softpos_free_threshold_period' => 'monthly',
                 'sort_order'        => 1,
                 'features' => [
+                    // Core POS
                     ['feature_key' => 'pos',                    'name' => 'Point of Sale',              'name_ar' => 'نقطة البيع',                      'is_enabled' => true],
                     ['feature_key' => 'zatca_phase2',           'name' => 'ZATCA Phase 2',               'name_ar' => 'زاتكا المرحلة الثانية',            'is_enabled' => true],
                     ['feature_key' => 'inventory',              'name' => 'Inventory Management',        'name_ar' => 'إدارة المخزون',                   'is_enabled' => true],
@@ -81,6 +85,7 @@ class SubscriptionPlanSeeder extends Seeder
                     ['feature_key' => 'receipt_printing',       'name' => 'Receipt Printing',            'name_ar' => 'طباعة الإيصالات',                 'is_enabled' => true],
                     ['feature_key' => 'offline_mode',           'name' => 'Offline Mode',                'name_ar' => 'وضع عدم الاتصال',                 'is_enabled' => true],
                     ['feature_key' => 'mada_payments',          'name' => 'Mada & Card Payments',        'name_ar' => 'مدفوعات مدى والبطاقات',           'is_enabled' => true],
+                    // Advanced features
                     ['feature_key' => 'reports_advanced',       'name' => 'Advanced Analytics',          'name_ar' => 'التحليلات المتقدمة',              'is_enabled' => false],
                     ['feature_key' => 'multi_branch',           'name' => 'Multi-Branch',                'name_ar' => 'متعدد الفروع',                    'is_enabled' => false],
                     ['feature_key' => 'delivery_integration',   'name' => 'Delivery Integration',        'name_ar' => 'تكامل التوصيل',                  'is_enabled' => false],
@@ -91,6 +96,20 @@ class SubscriptionPlanSeeder extends Seeder
                     ['feature_key' => 'dedicated_manager',      'name' => 'Dedicated Manager',           'name_ar' => 'مدير مخصص',                       'is_enabled' => false],
                     ['feature_key' => 'custom_integrations',    'name' => 'Custom Integrations',         'name_ar' => 'تكاملات مخصصة',                  'is_enabled' => false],
                     ['feature_key' => 'sla_guarantee',          'name' => 'SLA Guarantee',               'name_ar' => 'ضمان مستوى الخدمة',              'is_enabled' => false],
+                    // AI & Tools
+                    ['feature_key' => 'wameed_ai',              'name' => 'Wameed AI',                   'name_ar' => 'وميض الذكاء الاصطناعي',           'is_enabled' => false],
+                    ['feature_key' => 'cashier_gamification',   'name' => 'Cashier Gamification',        'name_ar' => 'ألعاب الكاشير',                   'is_enabled' => false],
+                    ['feature_key' => 'pos_customization',      'name' => 'POS Customization',           'name_ar' => 'تخصيص نقطة البيع',               'is_enabled' => false],
+                    ['feature_key' => 'companion_app',          'name' => 'Companion App',               'name_ar' => 'تطبيق المالك',                    'is_enabled' => false],
+                    ['feature_key' => 'installments',           'name' => 'Installment Payments',        'name_ar' => 'الدفع بالتقسيط',                 'is_enabled' => false],
+                    ['feature_key' => 'accounting',             'name' => 'Accounting',                  'name_ar' => 'المحاسبة',                        'is_enabled' => false],
+                    // Industry verticals
+                    ['feature_key' => 'industry_restaurant',    'name' => 'Restaurant Features',         'name_ar' => 'ميزات المطاعم',                  'is_enabled' => false],
+                    ['feature_key' => 'industry_bakery',        'name' => 'Bakery Features',             'name_ar' => 'ميزات المخابز',                  'is_enabled' => false],
+                    ['feature_key' => 'industry_pharmacy',      'name' => 'Pharmacy Features',           'name_ar' => 'ميزات الصيدليات',                'is_enabled' => false],
+                    ['feature_key' => 'industry_electronics',   'name' => 'Electronics Features',        'name_ar' => 'ميزات الإلكترونيات',             'is_enabled' => false],
+                    ['feature_key' => 'industry_florist',       'name' => 'Florist Features',            'name_ar' => 'ميزات الزهور',                   'is_enabled' => false],
+                    ['feature_key' => 'industry_jewelry',       'name' => 'Jewelry Features',            'name_ar' => 'ميزات المجوهرات',                'is_enabled' => false],
                 ],
                 'limits' => [
                     ['limit_key' => 'products',                 'limit_value' => 500,     'price_per_extra_unit' => null],
@@ -111,13 +130,17 @@ class SubscriptionPlanSeeder extends Seeder
                 'description'       => 'Ideal for growing supermarkets and multi-cashier retail stores.',
                 'description_ar'    => 'مثالي للسوبرماركت المتنامية ومتاجر التجزئة متعددة الكاشير.',
                 'monthly_price'     => 299.00,
-                'annual_price'      => 2870.00, // ~20% annual discount
+                'annual_price'      => 2870.00,
                 'trial_days'        => 14,
                 'grace_period_days' => 7,
                 'is_active'         => true,
                 'is_highlighted'    => true,
+                'softpos_free_eligible'       => true,
+                'softpos_free_threshold'      => 300,
+                'softpos_free_threshold_period' => 'monthly',
                 'sort_order'        => 2,
                 'features' => [
+                    // Core POS
                     ['feature_key' => 'pos',                    'name' => 'Point of Sale',              'name_ar' => 'نقطة البيع',                      'is_enabled' => true],
                     ['feature_key' => 'zatca_phase2',           'name' => 'ZATCA Phase 2',               'name_ar' => 'زاتكا المرحلة الثانية',            'is_enabled' => true],
                     ['feature_key' => 'inventory',              'name' => 'Inventory Management',        'name_ar' => 'إدارة المخزون',                   'is_enabled' => true],
@@ -128,6 +151,7 @@ class SubscriptionPlanSeeder extends Seeder
                     ['feature_key' => 'receipt_printing',       'name' => 'Receipt Printing',            'name_ar' => 'طباعة الإيصالات',                 'is_enabled' => true],
                     ['feature_key' => 'offline_mode',           'name' => 'Offline Mode',                'name_ar' => 'وضع عدم الاتصال',                 'is_enabled' => true],
                     ['feature_key' => 'mada_payments',          'name' => 'Mada & Card Payments',        'name_ar' => 'مدفوعات مدى والبطاقات',           'is_enabled' => true],
+                    // Advanced features
                     ['feature_key' => 'reports_advanced',       'name' => 'Advanced Analytics',          'name_ar' => 'التحليلات المتقدمة',              'is_enabled' => true],
                     ['feature_key' => 'multi_branch',           'name' => 'Multi-Branch',                'name_ar' => 'متعدد الفروع',                    'is_enabled' => true],
                     ['feature_key' => 'delivery_integration',   'name' => 'Delivery Integration',        'name_ar' => 'تكامل التوصيل',                  'is_enabled' => true],
@@ -138,6 +162,20 @@ class SubscriptionPlanSeeder extends Seeder
                     ['feature_key' => 'dedicated_manager',      'name' => 'Dedicated Manager',           'name_ar' => 'مدير مخصص',                       'is_enabled' => false],
                     ['feature_key' => 'custom_integrations',    'name' => 'Custom Integrations',         'name_ar' => 'تكاملات مخصصة',                  'is_enabled' => false],
                     ['feature_key' => 'sla_guarantee',          'name' => 'SLA Guarantee',               'name_ar' => 'ضمان مستوى الخدمة',              'is_enabled' => false],
+                    // AI & Tools
+                    ['feature_key' => 'wameed_ai',              'name' => 'Wameed AI',                   'name_ar' => 'وميض الذكاء الاصطناعي',           'is_enabled' => true],
+                    ['feature_key' => 'cashier_gamification',   'name' => 'Cashier Gamification',        'name_ar' => 'ألعاب الكاشير',                   'is_enabled' => true],
+                    ['feature_key' => 'pos_customization',      'name' => 'POS Customization',           'name_ar' => 'تخصيص نقطة البيع',               'is_enabled' => true],
+                    ['feature_key' => 'companion_app',          'name' => 'Companion App',               'name_ar' => 'تطبيق المالك',                    'is_enabled' => true],
+                    ['feature_key' => 'installments',           'name' => 'Installment Payments',        'name_ar' => 'الدفع بالتقسيط',                 'is_enabled' => true],
+                    ['feature_key' => 'accounting',             'name' => 'Accounting',                  'name_ar' => 'المحاسبة',                        'is_enabled' => true],
+                    // Industry verticals
+                    ['feature_key' => 'industry_restaurant',    'name' => 'Restaurant Features',         'name_ar' => 'ميزات المطاعم',                  'is_enabled' => true],
+                    ['feature_key' => 'industry_bakery',        'name' => 'Bakery Features',             'name_ar' => 'ميزات المخابز',                  'is_enabled' => true],
+                    ['feature_key' => 'industry_pharmacy',      'name' => 'Pharmacy Features',           'name_ar' => 'ميزات الصيدليات',                'is_enabled' => false],
+                    ['feature_key' => 'industry_electronics',   'name' => 'Electronics Features',        'name_ar' => 'ميزات الإلكترونيات',             'is_enabled' => false],
+                    ['feature_key' => 'industry_florist',       'name' => 'Florist Features',            'name_ar' => 'ميزات الزهور',                   'is_enabled' => false],
+                    ['feature_key' => 'industry_jewelry',       'name' => 'Jewelry Features',            'name_ar' => 'ميزات المجوهرات',                'is_enabled' => false],
                 ],
                 'limits' => [
                     ['limit_key' => 'products',                 'limit_value' => 5000,    'price_per_extra_unit' => 0.02],
@@ -158,13 +196,17 @@ class SubscriptionPlanSeeder extends Seeder
                 'description'       => 'For retail chains with 5+ branches requiring full customisation and SLA-backed support.',
                 'description_ar'    => 'لسلاسل التجزئة ذات 5 فروع أو أكثر التي تحتاج إلى تخصيص كامل ودعم مضمون.',
                 'monthly_price'     => 699.00,
-                'annual_price'      => 6710.00, // ~20% annual discount
+                'annual_price'      => 6710.00,
                 'trial_days'        => 30,
                 'grace_period_days' => 14,
                 'is_active'         => true,
                 'is_highlighted'    => false,
+                'softpos_free_eligible'       => true,
+                'softpos_free_threshold'      => 200,
+                'softpos_free_threshold_period' => 'monthly',
                 'sort_order'        => 3,
                 'features' => [
+                    // Core POS
                     ['feature_key' => 'pos',                    'name' => 'Point of Sale',              'name_ar' => 'نقطة البيع',                      'is_enabled' => true],
                     ['feature_key' => 'zatca_phase2',           'name' => 'ZATCA Phase 2',               'name_ar' => 'زاتكا المرحلة الثانية',            'is_enabled' => true],
                     ['feature_key' => 'inventory',              'name' => 'Inventory Management',        'name_ar' => 'إدارة المخزون',                   'is_enabled' => true],
@@ -175,6 +217,7 @@ class SubscriptionPlanSeeder extends Seeder
                     ['feature_key' => 'receipt_printing',       'name' => 'Receipt Printing',            'name_ar' => 'طباعة الإيصالات',                 'is_enabled' => true],
                     ['feature_key' => 'offline_mode',           'name' => 'Offline Mode',                'name_ar' => 'وضع عدم الاتصال',                 'is_enabled' => true],
                     ['feature_key' => 'mada_payments',          'name' => 'Mada & Card Payments',        'name_ar' => 'مدفوعات مدى والبطاقات',           'is_enabled' => true],
+                    // Advanced features
                     ['feature_key' => 'reports_advanced',       'name' => 'Advanced Analytics',          'name_ar' => 'التحليلات المتقدمة',              'is_enabled' => true],
                     ['feature_key' => 'multi_branch',           'name' => 'Multi-Branch',                'name_ar' => 'متعدد الفروع',                    'is_enabled' => true],
                     ['feature_key' => 'delivery_integration',   'name' => 'Delivery Integration',        'name_ar' => 'تكامل التوصيل',                  'is_enabled' => true],
@@ -185,6 +228,20 @@ class SubscriptionPlanSeeder extends Seeder
                     ['feature_key' => 'dedicated_manager',      'name' => 'Dedicated Manager',           'name_ar' => 'مدير مخصص',                       'is_enabled' => true],
                     ['feature_key' => 'custom_integrations',    'name' => 'Custom Integrations',         'name_ar' => 'تكاملات مخصصة',                  'is_enabled' => true],
                     ['feature_key' => 'sla_guarantee',          'name' => 'SLA Guarantee',               'name_ar' => 'ضمان مستوى الخدمة',              'is_enabled' => true],
+                    // AI & Tools
+                    ['feature_key' => 'wameed_ai',              'name' => 'Wameed AI',                   'name_ar' => 'وميض الذكاء الاصطناعي',           'is_enabled' => true],
+                    ['feature_key' => 'cashier_gamification',   'name' => 'Cashier Gamification',        'name_ar' => 'ألعاب الكاشير',                   'is_enabled' => true],
+                    ['feature_key' => 'pos_customization',      'name' => 'POS Customization',           'name_ar' => 'تخصيص نقطة البيع',               'is_enabled' => true],
+                    ['feature_key' => 'companion_app',          'name' => 'Companion App',               'name_ar' => 'تطبيق المالك',                    'is_enabled' => true],
+                    ['feature_key' => 'installments',           'name' => 'Installment Payments',        'name_ar' => 'الدفع بالتقسيط',                 'is_enabled' => true],
+                    ['feature_key' => 'accounting',             'name' => 'Accounting',                  'name_ar' => 'المحاسبة',                        'is_enabled' => true],
+                    // Industry verticals
+                    ['feature_key' => 'industry_restaurant',    'name' => 'Restaurant Features',         'name_ar' => 'ميزات المطاعم',                  'is_enabled' => true],
+                    ['feature_key' => 'industry_bakery',        'name' => 'Bakery Features',             'name_ar' => 'ميزات المخابز',                  'is_enabled' => true],
+                    ['feature_key' => 'industry_pharmacy',      'name' => 'Pharmacy Features',           'name_ar' => 'ميزات الصيدليات',                'is_enabled' => true],
+                    ['feature_key' => 'industry_electronics',   'name' => 'Electronics Features',        'name_ar' => 'ميزات الإلكترونيات',             'is_enabled' => true],
+                    ['feature_key' => 'industry_florist',       'name' => 'Florist Features',            'name_ar' => 'ميزات الزهور',                   'is_enabled' => true],
+                    ['feature_key' => 'industry_jewelry',       'name' => 'Jewelry Features',            'name_ar' => 'ميزات المجوهرات',                'is_enabled' => true],
                 ],
                 'limits' => [
                     ['limit_key' => 'products',                 'limit_value' => -1,      'price_per_extra_unit' => null],

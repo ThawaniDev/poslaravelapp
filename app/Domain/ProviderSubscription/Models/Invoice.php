@@ -26,6 +26,10 @@ class Invoice extends Model
         'due_date',
         'paid_at',
         'pdf_url',
+        'gateway_transaction_ref',
+        'gateway_name',
+        'payment_method_used',
+        'gateway_response',
         'created_at',
     ];
 
@@ -36,6 +40,7 @@ class Invoice extends Model
         'total' => 'decimal:2',
         'due_date' => 'date',
         'paid_at' => 'datetime',
+        'gateway_response' => 'array',
     ];
 
     public function storeSubscription(): BelongsTo

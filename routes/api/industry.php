@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('industry')->middleware('auth:sanctum')->group(function () {
 
     // ── Pharmacy ─────────────────────────────────────────
-    Route::prefix('pharmacy')->middleware('permission:pharmacy.view')->group(function () {
+    Route::prefix('pharmacy')->middleware(['permission:pharmacy.view', 'plan.feature:industry_pharmacy'])->group(function () {
         Route::get('prescriptions', [PharmacyController::class, 'listPrescriptions']);
         Route::post('prescriptions', [PharmacyController::class, 'createPrescription'])->middleware('permission:pharmacy.prescriptions');
         Route::put('prescriptions/{id}', [PharmacyController::class, 'updatePrescription'])->middleware('permission:pharmacy.prescriptions');
@@ -31,7 +31,7 @@ Route::prefix('industry')->middleware('auth:sanctum')->group(function () {
     });
 
     // ── Jewelry ──────────────────────────────────────────
-    Route::prefix('jewelry')->middleware('permission:jewelry.view')->group(function () {
+    Route::prefix('jewelry')->middleware(['permission:jewelry.view', 'plan.feature:industry_jewelry'])->group(function () {
         Route::get('metal-rates', [JewelryController::class, 'listMetalRates']);
         Route::post('metal-rates', [JewelryController::class, 'upsertMetalRate'])->middleware('permission:jewelry.manage_rates');
         Route::get('product-details', [JewelryController::class, 'listProductDetails']);
@@ -42,7 +42,7 @@ Route::prefix('industry')->middleware('auth:sanctum')->group(function () {
     });
 
     // ── Electronics ──────────────────────────────────────
-    Route::prefix('electronics')->middleware('permission:mobile.view')->group(function () {
+    Route::prefix('electronics')->middleware(['permission:mobile.view', 'plan.feature:industry_electronics'])->group(function () {
         Route::get('imei-records', [ElectronicsController::class, 'listImeiRecords']);
         Route::post('imei-records', [ElectronicsController::class, 'createImeiRecord'])->middleware('permission:mobile.imei');
         Route::put('imei-records/{id}', [ElectronicsController::class, 'updateImeiRecord'])->middleware('permission:mobile.imei');
@@ -55,7 +55,7 @@ Route::prefix('industry')->middleware('auth:sanctum')->group(function () {
     });
 
     // ── Florist ──────────────────────────────────────────
-    Route::prefix('florist')->middleware('permission:flowers.view')->group(function () {
+    Route::prefix('florist')->middleware(['permission:flowers.view', 'plan.feature:industry_florist'])->group(function () {
         Route::get('arrangements', [FloristController::class, 'listArrangements']);
         Route::post('arrangements', [FloristController::class, 'createArrangement'])->middleware('permission:flowers.arrangements');
         Route::put('arrangements/{id}', [FloristController::class, 'updateArrangement'])->middleware('permission:flowers.arrangements');
@@ -70,7 +70,7 @@ Route::prefix('industry')->middleware('auth:sanctum')->group(function () {
     });
 
     // ── Bakery ───────────────────────────────────────────
-    Route::prefix('bakery')->middleware('permission:bakery.view')->group(function () {
+    Route::prefix('bakery')->middleware(['permission:bakery.view', 'plan.feature:industry_bakery'])->group(function () {
         Route::get('recipes', [BakeryController::class, 'listRecipes']);
         Route::post('recipes', [BakeryController::class, 'createRecipe'])->middleware('permission:bakery.recipes');
         Route::put('recipes/{id}', [BakeryController::class, 'updateRecipe'])->middleware('permission:bakery.recipes');
@@ -86,7 +86,7 @@ Route::prefix('industry')->middleware('auth:sanctum')->group(function () {
     });
 
     // ── Restaurant ───────────────────────────────────────
-    Route::prefix('restaurant')->middleware('permission:restaurant.view')->group(function () {
+    Route::prefix('restaurant')->middleware(['permission:restaurant.view', 'plan.feature:industry_restaurant'])->group(function () {
         Route::get('tables', [RestaurantController::class, 'listTables']);
         Route::post('tables', [RestaurantController::class, 'createTable'])->middleware('permission:restaurant.tables');
         Route::put('tables/{id}', [RestaurantController::class, 'updateTable'])->middleware('permission:restaurant.tables');

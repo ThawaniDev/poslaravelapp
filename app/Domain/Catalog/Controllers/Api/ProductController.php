@@ -11,12 +11,14 @@ use App\Domain\Catalog\Resources\ProductResource;
 use App\Domain\Catalog\Resources\StorePriceResource;
 use App\Domain\Catalog\Resources\ProductSupplierResource;
 use App\Domain\Catalog\Services\ProductService;
+use App\Domain\Subscription\Traits\TracksSubscriptionUsage;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ProductController extends BaseApiController
 {
+    use TracksSubscriptionUsage;
     public function __construct(
         private readonly ProductService $productService,
     ) {}
@@ -52,6 +54,12 @@ class ProductController extends BaseApiController
             $request->validated(),
             $request->user(),
         );
+
+        // Refresh product usage snapshot after creation
+        $orgId = $this->resolveOrganizationId($request);
+        if ($orgId) {
+            $this->refreshUsageFor($orgId, 'products');
+        }
 
         return $this->created(new ProductResource($product));
     }
@@ -90,6 +98,12 @@ class ProductController extends BaseApiController
         }
 
         $this->productService->delete($found);
+
+        // Refresh product usage snapshot after deletion
+        $orgId = $this->resolveOrganizationId($request);
+        if ($orgId) {
+            $this->refreshUsageFor($orgId, 'products');
+        }
 
         return $this->success(null, 'Product deleted successfully.');
     }

@@ -14,12 +14,14 @@ class StoreAddOn extends Pivot
         'store_id',
         'plan_add_on_id',
         'activated_at',
+        'deactivated_at',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'activated_at' => 'datetime',
+        'deactivated_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

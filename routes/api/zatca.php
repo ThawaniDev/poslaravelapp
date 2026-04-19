@@ -3,7 +3,7 @@
 use App\Domain\ZatcaCompliance\Controllers\Api\ZatcaComplianceController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:sanctum')->prefix('zatca')->group(function () {
+Route::middleware(['auth:sanctum', 'plan.feature:zatca_phase2'])->prefix('zatca')->group(function () {
     Route::post('/enroll', [ZatcaComplianceController::class, 'enroll'])->middleware('permission:zatca.manage');
     Route::post('/renew', [ZatcaComplianceController::class, 'renew'])->middleware('permission:zatca.manage');
     Route::post('/submit-invoice', [ZatcaComplianceController::class, 'submitInvoice'])->middleware('permission:zatca.manage');

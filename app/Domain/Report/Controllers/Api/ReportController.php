@@ -6,13 +6,16 @@ use App\Domain\Report\Requests\ExportReportRequest;
 use App\Domain\Report\Requests\ReportFilterRequest;
 use App\Domain\Report\Requests\ScheduleReportRequest;
 use App\Domain\Report\Services\ReportService;
+use App\Domain\Subscription\Traits\TracksSubscriptionUsage;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class ReportController extends BaseApiController
 {
+    use TracksSubscriptionUsage;
     public function __construct(
         private readonly ReportService $reportService,
     ) {}
@@ -292,12 +295,36 @@ class ReportController extends BaseApiController
     {
         $validated = $request->validated();
 
+        // Check PDF report export limit before proceeding
+        $orgId = $this->resolveOrganizationId($request);
+        if ($orgId) {
+            $limitResponse = $this->checkLimitOrFail($orgId, 'pdf_reports_per_month');
+            if ($limitResponse) {
+                return $limitResponse;
+            }
+        }
+
         $data = $this->reportService->exportReport(
             $this->resolveStoreId($request),
             $validated['report_type'],
             collect($validated)->except(['report_type', 'format'])->toArray(),
             $validated['format'],
         );
+
+        // Record the export for usage tracking
+        if ($orgId) {
+            DB::table('report_exports')->insert([
+                'id' => Str::uuid()->toString(),
+                'organization_id' => $orgId,
+                'store_id' => $request->user()->store_id,
+                'user_id' => $request->user()->id,
+                'report_type' => $validated['report_type'],
+                'format' => $validated['format'] ?? 'pdf',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $this->refreshUsageFor($orgId, 'pdf_reports_per_month');
+        }
 
         return $this->success($data);
     }

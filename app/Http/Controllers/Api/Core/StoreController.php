@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Core;
 
 use App\Domain\Core\Models\Store;
 use App\Domain\Core\Services\StoreService;
+use App\Domain\Subscription\Traits\TracksSubscriptionUsage;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Core\CreateStoreRequest;
 use App\Http\Requests\Core\UpdateStoreRequest;
@@ -18,6 +19,7 @@ use Illuminate\Http\Request;
 
 class StoreController extends BaseApiController
 {
+    use TracksSubscriptionUsage;
     public function __construct(
         private readonly StoreService $storeService,
     ) {}
@@ -94,6 +96,9 @@ class StoreController extends BaseApiController
             $request->validated(),
         );
 
+        // Refresh branch usage snapshot after creation
+        $this->refreshUsageFor($user->organization_id, 'branches');
+
         return $this->created(new StoreResource($store), __('Branch created successfully.'));
     }
 
@@ -127,6 +132,10 @@ class StoreController extends BaseApiController
                 ->firstOrFail();
 
             $this->storeService->deleteStore($store);
+
+            // Refresh branch usage snapshot after deletion
+            $this->refreshUsageFor($user->organization_id, 'branches');
+
             return $this->success(null, __('Branch deleted successfully.'));
         } catch (ModelNotFoundException) {
             return $this->notFound(__('Store not found.'));

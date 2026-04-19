@@ -37,6 +37,16 @@ Route::prefix('subscription')->group(function () {
         Route::get('usage', [SubscriptionController::class, 'usage'])->middleware('permission:subscription.view');
         Route::get('check-feature/{featureKey}', [SubscriptionController::class, 'checkFeature'])->middleware('permission:subscription.view');
         Route::get('check-limit/{limitKey}', [SubscriptionController::class, 'checkLimit'])->middleware('permission:subscription.view');
+        Route::get('features', [SubscriptionController::class, 'allFeatures'])->middleware('permission:subscription.view');
+        Route::get('feature-route-mapping', [SubscriptionController::class, 'featureRouteMapping'])->middleware('permission:subscription.view');
+
+        // SoftPOS threshold & transactions
+        Route::prefix('softpos')->middleware('permission:subscription.view')->group(function () {
+            Route::get('info', [SubscriptionController::class, 'softPosInfo']);
+            Route::get('statistics', [SubscriptionController::class, 'softPosStatistics']);
+            Route::get('transactions', [SubscriptionController::class, 'softPosTransactions']);
+            Route::post('record', [SubscriptionController::class, 'recordSoftPosTransaction'])->middleware('permission:subscription.manage');
+        });
 
         // Invoices
         Route::get('invoices', [InvoiceController::class, 'index'])->middleware('permission:subscription.view');
@@ -48,6 +58,7 @@ Route::prefix('subscription')->group(function () {
 
         // Add-ons for current store
         Route::get('store-add-ons', [SubscriptionController::class, 'storeAddOns'])->middleware('permission:subscription.view');
+        Route::delete('store-add-ons/{addOnId}', [SubscriptionController::class, 'removeAddOn'])->middleware('permission:subscription.manage');
 
         // Admin-only plan management
         Route::post('plans', [PlanController::class, 'store'])->middleware('permission:subscription.manage');

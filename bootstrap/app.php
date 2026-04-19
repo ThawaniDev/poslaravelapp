@@ -24,6 +24,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'branch.scope' => \App\Http\Middleware\BranchScope::class,
+            'plan.feature' => \App\Http\Middleware\CheckPlanFeature::class,
+            'plan.limit' => \App\Http\Middleware\CheckPlanLimit::class,
+            'plan.active' => \App\Http\Middleware\CheckActiveSubscription::class,
         ]);
 
         $middleware->statefulApi();

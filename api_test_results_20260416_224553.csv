@@ -1,0 +1,13 @@
+method,uri,status,time_ms,category,response_snippet
+POST,api/v2/auth/login,200,3659,auth,"{'success': true; 'message': 'Login successful.'; 'data': {'user': {'id': '019d90a8-0928-714c-846e-2"
+POST,api/v2/auth/login/pin,422,1231,auth,"{'message': 'validation.exists'; 'errors': {'store_id': ['validation.exists']}}"
+POST,api/v2/auth/logout,200,3377,auth,"{'success': true; 'message': 'Logged out successfully.'; 'data': null}"
+POST,api/v2/auth/logout-all,401,1361,auth,"{'message': 'Unauthenticated.'}"
+GET,api/v2/auth/me,401,1591,auth,"{'message': 'Unauthenticated.'}"
+POST,api/v2/auth/otp/send,422,35,auth,"{'message': 'validation.required'; 'errors': {'email': ['validation.required']}}"
+POST,api/v2/auth/otp/verify,422,19,auth,"{'message': 'validation.required (and 1 more error)'; 'errors': {'otp_id': ['validation.required']; "
+PUT,api/v2/auth/password,401,1575,auth,"{'message': 'Unauthenticated.'}"
+PUT,api/v2/auth/pin,401,1279,auth,"{'message': 'Unauthenticated.'}"
+PUT,api/v2/auth/profile,401,1235,auth,"{'message': 'Unauthenticated.'}"
+POST,api/v2/auth/refresh,401,1237,auth,"{'message': 'Unauthenticated.'}"
+POST,api/v2/auth/register,201,3592,auth,"{'success': true; 'message': 'Account registered successfully.'; 'data': {'user': {'id': '019d97d4-1"

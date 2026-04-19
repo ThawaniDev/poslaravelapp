@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('wameed-ai')->middleware('auth:sanctum')->group(function () {
+Route::prefix('wameed-ai')->middleware(['auth:sanctum', 'plan.feature:wameed_ai'])->group(function () {
 
     // ─── Chat (ChatGPT-like interface) ───────────────────────
     Route::get('/models', [AIChatController::class, 'availableModels'])->middleware('permission:wameed_ai.view');

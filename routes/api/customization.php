@@ -3,7 +3,7 @@
 use App\Domain\PosCustomization\Controllers\Api\CustomizationController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:sanctum')->prefix('customization')->group(function () {
+Route::middleware(['auth:sanctum', 'plan.feature:pos_customization'])->prefix('customization')->group(function () {
     // POS Settings
     Route::get('settings', [CustomizationController::class, 'getSettings'])->middleware('permission:pos_customization.view');
     Route::put('settings', [CustomizationController::class, 'updateSettings'])->middleware('permission:pos_customization.manage');

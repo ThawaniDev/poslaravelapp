@@ -6,12 +6,15 @@ use App\Domain\Core\Models\Register;
 use App\Domain\Core\Requests\StoreRegisterRequest;
 use App\Domain\Core\Requests\UpdateRegisterRequest;
 use App\Domain\Core\Resources\RegisterResource;
+use App\Domain\Subscription\Traits\TracksSubscriptionUsage;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class RegisterController extends BaseApiController
 {
+    use TracksSubscriptionUsage;
+
     /**
      * List all registers (terminals) for the authenticated user's store.
      */
@@ -56,7 +59,13 @@ class RegisterController extends BaseApiController
             ['store_id' => $request->user()->store_id],
         ));
 
-        return $this->created(new RegisterResource($register), 'Terminal created successfully.');
+        // Refresh terminal usage snapshot after creation
+        $orgId = $this->resolveOrganizationId($request);
+        if ($orgId) {
+            $this->refreshUsageFor($orgId, 'cashier_terminals');
+        }
+
+        return $this->created(new RegisterResource($register), __('terminals.created'));
     }
 
     /**
@@ -78,7 +87,7 @@ class RegisterController extends BaseApiController
 
         $found->update($request->validated());
 
-        return $this->success(new RegisterResource($found->fresh()), 'Terminal updated successfully.');
+        return $this->success(new RegisterResource($found->fresh()), __('terminals.updated'));
     }
 
     /**
@@ -90,7 +99,13 @@ class RegisterController extends BaseApiController
 
         $found->delete();
 
-        return $this->success(null, 'Terminal deleted successfully.');
+        // Refresh terminal usage snapshot after deletion
+        $orgId = $this->resolveOrganizationId($request);
+        if ($orgId) {
+            $this->refreshUsageFor($orgId, 'cashier_terminals');
+        }
+
+        return $this->success(null, __('terminals.deleted'));
     }
 
     /**
@@ -104,7 +119,7 @@ class RegisterController extends BaseApiController
 
         return $this->success(
             new RegisterResource($found->fresh()),
-            $found->is_active ? 'Terminal activated.' : 'Terminal deactivated.',
+            $found->is_active ? __('terminals.activated') : __('terminals.deactivated'),
         );
     }
 }

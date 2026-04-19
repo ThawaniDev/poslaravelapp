@@ -47,7 +47,7 @@ Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
     // Terminals (Registers) — full CRUD for admins
     Route::middleware('permission:pos.manage_terminals')->group(function () {
         Route::get('/terminals', [RegisterController::class, 'index']);
-        Route::post('/terminals', [RegisterController::class, 'store']);
+        Route::post('/terminals', [RegisterController::class, 'store'])->middleware('plan.limit:cashier_terminals');
         Route::get('/terminals/{register}', [RegisterController::class, 'show']);
         Route::put('/terminals/{register}', [RegisterController::class, 'update']);
         Route::delete('/terminals/{register}', [RegisterController::class, 'destroy']);
