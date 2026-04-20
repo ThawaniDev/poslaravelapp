@@ -46,13 +46,13 @@ class CustomerController extends BaseApiController
 
     public function show(string $customer): JsonResponse
     {
-        $found = $this->customerService->find($customer);
+        $found = $this->customerService->find($request->user()->organization_id, $customer);
         return $this->success(new CustomerResource($found));
     }
 
     public function update(UpdateCustomerRequest $request, string $customer): JsonResponse
     {
-        $found = $this->customerService->find($customer);
+        $found = $this->customerService->find($request->user()->organization_id, $customer);
         if ($found->organization_id !== $request->user()->organization_id) {
             return $this->notFound('Customer not found.');
         }
@@ -66,7 +66,7 @@ class CustomerController extends BaseApiController
 
     public function destroy(Request $request, string $customer): JsonResponse
     {
-        $found = $this->customerService->find($customer);
+        $found = $this->customerService->find($request->user()->organization_id, $customer);
         if ($found->organization_id !== $request->user()->organization_id) {
             return $this->notFound('Customer not found.');
         }

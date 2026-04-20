@@ -29,9 +29,11 @@ class CategoryService
         return $query->get();
     }
 
-    public function find(string $categoryId): Category
+    public function find(string $organizationId, string $categoryId): Category
     {
-        return Category::with(['categories', 'products'])->findOrFail($categoryId);
+        return Category::with(['categories', 'products'])
+            ->where('organization_id', $organizationId)
+            ->findOrFail($categoryId);
     }
 
     public function create(array $data, User $actor): Category

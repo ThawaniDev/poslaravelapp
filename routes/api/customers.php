@@ -4,7 +4,7 @@ use App\Domain\Customer\Controllers\Api\CustomerController;
 use App\Domain\Customer\Controllers\Api\LoyaltyController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('customers')->middleware('auth:sanctum')->group(function () {
+Route::prefix('customers')->middleware(['auth:sanctum', 'plan.active'])->group(function () {
 
     // Customer CRUD
     Route::get('/', [CustomerController::class, 'index'])->middleware('permission:customers.view');

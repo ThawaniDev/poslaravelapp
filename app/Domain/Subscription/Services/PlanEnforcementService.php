@@ -177,15 +177,22 @@ class PlanEnforcementService
      */
     private function calculateStorageMb(string $organizationId): int
     {
-        // Approximate based on media library if available
-        $bytes = DB::table('media')
-            ->where('model_type', 'like', '%')
-            ->whereIn('model_id', function ($q) use ($organizationId) {
-                $q->select('id')->from('stores')->where('organization_id', $organizationId);
-            })
-            ->sum('size');
+        try {
+            $storeIds = Store::where('organization_id', $organizationId)->pluck('id')->toArray();
 
-        return (int) ceil($bytes / (1024 * 1024));
+            if (empty($storeIds)) {
+                return 0;
+            }
+
+            // Cast model_id to text for UUID comparison (media.model_id may be bigint)
+            $bytes = DB::table('media')
+                ->whereIn(DB::raw('model_id::text'), $storeIds)
+                ->sum('size');
+
+            return (int) ceil($bytes / (1024 * 1024));
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 
     /**

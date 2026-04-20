@@ -38,7 +38,7 @@ class CategoryController extends BaseApiController
 
     public function show(Request $request, string $category): JsonResponse
     {
-        $found = $this->categoryService->find($category);
+        $found = $this->categoryService->find($request->user()->organization_id, $category);
 
         if ($found->organization_id !== $request->user()->organization_id) {
             return $this->notFound('Category not found.');
@@ -49,7 +49,7 @@ class CategoryController extends BaseApiController
 
     public function update(UpdateCategoryRequest $request, string $category): JsonResponse
     {
-        $found = $this->categoryService->find($category);
+        $found = $this->categoryService->find($request->user()->organization_id, $category);
 
         if ($found->organization_id !== $request->user()->organization_id) {
             return $this->notFound('Category not found.');
@@ -62,7 +62,7 @@ class CategoryController extends BaseApiController
 
     public function destroy(Request $request, string $category): JsonResponse
     {
-        $found = $this->categoryService->find($category);
+        $found = $this->categoryService->find($request->user()->organization_id, $category);
 
         if ($found->organization_id !== $request->user()->organization_id) {
             return $this->notFound('Category not found.');

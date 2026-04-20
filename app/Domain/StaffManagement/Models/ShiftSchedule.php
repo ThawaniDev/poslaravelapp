@@ -25,6 +25,7 @@ class ShiftSchedule extends Model
         'actual_end',
         'status',
         'swapped_with_id',
+        'notes',
     ];
 
     protected $casts = [

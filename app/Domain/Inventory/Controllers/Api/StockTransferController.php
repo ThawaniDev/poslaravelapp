@@ -57,9 +57,9 @@ class StockTransferController extends BaseApiController
     /**
      * GET /api/v2/inventory/stock-transfers/{id}
      */
-    public function show(string $stockTransfer): JsonResponse
+    public function show(Request $request, string $stockTransfer): JsonResponse
     {
-        $transfer = $this->stockTransferService->find($stockTransfer);
+        $transfer = $this->stockTransferService->find($request->user()->organization_id, $stockTransfer);
 
         return $this->success(new StockTransferResource($transfer));
     }

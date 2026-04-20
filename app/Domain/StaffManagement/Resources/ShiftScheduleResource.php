@@ -19,6 +19,7 @@ class ShiftScheduleResource extends JsonResource
             'actual_end'        => $this->actual_end?->toIso8601String(),
             'status'            => $this->status?->value,
             'swapped_with_id'   => $this->swapped_with_id,
+            'notes'             => $this->notes,
             'staff_user'        => new StaffUserResource($this->whenLoaded('staffUser')),
             'shift_template'    => new ShiftTemplateResource($this->whenLoaded('shiftTemplate')),
         ];

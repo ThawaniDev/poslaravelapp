@@ -21,7 +21,14 @@ class ShiftTemplate extends Model
         'name',
         'start_time',
         'end_time',
+        'break_duration_minutes',
         'color',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'break_duration_minutes' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     public function store(): BelongsTo

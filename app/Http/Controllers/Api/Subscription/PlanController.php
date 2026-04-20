@@ -21,11 +21,19 @@ class PlanController extends BaseApiController
 
     /**
      * GET /subscription/plans — List available plans.
+     * Authenticated users see plans filtered by their organization's business_type.
      */
     public function index(ListPlansRequest $request): JsonResponse
     {
         $activeOnly = $request->boolean('active_only', true);
-        $plans = $this->subscriptionService->listPlans($activeOnly);
+
+        // Auto-filter by the provider's business type if authenticated
+        $businessType = null;
+        if ($request->user()?->organization) {
+            $businessType = $request->user()->organization->business_type?->value;
+        }
+
+        $plans = $this->subscriptionService->listPlans($activeOnly, $businessType);
 
         return $this->success(SubscriptionPlanResource::collection($plans));
     }

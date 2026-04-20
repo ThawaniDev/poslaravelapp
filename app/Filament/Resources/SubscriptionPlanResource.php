@@ -147,6 +147,35 @@ class SubscriptionPlanResource extends Resource
                                         ->helperText(__('subscription_plans.field_grace_period_days_helper')),
                                 ]),
                             ])->collapsible(),
+                        Forms\Components\Section::make(__('subscription_plans.section_softpos_free'))
+                            ->description(__('subscription_plans.section_softpos_free_desc'))
+                            ->schema([
+                                Forms\Components\Toggle::make('softpos_free_eligible')
+                                    ->label(__('subscription_plans.field_softpos_free_eligible'))
+                                    ->helperText(__('subscription_plans.field_softpos_free_eligible_helper'))
+                                    ->default(false)
+                                    ->live(),
+                                Forms\Components\Grid::make(2)->schema([
+                                    Forms\Components\TextInput::make('softpos_free_threshold')
+                                        ->label(__('subscription_plans.field_softpos_free_threshold'))
+                                        ->numeric()
+                                        ->minValue(1)
+                                        ->helperText(__('subscription_plans.field_softpos_free_threshold_helper'))
+                                        ->visible(fn (Forms\Get $get): bool => (bool) $get('softpos_free_eligible'))
+                                        ->required(fn (Forms\Get $get): bool => (bool) $get('softpos_free_eligible')),
+                                    Forms\Components\Select::make('softpos_free_threshold_period')
+                                        ->label(__('subscription_plans.field_softpos_free_threshold_period'))
+                                        ->options([
+                                            'monthly' => __('subscription_plans.period_monthly'),
+                                            'quarterly' => __('subscription_plans.period_quarterly'),
+                                            'annually' => __('subscription_plans.period_annually'),
+                                        ])
+                                        ->default('monthly')
+                                        ->helperText(__('subscription_plans.field_softpos_free_threshold_period_helper'))
+                                        ->visible(fn (Forms\Get $get): bool => (bool) $get('softpos_free_eligible'))
+                                        ->required(fn (Forms\Get $get): bool => (bool) $get('softpos_free_eligible')),
+                                ]),
+                            ])->collapsible(),
                     ]),
 
                 // ─── Feature Toggles ──────────────────────────────────
@@ -183,6 +212,20 @@ class SubscriptionPlanResource extends Resource
                                                 'dedicated_manager'     => __('subscription_plans.feature_dedicated_manager'),
                                                 'custom_integrations'   => __('subscription_plans.feature_custom_integrations'),
                                                 'sla_guarantee'         => __('subscription_plans.feature_sla_guarantee'),
+                                                // AI & Tools
+                                                'wameed_ai'             => __('subscription_plans.feature_wameed_ai'),
+                                                'cashier_gamification'  => __('subscription_plans.feature_cashier_gamification'),
+                                                'pos_customization'     => __('subscription_plans.feature_pos_customization'),
+                                                'companion_app'         => __('subscription_plans.feature_companion_app'),
+                                                'installments'          => __('subscription_plans.feature_installments'),
+                                                'accounting'            => __('subscription_plans.feature_accounting'),
+                                                // Industry Verticals
+                                                'industry_restaurant'   => __('subscription_plans.feature_industry_restaurant'),
+                                                'industry_bakery'       => __('subscription_plans.feature_industry_bakery'),
+                                                'industry_pharmacy'     => __('subscription_plans.feature_industry_pharmacy'),
+                                                'industry_electronics'  => __('subscription_plans.feature_industry_electronics'),
+                                                'industry_florist'      => __('subscription_plans.feature_industry_florist'),
+                                                'industry_jewelry'      => __('subscription_plans.feature_industry_jewelry'),
                                             ])
                                             ->required()
                                             ->searchable()
@@ -402,6 +445,20 @@ class SubscriptionPlanResource extends Resource
                         Infolists\Components\TextEntry::make('sort_order'),
                     ]),
                 ]),
+            Infolists\Components\Section::make(__('subscription_plans.section_softpos_free'))
+                ->schema([
+                    Infolists\Components\Grid::make(3)->schema([
+                        Infolists\Components\IconEntry::make('softpos_free_eligible')
+                            ->label(__('subscription_plans.field_softpos_free_eligible'))
+                            ->boolean(),
+                        Infolists\Components\TextEntry::make('softpos_free_threshold')
+                            ->label(__('subscription_plans.field_softpos_free_threshold'))
+                            ->placeholder('—'),
+                        Infolists\Components\TextEntry::make('softpos_free_threshold_period')
+                            ->label(__('subscription_plans.field_softpos_free_threshold_period'))
+                            ->placeholder('—'),
+                    ]),
+                ])->collapsible(),
             Infolists\Components\Section::make(__('subscription_plans.section_feature_toggles'))
                 ->schema([
                     Infolists\Components\RepeatableEntry::make('planFeatureToggles')

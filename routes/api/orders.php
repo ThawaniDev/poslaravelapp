@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('orders')->middleware('auth:sanctum')->group(function () {
+Route::prefix('orders')->middleware(['auth:sanctum', 'plan.active'])->group(function () {
     // Returns (before wildcard routes)
     Route::get('/returns/list', [OrderController::class, 'returns'])->middleware('permission:orders.view');
     Route::get('/returns/{returnId}', [OrderController::class, 'showReturn'])->middleware('permission:orders.view');

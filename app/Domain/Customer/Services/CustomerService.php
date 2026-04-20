@@ -31,9 +31,11 @@ class CustomerService
         return $query->orderBy('name')->paginate($perPage);
     }
 
-    public function find(string $customerId): Customer
+    public function find(string $organizationId, string $customerId): Customer
     {
-        return Customer::with(['loyaltyTransactions', 'storeCreditTransactions'])->findOrFail($customerId);
+        return Customer::with(['loyaltyTransactions', 'storeCreditTransactions'])
+            ->where('organization_id', $organizationId)
+            ->findOrFail($customerId);
     }
 
     public function create(array $data, User $actor): Customer

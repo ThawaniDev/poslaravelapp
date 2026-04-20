@@ -77,6 +77,22 @@ return [
     'feature_custom_integrations'       => 'Custom Integrations',
     'feature_sla_guarantee'             => 'SLA Guarantee',
 
+    // AI & Tools features
+    'feature_wameed_ai'                 => 'Wameed AI',
+    'feature_cashier_gamification'      => 'Cashier Gamification',
+    'feature_pos_customization'         => 'POS Customization',
+    'feature_companion_app'             => 'Companion App',
+    'feature_installments'              => 'Installment Payments',
+    'feature_accounting'                => 'Accounting',
+
+    // Industry vertical features
+    'feature_industry_restaurant'       => 'Restaurant Features',
+    'feature_industry_bakery'           => 'Bakery Features',
+    'feature_industry_pharmacy'         => 'Pharmacy Features',
+    'feature_industry_electronics'      => 'Electronics Features',
+    'feature_industry_florist'          => 'Florist Features',
+    'feature_industry_jewelry'          => 'Jewelry Features',
+
     // ── Limits Tab ───────────────────────────────────────────────────────────
     'section_plan_limits'               => 'Plan Limits',
     'section_plan_limits_desc'          => 'Set hard limits for each resource. Stores exceeding limits will be prompted to upgrade.',
@@ -141,4 +157,17 @@ return [
     'info_resource'                     => 'Resource',
     'info_limit'                        => 'Limit',
     'info_overage'                      => 'Overage',
+
+    // ── SoftPOS Free Tier ─────────────────────────────────────────────────────
+    'section_softpos_free'                       => 'SoftPOS Free Tier',
+    'section_softpos_free_desc'                  => 'Make this plan free for stores that reach a SoftPOS transaction threshold',
+    'field_softpos_free_eligible'                => 'SoftPOS Free Eligible',
+    'field_softpos_free_eligible_helper'         => 'When enabled, stores reaching the transaction threshold will get this plan for free',
+    'field_softpos_free_threshold'               => 'Transaction Threshold',
+    'field_softpos_free_threshold_helper'        => 'Number of SoftPOS transactions required to unlock free tier',
+    'field_softpos_free_threshold_period'        => 'Threshold Period',
+    'field_softpos_free_threshold_period_helper' => 'The time window in which transactions must be completed',
+    'period_monthly'                             => 'Monthly',
+    'period_quarterly'                           => 'Quarterly',
+    'period_annually'                            => 'Annually',
 ];

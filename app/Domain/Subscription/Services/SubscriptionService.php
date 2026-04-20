@@ -16,8 +16,9 @@ class SubscriptionService
 
     /**
      * List all active subscription plans with their features and limits.
+     * Optionally filter by business_type (returns plans matching the type + plans with no type set).
      */
-    public function listPlans(bool $activeOnly = true): Collection
+    public function listPlans(bool $activeOnly = true, ?string $businessType = null): Collection
     {
         $query = SubscriptionPlan::with(['planFeatureToggles', 'planLimits', 'pricingPageContent'])
             ->orderBy('sort_order')
@@ -25,6 +26,13 @@ class SubscriptionService
 
         if ($activeOnly) {
             $query->where('is_active', true);
+        }
+
+        if ($businessType) {
+            $query->where(function ($q) use ($businessType) {
+                $q->where('business_type', $businessType)
+                    ->orWhereNull('business_type');
+            });
         }
 
         return $query->get();

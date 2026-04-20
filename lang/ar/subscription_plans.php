@@ -77,6 +77,22 @@ return [
     'feature_custom_integrations'       => 'تكاملات مخصصة',
     'feature_sla_guarantee'             => 'ضمان مستوى الخدمة',
 
+    // AI & Tools features
+    'feature_wameed_ai'                 => 'وميض الذكاء الاصطناعي',
+    'feature_cashier_gamification'      => 'ألعاب تحفيز الكاشير',
+    'feature_pos_customization'         => 'تخصيص نقطة البيع',
+    'feature_companion_app'             => 'التطبيق المصاحب',
+    'feature_installments'              => 'الدفع بالتقسيط',
+    'feature_accounting'                => 'المحاسبة',
+
+    // Industry vertical features
+    'feature_industry_restaurant'       => 'ميزات المطاعم',
+    'feature_industry_bakery'           => 'ميزات المخابز',
+    'feature_industry_pharmacy'         => 'ميزات الصيدليات',
+    'feature_industry_electronics'      => 'ميزات الإلكترونيات',
+    'feature_industry_florist'          => 'ميزات بائع الزهور',
+    'feature_industry_jewelry'          => 'ميزات المجوهرات',
+
     // ── Limits Tab ───────────────────────────────────────────────────────────
     'section_plan_limits'               => 'حدود الخطة',
     'section_plan_limits_desc'          => 'حدد قيوداً صارمة لكل مورد. سيُطلب من المتاجر التي تتجاوز الحدود الترقية.',
@@ -141,4 +157,17 @@ return [
     'info_resource'                     => 'المورد',
     'info_limit'                        => 'الحد الأقصى',
     'info_overage'                      => 'رسوم الزيادة',
+
+    // ── SoftPOS Free Tier ─────────────────────────────────────────────────────
+    'section_softpos_free'                       => 'SoftPOS المجاني',
+    'section_softpos_free_desc'                  => 'اجعل هذه الخطة مجانية للمتاجر التي تصل إلى حد معاملات SoftPOS',
+    'field_softpos_free_eligible'                => 'مؤهل لـ SoftPOS المجاني',
+    'field_softpos_free_eligible_helper'         => 'عند التفعيل، ستحصل المتاجر التي تصل إلى حد المعاملات على هذه الخطة مجاناً',
+    'field_softpos_free_threshold'               => 'حد المعاملات',
+    'field_softpos_free_threshold_helper'        => 'عدد معاملات SoftPOS المطلوبة لفتح المستوى المجاني',
+    'field_softpos_free_threshold_period'        => 'فترة الحد',
+    'field_softpos_free_threshold_period_helper' => 'الإطار الزمني الذي يجب إتمام المعاملات خلاله',
+    'period_monthly'                             => 'شهري',
+    'period_quarterly'                           => 'ربع سنوي',
+    'period_annually'                            => 'سنوي',
 ];

@@ -38,18 +38,22 @@ Route::prefix('staff')->middleware('auth:sanctum')->group(function () {
 
     // ─── Attendance ─────────────────────────────────────────
     Route::get('attendance', [StaffUserController::class, 'attendance'])->middleware('permission:reports.attendance');
+    Route::get('attendance/summary', [StaffUserController::class, 'attendanceSummary'])->middleware('permission:reports.attendance');
     Route::post('attendance/clock', [StaffUserController::class, 'clock'])->middleware('permission:staff.view');
     Route::get('attendance/export', [StaffUserController::class, 'attendanceExport'])->middleware('permission:reports.attendance');
 
     // ─── Shifts ─────────────────────────────────────────────
     Route::get('shifts', [StaffUserController::class, 'shifts'])->middleware('permission:staff.manage_shifts');
     Route::post('shifts', [StaffUserController::class, 'storeShift'])->middleware('permission:staff.manage_shifts');
+    Route::post('shifts/bulk', [StaffUserController::class, 'bulkStoreShift'])->middleware('permission:staff.manage_shifts');
     Route::put('shifts/{id}', [StaffUserController::class, 'updateShift'])->middleware('permission:staff.manage_shifts');
     Route::delete('shifts/{id}', [StaffUserController::class, 'destroyShift'])->middleware('permission:staff.manage_shifts');
 
     // ─── Shift Templates ────────────────────────────────────
     Route::get('shift-templates', [StaffUserController::class, 'shiftTemplates'])->middleware('permission:staff.manage_shifts');
     Route::post('shift-templates', [StaffUserController::class, 'storeShiftTemplate'])->middleware('permission:staff.manage_shifts');
+    Route::put('shift-templates/{id}', [StaffUserController::class, 'updateShiftTemplate'])->middleware('permission:staff.manage_shifts');
+    Route::delete('shift-templates/{id}', [StaffUserController::class, 'destroyShiftTemplate'])->middleware('permission:staff.manage_shifts');
 
     // ─── Roles ───────────────────────────────────────────────
     Route::get('roles/user-permissions', [RoleController::class, 'userPermissions']);

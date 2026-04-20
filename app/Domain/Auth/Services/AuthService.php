@@ -8,6 +8,7 @@ use App\Domain\Auth\Enums\UserRole;
 use App\Domain\Auth\Models\User;
 use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -131,6 +132,16 @@ class AuthService
      */
     public function loginByPin(string $storeId, string $pin): array
     {
+        // PIN brute-force protection: max 5 attempts per store per 15 minutes
+        $cacheKey = "pin_attempts:{$storeId}";
+        $attempts = (int) Cache::get($cacheKey, 0);
+
+        if ($attempts >= 5) {
+            throw ValidationException::withMessages([
+                'pin' => [__('auth.pin_locked')],
+            ]);
+        }
+
         // Find user by PIN within the store
         $users = User::where('store_id', $storeId)
             ->where('is_active', true)
@@ -145,10 +156,14 @@ class AuthService
         }
 
         if (! $matchedUser) {
+            Cache::put($cacheKey, $attempts + 1, now()->addMinutes(15));
             throw ValidationException::withMessages([
-                'pin' => [__('Invalid PIN.')],
+                'pin' => [__('auth.invalid_pin')],
             ]);
         }
+
+        // Reset attempts on success
+        Cache::forget($cacheKey);
 
         $matchedUser->touchLastLogin();
         $token = $this->tokenService->createToken($matchedUser, 'pin-login');

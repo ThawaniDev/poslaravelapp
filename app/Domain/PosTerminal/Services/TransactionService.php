@@ -39,15 +39,18 @@ class TransactionService
         }
 
         if (!empty($filters['search'])) {
-            $query->where('transaction_number', 'like', "%{$filters['search']}%");
+            $escaped = str_replace(['%', '_'], ['\%', '\_'], $filters['search']);
+            $query->where('transaction_number', 'like', "%{$escaped}%");
         }
 
         return $query->orderByDesc('created_at')->paginate($perPage);
     }
 
-    public function find(string $transactionId): Transaction
+    public function find(string $storeId, string $transactionId): Transaction
     {
-        return Transaction::with(['transactionItems', 'payments'])->findOrFail($transactionId);
+        return Transaction::with(['transactionItems', 'payments'])
+            ->where('store_id', $storeId)
+            ->findOrFail($transactionId);
     }
 
     public function findByNumber(string $storeId, string $number): Transaction
@@ -227,11 +230,11 @@ class TransactionService
     public function void(Transaction $transaction, User $actor): Transaction
     {
         if ($transaction->status === TransactionStatus::Voided) {
-            throw new \RuntimeException('This transaction is already voided.');
+            throw new \RuntimeException(__('pos.transaction_already_voided'));
         }
 
         if ($transaction->status !== TransactionStatus::Completed) {
-            throw new \RuntimeException('Only completed transactions can be voided.');
+            throw new \RuntimeException(__('pos.only_completed_can_void'));
         }
 
         $transaction->update([
@@ -306,54 +309,41 @@ class TransactionService
         $taxAmount = (float) $transaction->tax_amount;
         $totalCost = $transaction->transactionItems->sum(fn ($item) => (float) $item->cost_price * (float) $item->quantity);
 
-        // Upsert daily_sales_summary atomically
-        $existing = DailySalesSummary::where('store_id', $storeId)
-            ->whereDate('date', $date)
-            ->first();
+        // Upsert daily_sales_summary atomically using firstOrCreate + parameterized update
+        $customerIncrement = $transaction->customer_id ? 1 : 0;
 
-        if ($existing) {
-            $query = DailySalesSummary::where('id', $existing->id);
-            if ($isReturn) {
-                $query->update([
-                    'total_refunds' => DB::raw("total_refunds + {$totalAmount}"),
-                    'net_revenue' => DB::raw("net_revenue - {$totalAmount}"),
-                ]);
-            } else {
-                $newTxCount = $existing->total_transactions + 1;
-                $newRevenue = (float) $existing->total_revenue + $totalAmount;
-                $newAvgBasket = $newTxCount > 0 ? round($newRevenue / $newTxCount, 2) : 0;
-                $customerIncrement = $transaction->customer_id ? 1 : 0;
-                $query->update([
-                    'total_transactions' => DB::raw('total_transactions + 1'),
-                    'total_revenue' => DB::raw("total_revenue + {$totalAmount}"),
-                    'total_cost' => DB::raw("total_cost + {$totalCost}"),
-                    'total_discount' => DB::raw("total_discount + {$discountAmount}"),
-                    'total_tax' => DB::raw("total_tax + {$taxAmount}"),
-                    'net_revenue' => DB::raw("net_revenue + {$totalAmount}"),
-                    'cash_revenue' => DB::raw("cash_revenue + {$cashRevenue}"),
-                    'card_revenue' => DB::raw("card_revenue + {$cardRevenue}"),
-                    'other_revenue' => DB::raw("other_revenue + {$otherRevenue}"),
-                    'avg_basket_size' => $newAvgBasket,
-                    'unique_customers' => DB::raw("unique_customers + {$customerIncrement}"),
-                ]);
-            }
+        $summary = DailySalesSummary::firstOrCreate(
+            ['store_id' => $storeId, 'date' => $date],
+            [
+                'total_transactions' => 0, 'total_revenue' => 0, 'total_cost' => 0,
+                'total_discount' => 0, 'total_tax' => 0, 'total_refunds' => 0,
+                'net_revenue' => 0, 'cash_revenue' => 0, 'card_revenue' => 0,
+                'other_revenue' => 0, 'avg_basket_size' => 0, 'unique_customers' => 0,
+            ]
+        );
+
+        if ($isReturn) {
+            DB::update(
+                'UPDATE daily_sales_summaries SET total_refunds = total_refunds + ?, net_revenue = net_revenue - ? WHERE id = ?',
+                [$totalAmount, $totalAmount, $summary->id]
+            );
         } else {
-            DailySalesSummary::create([
-                'store_id' => $storeId,
-                'date' => $date,
-                'total_transactions' => $isReturn ? 0 : 1,
-                'total_revenue' => $isReturn ? 0 : $totalAmount,
-                'total_cost' => $isReturn ? 0 : $totalCost,
-                'total_discount' => $isReturn ? 0 : $discountAmount,
-                'total_tax' => $isReturn ? 0 : $taxAmount,
-                'total_refunds' => $isReturn ? $totalAmount : 0,
-                'net_revenue' => $isReturn ? -$totalAmount : $totalAmount,
-                'cash_revenue' => $isReturn ? 0 : $cashRevenue,
-                'card_revenue' => $isReturn ? 0 : $cardRevenue,
-                'other_revenue' => $isReturn ? 0 : $otherRevenue,
-                'avg_basket_size' => $isReturn ? 0 : $totalAmount,
-                'unique_customers' => $transaction->customer_id ? 1 : 0,
-            ]);
+            DB::update(
+                'UPDATE daily_sales_summaries SET '
+                . 'total_transactions = total_transactions + 1, '
+                . 'total_revenue = total_revenue + ?, '
+                . 'total_cost = total_cost + ?, '
+                . 'total_discount = total_discount + ?, '
+                . 'total_tax = total_tax + ?, '
+                . 'net_revenue = net_revenue + ?, '
+                . 'cash_revenue = cash_revenue + ?, '
+                . 'card_revenue = card_revenue + ?, '
+                . 'other_revenue = other_revenue + ?, '
+                . 'unique_customers = unique_customers + ?, '
+                . 'avg_basket_size = CASE WHEN total_transactions + 1 > 0 THEN ROUND((total_revenue + ?) / (total_transactions + 1), 2) ELSE 0 END '
+                . 'WHERE id = ?',
+                [$totalAmount, $totalCost, $discountAmount, $taxAmount, $totalAmount, $cashRevenue, $cardRevenue, $otherRevenue, $customerIncrement, $totalAmount, $summary->id]
+            );
         }
 
         // Upsert product_sales_summary atomically for each item
@@ -362,46 +352,28 @@ class TransactionService
                 continue;
             }
 
-            $existingProduct = ProductSalesSummary::where('store_id', $storeId)
-                ->where('product_id', $item->product_id)
-                ->whereDate('date', $date)
-                ->first();
-
             $qty = (float) $item->quantity;
             $revenue = (float) $item->line_total;
             $cost = (float) $item->cost_price * $qty;
             $discount = (float) $item->discount_amount;
             $tax = (float) $item->tax_amount;
 
-            if ($existingProduct) {
-                $productQuery = ProductSalesSummary::where('id', $existingProduct->id);
-                if ($isReturn || $item->is_return_item) {
-                    $productQuery->update([
-                        'return_quantity' => DB::raw("return_quantity + {$qty}"),
-                        'return_amount' => DB::raw("return_amount + {$revenue}"),
-                    ]);
-                } else {
-                    $productQuery->update([
-                        'quantity_sold' => DB::raw("quantity_sold + {$qty}"),
-                        'revenue' => DB::raw("revenue + {$revenue}"),
-                        'cost' => DB::raw("cost + {$cost}"),
-                        'discount_amount' => DB::raw("discount_amount + {$discount}"),
-                        'tax_amount' => DB::raw("tax_amount + {$tax}"),
-                    ]);
-                }
+            // Use firstOrCreate + atomic update to avoid race conditions
+            $productSummary = ProductSalesSummary::firstOrCreate(
+                ['store_id' => $storeId, 'product_id' => $item->product_id, 'date' => $date],
+                ['quantity_sold' => 0, 'revenue' => 0, 'cost' => 0, 'discount_amount' => 0, 'tax_amount' => 0, 'return_quantity' => 0, 'return_amount' => 0]
+            );
+
+            if ($isReturn || $item->is_return_item) {
+                DB::update(
+                    'UPDATE product_sales_summaries SET return_quantity = return_quantity + ?, return_amount = return_amount + ? WHERE id = ?',
+                    [$qty, $revenue, $productSummary->id]
+                );
             } else {
-                ProductSalesSummary::create([
-                    'store_id' => $storeId,
-                    'product_id' => $item->product_id,
-                    'date' => $date,
-                    'quantity_sold' => ($isReturn || $item->is_return_item) ? 0 : $qty,
-                    'revenue' => ($isReturn || $item->is_return_item) ? 0 : $revenue,
-                    'cost' => ($isReturn || $item->is_return_item) ? 0 : $cost,
-                    'discount_amount' => ($isReturn || $item->is_return_item) ? 0 : $discount,
-                    'tax_amount' => ($isReturn || $item->is_return_item) ? 0 : $tax,
-                    'return_quantity' => ($isReturn || $item->is_return_item) ? $qty : 0,
-                    'return_amount' => ($isReturn || $item->is_return_item) ? $revenue : 0,
-                ]);
+                DB::update(
+                    'UPDATE product_sales_summaries SET quantity_sold = quantity_sold + ?, revenue = revenue + ?, cost = cost + ?, discount_amount = discount_amount + ?, tax_amount = tax_amount + ? WHERE id = ?',
+                    [$qty, $revenue, $cost, $discount, $tax, $productSummary->id]
+                );
             }
         }
     }
@@ -442,30 +414,30 @@ class TransactionService
             ->first();
 
         if ($existing) {
-            $query = DailySalesSummary::where('id', $existing->id);
+            $customerDecrement = $transaction->customer_id ? 1 : 0;
+
             if ($isReturn) {
-                $query->update([
-                    'total_refunds' => DB::raw("GREATEST(0, total_refunds - {$totalAmount})"),
-                    'net_revenue' => DB::raw("net_revenue + {$totalAmount}"),
-                ]);
+                DB::update(
+                    'UPDATE daily_sales_summaries SET total_refunds = GREATEST(0, total_refunds - ?), net_revenue = net_revenue + ? WHERE id = ?',
+                    [$totalAmount, $totalAmount, $existing->id]
+                );
             } else {
-                $newTxCount = max(0, $existing->total_transactions - 1);
-                $newRevenue = max(0, (float) $existing->total_revenue - $totalAmount);
-                $newAvgBasket = $newTxCount > 0 ? round($newRevenue / $newTxCount, 2) : 0;
-                $customerDecrement = $transaction->customer_id ? 1 : 0;
-                $query->update([
-                    'total_transactions' => DB::raw('GREATEST(0, total_transactions - 1)'),
-                    'total_revenue' => DB::raw("GREATEST(0, total_revenue - {$totalAmount})"),
-                    'total_cost' => DB::raw("GREATEST(0, total_cost - {$totalCost})"),
-                    'total_discount' => DB::raw("GREATEST(0, total_discount - {$discountAmount})"),
-                    'total_tax' => DB::raw("GREATEST(0, total_tax - {$taxAmount})"),
-                    'net_revenue' => DB::raw("net_revenue - {$totalAmount}"),
-                    'cash_revenue' => DB::raw("GREATEST(0, cash_revenue - {$cashRevenue})"),
-                    'card_revenue' => DB::raw("GREATEST(0, card_revenue - {$cardRevenue})"),
-                    'other_revenue' => DB::raw("GREATEST(0, other_revenue - {$otherRevenue})"),
-                    'avg_basket_size' => $newAvgBasket,
-                    'unique_customers' => DB::raw("GREATEST(0, unique_customers - {$customerDecrement})"),
-                ]);
+                DB::update(
+                    'UPDATE daily_sales_summaries SET '
+                    . 'total_transactions = GREATEST(0, total_transactions - 1), '
+                    . 'total_revenue = GREATEST(0, total_revenue - ?), '
+                    . 'total_cost = GREATEST(0, total_cost - ?), '
+                    . 'total_discount = GREATEST(0, total_discount - ?), '
+                    . 'total_tax = GREATEST(0, total_tax - ?), '
+                    . 'net_revenue = net_revenue - ?, '
+                    . 'cash_revenue = GREATEST(0, cash_revenue - ?), '
+                    . 'card_revenue = GREATEST(0, card_revenue - ?), '
+                    . 'other_revenue = GREATEST(0, other_revenue - ?), '
+                    . 'unique_customers = GREATEST(0, unique_customers - ?), '
+                    . 'avg_basket_size = CASE WHEN GREATEST(0, total_transactions - 1) > 0 THEN ROUND(GREATEST(0, total_revenue - ?) / GREATEST(1, total_transactions - 1), 2) ELSE 0 END '
+                    . 'WHERE id = ?',
+                    [$totalAmount, $totalCost, $discountAmount, $taxAmount, $totalAmount, $cashRevenue, $cardRevenue, $otherRevenue, $customerDecrement, $totalAmount, $existing->id]
+                );
             }
         }
 
@@ -490,20 +462,16 @@ class TransactionService
             $discount = (float) $item->discount_amount;
             $tax = (float) $item->tax_amount;
 
-            $productQuery = ProductSalesSummary::where('id', $existingProduct->id);
             if ($isReturn || $item->is_return_item) {
-                $productQuery->update([
-                    'return_quantity' => DB::raw("GREATEST(0, return_quantity - {$qty})"),
-                    'return_amount' => DB::raw("GREATEST(0, return_amount - {$revenue})"),
-                ]);
+                DB::update(
+                    'UPDATE product_sales_summaries SET return_quantity = GREATEST(0, return_quantity - ?), return_amount = GREATEST(0, return_amount - ?) WHERE id = ?',
+                    [$qty, $revenue, $existingProduct->id]
+                );
             } else {
-                $productQuery->update([
-                    'quantity_sold' => DB::raw("GREATEST(0, quantity_sold - {$qty})"),
-                    'revenue' => DB::raw("GREATEST(0, revenue - {$revenue})"),
-                    'cost' => DB::raw("GREATEST(0, cost - {$cost})"),
-                    'discount_amount' => DB::raw("GREATEST(0, discount_amount - {$discount})"),
-                    'tax_amount' => DB::raw("GREATEST(0, tax_amount - {$tax})"),
-                ]);
+                DB::update(
+                    'UPDATE product_sales_summaries SET quantity_sold = GREATEST(0, quantity_sold - ?), revenue = GREATEST(0, revenue - ?), cost = GREATEST(0, cost - ?), discount_amount = GREATEST(0, discount_amount - ?), tax_amount = GREATEST(0, tax_amount - ?) WHERE id = ?',
+                    [$qty, $revenue, $cost, $discount, $tax, $existingProduct->id]
+                );
             }
         }
     }
@@ -543,9 +511,10 @@ class TransactionService
                 $reason = 'POS sale - ' . $transaction->transaction_number;
             }
 
-            // Update stock_levels
+            // Update stock_levels with row lock to prevent race conditions
             $stockLevel = StockLevel::where('store_id', $storeId)
                 ->where('product_id', $item->product_id)
+                ->lockForUpdate()
                 ->first();
 
             if ($stockLevel) {
@@ -698,10 +667,25 @@ class TransactionService
     private function generateNumber(string $storeId): string
     {
         $date = now()->format('Ymd');
-        $count = Transaction::where('store_id', $storeId)
-            ->where('transaction_number', 'like', "TXN-{$date}-%")
+        $prefix = "TXN-{$date}-";
+
+        // Use atomic lock to prevent duplicate transaction numbers
+        $count = DB::table('transactions')
+            ->where('store_id', $storeId)
+            ->where('transaction_number', 'like', "{$prefix}%")
+            ->lockForUpdate()
             ->count();
 
-        return sprintf('TXN-%s-%04d', $date, $count + 1);
+        $number = sprintf('TXN-%s-%04d', $date, $count + 1);
+
+        // Retry with incrementing suffix if collision occurs
+        $maxRetries = 5;
+        $attempt = 0;
+        while (Transaction::where('transaction_number', $number)->exists() && $attempt < $maxRetries) {
+            $attempt++;
+            $number = sprintf('TXN-%s-%04d', $date, $count + 1 + $attempt);
+        }
+
+        return $number;
     }
 }

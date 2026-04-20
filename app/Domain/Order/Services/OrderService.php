@@ -26,15 +26,18 @@ class OrderService
         }
 
         if (!empty($filters['search'])) {
-            $query->where('order_number', 'like', "%{$filters['search']}%");
+            $escaped = str_replace(['%', '_'], ['\%', '\_'], $filters['search']);
+            $query->where('order_number', 'like', "%{$escaped}%");
         }
 
         return $query->orderByDesc('created_at')->paginate($perPage);
     }
 
-    public function find(string $orderId): Order
+    public function find(string $storeId, string $orderId): Order
     {
-        return Order::with(['orderItems', 'orderStatusHistory', 'returns'])->findOrFail($orderId);
+        return Order::with(['orderItems', 'orderStatusHistory', 'returns'])
+            ->where('store_id', $storeId)
+            ->findOrFail($orderId);
     }
 
     public function create(array $data, User $actor): Order
@@ -97,7 +100,7 @@ class OrderService
         // Validate status transition
         $allowed = $this->getAllowedTransitions($oldStatus);
         if (!in_array($newStatusEnum, $allowed)) {
-            throw new \RuntimeException("Cannot transition from {$oldStatus->value} to {$newStatus}.");
+            throw new \RuntimeException(__('orders.invalid_transition', ['from' => $oldStatus->value, 'to' => $newStatus]));
         }
 
         $order->update(['status' => $newStatusEnum]);
@@ -117,7 +120,7 @@ class OrderService
     {
         $nonVoidable = [OrderStatus::Completed, OrderStatus::Delivered, OrderStatus::Voided, OrderStatus::Cancelled];
         if (in_array($order->status, $nonVoidable)) {
-            throw new \RuntimeException("Cannot void an order with status {$order->status->value}.");
+            throw new \RuntimeException(__('orders.cannot_void_status', ['status' => $order->status->value]));
         }
 
         $oldStatus = $order->status;
@@ -150,8 +153,12 @@ class OrderService
     private function generateOrderNumber(string $storeId): string
     {
         $date = now()->format('Ymd');
-        $count = Order::where('store_id', $storeId)
-            ->where('order_number', 'like', "ORD-{$date}-%")
+        $prefix = "ORD-{$date}-";
+
+        $count = DB::table('orders')
+            ->where('store_id', $storeId)
+            ->where('order_number', 'like', "{$prefix}%")
+            ->lockForUpdate()
             ->count();
 
         return sprintf('ORD-%s-%04d', $date, $count + 1);

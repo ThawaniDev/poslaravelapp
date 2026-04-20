@@ -25,6 +25,11 @@ class UpdatePlanRequest extends FormRequest
             'is_highlighted' => ['sometimes', 'boolean'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
 
+            // SoftPOS free tier
+            'softpos_free_eligible' => ['sometimes', 'boolean'],
+            'softpos_free_threshold' => ['nullable', 'integer', 'min:1', 'required_if:softpos_free_eligible,true'],
+            'softpos_free_threshold_period' => ['nullable', 'string', 'in:monthly,quarterly,annually', 'required_if:softpos_free_eligible,true'],
+
             'features' => ['sometimes', 'array'],
             'features.*.feature_key' => ['required_with:features', 'string', 'max:100'],
             'features.*.is_enabled' => ['required_with:features', 'boolean'],

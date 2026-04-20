@@ -27,9 +27,11 @@ class StockTransferService
     /**
      * Get a single transfer with items.
      */
-    public function find(string $id): StockTransfer
+    public function find(string $organizationId, string $id): StockTransfer
     {
-        return StockTransfer::with(['stockTransferItems.product', 'fromStore', 'toStore'])->findOrFail($id);
+        return StockTransfer::with(['stockTransferItems.product', 'fromStore', 'toStore'])
+            ->where('organization_id', $organizationId)
+            ->findOrFail($id);
     }
 
     /**
@@ -70,6 +72,26 @@ class StockTransferService
 
             if ($transfer->status !== StockTransferStatus::Pending) {
                 throw new \RuntimeException('Only pending transfers can be approved.');
+            }
+
+            // Verify stock availability at source store before transferring
+            foreach ($transfer->stockTransferItems as $item) {
+                $stockLevel = \App\Domain\Inventory\Models\StockLevel::where('store_id', $transfer->from_store_id)
+                    ->where('product_id', $item->product_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                $available = $stockLevel ? (float) $stockLevel->quantity : 0;
+                if ($available < (float) $item->quantity_sent) {
+                    $productName = $item->product?->name ?? $item->product_id;
+                    throw new \RuntimeException(
+                        __('inventory.insufficient_stock_for_transfer', [
+                            'product' => $productName,
+                            'available' => $available,
+                            'requested' => $item->quantity_sent,
+                        ])
+                    );
+                }
             }
 
             // Deduct stock from source store

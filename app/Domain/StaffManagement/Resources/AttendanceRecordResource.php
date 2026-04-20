@@ -20,6 +20,7 @@ class AttendanceRecordResource extends JsonResource
             'scheduled_shift_id' => $this->scheduled_shift_id,
             'notes'             => $this->notes,
             'auth_method'       => $this->auth_method?->value,
+            'status'            => $this->status,
             'staff_user'        => new StaffUserResource($this->whenLoaded('staffUser')),
             'break_records'     => BreakRecordResource::collection($this->whenLoaded('breakRecords')),
         ];

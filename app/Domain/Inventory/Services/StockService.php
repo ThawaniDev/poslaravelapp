@@ -27,8 +27,9 @@ class StockService
         }
 
         if (!empty($filters['search'])) {
-            $query->whereHas('product', function ($q) use ($filters) {
-                $q->where('name', 'like', '%' . $filters['search'] . '%');
+            $escaped = str_replace(['%', '_'], ['\\%', '\\_'], $filters['search']);
+            $query->whereHas('product', function ($q) use ($escaped) {
+                $q->where('name', 'like', '%' . $escaped . '%');
             });
         }
 
@@ -65,7 +66,22 @@ class StockService
             $storeId, $productId, $type, $quantity,
             $unitCost, $referenceType, $referenceId, $reason, $performedBy
         ) {
-            $level = $this->getOrCreate($storeId, $productId);
+            // Lock the row to prevent concurrent modification
+            $level = StockLevel::where('store_id', $storeId)
+                ->where('product_id', $productId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$level) {
+                $level = StockLevel::create([
+                    'store_id' => $storeId,
+                    'product_id' => $productId,
+                    'quantity' => 0,
+                    'reserved_quantity' => 0,
+                    'average_cost' => 0,
+                    'sync_version' => 1,
+                ]);
+            }
 
             // Determine signed quantity change
             $signedQty = match ($type) {

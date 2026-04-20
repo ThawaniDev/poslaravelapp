@@ -402,9 +402,7 @@ class InstallmentService
     private function getBaseUrl(InstallmentProvider $provider, string $environment): string
     {
         return match ($provider) {
-            InstallmentProvider::Tabby => $environment === 'production'
-                ? 'https://api.tabby.ai/api/v2'
-                : 'https://api.tabby.ai/api/v2',
+            InstallmentProvider::Tabby => 'https://api.tabby.ai/api/v2',
             InstallmentProvider::Tamara => $environment === 'production'
                 ? 'https://api.tamara.co'
                 : 'https://api-sandbox.tamara.co',

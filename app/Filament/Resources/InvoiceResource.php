@@ -57,8 +57,8 @@ class InvoiceResource extends Resource
                             ->maxLength(50)
                             ->disabled(fn (?Invoice $record) => $record !== null),
                         Forms\Components\Select::make('store_subscription_id')
-                            ->relationship('storeSubscription', 'id', fn (Builder $query) => $query->with('store'))
-                            ->getOptionLabelFromRecordUsing(fn ($record) => $record->store?->name . ' — ' . $record->id)
+                            ->relationship('storeSubscription', 'id', fn (Builder $query) => $query->with('organization'))
+                            ->getOptionLabelFromRecordUsing(fn ($record) => ($record->organization?->name ?? 'Unknown') . ' — ' . $record->id)
                             ->searchable()
                             ->preload()
                             ->required(),

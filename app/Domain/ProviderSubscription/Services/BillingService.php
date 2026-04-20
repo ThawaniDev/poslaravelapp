@@ -334,16 +334,26 @@ class BillingService
         $tax = round($subtotal * self::VAT_RATE, 2);
         $total = round($subtotal + $tax, 2);
 
+        // If total is zero or less (e.g. fully covered by SoftPOS free tier),
+        // mark invoice as paid immediately with zero amount.
+        $isFreeInvoice = $total <= 0;
+        if ($isFreeInvoice) {
+            $subtotal = 0;
+            $tax = 0;
+            $total = 0;
+        }
+
         // ── 5. Create invoice ─────────────────────────────────────
-        return DB::transaction(function () use ($subscription, $lineItems, $subtotal, $tax, $total) {
+        return DB::transaction(function () use ($subscription, $lineItems, $subtotal, $tax, $total, $isFreeInvoice) {
             $invoice = Invoice::create([
                 'store_subscription_id' => $subscription->id,
                 'invoice_number' => $this->nextInvoiceNumber(),
                 'amount' => $subtotal,
                 'tax' => $tax,
                 'total' => $total,
-                'status' => 'pending',
-                'due_date' => now()->addDays(7),
+                'status' => $isFreeInvoice ? 'paid' : 'pending',
+                'due_date' => $isFreeInvoice ? now() : now()->addDays(7),
+                'paid_at' => $isFreeInvoice ? now() : null,
             ]);
 
             foreach ($lineItems as $item) {

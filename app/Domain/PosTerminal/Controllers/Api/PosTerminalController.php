@@ -101,9 +101,9 @@ class PosTerminalController extends BaseApiController
         }
     }
 
-    public function showTransaction(string $transaction): JsonResponse
+    public function showTransaction(Request $request, string $transaction): JsonResponse
     {
-        $found = $this->transactionService->find($transaction);
+        $found = $this->transactionService->find($request->user()->store_id, $transaction);
         return $this->success(new TransactionResource($found));
     }
 
@@ -123,7 +123,7 @@ class PosTerminalController extends BaseApiController
     public function voidTransaction(Request $request, string $transaction): JsonResponse
     {
         try {
-            $found = $this->transactionService->find($transaction);
+            $found = $this->transactionService->find($request->user()->store_id, $transaction);
             $voided = $this->transactionService->void($found, $request->user());
             return $this->success(new TransactionResource($voided));
         } catch (\RuntimeException $e) {

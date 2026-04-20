@@ -280,17 +280,50 @@ class StaffService
 
     public function createShift(array $data): ShiftSchedule
     {
-        // Check for conflicts
-        $conflict = ShiftSchedule::where('store_id', $data['store_id'])
+        // Check for conflicts (same staff + same date + same template)
+        $query = ShiftSchedule::where('store_id', $data['store_id'])
             ->where('staff_user_id', $data['staff_user_id'])
-            ->whereDate('date', $data['date'])
-            ->exists();
+            ->whereDate('date', $data['date']);
 
-        if ($conflict) {
-            throw new \InvalidArgumentException('Staff already has a shift on this date.');
+        if (!empty($data['shift_template_id'])) {
+            $query->where('shift_template_id', $data['shift_template_id']);
+        }
+
+        if ($query->exists()) {
+            throw new \InvalidArgumentException('Staff already has this shift on this date.');
         }
 
         return ShiftSchedule::create($data);
+    }
+
+    public function bulkCreateShifts(array $data): array
+    {
+        $dates = $data['dates'];
+        $staffUserIds = $data['staff_user_ids'];
+        $created = [];
+
+        foreach ($staffUserIds as $staffUserId) {
+            foreach ($dates as $date) {
+                $conflict = ShiftSchedule::where('store_id', $data['store_id'])
+                    ->where('staff_user_id', $staffUserId)
+                    ->whereDate('date', $date)
+                    ->where('shift_template_id', $data['shift_template_id'])
+                    ->exists();
+
+                if (!$conflict) {
+                    $created[] = ShiftSchedule::create([
+                        'store_id'          => $data['store_id'],
+                        'staff_user_id'     => $staffUserId,
+                        'shift_template_id' => $data['shift_template_id'],
+                        'date'              => $date,
+                        'status'            => $data['status'] ?? 'scheduled',
+                        'notes'             => $data['notes'] ?? null,
+                    ]);
+                }
+            }
+        }
+
+        return $created;
     }
 
     public function updateShift(ShiftSchedule $shift, array $data): ShiftSchedule
@@ -324,7 +357,79 @@ class StaffService
 
     public function deleteShiftTemplate(ShiftTemplate $template): bool
     {
+        // Check if template is in use
+        if ($template->shiftSchedules()->exists()) {
+            throw new \InvalidArgumentException('Cannot delete template that is assigned to shifts.');
+        }
         return $template->delete();
+    }
+
+    // ─── Attendance Summary ─────────────────────────────────
+
+    public function getAttendanceSummary(string $storeId, array $filters = []): array
+    {
+        $query = AttendanceRecord::where('store_id', $storeId)
+            ->with('staffUser');
+
+        if (!empty($filters['staff_user_id'])) {
+            $query->where('staff_user_id', $filters['staff_user_id']);
+        }
+
+        if (!empty($filters['date_from'])) {
+            $query->where('clock_in_at', '>=', $filters['date_from']);
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->where('clock_in_at', '<=', $filters['date_to'] . ' 23:59:59');
+        }
+
+        $records = $query->get();
+
+        $totalRecords = $records->count();
+        $completedRecords = $records->whereNotNull('clock_out_at');
+
+        $totalWorkMinutes = 0;
+        $totalBreakMinutes = 0;
+        $totalOvertimeMinutes = 0;
+        $lateCount = 0;
+        $onTimeCount = 0;
+        $earlyDepartureCount = 0;
+
+        foreach ($completedRecords as $record) {
+            $workMins = $record->clock_in_at->diffInMinutes($record->clock_out_at);
+            $totalWorkMinutes += $workMins;
+            $totalBreakMinutes += (int) ($record->break_minutes ?? 0);
+            $totalOvertimeMinutes += (int) ($record->overtime_minutes ?? 0);
+
+            if ($record->status === 'late') {
+                $lateCount++;
+            } elseif ($record->status === 'on_time') {
+                $onTimeCount++;
+            } elseif ($record->status === 'early_departure') {
+                $earlyDepartureCount++;
+            }
+        }
+
+        $currentlyClockedIn = AttendanceRecord::where('store_id', $storeId)
+            ->whereNull('clock_out_at')
+            ->count();
+
+        $avgWorkMinutes = $completedRecords->count() > 0
+            ? round($totalWorkMinutes / $completedRecords->count())
+            : 0;
+
+        return [
+            'total_records'          => $totalRecords,
+            'completed_records'      => $completedRecords->count(),
+            'currently_clocked_in'   => $currentlyClockedIn,
+            'total_work_hours'       => round($totalWorkMinutes / 60, 1),
+            'total_break_hours'      => round($totalBreakMinutes / 60, 1),
+            'total_overtime_hours'   => round($totalOvertimeMinutes / 60, 1),
+            'avg_work_hours'         => round($avgWorkMinutes / 60, 1),
+            'on_time_count'          => $onTimeCount,
+            'late_count'             => $lateCount,
+            'early_departure_count'  => $earlyDepartureCount,
+        ];
     }
 
     // ─── Commissions ────────────────────────────────────────

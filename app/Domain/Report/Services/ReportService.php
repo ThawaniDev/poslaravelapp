@@ -186,15 +186,21 @@ class ReportService
         $driver = DB::connection()->getDriverName();
 
         return match ($granularity) {
-            'weekly' => $driver === 'pgsql'
-                ? "TO_CHAR(DATE_TRUNC('week', $column), 'YYYY-MM-DD')"
-                : "strftime('%Y-%m-%d', $column, 'weekday 0', '-6 days')",
-            'monthly' => $driver === 'pgsql'
-                ? "TO_CHAR($column, 'YYYY-MM')"
-                : "strftime('%Y-%m', $column)",
-            default => $driver === 'pgsql'
-                ? "TO_CHAR($column, 'YYYY-MM-DD')"
-                : "strftime('%Y-%m-%d', $column)",
+            'weekly' => match ($driver) {
+                'pgsql' => "TO_CHAR(DATE_TRUNC('week', $column), 'YYYY-MM-DD')",
+                'mysql' => "DATE_FORMAT(DATE_SUB($column, INTERVAL WEEKDAY($column) DAY), '%Y-%m-%d')",
+                default => "strftime('%Y-%m-%d', $column, 'weekday 0', '-6 days')",
+            },
+            'monthly' => match ($driver) {
+                'pgsql' => "TO_CHAR($column, 'YYYY-MM')",
+                'mysql' => "DATE_FORMAT($column, '%Y-%m')",
+                default => "strftime('%Y-%m', $column)",
+            },
+            default => match ($driver) {
+                'pgsql' => "TO_CHAR($column, 'YYYY-MM-DD')",
+                'mysql' => "DATE_FORMAT($column, '%Y-%m-%d')",
+                default => "strftime('%Y-%m-%d', $column)",
+            },
         };
     }
 

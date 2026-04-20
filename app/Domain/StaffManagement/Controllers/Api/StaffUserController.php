@@ -188,7 +188,32 @@ class StaffUserController extends BaseApiController
     {
         try {
             $shift = $this->staffService->createShift($request->validated());
-            return $this->created(new ShiftScheduleResource($shift));
+            return $this->created(new ShiftScheduleResource($shift->load('staffUser', 'shiftTemplate')));
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    public function bulkStoreShift(Request $request)
+    {
+        $data = $request->validate([
+            'store_id'          => 'required|uuid|exists:stores,id',
+            'staff_user_ids'    => 'required|array|min:1',
+            'staff_user_ids.*'  => 'uuid|exists:staff_users,id',
+            'shift_template_id' => 'required|uuid|exists:shift_templates,id',
+            'dates'             => 'required|array|min:1',
+            'dates.*'           => 'date',
+            'notes'             => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $shifts = $this->staffService->bulkCreateShifts($data);
+            return $this->success(
+                ShiftScheduleResource::collection(
+                    collect($shifts)->load('staffUser', 'shiftTemplate')
+                ),
+                count($shifts) . ' shifts created'
+            );
         } catch (\InvalidArgumentException $e) {
             return $this->error($e->getMessage(), 422);
         }
@@ -235,16 +260,68 @@ class StaffUserController extends BaseApiController
     public function storeShiftTemplate(Request $request)
     {
         $data = $request->validate([
-            'store_id'   => 'required|uuid|exists:stores,id',
-            'name'       => 'required|string|max:100',
-            'start_time' => 'required|date_format:H:i',
-            'end_time'   => 'required|date_format:H:i',
-            'color'      => 'nullable|string|max:7',
+            'store_id'               => 'required|uuid|exists:stores,id',
+            'name'                   => 'required|string|max:100',
+            'start_time'             => 'required|date_format:H:i',
+            'end_time'               => 'required|date_format:H:i',
+            'break_duration_minutes' => 'nullable|integer|min:0',
+            'color'                  => 'nullable|string|max:7',
         ]);
 
         $template = $this->staffService->createShiftTemplate($data);
 
         return $this->created(new ShiftTemplateResource($template));
+    }
+
+    public function updateShiftTemplate(Request $request, string $id)
+    {
+        $template = \App\Domain\StaffManagement\Models\ShiftTemplate::findOrFail($id);
+
+        if ($template->store_id !== $request->user()->store_id) {
+            return $this->notFound('Template not found');
+        }
+
+        $data = $request->validate([
+            'name'                   => 'sometimes|string|max:100',
+            'start_time'             => 'sometimes|date_format:H:i',
+            'end_time'               => 'sometimes|date_format:H:i',
+            'break_duration_minutes' => 'nullable|integer|min:0',
+            'color'                  => 'nullable|string|max:7',
+            'is_active'              => 'nullable|boolean',
+        ]);
+
+        $updated = $this->staffService->updateShiftTemplate($template, $data);
+
+        return $this->success(new ShiftTemplateResource($updated));
+    }
+
+    public function destroyShiftTemplate(Request $request, string $id)
+    {
+        $template = \App\Domain\StaffManagement\Models\ShiftTemplate::findOrFail($id);
+
+        if ($template->store_id !== $request->user()->store_id) {
+            return $this->notFound('Template not found');
+        }
+
+        try {
+            $this->staffService->deleteShiftTemplate($template);
+            return $this->success(null, 'Shift template deleted');
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    // ─── Attendance Summary ─────────────────────────────────
+
+    public function attendanceSummary(Request $request)
+    {
+        $storeId = $request->user()->store_id;
+
+        $summary = $this->staffService->getAttendanceSummary($storeId, $request->only([
+            'staff_user_id', 'date_from', 'date_to',
+        ]));
+
+        return $this->success($summary);
     }
 
     // ─── Commissions ────────────────────────────────────────

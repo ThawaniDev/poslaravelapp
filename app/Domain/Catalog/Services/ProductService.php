@@ -58,7 +58,7 @@ class ProductService
         return $query->paginate($perPage);
     }
 
-    public function find(string $productId): Product
+    public function find(string $organizationId, string $productId): Product
     {
         return Product::with([
             'category',
@@ -68,7 +68,7 @@ class ProductService
             'modifierGroups.modifierOptions',
             'productSuppliers.supplier',
             'storePrices',
-        ])->findOrFail($productId);
+        ])->where('organization_id', $organizationId)->findOrFail($productId);
     }
 
     public function catalog(string $organizationId): Collection

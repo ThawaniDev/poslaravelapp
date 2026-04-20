@@ -33,6 +33,7 @@ class SubscriptionPlan extends Model
         'softpos_free_threshold',
         'softpos_free_threshold_period',
         'sort_order',
+        'business_type',
     ];
 
     protected $casts = [
