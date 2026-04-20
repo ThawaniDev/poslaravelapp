@@ -17,8 +17,10 @@ class CreateShiftRequest extends FormRequest
             'store_id'          => 'required|uuid|exists:stores,id',
             'staff_user_id'     => 'required|uuid|exists:staff_users,id',
             'shift_template_id' => 'nullable|uuid|exists:shift_templates,id',
-            'date'              => 'required|date',
+            'start_date'        => 'required|date',
+            'end_date'          => 'nullable|date|after_or_equal:start_date',
             'status'            => 'nullable|string|max:20',
+            'notes'             => 'nullable|string|max:500',
         ];
     }
 }

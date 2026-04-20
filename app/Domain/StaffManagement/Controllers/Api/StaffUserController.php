@@ -201,8 +201,8 @@ class StaffUserController extends BaseApiController
             'staff_user_ids'    => 'required|array|min:1',
             'staff_user_ids.*'  => 'uuid|exists:staff_users,id',
             'shift_template_id' => 'required|uuid|exists:shift_templates,id',
-            'dates'             => 'required|array|min:1',
-            'dates.*'           => 'date',
+            'start_date'        => 'required|date',
+            'end_date'          => 'nullable|date|after_or_equal:start_date',
             'notes'             => 'nullable|string|max:500',
         ]);
 
@@ -228,7 +228,7 @@ class StaffUserController extends BaseApiController
         }
 
         $updated = $this->staffService->updateShift($shift, $request->only([
-            'shift_template_id', 'date', 'status',
+            'shift_template_id', 'start_date', 'end_date', 'status', 'notes',
         ]));
 
         return $this->success(new ShiftScheduleResource($updated));

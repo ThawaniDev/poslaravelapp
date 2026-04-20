@@ -262,11 +262,11 @@ class StaffService
         }
 
         if (!empty($filters['date_from'])) {
-            $query->where('date', '>=', $filters['date_from']);
+            $query->where('end_date', '>=', $filters['date_from']);
         }
 
         if (!empty($filters['date_to'])) {
-            $query->where('date', '<=', $filters['date_to']);
+            $query->where('start_date', '<=', $filters['date_to']);
         }
 
         if (isset($filters['status'])) {
@@ -275,22 +275,28 @@ class StaffService
 
         $perPage = $filters['per_page'] ?? 20;
 
-        return $query->orderBy('date')->paginate($perPage);
+        return $query->orderBy('start_date')->paginate($perPage);
     }
 
     public function createShift(array $data): ShiftSchedule
     {
-        // Check for conflicts (same staff + same date + same template)
+        // If only start_date provided, default end_date = start_date
+        if (!empty($data['start_date']) && empty($data['end_date'])) {
+            $data['end_date'] = $data['start_date'];
+        }
+
+        // Check for overlapping periods (same staff + same template + overlapping dates)
         $query = ShiftSchedule::where('store_id', $data['store_id'])
             ->where('staff_user_id', $data['staff_user_id'])
-            ->whereDate('date', $data['date']);
+            ->where('start_date', '<=', $data['end_date'])
+            ->where('end_date', '>=', $data['start_date']);
 
         if (!empty($data['shift_template_id'])) {
             $query->where('shift_template_id', $data['shift_template_id']);
         }
 
         if ($query->exists()) {
-            throw new \InvalidArgumentException('Staff already has this shift on this date.');
+            throw new \InvalidArgumentException('Staff already has this shift in the selected period.');
         }
 
         return ShiftSchedule::create($data);
@@ -298,28 +304,29 @@ class StaffService
 
     public function bulkCreateShifts(array $data): array
     {
-        $dates = $data['dates'];
         $staffUserIds = $data['staff_user_ids'];
+        $startDate = $data['start_date'];
+        $endDate = $data['end_date'] ?? $startDate;
         $created = [];
 
         foreach ($staffUserIds as $staffUserId) {
-            foreach ($dates as $date) {
-                $conflict = ShiftSchedule::where('store_id', $data['store_id'])
-                    ->where('staff_user_id', $staffUserId)
-                    ->whereDate('date', $date)
-                    ->where('shift_template_id', $data['shift_template_id'])
-                    ->exists();
+            $conflict = ShiftSchedule::where('store_id', $data['store_id'])
+                ->where('staff_user_id', $staffUserId)
+                ->where('shift_template_id', $data['shift_template_id'])
+                ->where('start_date', '<=', $endDate)
+                ->where('end_date', '>=', $startDate)
+                ->exists();
 
-                if (!$conflict) {
-                    $created[] = ShiftSchedule::create([
-                        'store_id'          => $data['store_id'],
-                        'staff_user_id'     => $staffUserId,
-                        'shift_template_id' => $data['shift_template_id'],
-                        'date'              => $date,
-                        'status'            => $data['status'] ?? 'scheduled',
-                        'notes'             => $data['notes'] ?? null,
-                    ]);
-                }
+            if (!$conflict) {
+                $created[] = ShiftSchedule::create([
+                    'store_id'          => $data['store_id'],
+                    'staff_user_id'     => $staffUserId,
+                    'shift_template_id' => $data['shift_template_id'],
+                    'start_date'        => $startDate,
+                    'end_date'          => $endDate,
+                    'status'            => $data['status'] ?? 'scheduled',
+                    'notes'             => $data['notes'] ?? null,
+                ]);
             }
         }
 

@@ -20,7 +20,8 @@ class ShiftSchedule extends Model
         'store_id',
         'staff_user_id',
         'shift_template_id',
-        'date',
+        'start_date',
+        'end_date',
         'actual_start',
         'actual_end',
         'status',
@@ -30,7 +31,8 @@ class ShiftSchedule extends Model
 
     protected $casts = [
         'status' => ShiftScheduleStatus::class,
-        'date' => 'date',
+        'start_date' => 'date',
+        'end_date' => 'date',
         'actual_start' => 'datetime',
         'actual_end' => 'datetime',
     ];
