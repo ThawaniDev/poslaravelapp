@@ -2,151 +2,121 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Adds performance indexes for hot-path queries.
+ *
+ * Defensive: each index is only created when its table AND every referenced
+ * column exists, and when an index of the same name is not already present.
+ */
 return new class extends Migration
 {
+    /** @var array<int, array{table:string, columns:array<int,string>, name:string}> */
+    private array $indexes = [
+        ['table' => 'transactions', 'columns' => ['store_id'],                'name' => 'idx_transactions_store'],
+        ['table' => 'transactions', 'columns' => ['customer_id'],             'name' => 'idx_transactions_customer'],
+        ['table' => 'transactions', 'columns' => ['cashier_id'],              'name' => 'idx_transactions_cashier'],
+        ['table' => 'transactions', 'columns' => ['status'],                  'name' => 'idx_transactions_status'],
+        ['table' => 'transactions', 'columns' => ['created_at'],              'name' => 'idx_transactions_created_at'],
+        ['table' => 'transactions', 'columns' => ['store_id', 'status'],      'name' => 'idx_transactions_store_status'],
+        ['table' => 'transactions', 'columns' => ['store_id', 'created_at'],  'name' => 'idx_transactions_store_created'],
+
+        ['table' => 'products', 'columns' => ['store_id'],                    'name' => 'idx_products_store'],
+        ['table' => 'products', 'columns' => ['organization_id'],             'name' => 'idx_products_organization'],
+        ['table' => 'products', 'columns' => ['barcode'],                     'name' => 'idx_products_barcode'],
+        ['table' => 'products', 'columns' => ['sku'],                         'name' => 'idx_products_sku'],
+        ['table' => 'products', 'columns' => ['category_id'],                 'name' => 'idx_products_category'],
+        ['table' => 'products', 'columns' => ['store_id', 'is_active'],       'name' => 'idx_products_store_active'],
+        ['table' => 'products', 'columns' => ['organization_id', 'is_active'],'name' => 'idx_products_org_active'],
+
+        ['table' => 'pos_sessions', 'columns' => ['store_id'],                'name' => 'idx_pos_sessions_store'],
+        ['table' => 'pos_sessions', 'columns' => ['cashier_id'],              'name' => 'idx_pos_sessions_cashier'],
+        ['table' => 'pos_sessions', 'columns' => ['status'],                  'name' => 'idx_pos_sessions_status'],
+        ['table' => 'pos_sessions', 'columns' => ['store_id', 'status'],      'name' => 'idx_pos_sessions_store_status'],
+
+        ['table' => 'stock_levels', 'columns' => ['store_id'],                'name' => 'idx_stock_levels_store'],
+        ['table' => 'stock_levels', 'columns' => ['branch_id'],               'name' => 'idx_stock_levels_branch'],
+        ['table' => 'stock_levels', 'columns' => ['product_id'],              'name' => 'idx_stock_levels_product'],
+        ['table' => 'stock_levels', 'columns' => ['store_id', 'product_id'],  'name' => 'idx_stock_levels_store_product'],
+
+        ['table' => 'transaction_items', 'columns' => ['transaction_id'],     'name' => 'idx_transaction_items_transaction'],
+        ['table' => 'transaction_items', 'columns' => ['product_id'],         'name' => 'idx_transaction_items_product'],
+
+        ['table' => 'purchase_orders', 'columns' => ['store_id'],             'name' => 'idx_purchase_orders_store'],
+        ['table' => 'purchase_orders', 'columns' => ['status'],               'name' => 'idx_purchase_orders_status'],
+        ['table' => 'purchase_orders', 'columns' => ['supplier_id'],          'name' => 'idx_purchase_orders_supplier'],
+
+        ['table' => 'stock_transfers', 'columns' => ['organization_id'],      'name' => 'idx_stock_transfers_organization'],
+        ['table' => 'stock_transfers', 'columns' => ['status'],               'name' => 'idx_stock_transfers_status'],
+
+        ['table' => 'goods_receipts', 'columns' => ['store_id'],              'name' => 'idx_goods_receipts_store'],
+        ['table' => 'goods_receipts', 'columns' => ['status'],                'name' => 'idx_goods_receipts_status'],
+
+        ['table' => 'customers', 'columns' => ['store_id'],                   'name' => 'idx_customers_store'],
+        ['table' => 'customers', 'columns' => ['organization_id'],            'name' => 'idx_customers_organization'],
+        ['table' => 'customers', 'columns' => ['phone'],                      'name' => 'idx_customers_phone'],
+        ['table' => 'customers', 'columns' => ['loyalty_code'],               'name' => 'idx_customers_loyalty_code'],
+
+        ['table' => 'recipes', 'columns' => ['organization_id'],              'name' => 'idx_recipes_organization'],
+        ['table' => 'recipes', 'columns' => ['product_id'],                   'name' => 'idx_recipes_product'],
+    ];
+
     public function up(): void
     {
-        // ── Transactions ─────────────────────────────────────
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->index('store_id', 'idx_transactions_store');
-            $table->index('customer_id', 'idx_transactions_customer');
-            $table->index('cashier_id', 'idx_transactions_cashier');
-            $table->index('status', 'idx_transactions_status');
-            $table->index('created_at', 'idx_transactions_created_at');
-            $table->index(['store_id', 'status'], 'idx_transactions_store_status');
-            $table->index(['store_id', 'created_at'], 'idx_transactions_store_created');
-        });
-
-        // ── Products ─────────────────────────────────────────
-        Schema::table('products', function (Blueprint $table) {
-            $table->index('store_id', 'idx_products_store');
-            $table->index('organization_id', 'idx_products_organization');
-            $table->index('barcode', 'idx_products_barcode');
-            $table->index('sku', 'idx_products_sku');
-            $table->index('category_id', 'idx_products_category');
-            $table->index(['store_id', 'is_active'], 'idx_products_store_active');
-        });
-
-        // ── POS Sessions ────────────────────────────────────
-        Schema::table('pos_sessions', function (Blueprint $table) {
-            $table->index('store_id', 'idx_pos_sessions_store');
-            $table->index('cashier_id', 'idx_pos_sessions_cashier');
-            $table->index('status', 'idx_pos_sessions_status');
-            $table->index(['store_id', 'status'], 'idx_pos_sessions_store_status');
-        });
-
-        // ── Stock Levels ─────────────────────────────────────
-        Schema::table('stock_levels', function (Blueprint $table) {
-            $table->index('store_id', 'idx_stock_levels_store');
-            $table->index('product_id', 'idx_stock_levels_product');
-            $table->index(['store_id', 'product_id'], 'idx_stock_levels_store_product');
-        });
-
-        // ── Transaction Items ────────────────────────────────
-        Schema::table('transaction_items', function (Blueprint $table) {
-            $table->index('transaction_id', 'idx_transaction_items_transaction');
-            $table->index('product_id', 'idx_transaction_items_product');
-        });
-
-        // ── Purchase Orders ──────────────────────────────────
-        Schema::table('purchase_orders', function (Blueprint $table) {
-            $table->index('store_id', 'idx_purchase_orders_store');
-            $table->index('status', 'idx_purchase_orders_status');
-            $table->index('supplier_id', 'idx_purchase_orders_supplier');
-        });
-
-        // ── Stock Transfers ──────────────────────────────────
-        Schema::table('stock_transfers', function (Blueprint $table) {
-            $table->index('organization_id', 'idx_stock_transfers_organization');
-            $table->index('status', 'idx_stock_transfers_status');
-        });
-
-        // ── Goods Receipts ───────────────────────────────────
-        Schema::table('goods_receipts', function (Blueprint $table) {
-            $table->index('store_id', 'idx_goods_receipts_store');
-            $table->index('status', 'idx_goods_receipts_status');
-        });
-
-        // ── Customers ────────────────────────────────────────
-        Schema::table('customers', function (Blueprint $table) {
-            $table->index('store_id', 'idx_customers_store');
-            $table->index('phone', 'idx_customers_phone');
-            $table->index('loyalty_code', 'idx_customers_loyalty_code');
-        });
-
-        // ── Recipes ──────────────────────────────────────────
-        Schema::table('recipes', function (Blueprint $table) {
-            $table->index('organization_id', 'idx_recipes_organization');
-            $table->index('product_id', 'idx_recipes_product');
-        });
+        foreach ($this->indexes as $idx) {
+            if (!Schema::hasTable($idx['table'])) {
+                continue;
+            }
+            if (!Schema::hasColumns($idx['table'], $idx['columns'])) {
+                continue;
+            }
+            if ($this->indexExists($idx['table'], $idx['name'])) {
+                continue;
+            }
+            Schema::table($idx['table'], function (Blueprint $table) use ($idx) {
+                $table->index($idx['columns'], $idx['name']);
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->dropIndex('idx_transactions_store');
-            $table->dropIndex('idx_transactions_customer');
-            $table->dropIndex('idx_transactions_cashier');
-            $table->dropIndex('idx_transactions_status');
-            $table->dropIndex('idx_transactions_created_at');
-            $table->dropIndex('idx_transactions_store_status');
-            $table->dropIndex('idx_transactions_store_created');
-        });
+        foreach (array_reverse($this->indexes) as $idx) {
+            if (!Schema::hasTable($idx['table'])) {
+                continue;
+            }
+            if (!$this->indexExists($idx['table'], $idx['name'])) {
+                continue;
+            }
+            Schema::table($idx['table'], function (Blueprint $table) use ($idx) {
+                $table->dropIndex($idx['name']);
+            });
+        }
+    }
 
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropIndex('idx_products_store');
-            $table->dropIndex('idx_products_organization');
-            $table->dropIndex('idx_products_barcode');
-            $table->dropIndex('idx_products_sku');
-            $table->dropIndex('idx_products_category');
-            $table->dropIndex('idx_products_store_active');
-        });
-
-        Schema::table('pos_sessions', function (Blueprint $table) {
-            $table->dropIndex('idx_pos_sessions_store');
-            $table->dropIndex('idx_pos_sessions_cashier');
-            $table->dropIndex('idx_pos_sessions_status');
-            $table->dropIndex('idx_pos_sessions_store_status');
-        });
-
-        Schema::table('stock_levels', function (Blueprint $table) {
-            $table->dropIndex('idx_stock_levels_store');
-            $table->dropIndex('idx_stock_levels_product');
-            $table->dropIndex('idx_stock_levels_store_product');
-        });
-
-        Schema::table('transaction_items', function (Blueprint $table) {
-            $table->dropIndex('idx_transaction_items_transaction');
-            $table->dropIndex('idx_transaction_items_product');
-        });
-
-        Schema::table('purchase_orders', function (Blueprint $table) {
-            $table->dropIndex('idx_purchase_orders_store');
-            $table->dropIndex('idx_purchase_orders_status');
-            $table->dropIndex('idx_purchase_orders_supplier');
-        });
-
-        Schema::table('stock_transfers', function (Blueprint $table) {
-            $table->dropIndex('idx_stock_transfers_organization');
-            $table->dropIndex('idx_stock_transfers_status');
-        });
-
-        Schema::table('goods_receipts', function (Blueprint $table) {
-            $table->dropIndex('idx_goods_receipts_store');
-            $table->dropIndex('idx_goods_receipts_status');
-        });
-
-        Schema::table('customers', function (Blueprint $table) {
-            $table->dropIndex('idx_customers_store');
-            $table->dropIndex('idx_customers_phone');
-            $table->dropIndex('idx_customers_loyalty_code');
-        });
-
-        Schema::table('recipes', function (Blueprint $table) {
-            $table->dropIndex('idx_recipes_organization');
-            $table->dropIndex('idx_recipes_product');
-        });
+    private function indexExists(string $table, string $name): bool
+    {
+        $driver = DB::connection()->getDriverName();
+        try {
+            return match ($driver) {
+                'pgsql'  => DB::selectOne(
+                    'select 1 from pg_indexes where schemaname = current_schema() and tablename = ? and indexname = ?',
+                    [$table, $name]
+                ) !== null,
+                'mysql', 'mariadb' => DB::selectOne(
+                    'select 1 from information_schema.statistics where table_schema = database() and table_name = ? and index_name = ?',
+                    [$table, $name]
+                ) !== null,
+                'sqlite' => DB::selectOne(
+                    "select 1 from sqlite_master where type = 'index' and name = ? and tbl_name = ?",
+                    [$name, $table]
+                ) !== null,
+                default  => false,
+            };
+        } catch (\Throwable) {
+            return false;
+        }
     }
 };
