@@ -96,6 +96,14 @@ class Transaction extends Model
     {
         return $this->hasMany(Transaction::class, 'return_transaction_id');
     }
+    /**
+     * Alias of {@see transactions()} scoped to refund/return transactions issued
+     * against this sale. Used by eager loads and the refunded_quantities payload.
+     */
+    public function returns(): HasMany
+    {
+        return $this->hasMany(Transaction::class, 'return_transaction_id');
+    }
     public function transactionItems(): HasMany
     {
         return $this->hasMany(TransactionItem::class);
