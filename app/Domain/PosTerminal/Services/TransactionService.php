@@ -185,9 +185,13 @@ class TransactionService
                         ? $transaction->type
                         : TransactionType::from($transaction->type);
 
-                    if ($type === TransactionType::Sale) {
+                    if ($type === TransactionType::Sale || $type === TransactionType::Exchange) {
                         $this->updateSessionSales($session, $data['payments'] ?? []);
                     } elseif ($type === TransactionType::Return) {
+                        // Track each payment method separately so the cash drawer
+                        // reconciliation at close stays correct regardless of how
+                        // the refund was settled (cash vs card vs other).
+                        $this->updateSessionRefunds($session, $data['payments'] ?? []);
                         $session->increment('total_refunds', (float) $transaction->total_amount);
                     }
                 }
@@ -205,6 +209,15 @@ class TransactionService
             // Auto-earn loyalty points for sale transactions with a customer
             if ($isSale && $transaction->customer_id) {
                 $this->earnLoyaltyPoints($transaction, $actor);
+            }
+
+            // Deduct loyalty points when a refund is issued against a sale that
+            // had a customer attached, so the customer cannot keep points they
+            // earned on the refunded value.
+            $isReturn = $transaction->type === TransactionType::Return
+                || $transaction->type === TransactionType::Return->value;
+            if ($isReturn && $transaction->customer_id) {
+                $this->refundLoyaltyPoints($transaction, $actor);
             }
 
             return $transaction->load(['transactionItems', 'payments']);
@@ -242,6 +255,12 @@ class TransactionService
         }
         if (empty($data['pos_session_id'])) {
             $data['pos_session_id'] = $originalTransaction->pos_session_id;
+        }
+
+        // Inherit customer from the original sale so that customer_stats,
+        // loyalty points and customer_lifetime_value are reversed consistently.
+        if (empty($data['customer_id']) && $originalTransaction->customer_id) {
+            $data['customer_id'] = $originalTransaction->customer_id;
         }
 
         return $this->create($data, $actor);
@@ -297,6 +316,28 @@ class TransactionService
                 $session->increment('total_card_sales', $amount);
             } else {
                 $session->increment('total_other_sales', $amount);
+            }
+        }
+    }
+
+    /**
+     * Deduct refund amounts per payment method so the session's cash/card/other
+     * counters stay net-of-refunds. This keeps the close-session
+     * `expected_cash = opening_cash + total_cash_sales` reconciliation correct
+     * regardless of which method the refund was issued to.
+     */
+    private function updateSessionRefunds($session, array $payments): void
+    {
+        foreach ($payments as $payment) {
+            $amount = (float) ($payment['amount'] ?? 0);
+            $method = $payment['method'] ?? 'cash';
+
+            if ($method === 'cash') {
+                $session->decrement('total_cash_sales', $amount);
+            } elseif (str_starts_with($method, 'card') || $method === 'mada' || $method === 'apple_pay') {
+                $session->decrement('total_card_sales', $amount);
+            } else {
+                $session->decrement('total_other_sales', $amount);
             }
         }
     }
@@ -742,7 +783,31 @@ class TransactionService
             || $transaction->type === TransactionType::Return->value;
 
         if ($isReturn) {
-            return; // Returns don't earn points, nothing to reverse
+            // Voiding a refund should restore the points we deducted in
+            // refundLoyaltyPoints so the customer's balance snaps back.
+            $pointsToRestore = (int) floor($totalAmount * $config->points_per_sar);
+            if ($pointsToRestore <= 0) {
+                return;
+            }
+
+            try {
+                app(LoyaltyService::class)->adjustPoints(
+                    customerId: $transaction->customer_id,
+                    points: $pointsToRestore,
+                    type: LoyaltyTransactionType::VoidReversal->value,
+                    actor: $actor,
+                    notes: 'Restored - voided refund ' . $transaction->transaction_number,
+                    orderId: $transaction->id,
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Loyalty refund void restore failed', [
+                    'transaction_id' => $transaction->id,
+                    'customer_id' => $transaction->customer_id,
+                    'points' => $pointsToRestore,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+            return;
         }
 
         $earnedPoints = (int) floor($totalAmount * $config->points_per_sar);
@@ -764,6 +829,44 @@ class TransactionService
                 'transaction_id' => $transaction->id,
                 'customer_id' => $transaction->customer_id,
                 'points' => $earnedPoints,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Deduct loyalty points proportional to a refund amount, so the customer
+     * does not retain points earned on the refunded portion of the original
+     * sale. Writes a negative `adjust` entry in loyalty_transactions and
+     * decrements the customer's cumulative balance.
+     */
+    private function refundLoyaltyPoints(Transaction $transaction, User $actor): void
+    {
+        $config = LoyaltyConfig::where('organization_id', $transaction->organization_id)->first();
+        if (! $config || ! $config->is_active || $config->points_per_sar <= 0) {
+            return;
+        }
+
+        $refundAmount = (float) $transaction->total_amount;
+        $pointsToDeduct = (int) floor($refundAmount * $config->points_per_sar);
+        if ($pointsToDeduct <= 0) {
+            return;
+        }
+
+        try {
+            app(LoyaltyService::class)->adjustPoints(
+                customerId: $transaction->customer_id,
+                points: -$pointsToDeduct,
+                type: LoyaltyTransactionType::Adjust->value,
+                actor: $actor,
+                notes: 'Refund deduction - ' . $transaction->transaction_number,
+                orderId: $transaction->id,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Loyalty points refund deduction failed', [
+                'transaction_id' => $transaction->id,
+                'customer_id' => $transaction->customer_id,
+                'points' => $pointsToDeduct,
                 'error' => $e->getMessage(),
             ]);
         }

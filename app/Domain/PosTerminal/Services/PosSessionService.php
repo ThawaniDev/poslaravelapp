@@ -58,9 +58,11 @@ class PosSessionService
             throw new \RuntimeException('This session is already closed.');
         }
 
+        // total_cash_sales is already net of cash refunds (see
+        // TransactionService::updateSessionRefunds), so the expected cash in
+        // the drawer is simply opening float + net cash movement.
         $expectedCash = ($session->opening_cash ?? 0)
-            + ($session->total_cash_sales ?? 0)
-            - ($session->total_refunds ?? 0);
+            + ($session->total_cash_sales ?? 0);
 
         $closingCash = $data['closing_cash'] ?? 0;
         $difference = $closingCash - $expectedCash;
