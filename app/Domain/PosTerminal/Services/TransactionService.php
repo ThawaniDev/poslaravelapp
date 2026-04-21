@@ -759,21 +759,28 @@ class TransactionService
 
     private function generateNumber(string $storeId): string
     {
-        $date = now()->format('Ymd');
+        $date   = now()->format('Ymd');
         $prefix = "TXN-{$date}-";
 
-        // Use atomic lock to prevent duplicate transaction numbers
+        // Postgres rejects `SELECT count(*) ... FOR UPDATE`. Use a per-(store,date)
+        // advisory lock so concurrent transactions serialize on the counter without
+        // locking aggregate rows. SQLite/MySQL fall back to a no-op lock.
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'pgsql') {
+            $lockKey = crc32($storeId . '|' . $date);
+            DB::statement('SELECT pg_advisory_xact_lock(?)', [$lockKey]);
+        }
+
         $count = DB::table('transactions')
             ->where('store_id', $storeId)
             ->where('transaction_number', 'like', "{$prefix}%")
-            ->lockForUpdate()
             ->count();
 
         $number = sprintf('TXN-%s-%04d', $date, $count + 1);
 
-        // Retry with incrementing suffix if collision occurs
+        // Retry with incrementing suffix if collision occurs (defence-in-depth).
         $maxRetries = 5;
-        $attempt = 0;
+        $attempt    = 0;
         while (Transaction::where('transaction_number', $number)->exists() && $attempt < $maxRetries) {
             $attempt++;
             $number = sprintf('TXN-%s-%04d', $date, $count + 1 + $attempt);

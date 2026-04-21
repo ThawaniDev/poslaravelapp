@@ -31,7 +31,7 @@ class CheckPermission
             ], 401);
         }
 
-        $storeId = $user->store_id;
+        $storeId = $this->resolveStoreId($request, $user);
 
         if (!$storeId) {
             return response()->json([
@@ -61,6 +61,34 @@ class CheckPermission
             'message' => "You do not have permission to perform this action. Required: {$permissionNames}",
             'required_permissions' => $permissions,
         ], 403);
+    }
+
+    /**
+     * Resolve effective store id for permission checks.
+     * Order: user.store_id → X-Store-Id header → ?store_id query → first active
+     * store in user's organization.
+     */
+    private function resolveStoreId(Request $request, $user): ?string
+    {
+        if (!empty($user->store_id)) {
+            return $user->store_id;
+        }
+        $headerStore = $request->header('X-Store-Id');
+        if (is_string($headerStore) && $headerStore !== '') {
+            return $headerStore;
+        }
+        $queryStore = $request->query('store_id');
+        if (is_string($queryStore) && $queryStore !== '') {
+            return $queryStore;
+        }
+        if (!empty($user->organization_id)) {
+            return \App\Domain\Core\Models\Store::query()
+                ->where('organization_id', $user->organization_id)
+                ->where('is_active', true)
+                ->orderBy('created_at')
+                ->value('id');
+        }
+        return null;
     }
 
     private function isOwner($user, string $storeId): bool
