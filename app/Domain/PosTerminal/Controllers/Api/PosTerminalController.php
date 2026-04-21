@@ -43,6 +43,17 @@ class PosTerminalController extends BaseApiController
         return $this->success($result);
     }
 
+    /**
+     * Sessions currently open for the authenticated cashier across any register.
+     * Used by the POS client to block opening a second shift while one is already
+     * open and to surface the existing shift(s) the user must close first.
+     */
+    public function myOpenSessions(Request $request): JsonResponse
+    {
+        $sessions = $this->sessionService->myOpenSessions($request->user());
+        return $this->success(PosSessionResource::collection($sessions)->resolve());
+    }
+
     public function openSession(OpenSessionRequest $request): JsonResponse
     {
         try {

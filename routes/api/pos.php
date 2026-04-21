@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
     // Sessions
     Route::get('/sessions', [PosTerminalController::class, 'sessions'])->middleware('permission:pos.view_sessions');
+    Route::get('/sessions/mine/open', [PosTerminalController::class, 'myOpenSessions'])->middleware('permission:pos.sell');
     Route::post('/sessions', [PosTerminalController::class, 'openSession'])->middleware('permission:pos.shift_open');
     Route::get('/sessions/{session}', [PosTerminalController::class, 'showSession'])->middleware('permission:pos.view_sessions');
     Route::put('/sessions/{session}/close', [PosTerminalController::class, 'closeSession'])->middleware('permission:pos.shift_close');

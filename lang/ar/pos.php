@@ -5,6 +5,7 @@ return [
     'session_opened' => 'تم فتح الوردية بنجاح.',
     'session_closed' => 'تم إغلاق الوردية بنجاح.',
     'session_already_open' => 'توجد وردية مفتوحة بالفعل على هذا الجهاز.',
+    'session_user_has_other_open' => 'لديك وردية مفتوحة بالفعل على جهاز :register. يجب إغلاقها قبل فتح وردية جديدة.',
     'session_already_closed' => 'هذه الوردية مغلقة بالفعل.',
     'session_not_found' => 'الوردية غير موجودة.',
 

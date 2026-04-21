@@ -5,6 +5,7 @@ return [
     'session_opened' => 'Shift opened successfully.',
     'session_closed' => 'Shift closed successfully.',
     'session_already_open' => 'A shift is already open on this register.',
+    'session_user_has_other_open' => 'You already have an open shift on register :register. Please close it before opening a new one.',
     'session_already_closed' => 'This shift has already been closed.',
     'session_not_found' => 'Shift not found.',
 

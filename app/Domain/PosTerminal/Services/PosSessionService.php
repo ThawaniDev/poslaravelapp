@@ -20,6 +20,20 @@ class PosSessionService
             ->paginate($perPage);
     }
 
+    /**
+     * Open sessions currently owned by the given cashier, across ANY register
+     * or store. Used to enforce that a user cannot be linked to more than one
+     * register at a time, and to surface existing shifts they must close first.
+     */
+    public function myOpenSessions(User $actor): \Illuminate\Support\Collection
+    {
+        return PosSession::with('register')
+            ->where('cashier_id', $actor->id)
+            ->where('status', CashSessionStatus::Open)
+            ->orderByDesc('opened_at')
+            ->get();
+    }
+
     public function find(string $sessionId, string $storeId): PosSession
     {
         return PosSession::where('store_id', $storeId)->with('transactions')->findOrFail($sessionId);
@@ -27,7 +41,25 @@ class PosSessionService
 
     public function open(array $data, User $actor): PosSession
     {
-        // Check for existing open session on same register
+        // Enforce: one user can only own ONE open session at a time (on any
+        // register, any store). This prevents a cashier from being linked to
+        // multiple registers simultaneously, which would split their sales
+        // across shifts and break close-of-day reconciliation.
+        $existingForUser = PosSession::with('register')
+            ->where('cashier_id', $actor->id)
+            ->where('status', CashSessionStatus::Open)
+            ->first();
+
+        if ($existingForUser) {
+            if (!empty($data['register_id']) && $existingForUser->register_id === $data['register_id']) {
+                throw new \RuntimeException(__('pos.session_already_open'));
+            }
+            $registerName = $existingForUser->register?->name ?? $existingForUser->register_id ?? '';
+            throw new \RuntimeException(__('pos.session_user_has_other_open', ['register' => $registerName]));
+        }
+
+        // Belt-and-suspenders: also block a second session on the same register
+        // opened by a different cashier.
         if (!empty($data['register_id'])) {
             $existing = PosSession::where('store_id', $actor->store_id)
                 ->where('register_id', $data['register_id'])
@@ -35,7 +67,7 @@ class PosSessionService
                 ->first();
 
             if ($existing) {
-                throw new \RuntimeException('There is already an open session on this register.');
+                throw new \RuntimeException(__('pos.session_already_open'));
             }
         }
 

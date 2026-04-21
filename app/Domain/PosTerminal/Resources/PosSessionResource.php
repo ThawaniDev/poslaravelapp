@@ -12,6 +12,7 @@ class PosSessionResource extends JsonResource
             'id' => $this->id,
             'store_id' => $this->store_id,
             'register_id' => $this->register_id,
+            'register_name' => $this->whenLoaded('register', fn () => $this->register?->name),
             'cashier_id' => $this->cashier_id,
             'cashier_name' => $this->whenLoaded('cashier', fn () => $this->cashier->name),
             'status' => $this->status?->value ?? $this->status,
