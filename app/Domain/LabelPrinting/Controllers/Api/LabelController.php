@@ -84,7 +84,7 @@ class LabelController extends BaseApiController
 
     public function printHistory(Request $request): JsonResponse
     {
-        $paginator = $this->labelService->getPrintHistory($request->user()->store_id);
+        $paginator = $this->labelService->getPrintHistory($this->resolvedStoreId($request) ?? $request->user()->store_id);
         $result = $paginator->toArray();
         $result['data'] = LabelPrintHistoryResource::collection($paginator->items())->resolve();
         return $this->success($result);
@@ -99,7 +99,7 @@ class LabelController extends BaseApiController
             'printer_name'  => ['nullable', 'string', 'max:255'],
         ]);
 
-        $data['store_id'] = $request->user()->store_id;
+        $data['store_id'] = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $data['printed_by'] = $request->user()->id;
 
         $history = $this->labelService->recordPrintHistory($data);

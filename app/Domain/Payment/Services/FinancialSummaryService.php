@@ -2,19 +2,25 @@
 
 namespace App\Domain\Payment\Services;
 
+use App\Domain\Shared\Traits\ScopesStoreQuery;
 use Illuminate\Support\Facades\DB;
 
 class FinancialSummaryService
 {
+    use ScopesStoreQuery;
+
     /**
      * Get a financial daily summary for a given store and date.
      */
-    public function dailySummary(string $storeId, string $date): array
+    public function dailySummary(string|array $storeId, string $date): array
     {
         // Payment totals by method
-        $paymentBreakdown = DB::table('payments')
-            ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
-            ->where('transactions.store_id', $storeId)
+        $paymentBreakdown = $this->scopeByStore(
+                DB::table('payments')
+                    ->join('transactions', 'payments.transaction_id', '=', 'transactions.id'),
+                $storeId,
+                'transactions.store_id'
+            )
             ->whereDate('payments.created_at', $date)
             ->selectRaw("
                 payments.method,
@@ -34,10 +40,13 @@ class FinancialSummaryService
         $totalTransactions = collect($paymentBreakdown)->sum('count');
 
         // Refund totals
-        $refunds = DB::table('refunds')
-            ->join('payments', 'refunds.payment_id', '=', 'payments.id')
-            ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
-            ->where('transactions.store_id', $storeId)
+        $refunds = $this->scopeByStore(
+                DB::table('refunds')
+                    ->join('payments', 'refunds.payment_id', '=', 'payments.id')
+                    ->join('transactions', 'payments.transaction_id', '=', 'transactions.id'),
+                $storeId,
+                'transactions.store_id'
+            )
             ->whereDate('refunds.created_at', $date)
             ->where('refunds.status', 'completed')
             ->selectRaw("
@@ -47,8 +56,7 @@ class FinancialSummaryService
             ->first();
 
         // Cash sessions
-        $cashSessions = DB::table('cash_sessions')
-            ->where('store_id', $storeId)
+        $cashSessions = $this->scopeByStore(DB::table('cash_sessions'), $storeId)
             ->where(function ($q) use ($date) {
                 $q->whereDate('opened_at', $date)
                     ->orWhereDate('closed_at', $date);
@@ -62,8 +70,7 @@ class FinancialSummaryService
             ->first();
 
         // Expenses
-        $expenses = DB::table('expenses')
-            ->where('store_id', $storeId)
+        $expenses = $this->scopeByStore(DB::table('expenses'), $storeId)
             ->whereDate('expense_date', $date)
             ->selectRaw("
                 category,
@@ -89,9 +96,12 @@ class FinancialSummaryService
             $hourExpr = 'EXTRACT(HOUR FROM payments.created_at)';
         }
 
-        $hourlyData = DB::table('payments')
-            ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
-            ->where('transactions.store_id', $storeId)
+        $hourlyData = $this->scopeByStore(
+                DB::table('payments')
+                    ->join('transactions', 'payments.transaction_id', '=', 'transactions.id'),
+                $storeId,
+                'transactions.store_id'
+            )
             ->whereDate('payments.created_at', $date)
             ->selectRaw("
                 {$hourExpr} as hour,
@@ -115,7 +125,7 @@ class FinancialSummaryService
 
         return [
             'date' => $date,
-            'store_id' => $storeId,
+            'store_id' => is_array($storeId) ? $storeId : [$storeId],
             'revenue' => [
                 'gross' => round($totalRevenue, 2),
                 'refunds' => round((float) ($refunds->total ?? 0), 2),
@@ -145,10 +155,9 @@ class FinancialSummaryService
     /**
      * Get reconciliation data: expected vs actual for a date range.
      */
-    public function reconciliation(string $storeId, string $startDate, string $endDate): array
+    public function reconciliation(string|array $storeId, string $startDate, string $endDate): array
     {
-        $sessions = DB::table('cash_sessions')
-            ->where('store_id', $storeId)
+        $sessions = $this->scopeByStore(DB::table('cash_sessions'), $storeId)
             ->where('status', 'closed')
             ->whereDate('closed_at', '>=', $startDate)
             ->whereDate('closed_at', '<=', $endDate)

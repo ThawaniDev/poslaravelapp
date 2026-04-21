@@ -11,6 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('ai_usage_logs')) {
+            return;
+        }
         Schema::table('ai_usage_logs', function (Blueprint $table) {
             $table->uuid('ai_feature_definition_id')->nullable()->change();
         });
@@ -21,6 +24,9 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('ai_usage_logs')) {
+            return;
+        }
         Schema::table('ai_usage_logs', function (Blueprint $table) {
             $table->uuid('ai_feature_definition_id')->nullable(false)->change();
         });

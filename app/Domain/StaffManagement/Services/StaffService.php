@@ -3,6 +3,7 @@
 namespace App\Domain\StaffManagement\Services;
 
 use App\Domain\Auth\Models\User;
+use App\Domain\Shared\Traits\ScopesStoreQuery;
 use App\Domain\StaffManagement\Models\StaffUser;
 use App\Domain\StaffManagement\Models\AttendanceRecord;
 use App\Domain\StaffManagement\Models\BreakRecord;
@@ -17,11 +18,13 @@ use Illuminate\Support\Facades\Hash;
 
 class StaffService
 {
+    use ScopesStoreQuery;
+
     // ─── Staff CRUD ──────────────────────────────────────────
 
-    public function list(string $storeId, array $filters = [])
+    public function list(string|array $storeId, array $filters = [])
     {
-        $query = StaffUser::where('store_id', $storeId);
+        $query = $this->scopeByStore(StaffUser::query(), $storeId);
 
         if (!empty($filters['search'])) {
             $s = mb_strtolower($filters['search']);
@@ -46,12 +49,13 @@ class StaffService
         return $query->orderBy('first_name')->paginate($perPage);
     }
 
-    public function find(string $id): StaffUser
+    public function find(string $storeId, string $id): StaffUser
     {
-        return StaffUser::with([
-            'staffBranchAssignments',
-            'commissionRules',
-        ])->findOrFail($id);
+        return StaffUser::where('store_id', $storeId)
+            ->with([
+                'staffBranchAssignments',
+                'commissionRules',
+            ])->findOrFail($id);
     }
 
     public function create(array $data): StaffUser
@@ -126,9 +130,9 @@ class StaffService
 
     // ─── Attendance ─────────────────────────────────────────
 
-    public function listAttendance(string $storeId, array $filters = [])
+    public function listAttendance(string|array $storeId, array $filters = [])
     {
-        $query = AttendanceRecord::where('store_id', $storeId)
+        $query = $this->scopeByStore(AttendanceRecord::query(), $storeId)
             ->with('staffUser', 'breakRecords');
 
         if (!empty($filters['staff_user_id'])) {
@@ -252,9 +256,9 @@ class StaffService
 
     // ─── Shifts ─────────────────────────────────────────────
 
-    public function listShifts(string $storeId, array $filters = [])
+    public function listShifts(string|array $storeId, array $filters = [])
     {
-        $query = ShiftSchedule::where('store_id', $storeId)
+        $query = $this->scopeByStore(ShiftSchedule::query(), $storeId)
             ->with('staffUser', 'shiftTemplate');
 
         if (!empty($filters['staff_user_id'])) {
@@ -346,9 +350,9 @@ class StaffService
 
     // ─── Shift Templates ────────────────────────────────────
 
-    public function listShiftTemplates(string $storeId)
+    public function listShiftTemplates(string|array $storeId)
     {
-        return ShiftTemplate::where('store_id', $storeId)->orderBy('name')->get();
+        return $this->scopeByStore(ShiftTemplate::query(), $storeId)->orderBy('name')->get();
     }
 
     public function createShiftTemplate(array $data): ShiftTemplate
@@ -373,9 +377,9 @@ class StaffService
 
     // ─── Attendance Summary ─────────────────────────────────
 
-    public function getAttendanceSummary(string $storeId, array $filters = []): array
+    public function getAttendanceSummary(string|array $storeId, array $filters = []): array
     {
-        $query = AttendanceRecord::where('store_id', $storeId)
+        $query = $this->scopeByStore(AttendanceRecord::query(), $storeId)
             ->with('staffUser');
 
         if (!empty($filters['staff_user_id'])) {
@@ -417,7 +421,7 @@ class StaffService
             }
         }
 
-        $currentlyClockedIn = AttendanceRecord::where('store_id', $storeId)
+        $currentlyClockedIn = $this->scopeByStore(AttendanceRecord::query(), $storeId)
             ->whereNull('clock_out_at')
             ->count();
 
@@ -558,18 +562,18 @@ class StaffService
 
     // ─── Staff Stats ────────────────────────────────────────
 
-    public function getStats(string $storeId): array
+    public function getStats(string|array $storeId): array
     {
-        $total = StaffUser::where('store_id', $storeId)->count();
-        $active = StaffUser::where('store_id', $storeId)->where('status', 'active')->count();
-        $inactive = StaffUser::where('store_id', $storeId)->where('status', 'inactive')->count();
-        $onLeave = StaffUser::where('store_id', $storeId)->where('status', 'on_leave')->count();
+        $total = $this->scopeByStore(StaffUser::query(), $storeId)->count();
+        $active = $this->scopeByStore(StaffUser::query(), $storeId)->where('status', 'active')->count();
+        $inactive = $this->scopeByStore(StaffUser::query(), $storeId)->where('status', 'inactive')->count();
+        $onLeave = $this->scopeByStore(StaffUser::query(), $storeId)->where('status', 'on_leave')->count();
 
-        $clockedIn = AttendanceRecord::where('store_id', $storeId)
+        $clockedIn = $this->scopeByStore(AttendanceRecord::query(), $storeId)
             ->whereNull('clock_out_at')
             ->count();
 
-        $todayAttendance = AttendanceRecord::where('store_id', $storeId)
+        $todayAttendance = $this->scopeByStore(AttendanceRecord::query(), $storeId)
             ->whereDate('clock_in_at', now()->toDateString())
             ->count();
 
@@ -585,9 +589,9 @@ class StaffService
 
     // ─── Attendance Export ───────────────────────────────────
 
-    public function exportAttendance(string $storeId, array $filters = []): array
+    public function exportAttendance(string|array $storeId, array $filters = []): array
     {
-        $query = AttendanceRecord::where('store_id', $storeId)
+        $query = $this->scopeByStore(AttendanceRecord::query(), $storeId)
             ->with('staffUser');
 
         if (!empty($filters['staff_user_id'])) {

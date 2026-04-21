@@ -62,9 +62,9 @@ class SupplierReturnController extends BaseApiController
     /**
      * GET /api/v2/inventory/supplier-returns/{id}
      */
-    public function show(string $supplierReturn): JsonResponse
+    public function show(Request $request, string $supplierReturn): JsonResponse
     {
-        $return = $this->supplierReturnService->find($supplierReturn);
+        $return = $this->supplierReturnService->find($request->user()->organization_id, $supplierReturn);
 
         return $this->success(new SupplierReturnResource($return));
     }
@@ -87,7 +87,7 @@ class SupplierReturnController extends BaseApiController
             'items.*.batch_number' => 'nullable|string|max:100',
         ]);
 
-        $return = $this->supplierReturnService->find($supplierReturn);
+        $return = $this->supplierReturnService->find($request->user()->organization_id, $supplierReturn);
 
         if ($return->organization_id !== $request->user()->organization_id) {
             return $this->notFound('Supplier return not found.');
@@ -167,7 +167,7 @@ class SupplierReturnController extends BaseApiController
      */
     public function destroy(Request $request, string $supplierReturn): JsonResponse
     {
-        $return = $this->supplierReturnService->find($supplierReturn);
+        $return = $this->supplierReturnService->find($request->user()->organization_id, $supplierReturn);
 
         if ($return->organization_id !== $request->user()->organization_id) {
             return $this->notFound('Supplier return not found.');

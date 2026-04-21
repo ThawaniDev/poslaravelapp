@@ -25,9 +25,11 @@ class StocktakeService
             ->paginate($perPage);
     }
 
-    public function find(string $id): Stocktake
+    public function find(string $storeId, string $id): Stocktake
     {
-        return Stocktake::with(['stocktakeItems.product', 'store', 'category'])->findOrFail($id);
+        return Stocktake::where('store_id', $storeId)
+            ->with(['stocktakeItems.product', 'store', 'category'])
+            ->findOrFail($id);
     }
 
     public function create(array $data, string $userId): Stocktake

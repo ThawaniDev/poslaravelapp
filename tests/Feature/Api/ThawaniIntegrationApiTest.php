@@ -4,7 +4,7 @@ namespace Tests\Feature\Api;
 
 use App\Domain\Catalog\Models\Category;
 use App\Domain\Catalog\Models\Product;
-use App\Domain\Store\Models\Store;
+use App\Domain\Core\Models\Store;
 use App\Domain\ThawaniIntegration\Models\ThawaniCategoryMapping;
 use App\Domain\ThawaniIntegration\Models\ThawaniColumnMapping;
 use App\Domain\ThawaniIntegration\Models\ThawaniProductMapping;

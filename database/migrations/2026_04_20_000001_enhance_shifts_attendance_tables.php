@@ -9,60 +9,93 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Enhance shift_templates
-        Schema::table('shift_templates', function (Blueprint $table) {
-            $table->integer('break_duration_minutes')->default(0)->after('end_time');
-            $table->boolean('is_active')->default(true)->after('color');
-        });
+        // Enhance shift_templates (idempotent)
+        if (!Schema::hasColumn('shift_templates', 'break_duration_minutes')) {
+            Schema::table('shift_templates', function (Blueprint $table) {
+                $table->integer('break_duration_minutes')->default(0)->after('end_time');
+            });
+        }
+        if (!Schema::hasColumn('shift_templates', 'is_active')) {
+            Schema::table('shift_templates', function (Blueprint $table) {
+                $table->boolean('is_active')->default(true)->after('color');
+            });
+        }
 
-        // Enhance shift_schedules
-        Schema::table('shift_schedules', function (Blueprint $table) {
-            $table->text('notes')->nullable()->after('swapped_with_id');
-            // Convert single date to date range (start_date + end_date)
-            $table->date('start_date')->after('shift_template_id')->nullable();
-            $table->date('end_date')->after('start_date')->nullable();
-        });
+        // Enhance shift_schedules (idempotent)
+        if (!Schema::hasColumn('shift_schedules', 'notes')) {
+            Schema::table('shift_schedules', function (Blueprint $table) {
+                $table->text('notes')->nullable()->after('swapped_with_id');
+            });
+        }
 
-        // Copy existing date values into start_date and end_date
-        DB::statement('UPDATE shift_schedules SET start_date = date, end_date = date WHERE start_date IS NULL');
+        // Convert single date to date range (start_date + end_date)
+        if (!Schema::hasColumn('shift_schedules', 'start_date')) {
+            DB::statement('ALTER TABLE shift_schedules ADD COLUMN start_date DATE');
+        }
+        if (!Schema::hasColumn('shift_schedules', 'end_date')) {
+            DB::statement('ALTER TABLE shift_schedules ADD COLUMN end_date DATE');
+        }
+        if (Schema::hasColumn('shift_schedules', 'date')) {
+            DB::statement('UPDATE shift_schedules SET start_date = date, end_date = date WHERE start_date IS NULL');
+        }
+        if (Schema::getConnection()->getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE shift_schedules ALTER COLUMN start_date SET NOT NULL');
+            DB::statement('ALTER TABLE shift_schedules ALTER COLUMN end_date SET NOT NULL');
+            DB::statement('ALTER TABLE shift_schedules DROP CONSTRAINT IF EXISTS shift_schedules_staff_user_id_date_shift_template_id_unique');
+            if (Schema::hasColumn('shift_schedules', 'date')) {
+                DB::statement('ALTER TABLE shift_schedules DROP COLUMN date');
+            }
+            DB::statement('DROP INDEX IF EXISTS shift_schedules_staff_period_template_unique');
+            DB::statement('CREATE UNIQUE INDEX shift_schedules_staff_period_template_unique ON shift_schedules (staff_user_id, start_date, end_date, shift_template_id)');
+        }
 
-        // Now make them not-null and drop the old date column + old unique
-        Schema::table('shift_schedules', function (Blueprint $table) {
-            $table->date('start_date')->nullable(false)->change();
-            $table->date('end_date')->nullable(false)->change();
-            $table->dropUnique(['staff_user_id', 'date', 'shift_template_id']);
-            $table->dropColumn('date');
-            $table->unique(['staff_user_id', 'start_date', 'end_date', 'shift_template_id'], 'shift_schedules_staff_period_template_unique');
-        });
-
-        // Enhance attendance_records
-        Schema::table('attendance_records', function (Blueprint $table) {
-            $table->string('status', 30)->nullable()->after('auth_method');
-            // status: on_time, late, early_departure, absent
-        });
+        // Enhance attendance_records (idempotent)
+        if (!Schema::hasColumn('attendance_records', 'status')) {
+            Schema::table('attendance_records', function (Blueprint $table) {
+                $table->string('status', 30)->nullable()->after('auth_method');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('shift_templates', function (Blueprint $table) {
-            $table->dropColumn(['break_duration_minutes', 'is_active']);
-        });
+        if (Schema::hasColumn('shift_templates', 'break_duration_minutes')) {
+            Schema::table('shift_templates', function (Blueprint $table) {
+                $table->dropColumn('break_duration_minutes');
+            });
+        }
+        if (Schema::hasColumn('shift_templates', 'is_active')) {
+            Schema::table('shift_templates', function (Blueprint $table) {
+                $table->dropColumn('is_active');
+            });
+        }
 
-        Schema::table('shift_schedules', function (Blueprint $table) {
-            $table->date('date')->after('shift_template_id')->nullable();
-        });
+        if (Schema::hasColumn('shift_schedules', 'notes')) {
+            Schema::table('shift_schedules', function (Blueprint $table) {
+                $table->dropColumn('notes');
+            });
+        }
 
-        DB::statement('UPDATE shift_schedules SET date = start_date WHERE date IS NULL');
+        if (!Schema::hasColumn('shift_schedules', 'date')) {
+            DB::statement('ALTER TABLE shift_schedules ADD COLUMN date DATE');
+        }
+        if (Schema::hasColumn('shift_schedules', 'start_date')) {
+            DB::statement('UPDATE shift_schedules SET date = start_date WHERE date IS NULL');
+        }
+        DB::statement('ALTER TABLE shift_schedules ALTER COLUMN date SET NOT NULL');
+        DB::statement('DROP INDEX IF EXISTS shift_schedules_staff_period_template_unique');
+        if (Schema::hasColumn('shift_schedules', 'start_date')) {
+            DB::statement('ALTER TABLE shift_schedules DROP COLUMN start_date');
+        }
+        if (Schema::hasColumn('shift_schedules', 'end_date')) {
+            DB::statement('ALTER TABLE shift_schedules DROP COLUMN end_date');
+        }
+        DB::statement('CREATE UNIQUE INDEX shift_schedules_staff_user_id_date_shift_template_id_unique ON shift_schedules (staff_user_id, date, shift_template_id)');
 
-        Schema::table('shift_schedules', function (Blueprint $table) {
-            $table->date('date')->nullable(false)->change();
-            $table->dropUnique('shift_schedules_staff_period_template_unique');
-            $table->dropColumn(['start_date', 'end_date', 'notes']);
-            $table->unique(['staff_user_id', 'date', 'shift_template_id']);
-        });
-
-        Schema::table('attendance_records', function (Blueprint $table) {
-            $table->dropColumn('status');
-        });
+        if (Schema::hasColumn('attendance_records', 'status')) {
+            Schema::table('attendance_records', function (Blueprint $table) {
+                $table->dropColumn('status');
+            });
+        }
     }
 };

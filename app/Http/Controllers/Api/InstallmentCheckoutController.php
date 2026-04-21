@@ -81,7 +81,7 @@ class InstallmentCheckoutController extends BaseApiController
         ]);
 
         try {
-            $payment = $this->installmentService->confirmPayment($id, $request->input('provider_data', []));
+            $payment = $this->installmentService->confirmPayment($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $request->input('provider_data', []));
             return $this->success(new InstallmentPaymentResource($payment), 'Payment confirmed');
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('Payment not found');
@@ -91,10 +91,10 @@ class InstallmentCheckoutController extends BaseApiController
     /**
      * Cancel a pending payment.
      */
-    public function cancelPayment(string $id): JsonResponse
+    public function cancelPayment(Request $request, string $id): JsonResponse
     {
         try {
-            $payment = $this->installmentService->cancelPayment($id);
+            $payment = $this->installmentService->cancelPayment($id, $this->resolvedStoreId($request) ?? $request->user()->store_id);
             return $this->success(new InstallmentPaymentResource($payment), 'Payment cancelled');
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('Payment not found');
@@ -114,6 +114,7 @@ class InstallmentCheckoutController extends BaseApiController
         try {
             $payment = $this->installmentService->failPayment(
                 $id,
+                $this->resolvedStoreId($request) ?? $request->user()->store_id,
                 $request->input('error_code'),
                 $request->input('error_message'),
             );
@@ -126,10 +127,10 @@ class InstallmentCheckoutController extends BaseApiController
     /**
      * Get payment details.
      */
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         try {
-            $payment = $this->installmentService->showPayment($id);
+            $payment = $this->installmentService->showPayment($id, $this->resolvedStoreId($request) ?? $request->user()->store_id);
             return $this->success(new InstallmentPaymentResource($payment));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound('Payment not found');

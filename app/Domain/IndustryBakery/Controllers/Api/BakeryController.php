@@ -24,7 +24,7 @@ class BakeryController extends BaseApiController
 
     public function listRecipes(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listRecipes($storeId, $request->only(['search', 'per_page']));
 
         $data = $paginator->toArray();
@@ -35,20 +35,20 @@ class BakeryController extends BaseApiController
 
     public function createRecipe(CreateBakeryRecipeRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $recipe = $this->service->createRecipe($storeId, $request->validated());
         return $this->created(new BakeryRecipeResource($recipe), __('industry.recipe_created'));
     }
 
     public function updateRecipe(UpdateBakeryRecipeRequest $request, string $id): JsonResponse
     {
-        $recipe = $this->service->updateRecipe($id, $request->user()->store_id, $request->validated());
+        $recipe = $this->service->updateRecipe($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $request->validated());
         return $this->success(new BakeryRecipeResource($recipe), __('industry.recipe_updated'));
     }
 
     public function deleteRecipe(Request $request, string $id): JsonResponse
     {
-        $this->service->deleteRecipe($id, $request->user()->store_id);
+        $this->service->deleteRecipe($id, $this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success(null, __('industry.recipe_deleted'));
     }
 
@@ -56,7 +56,7 @@ class BakeryController extends BaseApiController
 
     public function listProductionSchedules(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listProductionSchedules($storeId, $request->only(['status', 'schedule_date', 'per_page']));
 
         $data = $paginator->toArray();
@@ -67,14 +67,14 @@ class BakeryController extends BaseApiController
 
     public function createProductionSchedule(CreateProductionScheduleRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $schedule = $this->service->createProductionSchedule($storeId, $request->validated());
         return $this->created(new ProductionScheduleResource($schedule), __('industry.schedule_created'));
     }
 
     public function updateProductionSchedule(UpdateProductionScheduleRequest $request, string $id): JsonResponse
     {
-        $schedule = $this->service->updateProductionSchedule($id, $request->user()->store_id, $request->validated());
+        $schedule = $this->service->updateProductionSchedule($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $request->validated());
         return $this->success(new ProductionScheduleResource($schedule), __('industry.schedule_updated'));
     }
 
@@ -84,7 +84,7 @@ class BakeryController extends BaseApiController
             'status' => 'required|string|in:planned,in_progress,completed',
         ]);
 
-        $schedule = $this->service->updateProductionScheduleStatus($id, $request->user()->store_id, $validated['status']);
+        $schedule = $this->service->updateProductionScheduleStatus($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $validated['status']);
         return $this->success(new ProductionScheduleResource($schedule), __('industry.schedule_status_updated'));
     }
 
@@ -92,7 +92,7 @@ class BakeryController extends BaseApiController
 
     public function listCustomCakeOrders(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listCustomCakeOrders($storeId, $request->only(['status', 'customer_id', 'per_page']));
 
         $data = $paginator->toArray();
@@ -103,14 +103,14 @@ class BakeryController extends BaseApiController
 
     public function createCustomCakeOrder(CreateCustomCakeOrderRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $order = $this->service->createCustomCakeOrder($storeId, $request->validated());
         return $this->created(new CustomCakeOrderResource($order), __('industry.cake_order_created'));
     }
 
     public function updateCustomCakeOrder(UpdateCustomCakeOrderRequest $request, string $id): JsonResponse
     {
-        $order = $this->service->updateCustomCakeOrder($id, $request->user()->store_id, $request->validated());
+        $order = $this->service->updateCustomCakeOrder($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $request->validated());
         return $this->success(new CustomCakeOrderResource($order), __('industry.cake_order_updated'));
     }
 
@@ -120,7 +120,7 @@ class BakeryController extends BaseApiController
             'status' => 'required|string|in:ordered,in_production,ready,delivered',
         ]);
 
-        $order = $this->service->updateCustomCakeOrderStatus($id, $request->user()->store_id, $validated['status']);
+        $order = $this->service->updateCustomCakeOrderStatus($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $validated['status']);
         return $this->success(new CustomCakeOrderResource($order), __('industry.cake_order_status_updated'));
     }
 }

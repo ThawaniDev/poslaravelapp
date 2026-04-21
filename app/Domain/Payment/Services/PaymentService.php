@@ -5,16 +5,20 @@ namespace App\Domain\Payment\Services;
 use App\Domain\Auth\Models\User;
 use App\Domain\Payment\Enums\PaymentMethodKey;
 use App\Domain\Payment\Models\Payment;
+use App\Domain\Shared\Traits\ScopesStoreQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class PaymentService
 {
-    public function list(string $storeId, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    use ScopesStoreQuery;
+
+    public function list(string|array $storeId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = Payment::query()
             ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
-            ->where('transactions.store_id', $storeId)
             ->select('payments.*');
+
+        $query = $this->scopeByStore($query, $storeId, 'transactions.store_id');
 
         if (!empty($filters['method'])) {
             $query->where('payments.method', $filters['method']);

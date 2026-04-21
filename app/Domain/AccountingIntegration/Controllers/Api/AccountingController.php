@@ -29,7 +29,7 @@ class AccountingController extends BaseApiController
      */
     public function status(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         return $this->success(
             $this->accountingService->getStatus($storeId),
@@ -42,7 +42,7 @@ class AccountingController extends BaseApiController
      */
     public function connect(ConnectProviderRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         $config = $this->accountingService->connect(
             $storeId,
@@ -61,7 +61,7 @@ class AccountingController extends BaseApiController
      */
     public function disconnect(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $disconnected = $this->accountingService->disconnect($storeId);
 
         if (!$disconnected) {
@@ -77,7 +77,7 @@ class AccountingController extends BaseApiController
      */
     public function refreshToken(RefreshTokenRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         $config = $this->accountingService->refreshToken(
             $storeId,
@@ -102,7 +102,7 @@ class AccountingController extends BaseApiController
      */
     public function getMappings(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         return $this->success([
             'mappings' => $this->accountingService->getMappings($storeId),
@@ -116,7 +116,7 @@ class AccountingController extends BaseApiController
      */
     public function saveMappings(SaveMappingsRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         $mappings = $this->accountingService->saveMappings(
             $storeId,
@@ -135,7 +135,7 @@ class AccountingController extends BaseApiController
      */
     public function deleteMapping(Request $request, string $id): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         $deleted = $this->accountingService->deleteMapping($storeId, $id);
 
@@ -154,7 +154,7 @@ class AccountingController extends BaseApiController
      */
     public function triggerExport(TriggerExportRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         $export = $this->accountingService->triggerExport(
             $storeId,
@@ -173,7 +173,7 @@ class AccountingController extends BaseApiController
      */
     public function listExports(ListExportsRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         $exports = $this->accountingService->listExports(
             $storeId,
@@ -191,7 +191,7 @@ class AccountingController extends BaseApiController
      */
     public function getExport(Request $request, string $id): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         $export = $this->accountingService->getExport($storeId, $id);
 
@@ -208,7 +208,7 @@ class AccountingController extends BaseApiController
      */
     public function retryExport(Request $request, string $id): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         $export = $this->accountingService->retryExport($storeId, $id);
 
@@ -230,7 +230,7 @@ class AccountingController extends BaseApiController
      */
     public function getAutoExport(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         return $this->success(
             $this->accountingService->getAutoExportConfig($storeId),
@@ -243,7 +243,7 @@ class AccountingController extends BaseApiController
      */
     public function updateAutoExport(UpdateAutoExportRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         $config = $this->accountingService->updateAutoExportConfig(
             $storeId,

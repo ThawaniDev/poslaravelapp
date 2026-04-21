@@ -20,7 +20,7 @@ class OwnerDashboardController extends BaseApiController
     public function stats(Request $request): JsonResponse
     {
         $data = $this->dashboardService->stats(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
         );
 
         return $this->success($data, __('owner_dashboard.stats_retrieved'));
@@ -32,7 +32,7 @@ class OwnerDashboardController extends BaseApiController
     public function salesTrend(DashboardFilterRequest $request): JsonResponse
     {
         $data = $this->dashboardService->salesTrend(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             $request->validated(),
         );
 
@@ -45,7 +45,7 @@ class OwnerDashboardController extends BaseApiController
     public function topProducts(DashboardFilterRequest $request): JsonResponse
     {
         $data = $this->dashboardService->topProducts(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             $request->validated(),
         );
 
@@ -60,7 +60,7 @@ class OwnerDashboardController extends BaseApiController
         $limit = (int) $request->input('limit', 10);
 
         $data = $this->dashboardService->lowStockAlerts(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             min($limit, 50),
         );
 
@@ -73,7 +73,7 @@ class OwnerDashboardController extends BaseApiController
     public function activeCashiers(Request $request): JsonResponse
     {
         $data = $this->dashboardService->activeCashiers(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
         );
 
         return $this->success($data, __('owner_dashboard.active_cashiers_retrieved'));
@@ -87,7 +87,7 @@ class OwnerDashboardController extends BaseApiController
         $limit = (int) $request->input('limit', 10);
 
         $data = $this->dashboardService->recentOrders(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             min($limit, 50),
         );
 
@@ -100,7 +100,7 @@ class OwnerDashboardController extends BaseApiController
     public function financialSummary(DashboardFilterRequest $request): JsonResponse
     {
         $data = $this->dashboardService->financialSummary(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             $request->validated(),
         );
 
@@ -115,7 +115,7 @@ class OwnerDashboardController extends BaseApiController
         $date = $request->input('date');
 
         $data = $this->dashboardService->hourlySales(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             $date,
         );
 
@@ -147,7 +147,7 @@ class OwnerDashboardController extends BaseApiController
     public function staffPerformance(DashboardFilterRequest $request): JsonResponse
     {
         $data = $this->dashboardService->staffPerformance(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             $request->validated(),
         );
 

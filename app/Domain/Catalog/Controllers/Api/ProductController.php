@@ -136,7 +136,7 @@ class ProductController extends BaseApiController
         }
 
         $barcode = $this->productService->generateBarcode(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $found,
         );
 

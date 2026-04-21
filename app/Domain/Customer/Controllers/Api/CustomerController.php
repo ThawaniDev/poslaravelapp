@@ -44,7 +44,7 @@ class CustomerController extends BaseApiController
         }
     }
 
-    public function show(string $customer): JsonResponse
+    public function show(Request $request, string $customer): JsonResponse
     {
         $found = $this->customerService->find($request->user()->organization_id, $customer);
         return $this->success(new CustomerResource($found));

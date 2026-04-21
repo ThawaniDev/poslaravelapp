@@ -22,7 +22,7 @@ class RoleController extends BaseApiController
      */
     public function index(Request $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         $roles = $this->roleService->listForStore($storeId);
 
@@ -111,24 +111,58 @@ class RoleController extends BaseApiController
      *
      * Get the effective permissions for the authenticated user.
      * Also returns branch scope and accessible store IDs.
+     *
+     * `store_id` is optional. When omitted, we resolve a default store from:
+     *   1. The user's own `store_id` (branch-scoped users), else
+     *   2. The first active store in the user's organization (org-scoped users).
      */
     public function userPermissions(Request $request)
     {
-        $request->validate(['store_id' => 'required|uuid|exists:stores,id']);
+        $request->validate(['store_id' => 'nullable|uuid|exists:stores,id']);
 
-        $user = $request->user();
-        $storeId = $request->store_id;
+        $user    = $request->user();
+        $storeId = $request->store_id ?? $this->resolveDefaultStoreId($user);
 
-        $permissions = $this->roleService->getEffectivePermissions($user, $storeId);
-        $branchScope = $this->roleService->getUserBranchScope($user, $storeId);
+        if ($storeId === null) {
+            return $this->success([
+                'permissions'          => [],
+                'branch_scope'         => 'branch',
+                'accessible_store_ids' => [],
+                'branch_roles'         => (object) [],
+                'store_id'             => null,
+            ]);
+        }
+
+        $permissions        = $this->roleService->getEffectivePermissions($user, $storeId);
+        $branchScope        = $this->roleService->getUserBranchScope($user, $storeId);
         $accessibleStoreIds = $this->roleService->getAccessibleStoreIds($user, $storeId);
-        $branchRoles = $this->roleService->getUserBranchRoles($user, $storeId);
+        $branchRoles        = $this->roleService->getUserBranchRoles($user, $storeId);
 
         return $this->success([
             'permissions'          => $permissions,
             'branch_scope'         => $branchScope,
             'accessible_store_ids' => $accessibleStoreIds,
-            'branch_roles'         => $branchRoles,
+            'branch_roles'         => (object) $branchRoles,
+            'store_id'             => $storeId,
         ]);
+    }
+
+    /**
+     * Resolve a default store id for the user when none is supplied.
+     * Returns null when the user has no store and no organization stores.
+     */
+    private function resolveDefaultStoreId(User $user): ?string
+    {
+        if (! empty($user->store_id)) {
+            return $user->store_id;
+        }
+        if (! empty($user->organization_id)) {
+            return \App\Domain\Core\Models\Store::query()
+                ->where('organization_id', $user->organization_id)
+                ->where('is_active', true)
+                ->orderBy('created_at')
+                ->value('id');
+        }
+        return null;
     }
 }

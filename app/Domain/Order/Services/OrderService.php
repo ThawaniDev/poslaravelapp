@@ -8,14 +8,17 @@ use App\Domain\Order\Enums\OrderStatus;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\OrderItem;
 use App\Domain\Order\Models\OrderStatusHistory;
+use App\Domain\Shared\Traits\ScopesStoreQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class OrderService
 {
-    public function list(string $storeId, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    use ScopesStoreQuery;
+
+    public function list(string|array $storeId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        $query = Order::where('store_id', $storeId);
+        $query = $this->scopeByStore(Order::query(), $storeId);
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);

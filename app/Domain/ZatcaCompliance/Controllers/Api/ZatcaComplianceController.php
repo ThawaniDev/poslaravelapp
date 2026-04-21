@@ -16,7 +16,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function enroll(EnrollRequest $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $result = $this->service->enroll(
             $storeId,
             $request->validated('otp'),
@@ -28,7 +28,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function renew(Request $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $result = $this->service->renewCertificate($storeId);
 
         return $this->success($result, __('zatca.renewed'));
@@ -36,7 +36,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function submitInvoice(SubmitInvoiceRequest $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $result = $this->service->submitInvoice($storeId, $request->validated());
 
         return $this->created($result, __('zatca.invoice_submitted'));
@@ -44,7 +44,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function submitBatch(SubmitBatchRequest $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $result = $this->service->submitBatch($storeId, $request->validated('invoices'));
 
         return $this->success($result, __('zatca.batch_submitted'));
@@ -52,7 +52,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function invoices(InvoiceFilterRequest $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $result = $this->service->listInvoices($storeId, $request->validated());
 
         return $this->success($result, __('zatca.invoices_retrieved'));
@@ -60,7 +60,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function invoiceXml(Request $request, string $invoiceId)
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $xml = $this->service->getInvoiceXml($storeId, $invoiceId);
 
         if (! $xml) {
@@ -72,7 +72,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function complianceSummary(Request $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $result = $this->service->complianceSummary($storeId);
 
         return $this->success($result, __('zatca.summary_retrieved'));
@@ -80,7 +80,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function vatReport(InvoiceFilterRequest $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $result = $this->service->vatReport($storeId, $request->validated());
 
         return $this->success($result, __('zatca.vat_report_retrieved'));

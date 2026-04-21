@@ -179,3 +179,10 @@ Schedule::job(new ProcessScheduledNotificationsJob)
     ->everyMinute()
     ->withoutOverlapping()
     ->onOneServer();
+
+// Fire time-based notification events (daily summary, expiry, license)
+// Runs once a day at 00:30 store local time (server time approximation).
+Schedule::command('notifications:fire-scheduled')
+    ->dailyAt('00:30')
+    ->withoutOverlapping()
+    ->onOneServer();

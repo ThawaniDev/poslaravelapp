@@ -112,4 +112,9 @@ return [
     'discount_exceeds_maximum' => 'لا يمكن أن يتجاوز الخصم :max%.',
     'insufficient_stock' => 'المخزون غير كافٍ لـ :product. المتاح: :available، المطلوب: :requested.',
     'refunds_disabled' => 'المرتجعات معطلة لهذا المتجر.',
+
+    // Payment validation
+    'payment_total_insufficient' => 'إجمالي المدفوعات لا يغطي المبلغ المطلوب.',
+    'return_qty_exceeds_original' => 'كمية الإرجاع للمنتج :product تتجاوز الأصلية (الحد الأقصى: :max).',
+    'only_completed_can_void' => 'يمكن إلغاء المعاملات المكتملة فقط.',
 ];

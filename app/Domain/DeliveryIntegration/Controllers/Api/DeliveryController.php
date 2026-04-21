@@ -25,7 +25,7 @@ class DeliveryController extends BaseApiController
      */
     public function stats(Request $request): JsonResponse
     {
-        $stats = $this->deliveryService->getStats($request->user()->store_id);
+        $stats = $this->deliveryService->getStats($this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         return $this->success($stats, __('delivery.stats_retrieved'));
     }
@@ -35,7 +35,7 @@ class DeliveryController extends BaseApiController
      */
     public function configs(Request $request): JsonResponse
     {
-        $configs = $this->deliveryService->getConfigs($request->user()->store_id);
+        $configs = $this->deliveryService->getConfigs($this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         return $this->success($configs, __('delivery.configs_retrieved'));
     }
@@ -59,7 +59,7 @@ class DeliveryController extends BaseApiController
             'menu_sync_interval_hours' => 'nullable|integer|min:1|max:168',
         ]);
 
-        $config = $this->deliveryService->saveConfig($request->user()->store_id, $validated);
+        $config = $this->deliveryService->saveConfig($this->resolvedStoreId($request) ?? $request->user()->store_id, $validated);
 
         return $this->success($config, __('delivery.config_saved'));
     }
@@ -69,7 +69,7 @@ class DeliveryController extends BaseApiController
      */
     public function toggleConfig(Request $request, string $id): JsonResponse
     {
-        $config = $this->deliveryService->toggleConfig($id, $request->user()->store_id);
+        $config = $this->deliveryService->toggleConfig($id, $this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         if (! $config) {
             return $this->notFound(__('delivery.config_not_found'));
@@ -83,7 +83,7 @@ class DeliveryController extends BaseApiController
      */
     public function testConnection(Request $request, string $id): JsonResponse
     {
-        $result = $this->deliveryService->testConnection($id, $request->user()->store_id);
+        $result = $this->deliveryService->testConnection($id, $this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         if (! $result['success']) {
             return $this->error($result['message'] ?? __('delivery.connection_failed'), 422);
@@ -106,7 +106,7 @@ class DeliveryController extends BaseApiController
         ]);
 
         $orders = $this->deliveryService->getOrders(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['platform', 'status', 'date_from', 'date_to', 'per_page']),
         );
 
@@ -118,7 +118,7 @@ class DeliveryController extends BaseApiController
      */
     public function activeOrders(Request $request): JsonResponse
     {
-        $orders = $this->deliveryService->getActiveOrders($request->user()->store_id);
+        $orders = $this->deliveryService->getActiveOrders($this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         return $this->success($orders, __('delivery.orders_retrieved'));
     }
@@ -128,7 +128,7 @@ class DeliveryController extends BaseApiController
      */
     public function orderDetail(Request $request, string $id): JsonResponse
     {
-        $order = $this->deliveryService->getOrder($id, $request->user()->store_id);
+        $order = $this->deliveryService->getOrder($id, $this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         if (! $order) {
             return $this->notFound(__('delivery.order_not_found'));
@@ -149,7 +149,7 @@ class DeliveryController extends BaseApiController
 
         $order = $this->deliveryService->updateOrderStatus(
             $id,
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $validated['status'],
             $validated['reason'] ?? null,
         );
@@ -174,7 +174,7 @@ class DeliveryController extends BaseApiController
             'products.*.price' => 'required|numeric|min:0',
         ]);
 
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $products = $validated['products'];
 
         if (! empty($validated['platform'])) {
@@ -206,7 +206,7 @@ class DeliveryController extends BaseApiController
         ]);
 
         $logs = $this->deliveryService->getSyncLogs(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['platform', 'per_page']),
         );
 
@@ -246,7 +246,7 @@ class DeliveryController extends BaseApiController
         ]);
 
         $logs = $this->deliveryService->getWebhookLogs(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['platform', 'per_page']),
         );
 
@@ -265,7 +265,7 @@ class DeliveryController extends BaseApiController
         ]);
 
         $logs = $this->deliveryService->getStatusPushLogs(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['platform', 'order_id', 'per_page']),
         );
 
@@ -277,7 +277,7 @@ class DeliveryController extends BaseApiController
      */
     public function configDetail(Request $request, string $id): JsonResponse
     {
-        $config = $this->deliveryService->getConfig($id, $request->user()->store_id);
+        $config = $this->deliveryService->getConfig($id, $this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         if (! $config) {
             return $this->notFound(__('delivery.config_not_found'));
@@ -291,7 +291,7 @@ class DeliveryController extends BaseApiController
      */
     public function deleteConfig(Request $request, string $id): JsonResponse
     {
-        $deleted = $this->deliveryService->deleteConfig($id, $request->user()->store_id);
+        $deleted = $this->deliveryService->deleteConfig($id, $this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         if (! $deleted) {
             return $this->notFound(__('delivery.config_not_found'));

@@ -97,7 +97,7 @@ class NotificationDispatcher
 
             if ($email) {
                 EmailService::queue($email, new NotificationMail(
-                    subject: $title,
+                    mailSubject: $title,
                     heading: $title,
                     body: $body,
                 ));

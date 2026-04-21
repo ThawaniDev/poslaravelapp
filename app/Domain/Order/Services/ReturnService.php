@@ -7,14 +7,17 @@ use App\Domain\Order\Enums\ReturnType;
 use App\Domain\Order\Models\Order;
 use App\Domain\Order\Models\ReturnItem;
 use App\Domain\Order\Models\SaleReturn;
+use App\Domain\Shared\Traits\ScopesStoreQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class ReturnService
 {
-    public function listReturns(string $storeId, int $perPage = 20): LengthAwarePaginator
+    use ScopesStoreQuery;
+
+    public function listReturns(string|array $storeId, int $perPage = 20): LengthAwarePaginator
     {
-        return SaleReturn::where('store_id', $storeId)
+        return $this->scopeByStore(SaleReturn::query(), $storeId)
             ->orderByDesc('id')
             ->paginate($perPage);
     }

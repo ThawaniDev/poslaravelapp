@@ -54,9 +54,9 @@ class RecipeController extends BaseApiController
     /**
      * GET /api/v2/inventory/recipes/{id}
      */
-    public function show(string $recipe): JsonResponse
+    public function show(Request $request, string $recipe): JsonResponse
     {
-        $found = $this->recipeService->find($recipe);
+        $found = $this->recipeService->find($recipe, $request->user()->organization_id);
 
         return $this->success(new RecipeResource($found));
     }
@@ -70,6 +70,7 @@ class RecipeController extends BaseApiController
 
         $updated = $this->recipeService->update(
             $recipe,
+            $request->user()->organization_id,
             $validated,
             $validated['ingredients'] ?? null,
         );
@@ -80,10 +81,10 @@ class RecipeController extends BaseApiController
     /**
      * DELETE /api/v2/inventory/recipes/{id}
      */
-    public function destroy(string $recipe): JsonResponse
+    public function destroy(Request $request, string $recipe): JsonResponse
     {
         try {
-            $this->recipeService->delete($recipe);
+            $this->recipeService->delete($recipe, $request->user()->organization_id);
 
             return $this->success(null, 'Recipe deleted successfully.');
         } catch (\RuntimeException $e) {

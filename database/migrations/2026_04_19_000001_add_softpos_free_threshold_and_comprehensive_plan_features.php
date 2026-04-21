@@ -10,24 +10,40 @@ return new class extends Migration
     {
         // ── 1. Add softPOS free-after-threshold columns to subscription_plans ──
         Schema::table('subscription_plans', function (Blueprint $table) {
-            $table->boolean('softpos_free_eligible')->default(false)->after('is_highlighted');
-            $table->unsignedInteger('softpos_free_threshold')->nullable()->after('softpos_free_eligible')
-                ->comment('Number of SoftPOS transactions to reach for free plan');
-            $table->string('softpos_free_threshold_period', 20)->default('monthly')->after('softpos_free_threshold')
-                ->comment('Period for threshold: monthly, yearly, lifetime');
+            if (!Schema::hasColumn('subscription_plans', 'softpos_free_eligible')) {
+                $table->boolean('softpos_free_eligible')->default(false)->after('is_highlighted');
+            }
+            if (!Schema::hasColumn('subscription_plans', 'softpos_free_threshold')) {
+                $table->unsignedInteger('softpos_free_threshold')->nullable()->after('softpos_free_eligible')
+                    ->comment('Number of SoftPOS transactions to reach for free plan');
+            }
+            if (!Schema::hasColumn('subscription_plans', 'softpos_free_threshold_period')) {
+                $table->string('softpos_free_threshold_period', 20)->default('monthly')->after('softpos_free_threshold')
+                    ->comment('Period for threshold: monthly, yearly, lifetime');
+            }
         });
 
         // ── 2. Track softPOS transactions at the store subscription level ──
         Schema::table('store_subscriptions', function (Blueprint $table) {
-            $table->boolean('is_softpos_free')->default(false)->after('cancelled_at')
-                ->comment('Whether the subscription is currently free due to SoftPOS threshold');
-            $table->unsignedInteger('softpos_transaction_count')->default(0)->after('is_softpos_free')
-                ->comment('Current SoftPOS transaction count for the threshold period');
-            $table->timestamp('softpos_count_reset_at')->nullable()->after('softpos_transaction_count')
-                ->comment('When the softPOS transaction count was last reset');
-            $table->decimal('original_amount', 10, 2)->nullable()->after('softpos_count_reset_at')
-                ->comment('Original subscription amount before softPOS discount');
-            $table->string('discount_reason')->nullable()->after('original_amount');
+            if (!Schema::hasColumn('store_subscriptions', 'is_softpos_free')) {
+                $table->boolean('is_softpos_free')->default(false)->after('cancelled_at')
+                    ->comment('Whether the subscription is currently free due to SoftPOS threshold');
+            }
+            if (!Schema::hasColumn('store_subscriptions', 'softpos_transaction_count')) {
+                $table->unsignedInteger('softpos_transaction_count')->default(0)->after('is_softpos_free')
+                    ->comment('Current SoftPOS transaction count for the threshold period');
+            }
+            if (!Schema::hasColumn('store_subscriptions', 'softpos_count_reset_at')) {
+                $table->timestamp('softpos_count_reset_at')->nullable()->after('softpos_transaction_count')
+                    ->comment('When the softPOS transaction count was last reset');
+            }
+            if (!Schema::hasColumn('store_subscriptions', 'original_amount')) {
+                $table->decimal('original_amount', 10, 2)->nullable()->after('softpos_count_reset_at')
+                    ->comment('Original subscription amount before softPOS discount');
+            }
+            if (!Schema::hasColumn('store_subscriptions', 'discount_reason')) {
+                $table->string('discount_reason')->nullable()->after('original_amount');
+            }
         });
 
         // ── 3. Create softpos_transactions table for tracking ──

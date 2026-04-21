@@ -10,9 +10,16 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('ai_usage_logs')) {
+            return;
+        }
         Schema::table('ai_usage_logs', function (Blueprint $table) {
-            $table->decimal('billed_cost_usd', 10, 6)->default(0)->after('estimated_cost_usd');
-            $table->decimal('margin_percentage_applied', 5, 3)->nullable()->after('billed_cost_usd');
+            if (!Schema::hasColumn('ai_usage_logs', 'billed_cost_usd')) {
+                $table->decimal('billed_cost_usd', 10, 6)->default(0)->after('estimated_cost_usd');
+            }
+            if (!Schema::hasColumn('ai_usage_logs', 'margin_percentage_applied')) {
+                $table->decimal('margin_percentage_applied', 5, 3)->nullable()->after('billed_cost_usd');
+            }
         });
 
         // Backfill existing logs with the current global margin
@@ -37,6 +44,9 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (!Schema::hasTable('ai_usage_logs')) {
+            return;
+        }
         Schema::table('ai_usage_logs', function (Blueprint $table) {
             $table->dropColumn(['billed_cost_usd', 'margin_percentage_applied']);
         });

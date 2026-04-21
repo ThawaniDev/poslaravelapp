@@ -112,4 +112,9 @@ return [
     'discount_exceeds_maximum' => 'Discount cannot exceed :max%.',
     'insufficient_stock' => 'Insufficient stock for :product. Available: :available, Requested: :requested.',
     'refunds_disabled' => 'Refunds are disabled for this store.',
+
+    // Payment validation
+    'payment_total_insufficient' => 'Payment total does not cover the amount due.',
+    'return_qty_exceeds_original' => 'Return quantity for :product exceeds original (max: :max).',
+    'only_completed_can_void' => 'Only completed transactions can be voided.',
 ];

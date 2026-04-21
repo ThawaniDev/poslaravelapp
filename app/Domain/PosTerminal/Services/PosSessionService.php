@@ -16,9 +16,9 @@ class PosSessionService
             ->paginate($perPage);
     }
 
-    public function find(string $sessionId): PosSession
+    public function find(string $sessionId, string $storeId): PosSession
     {
-        return PosSession::with('transactions')->findOrFail($sessionId);
+        return PosSession::where('store_id', $storeId)->with('transactions')->findOrFail($sessionId);
     }
 
     public function open(array $data, User $actor): PosSession

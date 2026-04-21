@@ -330,9 +330,9 @@ class InstallmentService
     // Payment Confirmation & Webhooks
     // ═══════════════════════════════════════════════════════════════
 
-    public function confirmPayment(string $installmentPaymentId, array $providerData = []): InstallmentPayment
+    public function confirmPayment(string $installmentPaymentId, string $storeId, array $providerData = []): InstallmentPayment
     {
-        $payment = InstallmentPayment::findOrFail($installmentPaymentId);
+        $payment = InstallmentPayment::where('store_id', $storeId)->findOrFail($installmentPaymentId);
 
         if ($payment->status->isFinal()) {
             return $payment;
@@ -342,9 +342,9 @@ class InstallmentService
         return $payment->fresh();
     }
 
-    public function cancelPayment(string $installmentPaymentId): InstallmentPayment
+    public function cancelPayment(string $installmentPaymentId, string $storeId): InstallmentPayment
     {
-        $payment = InstallmentPayment::findOrFail($installmentPaymentId);
+        $payment = InstallmentPayment::where('store_id', $storeId)->findOrFail($installmentPaymentId);
 
         if ($payment->status->isFinal()) {
             return $payment;
@@ -354,9 +354,9 @@ class InstallmentService
         return $payment->fresh();
     }
 
-    public function failPayment(string $installmentPaymentId, ?string $errorCode = null, ?string $errorMessage = null): InstallmentPayment
+    public function failPayment(string $installmentPaymentId, string $storeId, ?string $errorCode = null, ?string $errorMessage = null): InstallmentPayment
     {
-        $payment = InstallmentPayment::findOrFail($installmentPaymentId);
+        $payment = InstallmentPayment::where('store_id', $storeId)->findOrFail($installmentPaymentId);
 
         if ($payment->status->isFinal()) {
             return $payment;
@@ -390,9 +390,10 @@ class InstallmentService
         return $query->orderByDesc('created_at')->paginate($perPage);
     }
 
-    public function showPayment(string $id): InstallmentPayment
+    public function showPayment(string $id, string $storeId): InstallmentPayment
     {
-        return InstallmentPayment::with(['transaction', 'payment'])->findOrFail($id);
+        return InstallmentPayment::where('store_id', $storeId)
+            ->with(['transaction', 'payment'])->findOrFail($id);
     }
 
     // ═══════════════════════════════════════════════════════════════

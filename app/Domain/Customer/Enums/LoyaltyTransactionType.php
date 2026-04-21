@@ -8,4 +8,5 @@ enum LoyaltyTransactionType: string
     case Redeem = 'redeem';
     case Adjust = 'adjust';
     case Expire = 'expire';
+    case VoidReversal = 'void_reversal';
 }

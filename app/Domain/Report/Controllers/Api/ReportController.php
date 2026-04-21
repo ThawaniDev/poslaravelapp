@@ -316,7 +316,7 @@ class ReportController extends BaseApiController
             DB::table('report_exports')->insert([
                 'id' => Str::uuid()->toString(),
                 'organization_id' => $orgId,
-                'store_id' => $request->user()->store_id,
+                'store_id' => $this->resolvedStoreId($request) ?? $request->user()->store_id,
                 'user_id' => $request->user()->id,
                 'report_type' => $validated['report_type'],
                 'format' => $validated['format'] ?? 'pdf',

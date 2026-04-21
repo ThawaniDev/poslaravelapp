@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('website_hardware_quotes') || !Schema::hasTable('website_consultation_requests')) {
+            return;
+        }
         Schema::table('website_hardware_quotes', function (Blueprint $table) {
             $table->string('business_name')->nullable()->change();
         });

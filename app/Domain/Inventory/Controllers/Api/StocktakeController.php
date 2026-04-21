@@ -44,9 +44,10 @@ class StocktakeController extends BaseApiController
         return $this->created(new StocktakeResource($stocktake));
     }
 
-    public function show(string $stocktake): JsonResponse
+    public function show(Request $request, string $stocktake): JsonResponse
     {
-        $found = $this->stocktakeService->find($stocktake);
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $found = $this->stocktakeService->find($storeId, $stocktake);
 
         return $this->success(new StocktakeResource($found));
     }

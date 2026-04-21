@@ -35,7 +35,7 @@ class PaymentController extends BaseApiController
     public function listPayments(Request $request): JsonResponse
     {
         $paginator = $this->paymentService->list(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             $request->only(['method', 'transaction_id']),
             (int) $request->input('per_page', 20),
         );
@@ -58,7 +58,7 @@ class PaymentController extends BaseApiController
     public function listCashSessions(Request $request): JsonResponse
     {
         $paginator = $this->cashSessionService->list(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             (int) $request->input('per_page', 20),
         );
 
@@ -121,7 +121,7 @@ class PaymentController extends BaseApiController
     public function listExpenses(Request $request): JsonResponse
     {
         $paginator = $this->cashSessionService->listExpenses(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             (int) $request->input('per_page', 20),
         );
 
@@ -178,9 +178,9 @@ class PaymentController extends BaseApiController
         $request->validate(['date' => 'sometimes|date_format:Y-m-d']);
 
         $date = $request->input('date', now()->toDateString());
-        $storeId = $request->user()->store_id;
+        $storeIds = $this->resolvedStoreIds($request);
 
-        $summary = $this->financialSummaryService->dailySummary($storeId, $date);
+        $summary = $this->financialSummaryService->dailySummary($storeIds, $date);
 
         return $this->success($summary);
     }
@@ -194,9 +194,9 @@ class PaymentController extends BaseApiController
 
         $startDate = $request->input('start_date', now()->toDateString());
         $endDate = $request->input('end_date', now()->toDateString());
-        $storeId = $request->user()->store_id;
+        $storeIds = $this->resolvedStoreIds($request);
 
-        $data = $this->financialSummaryService->reconciliation($storeId, $startDate, $endDate);
+        $data = $this->financialSummaryService->reconciliation($storeIds, $startDate, $endDate);
 
         return $this->success($data);
     }

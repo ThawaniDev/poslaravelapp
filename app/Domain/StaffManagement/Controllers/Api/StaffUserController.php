@@ -28,19 +28,10 @@ class StaffUserController extends BaseApiController
 
     public function index(Request $request)
     {
-        // Allow filtering by store_id; default to the authenticated user's store
-        $storeId = $request->input('store_id', $request->user()->store_id);
+        // Use resolved store IDs from BranchScope middleware
+        $storeIds = $this->resolvedStoreIds($request);
 
-        // Ensure the requested store belongs to the same organization
-        $userOrgId = $request->user()->organization_id;
-        if ($storeId !== $request->user()->store_id) {
-            $store = \App\Domain\Core\Models\Store::find($storeId);
-            if (!$store || $store->organization_id !== $userOrgId) {
-                return $this->error('Store not found in your organization', 403);
-            }
-        }
-
-        $result = $this->staffService->list($storeId, $request->only([
+        $result = $this->staffService->list($storeIds, $request->only([
             'search', 'status', 'employment_type', 'per_page',
         ]));
 
@@ -65,9 +56,9 @@ class StaffUserController extends BaseApiController
 
     public function show(string $id, Request $request)
     {
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -76,9 +67,9 @@ class StaffUserController extends BaseApiController
 
     public function update(UpdateStaffRequest $request, string $id)
     {
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -89,9 +80,9 @@ class StaffUserController extends BaseApiController
 
     public function destroy(string $id, Request $request)
     {
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -110,9 +101,9 @@ class StaffUserController extends BaseApiController
     {
         $request->validate(['pin' => 'required|string|min:4|max:8']);
 
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -125,9 +116,9 @@ class StaffUserController extends BaseApiController
     {
         $request->validate(['nfc_badge_uid' => 'required|string|max:100']);
 
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -140,9 +131,9 @@ class StaffUserController extends BaseApiController
 
     public function attendance(Request $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeIds = $this->resolvedStoreIds($request);
 
-        $result = $this->staffService->listAttendance($storeId, $request->only([
+        $result = $this->staffService->listAttendance($storeIds, $request->only([
             'staff_user_id', 'date_from', 'date_to', 'per_page',
         ]));
 
@@ -175,9 +166,9 @@ class StaffUserController extends BaseApiController
 
     public function shifts(Request $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeIds = $this->resolvedStoreIds($request);
 
-        $result = $this->staffService->listShifts($storeId, $request->only([
+        $result = $this->staffService->listShifts($storeIds, $request->only([
             'staff_user_id', 'date_from', 'date_to', 'status', 'per_page',
         ]));
 
@@ -223,7 +214,7 @@ class StaffUserController extends BaseApiController
     {
         $shift = \App\Domain\StaffManagement\Models\ShiftSchedule::findOrFail($id);
 
-        if ($shift->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $shift->store_id)) {
             return $this->notFound('Shift not found');
         }
 
@@ -238,7 +229,7 @@ class StaffUserController extends BaseApiController
     {
         $shift = \App\Domain\StaffManagement\Models\ShiftSchedule::findOrFail($id);
 
-        if ($shift->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $shift->store_id)) {
             return $this->notFound('Shift not found');
         }
 
@@ -251,8 +242,8 @@ class StaffUserController extends BaseApiController
 
     public function shiftTemplates(Request $request)
     {
-        $storeId = $request->user()->store_id;
-        $templates = $this->staffService->listShiftTemplates($storeId);
+        $storeIds = $this->resolvedStoreIds($request);
+        $templates = $this->staffService->listShiftTemplates($storeIds);
 
         return $this->success(ShiftTemplateResource::collection($templates));
     }
@@ -277,7 +268,7 @@ class StaffUserController extends BaseApiController
     {
         $template = \App\Domain\StaffManagement\Models\ShiftTemplate::findOrFail($id);
 
-        if ($template->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $template->store_id)) {
             return $this->notFound('Template not found');
         }
 
@@ -299,7 +290,7 @@ class StaffUserController extends BaseApiController
     {
         $template = \App\Domain\StaffManagement\Models\ShiftTemplate::findOrFail($id);
 
-        if ($template->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $template->store_id)) {
             return $this->notFound('Template not found');
         }
 
@@ -315,9 +306,9 @@ class StaffUserController extends BaseApiController
 
     public function attendanceSummary(Request $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeIds = $this->resolvedStoreIds($request);
 
-        $summary = $this->staffService->getAttendanceSummary($storeId, $request->only([
+        $summary = $this->staffService->getAttendanceSummary($storeIds, $request->only([
             'staff_user_id', 'date_from', 'date_to',
         ]));
 
@@ -328,9 +319,9 @@ class StaffUserController extends BaseApiController
 
     public function commissions(string $id, Request $request)
     {
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -343,9 +334,9 @@ class StaffUserController extends BaseApiController
 
     public function setCommissionConfig(string $id, Request $request)
     {
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -367,9 +358,9 @@ class StaffUserController extends BaseApiController
 
     public function activityLog(string $id, Request $request)
     {
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -382,9 +373,9 @@ class StaffUserController extends BaseApiController
 
     public function branchAssignments(string $id, Request $request)
     {
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -395,9 +386,9 @@ class StaffUserController extends BaseApiController
 
     public function assignBranch(string $id, Request $request)
     {
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -417,9 +408,9 @@ class StaffUserController extends BaseApiController
 
     public function unassignBranch(string $id, Request $request)
     {
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -439,8 +430,8 @@ class StaffUserController extends BaseApiController
 
     public function stats(Request $request)
     {
-        $storeId = $request->user()->store_id;
-        $stats = $this->staffService->getStats($storeId);
+        $storeIds = $this->resolvedStoreIds($request);
+        $stats = $this->staffService->getStats($storeIds);
         return $this->success($stats);
     }
 
@@ -448,9 +439,9 @@ class StaffUserController extends BaseApiController
 
     public function attendanceExport(Request $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeIds = $this->resolvedStoreIds($request);
 
-        $data = $this->staffService->exportAttendance($storeId, $request->only([
+        $data = $this->staffService->exportAttendance($storeIds, $request->only([
             'staff_user_id', 'date_from', 'date_to',
         ]));
 
@@ -461,9 +452,9 @@ class StaffUserController extends BaseApiController
 
     public function linkUser(string $id, Request $request)
     {
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -481,9 +472,9 @@ class StaffUserController extends BaseApiController
 
     public function unlinkUser(string $id, Request $request)
     {
-        $staff = $this->staffService->find($id);
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
 
-        if ($staff->store_id !== $request->user()->store_id) {
+        if (!$this->canAccessStore($request, $staff->store_id)) {
             return $this->notFound('Staff not found');
         }
 
@@ -497,13 +488,19 @@ class StaffUserController extends BaseApiController
 
     public function linkableUsers(Request $request)
     {
-        $storeId = $request->user()->store_id;
+        $storeIds = $this->resolvedStoreIds($request);
 
-        $users = \App\Domain\Auth\Models\User::where('store_id', $storeId)
-            ->whereDoesntHave('staffUser')
+        $query = \App\Domain\Auth\Models\User::whereDoesntHave('staffUser')
             ->select('id', 'name', 'email')
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+
+        if (is_array($storeIds)) {
+            $query->whereIn('store_id', $storeIds);
+        } else {
+            $query->where('store_id', $storeIds);
+        }
+
+        $users = $query->get();
 
         return $this->success($users);
     }

@@ -20,7 +20,7 @@ class JewelryController extends BaseApiController
 
     public function listMetalRates(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listMetalRates($storeId, $request->only(['metal_type', 'per_page']));
 
         $data = $paginator->toArray();
@@ -31,7 +31,7 @@ class JewelryController extends BaseApiController
 
     public function upsertMetalRate(CreateDailyMetalRateRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $rate = $this->service->upsertMetalRate($storeId, $request->validated());
         return $this->success(new DailyMetalRateResource($rate), __('industry.metal_rate_saved'));
     }
@@ -54,13 +54,14 @@ class JewelryController extends BaseApiController
 
     public function updateProductDetail(UpdateJewelryProductDetailRequest $request, string $id): JsonResponse
     {
-        $detail = $this->service->updateProductDetail($id, $request->validated());
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $detail = $this->service->updateProductDetail($storeId, $id, $request->validated());
         return $this->success(new JewelryProductDetailResource($detail), __('industry.jewelry_detail_updated'));
     }
 
     public function listBuybacks(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listBuybacks($storeId, $request->only(['metal_type', 'customer_id', 'per_page']));
 
         $data = $paginator->toArray();
@@ -71,7 +72,7 @@ class JewelryController extends BaseApiController
 
     public function createBuyback(CreateBuybackTransactionRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $buyback = $this->service->createBuyback($storeId, $request->validated());
         return $this->created(new BuybackTransactionResource($buyback), __('industry.buyback_created'));
     }

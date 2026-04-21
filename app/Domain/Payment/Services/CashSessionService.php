@@ -8,13 +8,16 @@ use App\Domain\Payment\Models\CashEvent;
 use App\Domain\Payment\Models\CashSession;
 use App\Domain\Payment\Models\Expense;
 use App\Domain\Payment\Enums\CashSessionStatus;
+use App\Domain\Shared\Traits\ScopesStoreQuery;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class CashSessionService
 {
-    public function list(string $storeId, int $perPage = 20): LengthAwarePaginator
+    use ScopesStoreQuery;
+
+    public function list(string|array $storeId, int $perPage = 20): LengthAwarePaginator
     {
-        return CashSession::where('store_id', $storeId)
+        return $this->scopeByStore(CashSession::query(), $storeId)
             ->orderByDesc('opened_at')
             ->paginate($perPage);
     }
@@ -111,9 +114,9 @@ class CashSessionService
         ]);
     }
 
-    public function listExpenses(string $storeId, int $perPage = 20): LengthAwarePaginator
+    public function listExpenses(string|array $storeId, int $perPage = 20): LengthAwarePaginator
     {
-        return Expense::where('store_id', $storeId)
+        return $this->scopeByStore(Expense::query(), $storeId)
             ->orderByDesc('expense_date')
             ->paginate($perPage);
     }

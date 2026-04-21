@@ -160,7 +160,7 @@ class MarketplaceController extends BaseApiController
 
     public function myPurchases(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         if (! $storeId) {
             return $this->error(__('ui.no_store_associated'), 403);
@@ -173,7 +173,7 @@ class MarketplaceController extends BaseApiController
 
     public function checkAccess(Request $request, string $listingId): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         if (! $storeId) {
             return $this->error(__('ui.no_store_associated'), 403);
@@ -199,7 +199,7 @@ class MarketplaceController extends BaseApiController
 
     public function myInvoices(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         if (! $storeId) {
             return $this->error(__('ui.no_store_associated'), 403);
@@ -238,7 +238,7 @@ class MarketplaceController extends BaseApiController
             'body' => ['nullable', 'string', 'max:2000'],
         ]);
 
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
 
         if (! $storeId) {
             return $this->error(__('ui.no_store_associated'), 403);

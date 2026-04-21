@@ -27,6 +27,16 @@ use App\Domain\PosTerminal\Models\PosSession;
 use App\Domain\Notification\Observers\OrderNotificationObserver;
 use App\Domain\Notification\Observers\StockLevelNotificationObserver;
 use App\Domain\Notification\Observers\PosSessionNotificationObserver;
+use App\Domain\Notification\Observers\RefundNotificationObserver;
+use App\Domain\Notification\Observers\TransactionNotificationObserver;
+use App\Domain\Notification\Observers\StockAdjustmentNotificationObserver;
+use App\Domain\Notification\Observers\AppReleaseNotificationObserver;
+use App\Domain\Notification\Listeners\FireStaffLoginNotification;
+use App\Domain\Notification\Listeners\FireUnauthorizedAccessNotification;
+use App\Domain\Payment\Models\Refund;
+use App\Domain\PosTerminal\Models\Transaction;
+use App\Domain\Inventory\Models\StockAdjustment;
+use App\Domain\AppUpdateManagement\Models\AppRelease;
 use App\Domain\Announcement\Models\PlatformAnnouncement;
 use App\Domain\Announcement\Observers\PlatformAnnouncementObserver;
 use App\Domain\ProviderSubscription\Services\BillingService;
@@ -105,9 +115,23 @@ class AppServiceProvider extends ServiceProvider
         Order::observe(OrderNotificationObserver::class);
         StockLevel::observe(StockLevelNotificationObserver::class);
         PosSession::observe(PosSessionNotificationObserver::class);
+        Refund::observe(RefundNotificationObserver::class);
+        Transaction::observe(TransactionNotificationObserver::class);
+        StockAdjustment::observe(StockAdjustmentNotificationObserver::class);
+        AppRelease::observe(AppReleaseNotificationObserver::class);
 
         // Register announcement observer for push + email dispatch
         PlatformAnnouncement::observe(PlatformAnnouncementObserver::class);
+
+        // Register auth event listeners for staff.login / staff.unauthorized_access
+        \Illuminate\Support\Facades\Event::listen(
+            \Illuminate\Auth\Events\Login::class,
+            FireStaffLoginNotification::class,
+        );
+        \Illuminate\Support\Facades\Event::listen(
+            \Illuminate\Auth\Events\Failed::class,
+            FireUnauthorizedAccessNotification::class,
+        );
 
         // Configure API rate limiters
         RateLimiter::for('api', function (Request $request) {

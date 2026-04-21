@@ -21,7 +21,7 @@ class ElectronicsController extends BaseApiController
 
     public function listImeiRecords(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listImeiRecords($storeId, $request->only(['status', 'search', 'per_page']));
 
         $data = $paginator->toArray();
@@ -32,20 +32,20 @@ class ElectronicsController extends BaseApiController
 
     public function createImeiRecord(RegisterImeiRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $record = $this->service->createImeiRecord($storeId, $request->validated());
         return $this->created(new DeviceImeiRecordResource($record), __('industry.imei_record_created'));
     }
 
     public function updateImeiRecord(UpdateImeiRecordRequest $request, string $id): JsonResponse
     {
-        $record = $this->service->updateImeiRecord($id, $request->user()->store_id, $request->validated());
+        $record = $this->service->updateImeiRecord($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $request->validated());
         return $this->success(new DeviceImeiRecordResource($record), __('industry.imei_record_updated'));
     }
 
     public function listRepairJobs(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listRepairJobs($storeId, $request->only(['status', 'search', 'per_page']));
 
         $data = $paginator->toArray();
@@ -56,14 +56,14 @@ class ElectronicsController extends BaseApiController
 
     public function createRepairJob(CreateRepairJobRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $job = $this->service->createRepairJob($storeId, $request->validated());
         return $this->created(new RepairJobResource($job), __('industry.repair_job_created'));
     }
 
     public function updateRepairJob(UpdateRepairJobRequest $request, string $id): JsonResponse
     {
-        $job = $this->service->updateRepairJob($id, $request->user()->store_id, $request->validated());
+        $job = $this->service->updateRepairJob($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $request->validated());
         return $this->success(new RepairJobResource($job), __('industry.repair_job_updated'));
     }
 
@@ -73,13 +73,13 @@ class ElectronicsController extends BaseApiController
             'status' => 'required|string|in:received,diagnosing,repairing,testing,ready,collected,cancelled',
         ]);
 
-        $job = $this->service->updateRepairJobStatus($id, $request->user()->store_id, $validated['status']);
+        $job = $this->service->updateRepairJobStatus($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $validated['status']);
         return $this->success(new RepairJobResource($job), __('industry.repair_job_status_updated'));
     }
 
     public function listTradeIns(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listTradeIns($storeId, $request->only(['customer_id', 'search', 'per_page']));
 
         $data = $paginator->toArray();
@@ -90,7 +90,7 @@ class ElectronicsController extends BaseApiController
 
     public function createTradeIn(CreateTradeInRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $tradeIn = $this->service->createTradeIn($storeId, $request->validated());
         return $this->created(new TradeInRecordResource($tradeIn), __('industry.trade_in_created'));
     }

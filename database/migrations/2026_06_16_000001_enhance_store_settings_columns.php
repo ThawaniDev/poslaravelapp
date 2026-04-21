@@ -19,6 +19,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('store_settings')) {
+            return;
+        }
         Schema::table('store_settings', function (Blueprint $table) {
             // ─── Receipt enhancements ────────────────────────────
             $table->boolean('receipt_show_address')->default(true)->after('receipt_show_tax_breakdown');

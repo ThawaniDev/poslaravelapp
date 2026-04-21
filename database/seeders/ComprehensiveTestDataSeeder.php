@@ -895,11 +895,11 @@ class ComprehensiveTestDataSeeder extends Seeder
             $date = $today->copy()->addDays($i)->toDateString();
             DB::table('shift_schedules')->insertOrIgnore([
                 'store_id' => $this->storeId, 'staff_user_id' => $staffCashier,
-                'shift_template_id' => $morningShift, 'date' => $date, 'status' => 'scheduled',
+                'shift_template_id' => $morningShift, 'start_date' => $date, 'end_date' => $date, 'status' => 'scheduled',
             ]);
             DB::table('shift_schedules')->insertOrIgnore([
                 'store_id' => $this->storeId, 'staff_user_id' => $staffManager,
-                'shift_template_id' => $eveningShift, 'date' => $date, 'status' => 'scheduled',
+                'shift_template_id' => $eveningShift, 'start_date' => $date, 'end_date' => $date, 'status' => 'scheduled',
             ]);
         }
 

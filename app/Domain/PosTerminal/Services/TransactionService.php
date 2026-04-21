@@ -4,7 +4,10 @@ namespace App\Domain\PosTerminal\Services;
 
 use App\Domain\Auth\Models\User;
 use App\Domain\Core\Models\StoreSettings;
+use App\Domain\Customer\Enums\LoyaltyTransactionType;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Customer\Models\LoyaltyConfig;
+use App\Domain\Customer\Services\LoyaltyService;
 use App\Domain\Inventory\Enums\StockMovementType;
 use App\Domain\Inventory\Enums\StockReferenceType;
 use App\Domain\Inventory\Models\StockLevel;
@@ -199,6 +202,11 @@ class TransactionService
             // Update customer stats (total_spend, visit_count, last_visit_at)
             $this->updateCustomerStats($transaction);
 
+            // Auto-earn loyalty points for sale transactions with a customer
+            if ($isSale && $transaction->customer_id) {
+                $this->earnLoyaltyPoints($transaction, $actor);
+            }
+
             return $transaction->load(['transactionItems', 'payments']);
         });
     }
@@ -211,7 +219,7 @@ class TransactionService
             throw new \RuntimeException(__('pos.refunds_disabled'));
         }
 
-        $originalTransaction = $this->find($data['return_transaction_id']);
+        $originalTransaction = $this->find($actor->store_id, $data['return_transaction_id']);
 
         if ($originalTransaction->status !== TransactionStatus::Completed) {
             throw new \RuntimeException(__('pos.return_original_not_completed'));
@@ -250,6 +258,9 @@ class TransactionService
 
         // Reverse customer stats
         $this->reverseCustomerStats($transaction);
+
+        // Reverse loyalty points earned on the voided transaction
+        $this->reverseLoyaltyPoints($transaction, $actor);
 
         // Update session counters
         if ($transaction->pos_session_id) {
@@ -662,6 +673,88 @@ class TransactionService
         }
 
         $customer->save();
+    }
+
+    /**
+     * Auto-earn loyalty points based on LoyaltyConfig for the organization.
+     */
+    private function earnLoyaltyPoints(Transaction $transaction, User $actor): void
+    {
+        $config = LoyaltyConfig::where('organization_id', $transaction->organization_id)->first();
+        if (! $config || ! $config->is_active || $config->points_per_sar <= 0) {
+            return;
+        }
+
+        $totalAmount = (float) $transaction->total_amount;
+        $earnedPoints = (int) floor($totalAmount * $config->points_per_sar);
+        if ($earnedPoints <= 0) {
+            return;
+        }
+
+        try {
+            app(LoyaltyService::class)->adjustPoints(
+                customerId: $transaction->customer_id,
+                points: $earnedPoints,
+                type: LoyaltyTransactionType::Earn->value,
+                actor: $actor,
+                notes: 'Auto-earned from sale ' . $transaction->transaction_number,
+                orderId: $transaction->id,
+            );
+        } catch (\Throwable $e) {
+            // Loyalty earning failure should not block the transaction
+            \Illuminate\Support\Facades\Log::warning('Loyalty points auto-earn failed', [
+                'transaction_id' => $transaction->id,
+                'customer_id' => $transaction->customer_id,
+                'points' => $earnedPoints,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Reverse loyalty points when a transaction is voided.
+     */
+    private function reverseLoyaltyPoints(Transaction $transaction, User $actor): void
+    {
+        if (! $transaction->customer_id) {
+            return;
+        }
+
+        $config = LoyaltyConfig::where('organization_id', $transaction->organization_id)->first();
+        if (! $config || ! $config->is_active || $config->points_per_sar <= 0) {
+            return;
+        }
+
+        $totalAmount = (float) $transaction->total_amount;
+        $isReturn = $transaction->type === TransactionType::Return
+            || $transaction->type === TransactionType::Return->value;
+
+        if ($isReturn) {
+            return; // Returns don't earn points, nothing to reverse
+        }
+
+        $earnedPoints = (int) floor($totalAmount * $config->points_per_sar);
+        if ($earnedPoints <= 0) {
+            return;
+        }
+
+        try {
+            app(LoyaltyService::class)->adjustPoints(
+                customerId: $transaction->customer_id,
+                points: -$earnedPoints,
+                type: LoyaltyTransactionType::VoidReversal->value,
+                actor: $actor,
+                notes: 'Reversed - voided transaction ' . $transaction->transaction_number,
+                orderId: $transaction->id,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Loyalty points reversal failed', [
+                'transaction_id' => $transaction->id,
+                'customer_id' => $transaction->customer_id,
+                'points' => $earnedPoints,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     private function generateNumber(string $storeId): string

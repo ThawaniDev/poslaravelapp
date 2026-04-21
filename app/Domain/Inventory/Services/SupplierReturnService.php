@@ -48,9 +48,11 @@ class SupplierReturnService
     /**
      * Get a single supplier return with items.
      */
-    public function find(string $id): SupplierReturn
+    public function find(string $organizationId, string $id): SupplierReturn
     {
-        return SupplierReturn::with(['items.product', 'supplier', 'createdBy', 'approvedBy'])->findOrFail($id);
+        return SupplierReturn::where('organization_id', $organizationId)
+            ->with(['items.product', 'supplier', 'createdBy', 'approvedBy'])
+            ->findOrFail($id);
     }
 
     /**

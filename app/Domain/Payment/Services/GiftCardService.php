@@ -17,9 +17,9 @@ class GiftCardService
             ->paginate($perPage);
     }
 
-    public function find(string $id): GiftCard
+    public function find(string $organizationId, string $id): GiftCard
     {
-        return GiftCard::findOrFail($id);
+        return GiftCard::where('organization_id', $organizationId)->findOrFail($id);
     }
 
     public function findByCode(string $code): ?GiftCard
@@ -94,9 +94,9 @@ class GiftCardService
         return $card->fresh();
     }
 
-    public function deactivate(string $id): GiftCard
+    public function deactivate(string $organizationId, string $id): GiftCard
     {
-        $card = GiftCard::findOrFail($id);
+        $card = GiftCard::where('organization_id', $organizationId)->findOrFail($id);
         $card->update(['status' => GiftCardStatus::Deactivated]);
         return $card->fresh();
     }

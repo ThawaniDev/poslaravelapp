@@ -1,8 +1,11 @@
 <?php
 
 use App\Domain\Announcement\Controllers\Api\ProviderAnnouncementController;
+use App\Domain\Announcement\Controllers\Api\ProviderPaymentReminderController;
+use App\Domain\AppUpdateManagement\Controllers\Api\ProviderAppReleaseController;
 use App\Domain\Notification\Controllers\Api\NotificationController;
 use App\Domain\Notification\Controllers\Api\NotificationTemplateController;
+use App\Http\Controllers\Api\MaintenanceStatusController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,6 +23,23 @@ Route::prefix('announcements')->middleware('auth:sanctum')->group(function () {
     Route::get('/', [ProviderAnnouncementController::class, 'index'])->middleware('permission:notifications.view');
     Route::post('{id}/dismiss', [ProviderAnnouncementController::class, 'dismiss'])->middleware('permission:notifications.view');
 });
+
+// ─── Provider Payment Reminders ─────────────────────────────
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('payment-reminders', [ProviderPaymentReminderController::class, 'index'])
+        ->middleware('permission:notifications.view');
+});
+
+// ─── Provider App Releases (notification centre tab) ────────
+Route::middleware('auth:sanctum')->prefix('app-releases')->group(function () {
+    Route::get('/', [ProviderAppReleaseController::class, 'index'])
+        ->middleware('permission:auto_update.view');
+    Route::get('latest', [ProviderAppReleaseController::class, 'latest'])
+        ->middleware('permission:auto_update.view');
+});
+
+// ─── Maintenance Mode Status (no auth required so banner can show on login screen) ─
+Route::get('maintenance-status', [MaintenanceStatusController::class, 'show']);
 
 // ─── Notification Templates ──────────────────────────────────
 Route::prefix('notification-templates')->middleware(['auth:sanctum', 'permission:notifications.manage'])->group(function () {

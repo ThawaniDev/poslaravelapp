@@ -23,7 +23,7 @@ class FloristController extends BaseApiController
 
     public function listArrangements(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listArrangements($storeId, $request->only(['is_template', 'occasion', 'search', 'per_page']));
 
         $data = $paginator->toArray();
@@ -34,20 +34,20 @@ class FloristController extends BaseApiController
 
     public function createArrangement(CreateFlowerArrangementRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $arrangement = $this->service->createArrangement($storeId, $request->validated());
         return $this->created(new FlowerArrangementResource($arrangement), __('industry.arrangement_created'));
     }
 
     public function updateArrangement(UpdateFlowerArrangementRequest $request, string $id): JsonResponse
     {
-        $arrangement = $this->service->updateArrangement($id, $request->user()->store_id, $request->validated());
+        $arrangement = $this->service->updateArrangement($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $request->validated());
         return $this->success(new FlowerArrangementResource($arrangement), __('industry.arrangement_updated'));
     }
 
     public function deleteArrangement(Request $request, string $id): JsonResponse
     {
-        $this->service->deleteArrangement($id, $request->user()->store_id);
+        $this->service->deleteArrangement($id, $this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success(null, __('industry.arrangement_deleted'));
     }
 
@@ -55,7 +55,7 @@ class FloristController extends BaseApiController
 
     public function listFreshnessLogs(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listFreshnessLogs($storeId, $request->only(['status', 'product_id', 'per_page']));
 
         $data = $paginator->toArray();
@@ -66,7 +66,7 @@ class FloristController extends BaseApiController
 
     public function createFreshnessLog(CreateFreshnessLogRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $log = $this->service->createFreshnessLog($storeId, $request->validated());
         return $this->created(new FlowerFreshnessLogResource($log), __('industry.freshness_log_created'));
     }
@@ -77,7 +77,7 @@ class FloristController extends BaseApiController
             'status' => 'required|string|in:fresh,marked_down,disposed',
         ]);
 
-        $log = $this->service->updateFreshnessLogStatus($id, $request->user()->store_id, $validated['status']);
+        $log = $this->service->updateFreshnessLogStatus($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $validated['status']);
         return $this->success(new FlowerFreshnessLogResource($log), __('industry.freshness_log_updated'));
     }
 
@@ -85,7 +85,7 @@ class FloristController extends BaseApiController
 
     public function listSubscriptions(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listSubscriptions($storeId, $request->only(['is_active', 'customer_id', 'per_page']));
 
         $data = $paginator->toArray();
@@ -96,20 +96,20 @@ class FloristController extends BaseApiController
 
     public function createSubscription(CreateFlowerSubscriptionRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $sub = $this->service->createSubscription($storeId, $request->validated());
         return $this->created(new FlowerSubscriptionResource($sub), __('industry.subscription_created'));
     }
 
     public function updateSubscription(UpdateFlowerSubscriptionRequest $request, string $id): JsonResponse
     {
-        $sub = $this->service->updateSubscription($id, $request->user()->store_id, $request->validated());
+        $sub = $this->service->updateSubscription($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $request->validated());
         return $this->success(new FlowerSubscriptionResource($sub), __('industry.subscription_updated'));
     }
 
     public function toggleSubscription(Request $request, string $id): JsonResponse
     {
-        $sub = $this->service->toggleSubscription($id, $request->user()->store_id);
+        $sub = $this->service->toggleSubscription($id, $this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success(new FlowerSubscriptionResource($sub), __('industry.subscription_toggled'));
     }
 }

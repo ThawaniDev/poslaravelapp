@@ -27,7 +27,9 @@ Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
     Route::post('/transactions/return', [PosTerminalController::class, 'returnTransaction'])->middleware('permission:pos.return');
     Route::get('/transactions/by-number/{number}', [PosTerminalController::class, 'showTransactionByNumber'])->middleware('permission:pos.sell');
     Route::get('/transactions/{transaction}', [PosTerminalController::class, 'showTransaction'])->middleware('permission:pos.sell');
+    Route::get('/transactions/{transaction}/receipt', [PosTerminalController::class, 'transactionReceipt'])->middleware('permission:pos.sell');
     Route::post('/transactions/{transaction}/void', [PosTerminalController::class, 'voidTransaction'])->middleware('permission:pos.void_transaction');
+    Route::post('/transactions/exchange', [PosTerminalController::class, 'exchangeTransaction'])->middleware('permission:pos.return');
 
     // Held Carts
     Route::get('/held-carts', [PosTerminalController::class, 'heldCarts'])->middleware('permission:pos.hold_recall');

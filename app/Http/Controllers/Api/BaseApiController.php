@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\ResolvesBranchScope;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -10,14 +11,22 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 abstract class BaseApiController extends Controller
 {
+    use ResolvesBranchScope;
+
     /**
      * Resolve the effective store ID from the request.
      *
-     * Prefers the X-Store-Id header (set by Flutter Dio interceptor),
-     * then falls back to the authenticated user's store_id.
+     * Uses the BranchScope middleware attributes when available,
+     * falls back to X-Store-Id header / authenticated user's store_id.
+     * Returns null when org-scoped user selects "all stores".
      */
     protected function resolveStoreId(Request $request): ?string
     {
+        // Prefer middleware-resolved value (set by BranchScope)
+        if ($request->attributes->has('resolved_store_id')) {
+            return $request->attributes->get('resolved_store_id');
+        }
+
         return $request->header('X-Store-Id') ?? $request->user()?->store_id;
     }
 

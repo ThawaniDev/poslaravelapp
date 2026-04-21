@@ -54,9 +54,10 @@ class StockAdjustmentController extends BaseApiController
     /**
      * GET /api/v2/inventory/stock-adjustments/{id}
      */
-    public function show(string $stockAdjustment): JsonResponse
+    public function show(Request $request, string $stockAdjustment): JsonResponse
     {
-        $adjustment = $this->stockAdjustmentService->find($stockAdjustment);
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $adjustment = $this->stockAdjustmentService->find($storeId, $stockAdjustment);
 
         return $this->success(new StockAdjustmentResource($adjustment));
     }

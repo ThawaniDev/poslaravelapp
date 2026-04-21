@@ -70,7 +70,7 @@ class StockTransferController extends BaseApiController
     public function approve(Request $request, string $stockTransfer): JsonResponse
     {
         try {
-            $transfer = $this->stockTransferService->approve($stockTransfer, $request->user()->id);
+            $transfer = $this->stockTransferService->approve($stockTransfer, $request->user()->organization_id, $request->user()->id);
 
             return $this->success(new StockTransferResource($transfer), 'Transfer approved.');
         } catch (\RuntimeException $e) {
@@ -86,8 +86,7 @@ class StockTransferController extends BaseApiController
         try {
             $transfer = $this->stockTransferService->receive(
                 $stockTransfer,
-                $request->user()->id,
-                $request->validated()['items'] ?? [],
+            $request->user()->organization_id,
             );
 
             return $this->success(new StockTransferResource($transfer), 'Transfer received.');
@@ -99,10 +98,10 @@ class StockTransferController extends BaseApiController
     /**
      * POST /api/v2/inventory/stock-transfers/{id}/cancel
      */
-    public function cancel(string $stockTransfer): JsonResponse
-    {
-        try {
-            $transfer = $this->stockTransferService->cancel($stockTransfer);
+public function cancel(Request $request, string $stockTransfer): JsonResponse
+{
+    try {
+        $transfer = $this->stockTransferService->cancel($stockTransfer, $request->user()->organization_id);
 
             return $this->success(new StockTransferResource($transfer), 'Transfer cancelled.');
         } catch (\RuntimeException $e) {

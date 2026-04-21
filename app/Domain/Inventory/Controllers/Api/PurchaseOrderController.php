@@ -60,9 +60,9 @@ class PurchaseOrderController extends BaseApiController
     /**
      * GET /api/v2/inventory/purchase-orders/{id}
      */
-    public function show(string $purchaseOrder): JsonResponse
-    {
-        $po = $this->purchaseOrderService->find($purchaseOrder);
+public function show(Request $request, string $purchaseOrder): JsonResponse
+{
+    $po = $this->purchaseOrderService->find($purchaseOrder, $this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         return $this->success(new PurchaseOrderResource($po));
     }
@@ -70,10 +70,10 @@ class PurchaseOrderController extends BaseApiController
     /**
      * POST /api/v2/inventory/purchase-orders/{id}/send
      */
-    public function send(string $purchaseOrder): JsonResponse
-    {
-        try {
-            $po = $this->purchaseOrderService->send($purchaseOrder);
+public function send(Request $request, string $purchaseOrder): JsonResponse
+{
+    try {
+        $po = $this->purchaseOrderService->send($purchaseOrder, $this->resolvedStoreId($request) ?? $request->user()->store_id);
 
             return $this->success(new PurchaseOrderResource($po), 'Purchase order sent.');
         } catch (\RuntimeException $e) {
@@ -89,6 +89,7 @@ class PurchaseOrderController extends BaseApiController
         try {
             $po = $this->purchaseOrderService->receive(
                 $purchaseOrder,
+                $this->resolvedStoreId($request) ?? $request->user()->store_id,
                 $request->validated()['items'],
             );
 
@@ -101,10 +102,10 @@ class PurchaseOrderController extends BaseApiController
     /**
      * POST /api/v2/inventory/purchase-orders/{id}/cancel
      */
-    public function cancel(string $purchaseOrder): JsonResponse
-    {
-        try {
-            $po = $this->purchaseOrderService->cancel($purchaseOrder);
+public function cancel(Request $request, string $purchaseOrder): JsonResponse
+{
+    try {
+        $po = $this->purchaseOrderService->cancel($purchaseOrder, $this->resolvedStoreId($request) ?? $request->user()->store_id);
 
             return $this->success(new PurchaseOrderResource($po), 'Purchase order cancelled.');
         } catch (\RuntimeException $e) {

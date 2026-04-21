@@ -2945,13 +2945,15 @@ return new class extends Migration
             $table->foreign('staff_user_id')->references('id')->on('staff_users');
             $table->uuid('shift_template_id');
             $table->foreign('shift_template_id')->references('id')->on('shift_templates');
-            $table->date('date');
+            $table->date('start_date');
+            $table->date('end_date');
             $table->timestamp('actual_start')->nullable();
             $table->timestamp('actual_end')->nullable();
             $table->string('status', 20)->default('scheduled');
             $table->uuid('swapped_with_id')->nullable();
+            $table->text('notes')->nullable();
             $table->timestamp('created_at')->nullable();
-            $table->unique(['staff_user_id', 'date', 'shift_template_id']);
+            $table->unique(['staff_user_id', 'start_date', 'end_date', 'shift_template_id'], 'shift_schedules_staff_period_template_unique');
         });
 
         Schema::create('attendance_records', function (Blueprint $table) {

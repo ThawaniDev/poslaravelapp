@@ -22,8 +22,10 @@ class RegisterController extends BaseApiController
     {
         $perPage = (int) $request->get('per_page', 20);
         $search  = $request->get('search');
+        $storeIds = $this->resolvedStoreIds($request);
 
-        $query = Register::where('store_id', $request->user()->store_id)
+        $query = Register::query()
+            ->when(is_array($storeIds), fn ($q) => $q->whereIn('store_id', $storeIds), fn ($q) => $q->where('store_id', $storeIds))
             ->when($search, fn ($q) => $q->where('name', 'like', "%{$search}%"))
             ->orderBy('name');
 
@@ -41,10 +43,14 @@ class RegisterController extends BaseApiController
      */
     public function listActive(Request $request): JsonResponse
     {
-        $registers = Register::where('store_id', $request->user()->store_id)
+        $storeIds = $this->resolvedStoreIds($request);
+
+        $query = Register::query()
+            ->when(is_array($storeIds), fn ($q) => $q->whereIn('store_id', $storeIds), fn ($q) => $q->where('store_id', $storeIds))
             ->where('is_active', true)
-            ->orderBy('name')
-            ->get(['id', 'store_id', 'name', 'device_id', 'platform', 'is_online']);
+            ->orderBy('name');
+
+        $registers = $query->get(['id', 'store_id', 'name', 'device_id', 'platform', 'is_online']);
 
         return $this->success($registers);
     }
@@ -54,9 +60,11 @@ class RegisterController extends BaseApiController
      */
     public function store(StoreRegisterRequest $request): JsonResponse
     {
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+
         $register = Register::create(array_merge(
             $request->validated(),
-            ['store_id' => $request->user()->store_id],
+            ['store_id' => $storeId],
         ));
 
         // Refresh terminal usage snapshot after creation
@@ -73,7 +81,11 @@ class RegisterController extends BaseApiController
      */
     public function show(Request $request, string $register): JsonResponse
     {
-        $found = Register::where('store_id', $request->user()->store_id)->findOrFail($register);
+        $found = Register::findOrFail($register);
+
+        if (!$this->canAccessStore($request, $found->store_id)) {
+            return $this->notFound('Register not found');
+        }
 
         return $this->success(new RegisterResource($found));
     }
@@ -83,7 +95,11 @@ class RegisterController extends BaseApiController
      */
     public function update(UpdateRegisterRequest $request, string $register): JsonResponse
     {
-        $found = Register::where('store_id', $request->user()->store_id)->findOrFail($register);
+        $found = Register::findOrFail($register);
+
+        if (!$this->canAccessStore($request, $found->store_id)) {
+            return $this->notFound('Register not found');
+        }
 
         $found->update($request->validated());
 
@@ -95,7 +111,11 @@ class RegisterController extends BaseApiController
      */
     public function destroy(Request $request, string $register): JsonResponse
     {
-        $found = Register::where('store_id', $request->user()->store_id)->findOrFail($register);
+        $found = Register::findOrFail($register);
+
+        if (!$this->canAccessStore($request, $found->store_id)) {
+            return $this->notFound('Register not found');
+        }
 
         $found->delete();
 
@@ -113,7 +133,11 @@ class RegisterController extends BaseApiController
      */
     public function toggleStatus(Request $request, string $register): JsonResponse
     {
-        $found = Register::where('store_id', $request->user()->store_id)->findOrFail($register);
+        $found = Register::findOrFail($register);
+
+        if (!$this->canAccessStore($request, $found->store_id)) {
+            return $this->notFound('Register not found');
+        }
 
         $found->update(['is_active' => !$found->is_active]);
 

@@ -26,9 +26,11 @@ class RecipeService
     /**
      * Get a single recipe with ingredients.
      */
-    public function find(string $id): Recipe
+    public function find(string $id, string $organizationId): Recipe
     {
-        return Recipe::with(['product', 'recipeIngredients.ingredientProduct'])->findOrFail($id);
+        return Recipe::where('organization_id', $organizationId)
+            ->with(['product', 'recipeIngredients.ingredientProduct'])
+            ->findOrFail($id);
     }
 
     /**
@@ -63,10 +65,10 @@ class RecipeService
     /**
      * Update recipe and optionally replace ingredients.
      */
-    public function update(string $id, array $data, ?array $ingredients = null): Recipe
+    public function update(string $id, string $organizationId, array $data, ?array $ingredients = null): Recipe
     {
-        return DB::transaction(function () use ($id, $data, $ingredients) {
-            $recipe = Recipe::findOrFail($id);
+        return DB::transaction(function () use ($id, $organizationId, $data, $ingredients) {
+            $recipe = Recipe::where('organization_id', $organizationId)->findOrFail($id);
             $recipe->update(array_filter([
                 'name' => $data['name'] ?? null,
                 'description' => $data['description'] ?? null,
@@ -94,9 +96,9 @@ class RecipeService
     /**
      * Delete recipe.
      */
-    public function delete(string $id): void
+    public function delete(string $id, string $organizationId): void
     {
-        $recipe = Recipe::findOrFail($id);
+        $recipe = Recipe::where('organization_id', $organizationId)->findOrFail($id);
         $recipe->recipeIngredients()->delete();
         $recipe->delete();
     }

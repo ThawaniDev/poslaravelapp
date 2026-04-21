@@ -65,10 +65,11 @@ class StockTransferService
     /**
      * Approve transfer → status = in_transit, deduct from source store.
      */
-    public function approve(string $id, string $userId): StockTransfer
+    public function approve(string $id, string $organizationId, string $userId): StockTransfer
     {
-        return DB::transaction(function () use ($id, $userId) {
-            $transfer = StockTransfer::with('stockTransferItems')->findOrFail($id);
+        return DB::transaction(function () use ($id, $organizationId, $userId) {
+            $transfer = StockTransfer::where('organization_id', $organizationId)
+                ->with('stockTransferItems')->findOrFail($id);
 
             if ($transfer->status !== StockTransferStatus::Pending) {
                 throw new \RuntimeException('Only pending transfers can be approved.');
@@ -120,10 +121,11 @@ class StockTransferService
      * Receive transfer → status = completed, add to destination store.
      * Accepts received quantities (may differ from sent = variance).
      */
-    public function receive(string $id, string $userId, array $receivedItems = []): StockTransfer
+    public function receive(string $id, string $organizationId, string $userId, array $receivedItems = []): StockTransfer
     {
-        return DB::transaction(function () use ($id, $userId, $receivedItems) {
-            $transfer = StockTransfer::with('stockTransferItems')->findOrFail($id);
+        return DB::transaction(function () use ($id, $organizationId, $userId, $receivedItems) {
+            $transfer = StockTransfer::where('organization_id', $organizationId)
+                ->with('stockTransferItems')->findOrFail($id);
 
             if ($transfer->status !== StockTransferStatus::InTransit) {
                 throw new \RuntimeException('Only in-transit transfers can be received.');
@@ -164,9 +166,9 @@ class StockTransferService
     /**
      * Cancel a pending transfer (cannot cancel once in-transit or completed).
      */
-    public function cancel(string $id): StockTransfer
+    public function cancel(string $id, string $organizationId): StockTransfer
     {
-        $transfer = StockTransfer::findOrFail($id);
+        $transfer = StockTransfer::where('organization_id', $organizationId)->findOrFail($id);
 
         if ($transfer->status !== StockTransferStatus::Pending) {
             throw new \RuntimeException('Only pending transfers can be cancelled.');

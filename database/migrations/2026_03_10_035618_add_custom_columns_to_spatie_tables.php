@@ -48,7 +48,11 @@ return new class extends Migration
         // with one that includes store_id, so the same role name can
         // exist in different stores.
         // PostgreSQL: must drop the constraint (which owns the index), not the index directly.
-        DB::statement('ALTER TABLE roles DROP CONSTRAINT IF EXISTS roles_name_guard_name_unique');
+        // SQLite/MySQL do not support DROP CONSTRAINT.
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'pgsql') {
+            DB::statement('ALTER TABLE roles DROP CONSTRAINT IF EXISTS roles_name_guard_name_unique');
+        }
         DB::statement('DROP INDEX IF EXISTS roles_name_guard_name_unique');
         DB::statement('CREATE UNIQUE INDEX roles_name_guard_name_store_id_unique ON roles (name, guard_name, store_id)');
     }

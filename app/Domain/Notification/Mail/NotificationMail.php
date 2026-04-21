@@ -13,7 +13,7 @@ class NotificationMail extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public readonly string $subject,
+        public readonly string $mailSubject,
         public readonly string $heading,
         public readonly string $body,
         public readonly ?string $actionUrl = null,
@@ -27,7 +27,7 @@ class NotificationMail extends Mailable
                 config('mail.from.address_transactional', config('mail.from.address')),
                 config('mail.from.name_transactional', config('mail.from.name')),
             ),
-            subject: $this->subject,
+            subject: $this->mailSubject,
         );
     }
 

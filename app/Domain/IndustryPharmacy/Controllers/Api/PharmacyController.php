@@ -19,7 +19,7 @@ class PharmacyController extends BaseApiController
 
     public function listPrescriptions(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listPrescriptions($storeId, $request->only(['search', 'per_page']));
 
         $data = $paginator->toArray();
@@ -30,14 +30,14 @@ class PharmacyController extends BaseApiController
 
     public function createPrescription(CreatePrescriptionRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $prescription = $this->service->createPrescription($storeId, $request->validated());
         return $this->created(new PrescriptionResource($prescription), __('industry.prescription_created'));
     }
 
     public function updatePrescription(UpdatePrescriptionRequest $request, string $id): JsonResponse
     {
-        $prescription = $this->service->updatePrescription($id, $request->user()->store_id, $request->validated());
+        $prescription = $this->service->updatePrescription($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $request->validated());
         return $this->success(new PrescriptionResource($prescription), __('industry.prescription_updated'));
     }
 

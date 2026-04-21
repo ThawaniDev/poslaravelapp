@@ -65,16 +65,16 @@ class NiceToHaveService
         return Appointment::create($data);
     }
 
-    public function updateAppointment(string $id, array $data): Appointment
+    public function updateAppointment(string $storeId, string $id, array $data): Appointment
     {
-        $appointment = Appointment::findOrFail($id);
+        $appointment = Appointment::where('store_id', $storeId)->findOrFail($id);
         $appointment->update($data);
         return $appointment->fresh();
     }
 
-    public function cancelAppointment(string $id): Appointment
+    public function cancelAppointment(string $storeId, string $id): Appointment
     {
-        $appointment = Appointment::findOrFail($id);
+        $appointment = Appointment::where('store_id', $storeId)->findOrFail($id);
         $appointment->update(['status' => 'cancelled']);
         return $appointment->fresh();
     }
@@ -157,16 +157,16 @@ class NiceToHaveService
         return SignagePlaylist::create($data);
     }
 
-    public function updatePlaylist(string $id, array $data): SignagePlaylist
+    public function updatePlaylist(string $storeId, string $id, array $data): SignagePlaylist
     {
-        $playlist = SignagePlaylist::findOrFail($id);
+        $playlist = SignagePlaylist::where('store_id', $storeId)->findOrFail($id);
         $playlist->update($data);
         return $playlist->fresh();
     }
 
-    public function deletePlaylist(string $id): bool
+    public function deletePlaylist(string $storeId, string $id): bool
     {
-        return SignagePlaylist::findOrFail($id)->delete();
+        return SignagePlaylist::where('store_id', $storeId)->findOrFail($id)->delete();
     }
 
     // ═══════════════ Gamification ═══════════════

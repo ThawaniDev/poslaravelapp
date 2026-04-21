@@ -27,9 +27,10 @@ class PurchaseOrderService
     /**
      * Get a single PO with items.
      */
-    public function find(string $id): PurchaseOrder
+    public function find(string $id, string $storeId): PurchaseOrder
     {
-        return PurchaseOrder::with(['purchaseOrderItems.product', 'supplier'])->findOrFail($id);
+        return PurchaseOrder::where('store_id', $storeId)
+            ->with(['purchaseOrderItems.product', 'supplier'])->findOrFail($id);
     }
 
     /**
@@ -71,9 +72,9 @@ class PurchaseOrderService
     /**
      * Mark PO as sent to supplier.
      */
-    public function send(string $id): PurchaseOrder
+    public function send(string $id, string $storeId): PurchaseOrder
     {
-        $po = PurchaseOrder::findOrFail($id);
+        $po = PurchaseOrder::where('store_id', $storeId)->findOrFail($id);
 
         if ($po->status !== PurchaseOrderStatus::Draft) {
             throw new \RuntimeException('Only draft POs can be sent.');
@@ -89,10 +90,11 @@ class PurchaseOrderService
      * Mark PO as partially or fully received.
      * This updates item quantities received; stock is applied via GoodsReceipt separately.
      */
-    public function receive(string $id, array $receivedItems): PurchaseOrder
+    public function receive(string $id, string $storeId, array $receivedItems): PurchaseOrder
     {
-        return DB::transaction(function () use ($id, $receivedItems) {
-            $po = PurchaseOrder::with('purchaseOrderItems')->findOrFail($id);
+        return DB::transaction(function () use ($id, $storeId, $receivedItems) {
+            $po = PurchaseOrder::where('store_id', $storeId)
+                ->with('purchaseOrderItems')->findOrFail($id);
 
             if (!in_array($po->status, [PurchaseOrderStatus::Sent, PurchaseOrderStatus::PartiallyReceived])) {
                 throw new \RuntimeException('Only sent or partially-received POs can be received.');
@@ -128,9 +130,9 @@ class PurchaseOrderService
     /**
      * Cancel a PO (only draft or sent).
      */
-    public function cancel(string $id): PurchaseOrder
+    public function cancel(string $id, string $storeId): PurchaseOrder
     {
-        $po = PurchaseOrder::findOrFail($id);
+        $po = PurchaseOrder::where('store_id', $storeId)->findOrFail($id);
 
         if (!in_array($po->status, [PurchaseOrderStatus::Draft, PurchaseOrderStatus::Sent])) {
             throw new \RuntimeException('Only draft or sent POs can be cancelled.');

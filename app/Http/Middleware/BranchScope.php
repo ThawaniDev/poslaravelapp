@@ -41,28 +41,48 @@ class BranchScope
         $scope = $this->roleService->getUserBranchScope($user, $storeId);
         $accessibleStoreIds = $this->roleService->getAccessibleStoreIds($user, $storeId);
 
+        // Ensure user's primary store is always in their accessible list (defensive fallback).
+        if (!in_array($storeId, $accessibleStoreIds, true)) {
+            $accessibleStoreIds[] = $storeId;
+        }
+
         // Determine the resolved store_id for this request
+        // null/empty/"all" means "all stores" for org-scoped users
         $requestedStoreId = $request->input('store_id')
             ?? $request->header('X-Store-Id')
-            ?? $storeId;
+            ?? null;
+
+        // Treat empty string and the literal "all" sentinel as "all stores"
+        if ($requestedStoreId === '' || $requestedStoreId === 'all' || $requestedStoreId === 'null') {
+            $requestedStoreId = null;
+        }
 
         // Branch-scoped users can ONLY access their own store
         if ($scope === 'branch') {
             $requestedStoreId = $storeId;
         }
 
-        // Organization-scoped users validate requested store is in their org
-        if ($scope === 'organization' && !in_array($requestedStoreId, $accessibleStoreIds)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have access to this branch.',
-            ], 403);
+        // Organization-scoped users: validate if a specific store is requested
+        if ($scope === 'organization' && $requestedStoreId !== null) {
+            if (!in_array($requestedStoreId, $accessibleStoreIds, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have access to this branch.',
+                ], 403);
+            }
         }
 
         // Set attributes for downstream controllers/services
+        // resolved_store_id is null when org-scoped user selects "all stores"
+        // resolved_store_ids is always non-empty (falls back to user's own store if accessible list is empty)
+        $resolvedStoreIds = $requestedStoreId
+            ? [$requestedStoreId]
+            : (!empty($accessibleStoreIds) ? $accessibleStoreIds : [$storeId]);
+
         $request->attributes->set('branch_scope', $scope);
         $request->attributes->set('accessible_store_ids', $accessibleStoreIds);
         $request->attributes->set('resolved_store_id', $requestedStoreId);
+        $request->attributes->set('resolved_store_ids', $resolvedStoreIds);
 
         return $next($request);
     }

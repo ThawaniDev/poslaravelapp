@@ -27,9 +27,11 @@ class StockAdjustmentService
     /**
      * Get single adjustment with items.
      */
-    public function find(string $id): StockAdjustment
+    public function find(string $storeId, string $id): StockAdjustment
     {
-        return StockAdjustment::with(['stockAdjustmentItems.product', 'adjustedBy'])->findOrFail($id);
+        return StockAdjustment::where('store_id', $storeId)
+            ->with(['stockAdjustmentItems.product', 'adjustedBy'])
+            ->findOrFail($id);
     }
 
     /**

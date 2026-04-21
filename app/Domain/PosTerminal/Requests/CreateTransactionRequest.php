@@ -3,6 +3,7 @@
 namespace App\Domain\PosTerminal\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class CreateTransactionRequest extends FormRequest
 {
@@ -56,5 +57,42 @@ class CreateTransactionRequest extends FormRequest
             'payments.*.coupon_code' => ['nullable', 'string'],
             'payments.*.loyalty_points_used' => ['nullable', 'integer', 'min:0'],
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $totalAmount = (float) ($this->input('total_amount', 0));
+            $paymentSum = collect($this->input('payments', []))
+                ->sum(fn ($p) => (float) ($p['amount'] ?? 0));
+
+            if ($paymentSum < $totalAmount - 0.01) {
+                $validator->errors()->add('payments', __('pos.payment_total_insufficient'));
+            }
+
+            // Validate return qty doesn't exceed original transaction qty
+            if ($this->input('type') === 'return' && $this->input('return_transaction_id')) {
+                $original = \App\Domain\PosTerminal\Models\Transaction::with('transactionItems')
+                    ->find($this->input('return_transaction_id'));
+                if ($original) {
+                    foreach ($this->input('items', []) as $idx => $item) {
+                        if (empty($item['product_id'])) {
+                            continue;
+                        }
+                        $originalItem = $original->transactionItems
+                            ->firstWhere('product_id', $item['product_id']);
+                        if ($originalItem && (float) ($item['quantity'] ?? 0) > (float) $originalItem->quantity) {
+                            $validator->errors()->add(
+                                "items.{$idx}.quantity",
+                                __('pos.return_qty_exceeds_original', [
+                                    'product' => $item['product_name'] ?? '',
+                                    'max' => $originalItem->quantity,
+                                ])
+                            );
+                        }
+                    }
+                }
+            }
+        });
     }
 }

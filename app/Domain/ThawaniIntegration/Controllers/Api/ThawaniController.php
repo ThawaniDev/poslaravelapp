@@ -18,7 +18,7 @@ class ThawaniController extends BaseApiController
      */
     public function config(Request $request): JsonResponse
     {
-        $config = $this->thawaniService->getConfig($request->user()->store_id);
+        $config = $this->thawaniService->getConfig($this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success($config, __('thawani.config_retrieved'));
     }
 
@@ -40,7 +40,7 @@ class ThawaniController extends BaseApiController
             'commission_rate' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        $config = $this->thawaniService->saveConfig($request->user()->store_id, $validated);
+        $config = $this->thawaniService->saveConfig($this->resolvedStoreId($request) ?? $request->user()->store_id, $validated);
         return $this->success($config, __('thawani.config_saved'));
     }
 
@@ -49,7 +49,7 @@ class ThawaniController extends BaseApiController
      */
     public function disconnect(Request $request): JsonResponse
     {
-        $result = $this->thawaniService->disconnect($request->user()->store_id);
+        $result = $this->thawaniService->disconnect($this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         if (!$result) {
             return $this->notFound(__('thawani.config_not_found'));
@@ -63,7 +63,7 @@ class ThawaniController extends BaseApiController
      */
     public function testConnection(Request $request): JsonResponse
     {
-        $result = $this->thawaniService->testConnection($request->user()->store_id);
+        $result = $this->thawaniService->testConnection($this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         if ($result['success']) {
             return $this->success($result['data'] ?? $result, __('thawani.connection_successful'));
@@ -83,7 +83,7 @@ class ThawaniController extends BaseApiController
         ]);
 
         $orders = $this->thawaniService->getOrders(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['status', 'per_page']),
         );
 
@@ -95,7 +95,7 @@ class ThawaniController extends BaseApiController
      */
     public function productMappings(Request $request): JsonResponse
     {
-        $mappings = $this->thawaniService->getProductMappings($request->user()->store_id);
+        $mappings = $this->thawaniService->getProductMappings($this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success($mappings, __('thawani.product_mappings_retrieved'));
     }
 
@@ -104,7 +104,7 @@ class ThawaniController extends BaseApiController
      */
     public function pushProducts(Request $request): JsonResponse
     {
-        $result = $this->thawaniService->pushProductsToThawani($request->user()->store_id);
+        $result = $this->thawaniService->pushProductsToThawani($this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         if (!($result['success'] ?? false)) {
             return $this->error($result['message'] ?? __('thawani.sync_failed'), 422);
@@ -118,7 +118,7 @@ class ThawaniController extends BaseApiController
      */
     public function pullProducts(Request $request): JsonResponse
     {
-        $result = $this->thawaniService->pullProductsFromThawani($request->user()->store_id);
+        $result = $this->thawaniService->pullProductsFromThawani($this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         if (!($result['success'] ?? false)) {
             return $this->error($result['message'] ?? __('thawani.sync_failed'), 422);
@@ -132,7 +132,7 @@ class ThawaniController extends BaseApiController
      */
     public function categoryMappings(Request $request): JsonResponse
     {
-        $mappings = $this->thawaniService->getCategoryMappings($request->user()->store_id);
+        $mappings = $this->thawaniService->getCategoryMappings($this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success($mappings, __('thawani.category_mappings_retrieved'));
     }
 
@@ -141,7 +141,7 @@ class ThawaniController extends BaseApiController
      */
     public function pushCategories(Request $request): JsonResponse
     {
-        $result = $this->thawaniService->pushCategoriesToThawani($request->user()->store_id);
+        $result = $this->thawaniService->pushCategoriesToThawani($this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         if (!($result['success'] ?? false)) {
             return $this->error($result['message'] ?? __('thawani.sync_failed'), 422);
@@ -155,7 +155,7 @@ class ThawaniController extends BaseApiController
      */
     public function pullCategories(Request $request): JsonResponse
     {
-        $result = $this->thawaniService->pullCategoriesFromThawani($request->user()->store_id);
+        $result = $this->thawaniService->pullCategoriesFromThawani($this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         if (!($result['success'] ?? false)) {
             return $this->error($result['message'] ?? __('thawani.sync_failed'), 422);
@@ -194,7 +194,7 @@ class ThawaniController extends BaseApiController
         ]);
 
         $logs = $this->thawaniService->getSyncLogs(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['per_page', 'entity_type', 'status']),
         );
 
@@ -206,7 +206,7 @@ class ThawaniController extends BaseApiController
      */
     public function queueStats(Request $request): JsonResponse
     {
-        $stats = $this->thawaniService->getQueueStats($request->user()->store_id);
+        $stats = $this->thawaniService->getQueueStats($this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success($stats, __('thawani.queue_stats_retrieved'));
     }
 
@@ -215,7 +215,7 @@ class ThawaniController extends BaseApiController
      */
     public function processQueue(Request $request): JsonResponse
     {
-        $result = $this->thawaniService->processQueue($request->user()->store_id);
+        $result = $this->thawaniService->processQueue($this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success($result, __('thawani.sync_completed'));
     }
 
@@ -229,7 +229,7 @@ class ThawaniController extends BaseApiController
         ]);
 
         $settlements = $this->thawaniService->getSettlements(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['per_page']),
         );
 
@@ -241,7 +241,7 @@ class ThawaniController extends BaseApiController
      */
     public function stats(Request $request): JsonResponse
     {
-        $stats = $this->thawaniService->getStats($request->user()->store_id);
+        $stats = $this->thawaniService->getStats($this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success($stats, __('thawani.stats_retrieved'));
     }
 }

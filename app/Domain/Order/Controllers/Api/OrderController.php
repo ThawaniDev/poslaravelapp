@@ -26,7 +26,7 @@ class OrderController extends BaseApiController
     public function index(Request $request): JsonResponse
     {
         $paginator = $this->orderService->list(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             $request->only(['status', 'source', 'search']),
             (int) $request->get('per_page', 20),
         );
@@ -107,7 +107,7 @@ class OrderController extends BaseApiController
     public function returns(Request $request): JsonResponse
     {
         $paginator = $this->returnService->listReturns(
-            $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             (int) $request->get('per_page', 20),
         );
 

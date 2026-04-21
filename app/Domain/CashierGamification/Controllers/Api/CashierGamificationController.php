@@ -38,7 +38,7 @@ class CashierGamificationController extends BaseApiController
 
     public function leaderboard(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->performanceService->getLeaderboard(
             $storeId,
             $request->only(['date', 'period_type', 'sort_by', 'sort_dir']),
@@ -52,7 +52,7 @@ class CashierGamificationController extends BaseApiController
 
     public function cashierHistory(Request $request, string $cashierId): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->performanceService->getCashierHistory(
             $storeId,
             $cashierId,
@@ -69,7 +69,7 @@ class CashierGamificationController extends BaseApiController
 
     public function generateSnapshot(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $sessionId = $request->input('pos_session_id');
 
         if (!$sessionId) {
@@ -128,14 +128,14 @@ class CashierGamificationController extends BaseApiController
 
     public function badgeDefinitions(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $badges = $this->badgeService->listBadges($storeId);
         return $this->success(CashierBadgeResource::collection($badges)->resolve());
     }
 
     public function badgeAwards(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->badgeService->listAwards(
             $storeId,
             $request->only(['cashier_id', 'badge_id']),
@@ -149,14 +149,14 @@ class CashierGamificationController extends BaseApiController
 
     public function createBadge(ManageBadgeRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $badge = $this->badgeService->createBadge($storeId, $request->validated());
         return $this->created(new CashierBadgeResource($badge));
     }
 
     public function updateBadge(ManageBadgeRequest $request, string $badgeId): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $badge = CashierBadge::where('store_id', $storeId)->findOrFail($badgeId);
         $updated = $this->badgeService->updateBadge($badge, $request->validated());
         return $this->success(new CashierBadgeResource($updated));
@@ -164,7 +164,7 @@ class CashierGamificationController extends BaseApiController
 
     public function deleteBadge(Request $request, string $badgeId): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $badge = CashierBadge::where('store_id', $storeId)->findOrFail($badgeId);
         $this->badgeService->deleteBadge($badge);
         return $this->success(null, 'Badge deleted.');
@@ -172,7 +172,7 @@ class CashierGamificationController extends BaseApiController
 
     public function seedBadges(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $count = $this->badgeService->seedDefaultBadges($storeId);
         return $this->created(['badges_seeded' => $count]);
     }
@@ -181,7 +181,7 @@ class CashierGamificationController extends BaseApiController
 
     public function anomalies(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->anomalyService->list(
             $storeId,
             $request->only(['cashier_id', 'severity', 'anomaly_type', 'is_reviewed', 'date_from', 'date_to']),
@@ -195,7 +195,7 @@ class CashierGamificationController extends BaseApiController
 
     public function reviewAnomaly(ReviewAnomalyRequest $request, string $anomalyId): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $anomaly = CashierAnomaly::where('store_id', $storeId)->findOrFail($anomalyId);
         $reviewed = $this->anomalyService->review($anomaly, $request->user()->id, $request->input('review_notes'));
         return $this->success(new CashierAnomalyResource($reviewed));
@@ -205,7 +205,7 @@ class CashierGamificationController extends BaseApiController
 
     public function shiftReports(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->shiftReportService->list(
             $storeId,
             $request->only(['cashier_id', 'risk_level', 'date_from', 'date_to']),
@@ -219,14 +219,14 @@ class CashierGamificationController extends BaseApiController
 
     public function showShiftReport(Request $request, string $reportId): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $report = CashierShiftReport::where('store_id', $storeId)->findOrFail($reportId);
         return $this->success(new CashierShiftReportResource($report->load('cashier:id,name,email')));
     }
 
     public function markShiftReportSent(Request $request, string $reportId): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $report = CashierShiftReport::where('store_id', $storeId)->findOrFail($reportId);
         $updated = $this->shiftReportService->markSent($report);
         return $this->success(new CashierShiftReportResource($updated));
@@ -236,7 +236,7 @@ class CashierGamificationController extends BaseApiController
 
     public function settings(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $settings = CashierGamificationSetting::firstOrCreate(
             ['store_id' => $storeId],
             [
@@ -257,7 +257,7 @@ class CashierGamificationController extends BaseApiController
 
     public function updateSettings(UpdateGamificationSettingsRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $settings = CashierGamificationSetting::firstOrCreate(
             ['store_id' => $storeId],
             ['leaderboard_enabled' => true]

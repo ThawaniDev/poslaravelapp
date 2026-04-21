@@ -28,7 +28,7 @@ class SupportController extends BaseApiController
 
         $tickets = $this->supportService->listTickets(
             $request->user()->id,
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['status', 'category', 'priority', 'per_page']),
         );
 
@@ -43,7 +43,7 @@ class SupportController extends BaseApiController
         $ticket = $this->supportService->getTicket(
             $id,
             $request->user()->id,
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
         );
 
         if (!$ticket) {
@@ -67,7 +67,7 @@ class SupportController extends BaseApiController
 
         $ticket = $this->supportService->createTicket(
             $request->user()->id,
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->user()->organization_id ?? null,
             $validated,
         );
@@ -88,7 +88,7 @@ class SupportController extends BaseApiController
         $message = $this->supportService->addMessage(
             $id,
             $request->user()->id,
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $validated,
         );
 
@@ -107,7 +107,7 @@ class SupportController extends BaseApiController
         $closed = $this->supportService->closeTicket(
             $id,
             $request->user()->id,
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
         );
 
         if (!$closed) {
@@ -124,7 +124,7 @@ class SupportController extends BaseApiController
     {
         $stats = $this->supportService->getStats(
             $request->user()->id,
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
         );
 
         return $this->success($stats, __('support.stats_retrieved'));

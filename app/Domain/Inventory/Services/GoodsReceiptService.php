@@ -28,9 +28,11 @@ class GoodsReceiptService
     /**
      * Get a single goods receipt with items.
      */
-    public function find(string $id): GoodsReceipt
+    public function find(string $id, string $storeId): GoodsReceipt
     {
-        return GoodsReceipt::with(['goodsReceiptItems.product', 'supplier', 'receivedBy'])->findOrFail($id);
+        return GoodsReceipt::where('store_id', $storeId)
+            ->with(['goodsReceiptItems.product', 'supplier', 'receivedBy'])
+            ->findOrFail($id);
     }
 
     /**
@@ -75,10 +77,11 @@ class GoodsReceiptService
      * Confirm a draft goods receipt — add stock + create batches.
      * Once confirmed, cannot be unconfirmed (business rule).
      */
-    public function confirm(string $id, string $userId): GoodsReceipt
+    public function confirm(string $id, string $storeId, string $userId): GoodsReceipt
     {
-        return DB::transaction(function () use ($id, $userId) {
-            $receipt = GoodsReceipt::with('goodsReceiptItems')->findOrFail($id);
+        return DB::transaction(function () use ($id, $storeId, $userId) {
+            $receipt = GoodsReceipt::where('store_id', $storeId)
+                ->with('goodsReceiptItems')->findOrFail($id);
 
             if ($receipt->status === GoodsReceiptStatus::Confirmed) {
                 throw new \RuntimeException('Goods receipt is already confirmed.');

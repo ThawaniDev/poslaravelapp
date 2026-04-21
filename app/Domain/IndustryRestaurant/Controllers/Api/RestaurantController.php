@@ -25,7 +25,7 @@ class RestaurantController extends BaseApiController
 
     public function listTables(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listTables($storeId, $request->only(['status', 'zone', 'is_active', 'per_page']));
 
         $data = $paginator->toArray();
@@ -36,14 +36,14 @@ class RestaurantController extends BaseApiController
 
     public function createTable(CreateRestaurantTableRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $table = $this->service->createTable($storeId, $request->validated());
         return $this->created(new RestaurantTableResource($table), __('industry.table_created'));
     }
 
     public function updateTable(UpdateRestaurantTableRequest $request, string $id): JsonResponse
     {
-        $table = $this->service->updateTable($id, $request->user()->store_id, $request->validated());
+        $table = $this->service->updateTable($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $request->validated());
         return $this->success(new RestaurantTableResource($table), __('industry.table_updated'));
     }
 
@@ -53,7 +53,7 @@ class RestaurantController extends BaseApiController
             'status' => 'required|string|in:available,occupied,reserved,cleaning',
         ]);
 
-        $table = $this->service->updateTableStatus($id, $request->user()->store_id, $validated['status']);
+        $table = $this->service->updateTableStatus($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $validated['status']);
         return $this->success(new RestaurantTableResource($table), __('industry.table_status_updated'));
     }
 
@@ -61,7 +61,7 @@ class RestaurantController extends BaseApiController
 
     public function listKitchenTickets(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listKitchenTickets($storeId, $request->only(['status', 'station', 'table_id', 'per_page']));
 
         $data = $paginator->toArray();
@@ -72,7 +72,7 @@ class RestaurantController extends BaseApiController
 
     public function createKitchenTicket(CreateKitchenTicketRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $ticket = $this->service->createKitchenTicket($storeId, $request->validated());
         return $this->created(new KitchenTicketResource($ticket), __('industry.kitchen_ticket_created'));
     }
@@ -83,7 +83,7 @@ class RestaurantController extends BaseApiController
             'status' => 'required|string|in:pending,preparing,ready,served',
         ]);
 
-        $ticket = $this->service->updateKitchenTicketStatus($id, $request->user()->store_id, $validated['status']);
+        $ticket = $this->service->updateKitchenTicketStatus($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $validated['status']);
         return $this->success(new KitchenTicketResource($ticket), __('industry.kitchen_ticket_status_updated'));
     }
 
@@ -91,7 +91,7 @@ class RestaurantController extends BaseApiController
 
     public function listReservations(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listReservations($storeId, $request->only(['status', 'reservation_date', 'search', 'per_page']));
 
         $data = $paginator->toArray();
@@ -102,14 +102,14 @@ class RestaurantController extends BaseApiController
 
     public function createReservation(CreateTableReservationRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $reservation = $this->service->createReservation($storeId, $request->validated());
         return $this->created(new TableReservationResource($reservation), __('industry.reservation_created'));
     }
 
     public function updateReservation(UpdateTableReservationRequest $request, string $id): JsonResponse
     {
-        $reservation = $this->service->updateReservation($id, $request->user()->store_id, $request->validated());
+        $reservation = $this->service->updateReservation($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $request->validated());
         return $this->success(new TableReservationResource($reservation), __('industry.reservation_updated'));
     }
 
@@ -119,7 +119,7 @@ class RestaurantController extends BaseApiController
             'status' => 'required|string|in:confirmed,seated,completed,cancelled,no_show',
         ]);
 
-        $reservation = $this->service->updateReservationStatus($id, $request->user()->store_id, $validated['status']);
+        $reservation = $this->service->updateReservationStatus($id, $this->resolvedStoreId($request) ?? $request->user()->store_id, $validated['status']);
         return $this->success(new TableReservationResource($reservation), __('industry.reservation_status_updated'));
     }
 
@@ -127,7 +127,7 @@ class RestaurantController extends BaseApiController
 
     public function listOpenTabs(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $paginator = $this->service->listOpenTabs($storeId, $request->only(['status', 'table_id', 'per_page']));
 
         $data = $paginator->toArray();
@@ -138,14 +138,14 @@ class RestaurantController extends BaseApiController
 
     public function openTab(CreateOpenTabRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $tab = $this->service->openTab($storeId, $request->validated());
         return $this->created(new OpenTabResource($tab), __('industry.tab_opened'));
     }
 
     public function closeTab(Request $request, string $id): JsonResponse
     {
-        $tab = $this->service->closeTab($id, $request->user()->store_id);
+        $tab = $this->service->closeTab($id, $this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success(new OpenTabResource($tab), __('industry.tab_closed'));
     }
 }

@@ -57,7 +57,7 @@ class UiController extends BaseApiController
     public function preferences(Request $request): JsonResponse
     {
         $userId = $request->user()->id;
-        $storeId = $request->user()->store_id ?? null;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id ?? null;
 
         $preferences = $this->service->resolvePreferences($userId, $storeId);
 
@@ -99,7 +99,7 @@ class UiController extends BaseApiController
             'layout_direction' => ['nullable', 'string', 'in:ltr,rtl,auto'],
         ]);
 
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         if (! $storeId) {
             return $this->error(__('ui.no_store_associated'), 403);
         }

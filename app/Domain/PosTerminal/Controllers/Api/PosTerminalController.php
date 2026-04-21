@@ -34,7 +34,7 @@ class PosTerminalController extends BaseApiController
     public function sessions(Request $request): JsonResponse
     {
         $paginator = $this->sessionService->list(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             (int) $request->get('per_page', 20),
         );
 
@@ -56,16 +56,16 @@ class PosTerminalController extends BaseApiController
         }
     }
 
-    public function showSession(string $session): JsonResponse
-    {
-        $found = $this->sessionService->find($session);
+public function showSession(Request $request, string $session): JsonResponse
+{
+    $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success(new PosSessionResource($found));
     }
 
     public function closeSession(CloseSessionRequest $request, string $session): JsonResponse
     {
         try {
-            $found = $this->sessionService->find($session);
+            $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
             $closed = $this->sessionService->close($found, $request->validated());
             return $this->success(new PosSessionResource($closed));
         } catch (\RuntimeException $e) {
@@ -78,7 +78,7 @@ class PosTerminalController extends BaseApiController
     public function transactions(Request $request): JsonResponse
     {
         $paginator = $this->transactionService->list(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['session_id', 'type', 'status', 'search']),
             (int) $request->get('per_page', 20),
         );
@@ -103,7 +103,7 @@ class PosTerminalController extends BaseApiController
 
     public function showTransaction(Request $request, string $transaction): JsonResponse
     {
-        $found = $this->transactionService->find($request->user()->store_id, $transaction);
+        $found = $this->transactionService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $transaction);
         return $this->success(new TransactionResource($found));
     }
 
@@ -111,7 +111,7 @@ class PosTerminalController extends BaseApiController
     {
         try {
             $found = $this->transactionService->findByNumber(
-                $request->user()->store_id,
+                $this->resolvedStoreId($request) ?? $request->user()->store_id,
                 $number,
             );
             return $this->success(new TransactionResource($found));
@@ -123,7 +123,7 @@ class PosTerminalController extends BaseApiController
     public function voidTransaction(Request $request, string $transaction): JsonResponse
     {
         try {
-            $found = $this->transactionService->find($request->user()->store_id, $transaction);
+            $found = $this->transactionService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $transaction);
             $voided = $this->transactionService->void($found, $request->user());
             return $this->success(new TransactionResource($voided));
         } catch (\RuntimeException $e) {
@@ -144,11 +144,52 @@ class PosTerminalController extends BaseApiController
         }
     }
 
+    public function exchangeTransaction(CreateTransactionRequest $request): JsonResponse
+    {
+        try {
+            $data = $request->validated();
+            $data['type'] = 'exchange';
+            $transaction = $this->transactionService->create($data, $request->user());
+            return $this->created(new TransactionResource($transaction));
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    public function transactionReceipt(Request $request, string $transaction): JsonResponse
+    {
+        $found = $this->transactionService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $transaction);
+        $found->load(['transactionItems', 'payments', 'cashier', 'customer']);
+
+        $store = \App\Domain\Core\Models\Store::find($found->store_id);
+        $settings = \App\Domain\Core\Models\StoreSettings::where('store_id', $found->store_id)->first();
+
+        return $this->success([
+            'transaction' => new TransactionResource($found),
+            'store' => [
+                'name' => $store?->name,
+                'name_ar' => $store?->name_ar,
+                'address' => $store?->address,
+                'phone' => $store?->phone,
+                'email' => $store?->email,
+                'logo_url' => $store?->logo_url,
+                'tax_number' => $store?->tax_number,
+                'cr_number' => $store?->cr_number,
+            ],
+            'receipt_settings' => [
+                'header_text' => $settings?->receipt_header,
+                'footer_text' => $settings?->receipt_footer,
+                'show_logo' => (bool) $settings?->receipt_show_logo,
+                'show_tax_number' => (bool) $settings?->receipt_show_tax_number,
+            ],
+        ]);
+    }
+
     // ─── Held Carts ──────────────────────────────────────────
 
     public function heldCarts(Request $request): JsonResponse
     {
-        $carts = $this->heldCartService->list($request->user()->store_id);
+        $carts = $this->heldCartService->list($this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success(HeldCartResource::collection($carts)->resolve());
     }
 

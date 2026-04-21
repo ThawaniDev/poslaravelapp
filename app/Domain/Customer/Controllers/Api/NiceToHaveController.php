@@ -16,7 +16,7 @@ class NiceToHaveController extends BaseApiController
     public function wishlist(Request $request): JsonResponse
     {
         $items = $this->service->getWishlist(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->query('customer_id'),
         );
         return $this->success($items, __('nice_to_have.wishlist_loaded'));
@@ -29,7 +29,7 @@ class NiceToHaveController extends BaseApiController
             'product_id' => 'required|uuid',
         ]);
         $item = $this->service->addToWishlist(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->input('customer_id'),
             $request->input('product_id'),
         );
@@ -43,7 +43,7 @@ class NiceToHaveController extends BaseApiController
             'product_id' => 'required|uuid',
         ]);
         $this->service->removeFromWishlist(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->input('customer_id'),
             $request->input('product_id'),
         );
@@ -55,7 +55,7 @@ class NiceToHaveController extends BaseApiController
     public function appointments(Request $request): JsonResponse
     {
         $items = $this->service->getAppointments(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->query('date'),
         );
         return $this->success($items, __('nice_to_have.appointments_loaded'));
@@ -72,7 +72,7 @@ class NiceToHaveController extends BaseApiController
             'notes' => 'nullable|string|max:500',
         ]);
         $data = $request->only(['customer_id', 'appointment_date', 'start_time', 'end_time', 'status', 'notes']);
-        $data['store_id'] = $request->user()->store_id;
+        $data['store_id'] = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $data['status'] = $data['status'] ?? 'scheduled';
 
         $appt = $this->service->createAppointment($data);
@@ -88,15 +88,17 @@ class NiceToHaveController extends BaseApiController
             'start_time' => 'sometimes|string',
             'end_time' => 'sometimes|string',
         ]);
-        $appt = $this->service->updateAppointment($id, $request->only([
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $appt = $this->service->updateAppointment($storeId, $id, $request->only([
             'status', 'notes', 'appointment_date', 'start_time', 'end_time',
         ]));
         return $this->success($appt->toArray(), __('nice_to_have.appointment_updated'));
     }
 
-    public function cancelAppointment(string $id): JsonResponse
+    public function cancelAppointment(Request $request, string $id): JsonResponse
     {
-        $appt = $this->service->cancelAppointment($id);
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $appt = $this->service->cancelAppointment($storeId, $id);
         return $this->success($appt->toArray(), __('nice_to_have.appointment_cancelled'));
     }
 
@@ -104,7 +106,7 @@ class NiceToHaveController extends BaseApiController
 
     public function cfdConfig(Request $request): JsonResponse
     {
-        $config = $this->service->getCfdConfig($request->user()->store_id);
+        $config = $this->service->getCfdConfig($this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success($config, __('nice_to_have.cfd_loaded'));
     }
 
@@ -118,7 +120,7 @@ class NiceToHaveController extends BaseApiController
             'idle_rotation_seconds' => 'sometimes|integer|min:3|max:120',
         ]);
         $config = $this->service->updateCfdConfig(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['is_enabled', 'target_monitor', 'theme_config', 'idle_content', 'idle_rotation_seconds']),
         );
         return $this->success($config, __('nice_to_have.cfd_updated'));
@@ -129,7 +131,7 @@ class NiceToHaveController extends BaseApiController
     public function registries(Request $request): JsonResponse
     {
         $items = $this->service->getRegistries(
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->query('customer_id'),
         );
         return $this->success($items, __('nice_to_have.registries_loaded'));
@@ -144,7 +146,7 @@ class NiceToHaveController extends BaseApiController
             'event_date' => 'required|date',
         ]);
         $data = $request->only(['customer_id', 'name', 'event_type', 'event_date']);
-        $data['store_id'] = $request->user()->store_id;
+        $data['store_id'] = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $data['is_active'] = true;
 
         $reg = $this->service->createRegistry($data);
@@ -180,7 +182,7 @@ class NiceToHaveController extends BaseApiController
 
     public function playlists(Request $request): JsonResponse
     {
-        $items = $this->service->getPlaylists($request->user()->store_id);
+        $items = $this->service->getPlaylists($this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success($items, __('nice_to_have.playlists_loaded'));
     }
 
@@ -192,7 +194,7 @@ class NiceToHaveController extends BaseApiController
             'schedule' => 'sometimes|array',
         ]);
         $data = $request->only(['name', 'slides', 'schedule']);
-        $data['store_id'] = $request->user()->store_id;
+        $data['store_id'] = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $data['is_active'] = true;
 
         $pl = $this->service->createPlaylist($data);
@@ -207,13 +209,15 @@ class NiceToHaveController extends BaseApiController
             'schedule' => 'sometimes|array',
             'is_active' => 'sometimes|boolean',
         ]);
-        $pl = $this->service->updatePlaylist($id, $request->only(['name', 'slides', 'schedule', 'is_active']));
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $pl = $this->service->updatePlaylist($storeId, $id, $request->only(['name', 'slides', 'schedule', 'is_active']));
         return $this->success($pl->toArray(), __('nice_to_have.playlist_updated'));
     }
 
-    public function deletePlaylist(string $id): JsonResponse
+    public function deletePlaylist(Request $request, string $id): JsonResponse
     {
-        $this->service->deletePlaylist($id);
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $this->service->deletePlaylist($storeId, $id);
         return $this->success(null, __('nice_to_have.playlist_deleted'));
     }
 
@@ -221,19 +225,19 @@ class NiceToHaveController extends BaseApiController
 
     public function challenges(Request $request): JsonResponse
     {
-        $items = $this->service->getChallenges($request->user()->store_id);
+        $items = $this->service->getChallenges($this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success($items, __('nice_to_have.challenges_loaded'));
     }
 
     public function badges(Request $request): JsonResponse
     {
-        $items = $this->service->getBadges($request->user()->store_id);
+        $items = $this->service->getBadges($this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success($items, __('nice_to_have.badges_loaded'));
     }
 
     public function tiers(Request $request): JsonResponse
     {
-        $items = $this->service->getTiers($request->user()->store_id);
+        $items = $this->service->getTiers($this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success($items, __('nice_to_have.tiers_loaded'));
     }
 

@@ -40,7 +40,7 @@ class NotificationController extends BaseApiController
     {
         $notification = $this->notificationService->create(
             $request->user()->id,
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->validated(),
         );
 
@@ -67,7 +67,7 @@ class NotificationController extends BaseApiController
 
         $batch = $this->notificationService->createBatch(
             $request->input('user_ids'),
-            $request->user()->store_id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['category', 'title', 'message', 'priority', 'channel', 'action_url', 'metadata']),
         );
 
@@ -171,7 +171,7 @@ class NotificationController extends BaseApiController
      */
     public function deliveryLogs(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         if (!$storeId) {
             return $this->error(__('notifications.store_required'), 422);
         }
@@ -189,7 +189,7 @@ class NotificationController extends BaseApiController
      */
     public function deliveryStats(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         if (!$storeId) {
             return $this->error(__('notifications.store_required'), 422);
         }
@@ -232,7 +232,7 @@ class NotificationController extends BaseApiController
      */
     public function getSoundConfigs(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         if (!$storeId) {
             return $this->error(__('notifications.store_required'), 422);
         }
@@ -255,7 +255,7 @@ class NotificationController extends BaseApiController
             'repeat_interval_seconds' => 'nullable|integer|min:1|max:60',
         ]);
 
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         if (!$storeId) {
             return $this->error(__('notifications.store_required'), 422);
         }
@@ -276,7 +276,7 @@ class NotificationController extends BaseApiController
      */
     public function listSchedules(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         if (!$storeId) {
             return $this->error(__('notifications.store_required'), 422);
         }
@@ -310,7 +310,7 @@ class NotificationController extends BaseApiController
             'scheduled_at' => 'required|date|after:now',
         ]);
 
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         if (!$storeId) {
             return $this->error(__('notifications.store_required'), 422);
         }

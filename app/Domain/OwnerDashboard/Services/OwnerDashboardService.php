@@ -4,23 +4,25 @@ namespace App\Domain\OwnerDashboard\Services;
 
 use App\Domain\Report\Models\DailySalesSummary;
 use App\Domain\Report\Models\ProductSalesSummary;
+use App\Domain\Shared\Traits\ScopesStoreQuery;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class OwnerDashboardService
 {
+    use ScopesStoreQuery;
     // ─── Dashboard Stats (KPI Cards) ─────────────────────────
 
-    public function stats(string $storeId): array
+    public function stats(string|array $storeId): array
     {
         $today = Carbon::today()->toDateString();
         $yesterday = Carbon::yesterday()->toDateString();
 
-        $todaySummary = DailySalesSummary::where('store_id', $storeId)
+        $todaySummary = $this->scopeByStore(DailySalesSummary::query(), $storeId)
             ->whereDate('date', $today)
             ->first();
 
-        $yesterdaySummary = DailySalesSummary::where('store_id', $storeId)
+        $yesterdaySummary = $this->scopeByStore(DailySalesSummary::query(), $storeId)
             ->whereDate('date', $yesterday)
             ->first();
 
@@ -60,7 +62,7 @@ class OwnerDashboardService
 
     // ─── Sales Trend (chart data) ────────────────────────────
 
-    public function salesTrend(string $storeId, array $filters): array
+    public function salesTrend(string|array $storeId, array $filters): array
     {
         $days = (int) ($filters['days'] ?? 7);
         $from = Carbon::today()->subDays($days - 1)->toDateString();
@@ -69,13 +71,13 @@ class OwnerDashboardService
         $prevFrom = Carbon::today()->subDays($days * 2 - 1)->toDateString();
         $prevTo = Carbon::today()->subDays($days)->toDateString();
 
-        $current = DailySalesSummary::where('store_id', $storeId)
+        $current = $this->scopeByStore(DailySalesSummary::query(), $storeId)
             ->whereDate('date', '>=', $from)
             ->whereDate('date', '<=', $to)
             ->orderBy('date')
             ->get();
 
-        $previous = DailySalesSummary::where('store_id', $storeId)
+        $previous = $this->scopeByStore(DailySalesSummary::query(), $storeId)
             ->whereDate('date', '>=', $prevFrom)
             ->whereDate('date', '<=', $prevTo)
             ->orderBy('date')
@@ -108,7 +110,7 @@ class OwnerDashboardService
 
     // ─── Top Products ────────────────────────────────────────
 
-    public function topProducts(string $storeId, array $filters): array
+    public function topProducts(string|array $storeId, array $filters): array
     {
         $limit = (int) ($filters['limit'] ?? 5);
         $days = (int) ($filters['days'] ?? 30);
@@ -118,7 +120,7 @@ class OwnerDashboardService
 
         $orderColumn = $metric === 'quantity' ? 'total_qty' : 'total_revenue';
 
-        return ProductSalesSummary::where('product_sales_summary.store_id', $storeId)
+        return $this->scopeByStore(ProductSalesSummary::query(), $storeId, 'product_sales_summary.store_id')
             ->whereDate('product_sales_summary.date', '>=', $from)
             ->join('products', 'product_sales_summary.product_id', '=', 'products.id')
             ->select([
@@ -150,11 +152,10 @@ class OwnerDashboardService
 
     // ─── Low Stock Alerts ────────────────────────────────────
 
-    public function lowStockAlerts(string $storeId, int $limit = 10): array
+    public function lowStockAlerts(string|array $storeId, int $limit = 10): array
     {
-        return DB::table('stock_levels')
+        return $this->scopeByStore(DB::table('stock_levels'), $storeId, 'stock_levels.store_id')
             ->join('products', 'stock_levels.product_id', '=', 'products.id')
-            ->where('stock_levels.store_id', $storeId)
             ->whereColumn('stock_levels.quantity', '<=', 'stock_levels.reorder_point')
             ->where('stock_levels.quantity', '>', 0)
             ->select([
@@ -180,12 +181,11 @@ class OwnerDashboardService
 
     // ─── Active Cashiers ─────────────────────────────────────
 
-    public function activeCashiers(string $storeId): array
+    public function activeCashiers(string|array $storeId): array
     {
-        return DB::table('pos_sessions')
+        return $this->scopeByStore(DB::table('pos_sessions'), $storeId, 'pos_sessions.store_id')
             ->join('users', 'pos_sessions.cashier_id', '=', 'users.id')
             ->leftJoin('registers', 'pos_sessions.register_id', '=', 'registers.id')
-            ->where('pos_sessions.store_id', $storeId)
             ->whereNull('pos_sessions.closed_at')
             ->where('pos_sessions.status', 'open')
             ->select([
@@ -211,11 +211,10 @@ class OwnerDashboardService
 
     // ─── Recent Orders ───────────────────────────────────────
 
-    public function recentOrders(string $storeId, int $limit = 10): array
+    public function recentOrders(string|array $storeId, int $limit = 10): array
     {
-        return DB::table('orders')
+        return $this->scopeByStore(DB::table('orders'), $storeId, 'orders.store_id')
             ->leftJoin('customers', 'orders.customer_id', '=', 'customers.id')
-            ->where('orders.store_id', $storeId)
             ->select([
                 'orders.id',
                 'orders.order_number',
@@ -241,19 +240,22 @@ class OwnerDashboardService
 
     // ─── Financial Summary ───────────────────────────────────
 
-    public function financialSummary(string $storeId, array $filters): array
+    public function financialSummary(string|array $storeId, array $filters): array
     {
         $dateFrom = $filters['date_from'] ?? Carbon::today()->startOfMonth()->toDateString();
         $dateTo = $filters['date_to'] ?? Carbon::today()->toDateString();
 
-        $rows = DailySalesSummary::where('store_id', $storeId)
+        $rows = $this->scopeByStore(DailySalesSummary::query(), $storeId)
             ->whereDate('date', '>=', $dateFrom)
             ->whereDate('date', '<=', $dateTo)
             ->get();
 
-        $paymentBreakdown = DB::table('payments')
-            ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
-            ->where('transactions.store_id', $storeId)
+        $paymentBreakdown = $this->scopeByStore(
+                DB::table('payments')
+                    ->join('transactions', 'payments.transaction_id', '=', 'transactions.id'),
+                $storeId,
+                'transactions.store_id'
+            )
             ->whereDate('transactions.created_at', '>=', $dateFrom)
             ->whereDate('transactions.created_at', '<=', $dateTo)
             ->select([
@@ -292,7 +294,7 @@ class OwnerDashboardService
 
     // ─── Hourly Sales (for today or a specific date) ─────────
 
-    public function hourlySales(string $storeId, ?string $date = null): array
+    public function hourlySales(string|array $storeId, ?string $date = null): array
     {
         $targetDate = $date ?? Carbon::today()->toDateString();
 
@@ -302,8 +304,7 @@ class OwnerDashboardService
             default => 'EXTRACT(HOUR FROM transactions.created_at)',
         };
 
-        return DB::table('transactions')
-            ->where('transactions.store_id', $storeId)
+        return $this->scopeByStore(DB::table('transactions'), $storeId, 'transactions.store_id')
             ->whereDate('transactions.created_at', $targetDate)
             ->where('transactions.status', 'completed')
             ->select([
@@ -355,14 +356,13 @@ class OwnerDashboardService
 
     // ─── Staff Performance Summary ───────────────────────────
 
-    public function staffPerformance(string $storeId, array $filters): array
+    public function staffPerformance(string|array $storeId, array $filters): array
     {
         $dateFrom = $filters['date_from'] ?? Carbon::today()->startOfMonth()->toDateString();
         $dateTo = $filters['date_to'] ?? Carbon::today()->toDateString();
 
-        return DB::table('transactions')
+        return $this->scopeByStore(DB::table('transactions'), $storeId, 'transactions.store_id')
             ->join('users', 'transactions.cashier_id', '=', 'users.id')
-            ->where('transactions.store_id', $storeId)
             ->where('transactions.status', 'completed')
             ->whereDate('transactions.created_at', '>=', $dateFrom)
             ->whereDate('transactions.created_at', '<=', $dateTo)

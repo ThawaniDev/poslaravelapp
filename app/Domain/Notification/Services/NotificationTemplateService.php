@@ -572,7 +572,7 @@ class NotificationTemplateService
     private function sendViaEmail(string $provider, string $recipient, string $title, string $body): string
     {
         EmailService::send($recipient, new NotificationMail(
-            subject: $title,
+            mailSubject: $title,
             heading: $title,
             body: $body,
         ));

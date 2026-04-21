@@ -20,7 +20,7 @@ class HardwareController extends BaseApiController
      */
     public function listConfigs(Request $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $configs = $this->service->listConfigs($storeId, $request->only(['terminal_id', 'device_type', 'is_active']));
         return $this->success($configs, __('hardware.configs_listed'));
     }
@@ -30,7 +30,7 @@ class HardwareController extends BaseApiController
      */
     public function saveConfig(HardwareConfigRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $config = $this->service->saveConfig($storeId, $request->validated());
         return $this->success($config->toArray(), __('hardware.config_saved'));
     }
@@ -40,7 +40,7 @@ class HardwareController extends BaseApiController
      */
     public function removeConfig(Request $request, string $id): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $removed = $this->service->removeConfig($storeId, $id);
 
         if (!$removed) {
@@ -64,7 +64,7 @@ class HardwareController extends BaseApiController
      */
     public function testDevice(TestDeviceRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $result = $this->service->testDevice($storeId, $request->validated());
         return $this->success($result, __('hardware.test_success'));
     }
@@ -74,7 +74,7 @@ class HardwareController extends BaseApiController
      */
     public function recordEvent(EventLogRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $event = $this->service->recordEvent($storeId, $request->validated());
         return $this->created($event->toArray(), __('hardware.event_recorded'));
     }
@@ -84,7 +84,7 @@ class HardwareController extends BaseApiController
      */
     public function eventLogs(EventLogFilterRequest $request): JsonResponse
     {
-        $storeId = $request->user()->store_id;
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
         $logs = $this->service->eventLogs($storeId, $request->validated());
         return $this->success($logs, __('hardware.logs_listed'));
     }

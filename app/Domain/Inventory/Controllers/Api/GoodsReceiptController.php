@@ -54,9 +54,9 @@ class GoodsReceiptController extends BaseApiController
     /**
      * GET /api/v2/inventory/goods-receipts/{id}
      */
-    public function show(string $goodsReceipt): JsonResponse
-    {
-        $receipt = $this->goodsReceiptService->find($goodsReceipt);
+public function show(Request $request, string $goodsReceipt): JsonResponse
+{
+    $receipt = $this->goodsReceiptService->find($goodsReceipt, $this->resolvedStoreId($request) ?? $request->user()->store_id);
 
         return $this->success(new GoodsReceiptResource($receipt));
     }
@@ -67,7 +67,7 @@ class GoodsReceiptController extends BaseApiController
     public function confirm(Request $request, string $goodsReceipt): JsonResponse
     {
         try {
-            $receipt = $this->goodsReceiptService->confirm($goodsReceipt, $request->user()->id);
+            $receipt = $this->goodsReceiptService->confirm($goodsReceipt, $this->resolvedStoreId($request) ?? $request->user()->store_id, $request->user()->id);
 
             return $this->success(new GoodsReceiptResource($receipt), 'Goods receipt confirmed.');
         } catch (\RuntimeException $e) {
