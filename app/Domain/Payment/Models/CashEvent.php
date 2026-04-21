@@ -19,6 +19,7 @@ class CashEvent extends Model
 
     protected $fillable = [
         'cash_session_id',
+        'pos_session_id',
         'type',
         'amount',
         'reason',

@@ -88,8 +88,10 @@ class PosSessionService
      * `total_cash_sales` running balance so the close-shift expected_cash
      * stays accurate.
      *
-     * `cash_events.cash_session_id` is reused here to point at the
-     * `pos_sessions.id` — both are UUIDs and there is no FK constraint.
+     * Writes to the dedicated `cash_events.pos_session_id` column
+     * (see migration 2026_04_21_100000). `cash_session_id` is left NULL
+     * because POS-originated events are anchored to the till session,
+     * not the legacy `cash_sessions` workflow.
      */
     public function recordCashEvent(PosSession $session, array $data, User $actor): CashEvent
     {
@@ -105,7 +107,7 @@ class PosSessionService
 
         return DB::transaction(function () use ($session, $type, $amount, $data, $actor) {
             $event = CashEvent::create([
-                'cash_session_id' => $session->id,
+                'pos_session_id' => $session->id,
                 'type' => $type->value,
                 'amount' => $amount,
                 'reason' => $data['reason'] ?? null,
@@ -127,7 +129,7 @@ class PosSessionService
 
     public function listCashEvents(PosSession $session): \Illuminate\Database\Eloquent\Collection
     {
-        return CashEvent::where('cash_session_id', $session->id)
+        return CashEvent::where('pos_session_id', $session->id)
             ->orderBy('created_at', 'desc')
             ->get();
     }
