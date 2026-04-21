@@ -19,6 +19,8 @@ return [
     'return_created' => 'تمّ الاسترجاع بنجاح.',
     'return_original_not_completed' => 'يجب أن تكون العملية الأصلية مكتملة لمعالجة الاسترجاع.',
     'return_only_sales' => 'يمكن إنشاء الاسترجاع لعمليات البيع فقط.',
+    'return_already_fully_refunded' => 'تم استرجاع هذه العملية بالكامل مسبقاً.',
+    'return_quantity_exceeds_remaining' => 'كمية استرجاع :product تتجاوز المتبقي (المطلوب :requested، المتبقي :remaining).',
 
     // Held Carts
     'cart_held' => 'تم تعليق السلة بنجاح.',

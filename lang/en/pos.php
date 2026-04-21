@@ -19,6 +19,8 @@ return [
     'return_created' => 'Return processed successfully.',
     'return_original_not_completed' => 'The original transaction must be completed to process a return.',
     'return_only_sales' => 'Returns can only be created for sale transactions.',
+    'return_already_fully_refunded' => 'This transaction has already been fully refunded.',
+    'return_quantity_exceeds_remaining' => 'Return quantity for :product exceeds what is still refundable (requested :requested, remaining :remaining).',
 
     // Held Carts
     'cart_held' => 'Cart held successfully.',

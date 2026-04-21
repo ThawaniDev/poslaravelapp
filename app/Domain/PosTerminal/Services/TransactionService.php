@@ -51,14 +51,14 @@ class TransactionService
 
     public function find(string $storeId, string $transactionId): Transaction
     {
-        return Transaction::with(['transactionItems', 'payments'])
+        return Transaction::with(['transactionItems', 'payments', 'returns.transactionItems'])
             ->where('store_id', $storeId)
             ->findOrFail($transactionId);
     }
 
     public function findByNumber(string $storeId, string $number): Transaction
     {
-        return Transaction::with(['transactionItems', 'payments'])
+        return Transaction::with(['transactionItems', 'payments', 'returns.transactionItems'])
             ->where('store_id', $storeId)
             ->where('transaction_number', $number)
             ->firstOrFail();
@@ -250,6 +250,11 @@ class TransactionService
             throw new \RuntimeException(__('pos.return_only_sales'));
         }
 
+        // Cap the total refundable quantity per product_id to what was
+        // originally sold, minus what has already been refunded on prior
+        // returns. Prevents unlimited refunds against the same sale.
+        $this->assertReturnQuantitiesAvailable($originalTransaction, $data['items'] ?? []);
+
         $data['type'] = TransactionType::Return->value;
         $data['return_transaction_id'] = $originalTransaction->id;
 
@@ -272,6 +277,71 @@ class TransactionService
         }
 
         return $this->create($data, $actor);
+    }
+
+    /**
+     * Cap the combined refunded quantity per product to what was originally
+     * sold on `$original`. Looks at every non-voided prior return that
+     * references this sale and subtracts their quantities from the original
+     * line quantities. Throws before any write if the requested return would
+     * exceed the remaining refundable quantity.
+     */
+    private function assertReturnQuantitiesAvailable(Transaction $original, array $requestedItems): void
+    {
+        // Original sold quantities, keyed by product_id.
+        $soldByProduct = [];
+        foreach ($original->transactionItems as $row) {
+            $pid = $row->product_id;
+            if (!$pid) continue;
+            $soldByProduct[$pid] = ($soldByProduct[$pid] ?? 0) + (float) $row->quantity;
+        }
+
+        // Already-refunded quantities across prior non-voided returns.
+        $priorReturns = Transaction::where('return_transaction_id', $original->id)
+            ->where('type', TransactionType::Return)
+            ->where('status', '!=', TransactionStatus::Voided)
+            ->with('transactionItems')
+            ->get();
+
+        $refundedByProduct = [];
+        foreach ($priorReturns as $ret) {
+            foreach ($ret->transactionItems as $row) {
+                $pid = $row->product_id;
+                if (!$pid) continue;
+                $refundedByProduct[$pid] = ($refundedByProduct[$pid] ?? 0) + (float) $row->quantity;
+            }
+        }
+
+        // Short-circuit: every sold unit is already refunded.
+        $totalSold = array_sum($soldByProduct);
+        $totalRefunded = array_sum($refundedByProduct);
+        if ($totalSold > 0 && $totalRefunded >= $totalSold) {
+            throw new \RuntimeException(__('pos.return_already_fully_refunded'));
+        }
+
+        // Per-product check of the incoming request.
+        $requestedByProduct = [];
+        $nameByProduct = [];
+        foreach ($requestedItems as $item) {
+            $pid = $item['product_id'] ?? null;
+            $qty = (float) ($item['quantity'] ?? 0);
+            if (!$pid || $qty <= 0) continue;
+            $requestedByProduct[$pid] = ($requestedByProduct[$pid] ?? 0) + $qty;
+            $nameByProduct[$pid] = $item['product_name'] ?? $pid;
+        }
+
+        foreach ($requestedByProduct as $pid => $qty) {
+            $sold = $soldByProduct[$pid] ?? 0;
+            $refunded = $refundedByProduct[$pid] ?? 0;
+            $remaining = $sold - $refunded;
+            if ($qty > $remaining) {
+                throw new \RuntimeException(__('pos.return_quantity_exceeds_remaining', [
+                    'product' => $nameByProduct[$pid] ?? $pid,
+                    'requested' => rtrim(rtrim(number_format($qty, 2, '.', ''), '0'), '.'),
+                    'remaining' => rtrim(rtrim(number_format(max(0, $remaining), 2, '.', ''), '0'), '.'),
+                ]));
+            }
+        }
     }
 
     public function void(Transaction $transaction, User $actor): Transaction

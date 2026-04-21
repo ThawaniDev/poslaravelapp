@@ -37,6 +37,21 @@ class TransactionResource extends JsonResource
             'customer_name' => $this->whenLoaded('customer', fn () => $this->customer?->name),
             'items' => TransactionItemResource::collection($this->whenLoaded('transactionItems')),
             'payments' => PaymentResource::collection($this->whenLoaded('payments')),
+            // Map of product_id => total already-refunded quantity across all
+            // prior non-voided return transactions against this sale. Lets the
+            // UI cap per-line return inputs so cashiers can't over-refund.
+            'refunded_quantities' => $this->whenLoaded('returns', function () {
+                $map = [];
+                foreach ($this->returns as $ret) {
+                    if (($ret->status?->value ?? $ret->status) === 'voided') continue;
+                    foreach ($ret->transactionItems ?? [] as $row) {
+                        $pid = $row->product_id;
+                        if (!$pid) continue;
+                        $map[$pid] = ($map[$pid] ?? 0) + (float) $row->quantity;
+                    }
+                }
+                return (object) $map;
+            }),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];
