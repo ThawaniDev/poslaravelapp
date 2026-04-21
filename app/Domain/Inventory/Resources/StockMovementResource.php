@@ -20,6 +20,11 @@ class StockMovementResource extends JsonResource
             'reference_id' => $this->reference_id,
             'performed_by' => $this->performed_by,
             'reason' => $this->reason,
+            'product' => $this->whenLoaded('product', fn () => [
+                'id' => $this->product->id,
+                'name' => $this->product->name,
+                'sku' => $this->product->sku,
+            ]),
             'created_at' => $this->created_at,
         ];
     }

@@ -133,7 +133,9 @@ class StockService
      */
     public function movements(string $storeId, ?string $productId = null, int $perPage = 25): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
-        $query = StockMovement::where('store_id', $storeId)->orderByDesc('created_at');
+        $query = StockMovement::where('store_id', $storeId)
+            ->with('product')
+            ->orderByDesc('created_at');
 
         if ($productId) {
             $query->where('product_id', $productId);

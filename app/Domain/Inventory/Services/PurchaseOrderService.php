@@ -3,12 +3,19 @@
 namespace App\Domain\Inventory\Services;
 
 use App\Domain\Inventory\Enums\PurchaseOrderStatus;
+use App\Domain\Inventory\Enums\StockMovementType;
+use App\Domain\Inventory\Enums\StockReferenceType;
 use App\Domain\Inventory\Models\PurchaseOrder;
 use App\Domain\Inventory\Models\PurchaseOrderItem;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class PurchaseOrderService
 {
+    public function __construct(
+        private readonly StockService $stockService,
+    ) {}
+
     /**
      * List purchase orders for a store.
      */
@@ -87,8 +94,15 @@ class PurchaseOrderService
     }
 
     /**
-     * Mark PO as partially or fully received.
-     * This updates item quantities received; stock is applied via GoodsReceipt separately.
+     * Mark PO as partially or fully received and CASCADE the receipt to stock:
+     * each newly-received quantity is added to stock_levels and an immutable
+     * stock_movements row of type Receipt is created with reference back to
+     * this PO. WAC is recalculated using the PO line's unit_cost.
+     *
+     * The delta in this call ($receivedItems[i]['quantity_received']) is what
+     * is added to stock — NOT the cumulative quantity_received on the line.
+     * This makes partial receipts safe to call repeatedly without double-
+     * counting.
      */
     public function receive(string $id, string $storeId, array $receivedItems): PurchaseOrder
     {
@@ -100,17 +114,37 @@ class PurchaseOrderService
                 throw new \RuntimeException('Only sent or partially-received POs can be received.');
             }
 
-            // Build lookup: product_id → quantity_received
+            // Build lookup: product_id → quantity_received in THIS call (delta).
             $receivedLookup = [];
             foreach ($receivedItems as $ri) {
                 $receivedLookup[$ri['product_id']] = (float) $ri['quantity_received'];
             }
 
+            $performedBy = Auth::id();
             $allFullyReceived = true;
+
             foreach ($po->purchaseOrderItems as $item) {
-                if (isset($receivedLookup[$item->product_id])) {
-                    $item->quantity_received = ($item->quantity_received ?? 0) + $receivedLookup[$item->product_id];
+                $delta = $receivedLookup[$item->product_id] ?? 0.0;
+
+                if ($delta > 0) {
+                    // 1. Bump the cumulative quantity_received on the PO line.
+                    $item->quantity_received = ($item->quantity_received ?? 0) + $delta;
                     $item->save();
+
+                    // 2. Apply the delta to stock_levels + stock_movements.
+                    //    Receipt movement type triggers WAC recalculation in
+                    //    StockService using this line's unit_cost.
+                    $this->stockService->adjustStock(
+                        storeId: $storeId,
+                        productId: $item->product_id,
+                        type: StockMovementType::Receipt,
+                        quantity: $delta,
+                        unitCost: (float) ($item->unit_cost ?? 0),
+                        referenceType: StockReferenceType::PurchaseOrder,
+                        referenceId: $po->id,
+                        reason: 'Purchase order receipt',
+                        performedBy: $performedBy,
+                    );
                 }
 
                 if (($item->quantity_received ?? 0) < $item->quantity_ordered) {

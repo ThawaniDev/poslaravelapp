@@ -5,6 +5,7 @@ namespace App\Domain\Inventory\Enums;
 enum StockReferenceType: string
 {
     case GoodsReceipt = 'goods_receipt';
+    case PurchaseOrder = 'purchase_order';
     case Adjustment = 'adjustment';
     case Transfer = 'transfer';
     case Transaction = 'transaction';
