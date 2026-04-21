@@ -335,12 +335,12 @@ class TransactionService
 
         if ($isReturn) {
             DB::update(
-                'UPDATE daily_sales_summaries SET total_refunds = total_refunds + ?, net_revenue = net_revenue - ? WHERE id = ?',
+                'UPDATE daily_sales_summary SET total_refunds = total_refunds + ?, net_revenue = net_revenue - ? WHERE id = ?',
                 [$totalAmount, $totalAmount, $summary->id]
             );
         } else {
             DB::update(
-                'UPDATE daily_sales_summaries SET '
+                'UPDATE daily_sales_summary SET '
                 . 'total_transactions = total_transactions + 1, '
                 . 'total_revenue = total_revenue + ?, '
                 . 'total_cost = total_cost + ?, '
@@ -377,12 +377,12 @@ class TransactionService
 
             if ($isReturn || $item->is_return_item) {
                 DB::update(
-                    'UPDATE product_sales_summaries SET return_quantity = return_quantity + ?, return_amount = return_amount + ? WHERE id = ?',
+                    'UPDATE product_sales_summary SET return_quantity = return_quantity + ?, return_amount = return_amount + ? WHERE id = ?',
                     [$qty, $revenue, $productSummary->id]
                 );
             } else {
                 DB::update(
-                    'UPDATE product_sales_summaries SET quantity_sold = quantity_sold + ?, revenue = revenue + ?, cost = cost + ?, discount_amount = discount_amount + ?, tax_amount = tax_amount + ? WHERE id = ?',
+                    'UPDATE product_sales_summary SET quantity_sold = quantity_sold + ?, revenue = revenue + ?, cost = cost + ?, discount_amount = discount_amount + ?, tax_amount = tax_amount + ? WHERE id = ?',
                     [$qty, $revenue, $cost, $discount, $tax, $productSummary->id]
                 );
             }
@@ -429,12 +429,12 @@ class TransactionService
 
             if ($isReturn) {
                 DB::update(
-                    'UPDATE daily_sales_summaries SET total_refunds = GREATEST(0, total_refunds - ?), net_revenue = net_revenue + ? WHERE id = ?',
+                    'UPDATE daily_sales_summary SET total_refunds = GREATEST(0, total_refunds - ?), net_revenue = net_revenue + ? WHERE id = ?',
                     [$totalAmount, $totalAmount, $existing->id]
                 );
             } else {
                 DB::update(
-                    'UPDATE daily_sales_summaries SET '
+                    'UPDATE daily_sales_summary SET '
                     . 'total_transactions = GREATEST(0, total_transactions - 1), '
                     . 'total_revenue = GREATEST(0, total_revenue - ?), '
                     . 'total_cost = GREATEST(0, total_cost - ?), '
@@ -475,12 +475,12 @@ class TransactionService
 
             if ($isReturn || $item->is_return_item) {
                 DB::update(
-                    'UPDATE product_sales_summaries SET return_quantity = GREATEST(0, return_quantity - ?), return_amount = GREATEST(0, return_amount - ?) WHERE id = ?',
+                    'UPDATE product_sales_summary SET return_quantity = GREATEST(0, return_quantity - ?), return_amount = GREATEST(0, return_amount - ?) WHERE id = ?',
                     [$qty, $revenue, $existingProduct->id]
                 );
             } else {
                 DB::update(
-                    'UPDATE product_sales_summaries SET quantity_sold = GREATEST(0, quantity_sold - ?), revenue = GREATEST(0, revenue - ?), cost = GREATEST(0, cost - ?), discount_amount = GREATEST(0, discount_amount - ?), tax_amount = GREATEST(0, tax_amount - ?) WHERE id = ?',
+                    'UPDATE product_sales_summary SET quantity_sold = GREATEST(0, quantity_sold - ?), revenue = GREATEST(0, revenue - ?), cost = GREATEST(0, cost - ?), discount_amount = GREATEST(0, discount_amount - ?), tax_amount = GREATEST(0, tax_amount - ?) WHERE id = ?',
                     [$qty, $revenue, $cost, $discount, $tax, $existingProduct->id]
                 );
             }
