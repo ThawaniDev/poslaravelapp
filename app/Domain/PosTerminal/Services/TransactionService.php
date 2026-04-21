@@ -232,6 +232,18 @@ class TransactionService
         $data['type'] = TransactionType::Return->value;
         $data['return_transaction_id'] = $originalTransaction->id;
 
+        // Inherit register/session from original sale if not explicitly provided,
+        // so the return is anchored to the same physical till. register_id is
+        // NOT NULL in the schema; without this fallback a refund initiated outside
+        // an active session (e.g. from the receipt lookup dialog) would crash with
+        // a not-null violation.
+        if (empty($data['register_id'])) {
+            $data['register_id'] = $originalTransaction->register_id;
+        }
+        if (empty($data['pos_session_id'])) {
+            $data['pos_session_id'] = $originalTransaction->pos_session_id;
+        }
+
         return $this->create($data, $actor);
     }
 
