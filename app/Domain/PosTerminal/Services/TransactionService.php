@@ -211,6 +211,14 @@ class TransactionService
                 $this->earnLoyaltyPoints($transaction, $actor);
             }
 
+            // If the customer paid with loyalty_points, redeem them now.
+            // The Flutter dialog supplies `loyalty_points_used` on the payment leg
+            // converted to SAR via LoyaltyConfig.points_per_sar; we just need to
+            // burn the equivalent point balance and write a `redeem` ledger entry.
+            if ($isSale && $transaction->customer_id) {
+                $this->redeemLoyaltyPoints($transaction, $data['payments'] ?? [], $actor);
+            }
+
             // Deduct loyalty points when a refund is issued against a sale that
             // had a customer attached, so the customer cannot keep points they
             // earned on the refunded value.
@@ -759,6 +767,44 @@ class TransactionService
                 'transaction_id' => $transaction->id,
                 'customer_id' => $transaction->customer_id,
                 'points' => $earnedPoints,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Burn loyalty points whenever a payment leg is settled with the
+     * `loyalty_points` method. Each payment carries `loyalty_points_used`
+     * so we know exactly how many to deduct, and we also write a `redeem`
+     * row in loyalty_transactions for audit.
+     */
+    private function redeemLoyaltyPoints(Transaction $transaction, array $payments, User $actor): void
+    {
+        $totalRedeemed = 0;
+        foreach ($payments as $payment) {
+            if (($payment['method'] ?? null) !== 'loyalty_points') {
+                continue;
+            }
+            $totalRedeemed += (int) ($payment['loyalty_points_used'] ?? 0);
+        }
+        if ($totalRedeemed <= 0) {
+            return;
+        }
+
+        try {
+            app(LoyaltyService::class)->adjustPoints(
+                customerId: $transaction->customer_id,
+                points: -$totalRedeemed,
+                type: LoyaltyTransactionType::Redeem->value,
+                actor: $actor,
+                notes: 'Redeemed at POS - ' . $transaction->transaction_number,
+                orderId: $transaction->id,
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Loyalty points redemption failed', [
+                'transaction_id' => $transaction->id,
+                'customer_id' => $transaction->customer_id,
+                'points' => $totalRedeemed,
                 'error' => $e->getMessage(),
             ]);
         }

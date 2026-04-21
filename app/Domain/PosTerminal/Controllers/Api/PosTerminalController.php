@@ -220,6 +220,46 @@ public function showSession(Request $request, string $session): JsonResponse
         return $this->success(null, 'Held cart deleted.');
     }
 
+    // ─── Cash Events (drop / payout / paid-in) ───────────────
+
+    public function cashEvents(Request $request, string $session): JsonResponse
+    {
+        $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
+        return $this->success($this->sessionService->listCashEvents($found));
+    }
+
+    public function recordCashEvent(Request $request, string $session): JsonResponse
+    {
+        $data = $request->validate([
+            'type' => 'required|in:cash_in,cash_out',
+            'amount' => 'required|numeric|min:0.01',
+            'reason' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+        ]);
+
+        try {
+            $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
+            $event = $this->sessionService->recordCashEvent($found, $data, $request->user());
+            return $this->created($event);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    // ─── Reports (X / Z) ─────────────────────────────────────
+
+    public function xReport(Request $request, string $session): JsonResponse
+    {
+        $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
+        return $this->success($this->sessionService->xReport($found));
+    }
+
+    public function zReport(Request $request, string $session): JsonResponse
+    {
+        $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
+        return $this->success($this->sessionService->zReport($found));
+    }
+
     // ─── Products (POS catalog) ──────────────────────────────
 
     public function products(Request $request): JsonResponse

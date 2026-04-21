@@ -21,6 +21,14 @@ Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
     Route::get('/sessions/{session}', [PosTerminalController::class, 'showSession'])->middleware('permission:pos.view_sessions');
     Route::put('/sessions/{session}/close', [PosTerminalController::class, 'closeSession'])->middleware('permission:pos.shift_close');
 
+    // Cash events (drop / payout / paid-in) on an open session
+    Route::get('/sessions/{session}/cash-events', [PosTerminalController::class, 'cashEvents'])->middleware('permission:pos.view_sessions');
+    Route::post('/sessions/{session}/cash-events', [PosTerminalController::class, 'recordCashEvent'])->middleware('permission:pos.shift_open');
+
+    // Shift reports (X mid-shift snapshot, Z end-of-shift)
+    Route::get('/sessions/{session}/x-report', [PosTerminalController::class, 'xReport'])->middleware('permission:pos.view_sessions');
+    Route::get('/sessions/{session}/z-report', [PosTerminalController::class, 'zReport'])->middleware('permission:pos.shift_close');
+
     // Transactions
     Route::get('/transactions', [PosTerminalController::class, 'transactions'])->middleware('permission:pos.sell');
     Route::post('/transactions', [PosTerminalController::class, 'createTransaction'])->middleware('permission:pos.sell');
