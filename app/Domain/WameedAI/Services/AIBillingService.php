@@ -801,6 +801,7 @@ class AIBillingService
     {
         $query = AIBillingInvoice::with(['store:id,name'])
             ->when($filters['store_id'] ?? null, fn ($q, $v) => $q->where('store_id', $v))
+            ->when($filters['organization_id'] ?? null, fn ($q, $v) => $q->where('organization_id', $v))
             ->when($filters['status'] ?? null, fn ($q, $v) => $q->where('status', $v))
             ->when($filters['year'] ?? null, fn ($q, $v) => $q->where('year', $v))
             ->when($filters['month'] ?? null, fn ($q, $v) => $q->where('month', $v))
@@ -812,15 +813,54 @@ class AIBillingService
     }
 
     /**
-     * Get all store billing configs for admin (with pagination & filters).
+     * Get a paginated list of stores with their billing configuration.
+     *
+     * Lists every store in the system (left-joined with ai_store_billing_configs),
+     * so admins can configure billing for any store — even those that have not
+     * yet triggered an AI request and therefore have no config row.
+     *
+     * Returned items are stdClass with the same keys the controller expects.
      */
     public function getAdminStoreConfigs(array $filters = [], int $perPage = 20)
     {
-        $query = AIStoreBillingConfig::with(['store:id,name'])
-            ->when(isset($filters['is_ai_enabled']), fn ($q) => $q->where('is_ai_enabled', $filters['is_ai_enabled']))
-            ->when($filters['organization_id'] ?? null, fn ($q, $v) => $q->where('organization_id', $v))
-            ->orderByDesc('created_at');
+        $query = DB::table('stores')
+            ->leftJoin('ai_store_billing_configs', 'ai_store_billing_configs.store_id', '=', 'stores.id')
+            ->select([
+                'ai_store_billing_configs.id as config_id',
+                'stores.id as store_id',
+                'stores.name as store_name',
+                'stores.organization_id as organization_id',
+                DB::raw('COALESCE(ai_store_billing_configs.is_ai_enabled, true) as is_ai_enabled'),
+                DB::raw('COALESCE(ai_store_billing_configs.monthly_limit_usd, 0) as monthly_limit_usd'),
+                'ai_store_billing_configs.custom_margin_percentage as custom_margin_percentage',
+                'ai_store_billing_configs.disabled_reason as disabled_reason',
+                'ai_store_billing_configs.disabled_at as disabled_at',
+                'ai_store_billing_configs.enabled_at as enabled_at',
+                'ai_store_billing_configs.notes as notes',
+            ])
+            ->where('stores.is_active', true)
+            ->when($filters['organization_id'] ?? null, fn ($q, $v) => $q->where('stores.organization_id', $v))
+            ->when(
+                isset($filters['is_ai_enabled']),
+                fn ($q) => $q->where(
+                    DB::raw('COALESCE(ai_store_billing_configs.is_ai_enabled, true)'),
+                    (bool) $filters['is_ai_enabled'],
+                ),
+            )
+            ->orderBy('stores.name');
 
         return $query->paginate($perPage);
+    }
+
+    /**
+     * List org-level billing configs (where store_id IS NULL).
+     * One row per organization that uses AI without a specific branch.
+     */
+    public function getAdminOrgLevelConfigs(): \Illuminate\Support\Collection
+    {
+        return AIStoreBillingConfig::with(['organization:id,name'])
+            ->whereNull('store_id')
+            ->orderByDesc('created_at')
+            ->get();
     }
 }

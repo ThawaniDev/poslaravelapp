@@ -76,7 +76,7 @@ class AIBillingAdminController extends BaseApiController
      */
     public function invoices(Request $request): JsonResponse
     {
-        $filters = $request->only(['store_id', 'status', 'year', 'month']);
+        $filters = $request->only(['store_id', 'organization_id', 'status', 'year', 'month']);
         $perPage = (int) $request->query('per_page', 20);
 
         $invoices = $this->billingService->getAdminInvoices($filters, $perPage);
@@ -84,16 +84,18 @@ class AIBillingAdminController extends BaseApiController
         $data = $invoices->getCollection()->map(fn ($inv) => [
             'id' => $inv->id,
             'store_id' => $inv->store_id,
-            'store_name' => $inv->store?->name ?? 'Unknown',
+            'store_name' => $inv->store?->name ?? ($inv->store_id ? 'Unknown' : 'Organization-level'),
+            'organization_id' => $inv->organization_id,
+            'scope' => $inv->store_id ? 'store' : 'organization',
             'invoice_number' => $inv->invoice_number,
-            'year' => $inv->year,
-            'month' => $inv->month,
-            'total_requests' => $inv->total_requests,
+            'year' => (int) $inv->year,
+            'month' => (int) $inv->month,
+            'total_requests' => (int) $inv->total_requests,
             'raw_cost_usd' => (float) $inv->raw_cost_usd,
             'margin_percentage' => (float) $inv->margin_percentage,
             'billed_amount_usd' => (float) $inv->billed_amount_usd,
             'status' => $inv->status,
-            'due_date' => $inv->due_date->toDateString(),
+            'due_date' => $inv->due_date?->toDateString(),
             'paid_at' => $inv->paid_at?->toIso8601String(),
         ]);
 
@@ -110,20 +112,22 @@ class AIBillingAdminController extends BaseApiController
         return $this->success([
             'id' => $invoice->id,
             'store_id' => $invoice->store_id,
-            'store_name' => $invoice->store?->name ?? 'Unknown',
+            'store_name' => $invoice->store?->name ?? ($invoice->store_id ? 'Unknown' : 'Organization-level'),
+            'organization_id' => $invoice->organization_id,
+            'scope' => $invoice->store_id ? 'store' : 'organization',
             'invoice_number' => $invoice->invoice_number,
-            'year' => $invoice->year,
-            'month' => $invoice->month,
-            'period_start' => $invoice->period_start->toDateString(),
-            'period_end' => $invoice->period_end->toDateString(),
-            'total_requests' => $invoice->total_requests,
-            'total_tokens' => $invoice->total_tokens,
+            'year' => (int) $invoice->year,
+            'month' => (int) $invoice->month,
+            'period_start' => $invoice->period_start?->toDateString(),
+            'period_end' => $invoice->period_end?->toDateString(),
+            'total_requests' => (int) $invoice->total_requests,
+            'total_tokens' => (int) $invoice->total_tokens,
             'raw_cost_usd' => (float) $invoice->raw_cost_usd,
             'margin_percentage' => (float) $invoice->margin_percentage,
             'margin_amount_usd' => (float) $invoice->margin_amount_usd,
             'billed_amount_usd' => (float) $invoice->billed_amount_usd,
             'status' => $invoice->status,
-            'due_date' => $invoice->due_date->toDateString(),
+            'due_date' => $invoice->due_date?->toDateString(),
             'paid_at' => $invoice->paid_at?->toIso8601String(),
             'payment_reference' => $invoice->payment_reference,
             'payment_notes' => $invoice->payment_notes,
@@ -234,6 +238,11 @@ class AIBillingAdminController extends BaseApiController
 
     /**
      * GET /admin/wameed-ai/billing/stores
+     *
+     * Lists every active store with its (real or default) billing config
+     * so admins can configure stores even before they trigger any AI usage.
+     * Org-level configs (store_id NULL) are returned alongside under the
+     * `org_level_configs` key so the UI can surface them too.
      */
     public function storeConfigs(Request $request): JsonResponse
     {
@@ -245,21 +254,50 @@ class AIBillingAdminController extends BaseApiController
 
         $configs = $this->billingService->getAdminStoreConfigs($filters, $perPage);
 
-        $data = $configs->getCollection()->map(fn ($cfg) => [
+        $data = $configs->getCollection()->map(fn ($row) => [
+            'id' => $row->config_id,
+            'store_id' => $row->store_id,
+            'store_name' => $row->store_name ?? 'Unknown',
+            'organization_id' => $row->organization_id,
+            'is_ai_enabled' => (bool) $row->is_ai_enabled,
+            'monthly_limit_usd' => (float) $row->monthly_limit_usd,
+            'custom_margin_percentage' => $row->custom_margin_percentage !== null ? (float) $row->custom_margin_percentage : null,
+            'disabled_reason' => $row->disabled_reason,
+            'disabled_at' => $row->disabled_at,
+            'enabled_at' => $row->enabled_at,
+            'notes' => $row->notes,
+            'has_config' => $row->config_id !== null,
+            'scope' => 'store',
+        ])->values();
+
+        $orgLevel = $this->billingService->getAdminOrgLevelConfigs()->map(fn ($cfg) => [
             'id' => $cfg->id,
-            'store_id' => $cfg->store_id,
-            'store_name' => $cfg->store?->name ?? 'Unknown',
+            'store_id' => null,
+            'store_name' => ($cfg->organization?->name ? $cfg->organization->name . ' (organization-level)' : 'Organization-level'),
             'organization_id' => $cfg->organization_id,
-            'is_ai_enabled' => $cfg->is_ai_enabled,
+            'is_ai_enabled' => (bool) $cfg->is_ai_enabled,
             'monthly_limit_usd' => (float) $cfg->monthly_limit_usd,
             'custom_margin_percentage' => $cfg->custom_margin_percentage !== null ? (float) $cfg->custom_margin_percentage : null,
             'disabled_reason' => $cfg->disabled_reason,
             'disabled_at' => $cfg->disabled_at?->toIso8601String(),
             'enabled_at' => $cfg->enabled_at?->toIso8601String(),
             'notes' => $cfg->notes,
-        ]);
+            'has_config' => true,
+            'scope' => 'organization',
+        ])->values();
 
-        return $this->successPaginated($data, $configs);
+        return response()->json([
+            'success' => true,
+            'message' => 'Success',
+            'data' => [
+                'data' => $data,
+                'org_level_configs' => $orgLevel,
+                'total' => $configs->total(),
+                'current_page' => $configs->currentPage(),
+                'last_page' => $configs->lastPage(),
+                'per_page' => $configs->perPage(),
+            ],
+        ]);
     }
 
     /**
