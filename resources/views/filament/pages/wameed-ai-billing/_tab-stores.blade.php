@@ -19,7 +19,7 @@
                             @if ($editingConfigId === $config->id)
                                 {{-- Inline Edit Row --}}
                                 <tr class="border-b border-primary-100 dark:border-primary-800 bg-primary-50 dark:bg-primary-500/5">
-                                    <td class="px-3 py-2 font-medium">{{ $config->store?->name ?? $config->store_id }}</td>
+                                    <td class="px-3 py-2 font-medium">{{ $config->store?->name ?? ($config->organization?->name ? $config->organization->name . ' (org-level)' : ($config->store_id ?? 'Org-level')) }}</td>
                                     <td class="px-3 py-2 text-center">
                                         <input wire:model="editConfigAiEnabled" type="checkbox" class="rounded border-gray-300 text-primary-600">
                                     </td>
@@ -43,7 +43,7 @@
                             @else
                                 {{-- Display Row --}}
                                 <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-white/5">
-                                    <td class="px-3 py-2 font-medium">{{ $config->store?->name ?? $config->store_id }}</td>
+                                    <td class="px-3 py-2 font-medium">{{ $config->store?->name ?? ($config->organization?->name ? $config->organization->name . ' (org-level)' : ($config->store_id ?? 'Org-level')) }}</td>
                                     <td class="px-3 py-2 text-center">
                                         @if ($config->is_ai_enabled)
                                             <span class="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">{{ __('ai.enabled') }}</span>

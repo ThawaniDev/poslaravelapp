@@ -334,9 +334,26 @@ class WameedAIBilling extends Page
             ->limit(50)
             ->get();
 
-        // Store configs list
-        $storeConfigs = AIStoreBillingConfig::with('store:id,name')
-            ->latest('updated_at')
+        // Ensure every active store has a billing config row so admins can
+        // configure stores even before they trigger any AI usage.
+        $existingStoreIds = AIStoreBillingConfig::whereNotNull('store_id')->pluck('store_id')->all();
+        $missingStores = \App\Domain\Core\Models\Store::where('is_active', true)
+            ->whereNotIn('id', $existingStoreIds)
+            ->get(['id', 'organization_id']);
+        foreach ($missingStores as $store) {
+            AIStoreBillingConfig::create([
+                'store_id' => $store->id,
+                'organization_id' => $store->organization_id,
+                'is_ai_enabled' => true,
+                'monthly_limit_usd' => 0,
+                'enabled_at' => now(),
+            ]);
+        }
+
+        // Store configs list (now includes the just-created defaults).
+        $storeConfigs = AIStoreBillingConfig::with(['store:id,name', 'organization:id,name'])
+            ->orderByRaw('CASE WHEN store_id IS NULL THEN 0 ELSE 1 END')
+            ->orderBy('updated_at', 'desc')
             ->get();
 
         // Billing settings with descriptions

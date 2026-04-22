@@ -66,7 +66,7 @@
                                             </div>
                                             <div class="flex-1">
                                                 <label class="text-xs font-medium text-gray-600">{{ __('ai.notes') }}</label>
-                                                <input wire:model="paymentNotes" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="{{ __(\'ai.optional_notes\') }}">
+                                                <input wire:model="paymentNotes" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="{{ __('ai.optional_notes') }}">
                                             </div>
                                             <x-filament::button wire:click="markInvoicePaid" size="sm" color="success">{{ __('ai.confirm_paid') }}</x-filament::button>
                                             <x-filament::button wire:click="cancelMarkPaid" size="sm" color="gray">{{ __('ai.cancel') }}</x-filament::button>
