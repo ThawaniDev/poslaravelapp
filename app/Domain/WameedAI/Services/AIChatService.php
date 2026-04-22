@@ -304,13 +304,17 @@ class AIChatService
 
     private function buildEnrichedSystemPrompt(AIChat $chat, ?string $featureSlug): string
     {
-        // Org-level chats (no store) fall back to the lightweight prompt — the
-        // store-context aggregator requires a specific store_id.
+        // Org-level chats (no specific store): aggregate context across every
+        // active store in the organization so the model sees combined sales,
+        // inventory and per-store breakdowns instead of a bare org name.
         if (!$chat->store_id) {
-            return $this->buildFallbackSystemPrompt($chat, $featureSlug);
+            if (!$chat->organization_id) {
+                return $this->buildFallbackSystemPrompt($chat, $featureSlug);
+            }
+            $prompt = $this->storeDataService->buildOrganizationContextPrompt($chat->organization_id);
+        } else {
+            $prompt = $this->storeDataService->buildStoreContextPrompt($chat->store_id, $chat->organization_id);
         }
-
-        $prompt = $this->storeDataService->buildStoreContextPrompt($chat->store_id, $chat->organization_id);
 
         if ($featureSlug) {
             $feature = AIFeatureDefinition::where('slug', $featureSlug)->first();

@@ -2,289 +2,746 @@
 
 namespace App\Domain\WameedAI\Services;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
+/**
+ * Builds rich, business-aware context that gets injected into every Wameed AI
+ * system prompt. Supports both single-store and organization-wide scopes so
+ * org-level users (no specific store selected) still get a comprehensive
+ * picture aggregated across every store they have access to.
+ */
 class AIStoreDataService
 {
-    /**
-     * Build a comprehensive store context array for AI features.
-     * Returns key-value pairs suitable for template interpolation ({{key}}).
-     */
+    // ─────────────────────────────────────────────────────────────────
+    //  Single-store entrypoints (kept for backward compatibility)
+    // ─────────────────────────────────────────────────────────────────
+
     public function getStoreContext(string $storeId, string $organizationId): array
     {
-        $thirtyDaysAgo = now()->subDays(30)->toDateTimeString();
-        $today = now()->toDateString();
-        $thirtyDaysFromNow = now()->addDays(30)->toDateString();
+        return $this->buildContext($organizationId, [$storeId], $storeId);
+    }
 
-        // ─── Store Info ─────────────────────────────────
-        $store = DB::selectOne("SELECT name, name_ar, currency, city, timezone, is_main_branch FROM stores WHERE id = ?", [$storeId]);
-        $storeName = $store->name ?? 'Unknown Store';
-        $storeNameAr = $store->name_ar ?? '';
-        $currency = $store->currency ?? 'SAR';
-        $city = $store->city ?? '';
-        $timezone = $store->timezone ?? 'Asia/Muscat';
-        $isMainBranch = $store->is_main_branch ?? false;
+    public function buildStoreContextPrompt(string $storeId, string $organizationId): string
+    {
+        return $this->buildPrompt($this->getStoreContext($storeId, $organizationId));
+    }
 
-        // Organization info
-        $org = DB::selectOne("SELECT name, business_type FROM organizations WHERE id = ?", [$organizationId]);
-        $orgName = $org->name ?? '';
-        $businessType = $org->business_type ?? 'retail';
+    // ─────────────────────────────────────────────────────────────────
+    //  Organization-scope entrypoints (all stores aggregated)
+    // ─────────────────────────────────────────────────────────────────
 
-        // Total branches in org
-        $branchCount = (int) (DB::selectOne("SELECT COUNT(*) as cnt FROM stores WHERE organization_id = ?", [$organizationId])->cnt ?? 1);
-
-        // ─── Sales Snapshot (last 30 days) ──────────────
-        $salesStats = DB::selectOne("
-            SELECT
-                COUNT(*) as total_transactions,
-                COALESCE(SUM(total_amount), 0) as total_revenue,
-                COALESCE(AVG(total_amount), 0) as avg_transaction,
-                COALESCE(MAX(total_amount), 0) as max_transaction,
-                COALESCE(SUM(discount_amount), 0) as total_discounts,
-                COALESCE(SUM(tax_amount), 0) as total_tax
-            FROM transactions
-            WHERE store_id = ? AND status = 'completed' AND created_at >= ?
-        ", [$storeId, $thirtyDaysAgo]);
-
-        // Today's sales
-        $todaySales = DB::selectOne("
-            SELECT COUNT(*) as cnt, COALESCE(SUM(total_amount), 0) as total
-            FROM transactions
-            WHERE store_id = ? AND status = 'completed' AND created_at >= ?
-        ", [$storeId, $today]);
-
-        // ─── Top 10 Products (last 30 days by revenue) ──
-        $topProducts = DB::select("
-            SELECT ti.product_name, SUM(ti.quantity) as qty_sold, SUM(ti.line_total) as revenue
-            FROM transaction_items ti
-            JOIN transactions t ON t.id = ti.transaction_id
-            WHERE t.store_id = ? AND t.status = 'completed' AND t.created_at >= ?
-            GROUP BY ti.product_name
-            ORDER BY revenue DESC
-            LIMIT 10
-        ", [$storeId, $thirtyDaysAgo]);
-
-        $topProductsText = '';
-        foreach ($topProducts as $i => $p) {
-            $n = $i + 1;
-            $qty = round($p->qty_sold, 1);
-            $rev = number_format($p->revenue, 2);
-            $topProductsText .= "  {$n}. {$p->product_name}: {$qty} units, {$currency} {$rev}\n";
+    /**
+     * Build context aggregated across every store in the organization (or the
+     * given subset of accessible store IDs).
+     */
+    public function getOrganizationContext(string $organizationId, ?array $storeIds = null): array
+    {
+        if ($storeIds === null || empty($storeIds)) {
+            $storeIds = DB::table('stores')
+                ->where('organization_id', $organizationId)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->all();
         }
 
-        // ─── Inventory Snapshot ─────────────────────────
-        $inventory = DB::selectOne("
-            SELECT
-                COUNT(*) as total_skus,
-                COALESCE(SUM(quantity), 0) as total_units,
-                COUNT(CASE WHEN quantity <= reorder_point AND reorder_point > 0 THEN 1 END) as low_stock_count,
-                COUNT(CASE WHEN quantity = 0 THEN 1 END) as out_of_stock_count
-            FROM stock_levels
-            WHERE store_id = ?
-        ", [$storeId]);
+        return $this->buildContext($organizationId, $storeIds, null);
+    }
 
-        // Expiring within 30 days
-        $expiringCount = (int) (DB::selectOne("
-            SELECT COUNT(*) as cnt FROM stock_batches
-            WHERE store_id = ? AND expiry_date IS NOT NULL AND expiry_date <= ? AND expiry_date >= ? AND quantity > 0
-        ", [$storeId, $thirtyDaysFromNow, $today])->cnt ?? 0);
+    public function buildOrganizationContextPrompt(string $organizationId, ?array $storeIds = null): string
+    {
+        return $this->buildPrompt($this->getOrganizationContext($organizationId, $storeIds));
+    }
 
-        // ─── Categories ─────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
+    //  Core context builder
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * @param array<string> $storeIds Stores to scope every aggregate to.
+     */
+    private function buildContext(string $organizationId, array $storeIds, ?string $primaryStoreId): array
+    {
+        $tz = $this->resolveTimezone($organizationId, $primaryStoreId);
+        $now = Carbon::now($tz);
+
+        $todayStart = $now->copy()->startOfDay()->utc()->toDateTimeString();
+        $todayEnd = $now->copy()->endOfDay()->utc()->toDateTimeString();
+        $yesterdayStart = $now->copy()->subDay()->startOfDay()->utc()->toDateTimeString();
+        $yesterdayEnd = $now->copy()->subDay()->endOfDay()->utc()->toDateTimeString();
+        $sevenDaysAgo = $now->copy()->subDays(7)->utc()->toDateTimeString();
+        $thirtyDaysAgo = $now->copy()->subDays(30)->utc()->toDateTimeString();
+        $monthStart = $now->copy()->startOfMonth()->utc()->toDateTimeString();
+        $lastMonthStart = $now->copy()->subMonthNoOverflow()->startOfMonth()->utc()->toDateTimeString();
+        $lastMonthEnd = $now->copy()->subMonthNoOverflow()->endOfMonth()->utc()->toDateTimeString();
+        $yearStart = $now->copy()->startOfYear()->utc()->toDateTimeString();
+        $lastYearStart = $now->copy()->subYearNoOverflow()->startOfYear()->utc()->toDateTimeString();
+        $lastYearEnd = $now->copy()->subYearNoOverflow()->endOfYear()->utc()->toDateTimeString();
+        $thirtyDaysFromNow = $now->copy()->addDays(30)->toDateString();
+        $todayDate = $now->toDateString();
+
+        // ── Org / store profile ─────────────────────────────────────
+        $org = DB::selectOne("SELECT name, business_type FROM organizations WHERE id = ?", [$organizationId]);
+        $orgName = $org->name ?? 'Unknown Organization';
+        $businessType = $org->business_type ?? 'retail';
+
+        $primaryStore = null;
+        if ($primaryStoreId) {
+            $primaryStore = DB::selectOne(
+                "SELECT name, name_ar, currency, city, timezone, is_main_branch FROM stores WHERE id = ?",
+                [$primaryStoreId]
+            );
+        }
+        // Currency falls back to any store in the org, then a sane default.
+        $currency = $primaryStore->currency
+            ?? DB::table('stores')->where('organization_id', $organizationId)->value('currency')
+            ?? 'SAR';
+        $displayName = $primaryStore->name ?? $orgName;
+
+        $stores = empty($storeIds)
+            ? collect()
+            : DB::table('stores')
+                ->whereIn('id', $storeIds)
+                ->get(['id', 'name', 'city', 'currency', 'is_active', 'is_main_branch']);
+
+        $branchCount = (int) DB::table('stores')->where('organization_id', $organizationId)->count();
+        $activeBranchCount = $stores->where('is_active', true)->count();
+
+        // ── Sales aggregates per period ─────────────────────────────
+        $today = $this->salesAgg($storeIds, $todayStart, $todayEnd);
+        $yesterday = $this->salesAgg($storeIds, $yesterdayStart, $yesterdayEnd);
+        $last7d = $this->salesAgg($storeIds, $sevenDaysAgo, null);
+        $last30d = $this->salesAgg($storeIds, $thirtyDaysAgo, null);
+        $mtd = $this->salesAgg($storeIds, $monthStart, null);
+        $lastMonth = $this->salesAgg($storeIds, $lastMonthStart, $lastMonthEnd);
+        $ytd = $this->salesAgg($storeIds, $yearStart, null);
+        $lastYear = $this->salesAgg($storeIds, $lastYearStart, $lastYearEnd);
+
+        // ── Daily series (last 14 days) ─────────────────────────────
+        $dailySeries = $this->dailySeries($storeIds, $now->copy()->subDays(13));
+
+        // ── Monthly series (last 12 months) ─────────────────────────
+        $monthlySeries = $this->monthlySeries($storeIds, $now->copy()->subMonthsNoOverflow(11)->startOfMonth());
+
+        // ── Top products / categories ───────────────────────────────
+        $topProducts = $this->topProducts($storeIds, $thirtyDaysAgo, 10);
+        $topCategories = $this->topCategories($storeIds, $thirtyDaysAgo, 8);
+
+        // ── Per-store breakdown (only meaningful for org-scope) ─────
+        $perStoreBreakdown = $this->perStoreBreakdown($storeIds, $thirtyDaysAgo);
+
+        // ── Inventory snapshot ──────────────────────────────────────
+        $inventory = $this->inventorySnapshot($storeIds);
+        $expiringCount = $this->expiringCount($storeIds, $todayDate, $thirtyDaysFromNow);
+        $lowStockSamples = $this->lowStockSamples($storeIds, 10);
+
+        // ── Catalog ─────────────────────────────────────────────────
+        $catalog = DB::selectOne("
+            SELECT COUNT(*) AS total_products,
+                   COALESCE(AVG(sell_price), 0) AS avg_price,
+                   COUNT(CASE WHEN is_active = false THEN 1 END) AS inactive_count
+            FROM products WHERE organization_id = ?
+        ", [$organizationId]);
+
         $categories = DB::select("
-            SELECT name FROM categories WHERE organization_id = ? AND is_active = true AND parent_id IS NULL ORDER BY sort_order LIMIT 20
+            SELECT name FROM categories
+            WHERE organization_id = ? AND is_active = true AND parent_id IS NULL
+            ORDER BY sort_order LIMIT 25
         ", [$organizationId]);
         $categoryNames = implode(', ', array_map(fn ($c) => $c->name, $categories));
 
-        // ─── Customers ──────────────────────────────────
+        // ── Customers ───────────────────────────────────────────────
         $customers = DB::selectOne("
-            SELECT
-                COUNT(*) as total_customers,
-                COALESCE(SUM(total_spend), 0) as lifetime_spend,
-                COALESCE(AVG(visit_count), 0) as avg_visits,
-                COUNT(CASE WHEN last_visit_at >= ? THEN 1 END) as active_30d
-            FROM customers
-            WHERE organization_id = ?
+            SELECT COUNT(*) AS total_customers,
+                   COALESCE(SUM(total_spend), 0) AS lifetime_spend,
+                   COALESCE(AVG(visit_count), 0) AS avg_visits,
+                   COUNT(CASE WHEN last_visit_at >= ? THEN 1 END) AS active_30d
+            FROM customers WHERE organization_id = ?
         ", [$thirtyDaysAgo, $organizationId]);
 
-        // ─── Staff ──────────────────────────────────────
-        $staffCount = (int) (DB::selectOne("
-            SELECT COUNT(*) as cnt FROM staff_users WHERE store_id = ? AND status = 'active'
-        ", [$storeId])->cnt ?? 0);
-
-        // ─── Products ───────────────────────────────────
-        $productStats = DB::selectOne("
-            SELECT
-                COUNT(*) as total_products,
-                COALESCE(AVG(sell_price), 0) as avg_price,
-                COUNT(CASE WHEN is_active = false THEN 1 END) as inactive_count
-            FROM products
-            WHERE organization_id = ?
+        $topCustomers = DB::select("
+            SELECT name, total_spend, visit_count
+            FROM customers
+            WHERE organization_id = ? AND total_spend > 0
+            ORDER BY total_spend DESC LIMIT 5
         ", [$organizationId]);
 
-        // ─── Payment Methods (last 30 days) ─────────────
-        $paymentMethods = DB::select("
-            SELECT p.method, COUNT(*) as cnt, SUM(p.amount) as total
-            FROM payments p
-            JOIN transactions t ON t.id = p.transaction_id
-            WHERE t.store_id = ? AND t.status = 'completed' AND t.created_at >= ?
-            GROUP BY p.method ORDER BY total DESC
-        ", [$storeId, $thirtyDaysAgo]);
-        $paymentText = '';
-        foreach ($paymentMethods as $pm) {
-            $paymentText .= "  - {$pm->method}: {$pm->cnt} transactions, {$currency} " . number_format($pm->total, 2) . "\n";
-        }
+        // ── Staff ───────────────────────────────────────────────────
+        $staffCount = empty($storeIds) ? 0 : (int) DB::table('staff_users')
+            ->whereIn('store_id', $storeIds)
+            ->where('status', 'active')
+            ->count();
 
-        // ─── Recent Expenses (last 30 days) ─────────────
-        $expenses = DB::selectOne("
-            SELECT COALESCE(SUM(amount), 0) as total_expenses, COUNT(*) as cnt
-            FROM expenses WHERE store_id = ? AND expense_date >= ?
-        ", [$storeId, $thirtyDaysAgo]);
+        // ── Payments / expenses / promotions ────────────────────────
+        $payments = $this->paymentsBreakdown($storeIds, $thirtyDaysAgo);
 
-        // ─── Active Promotions ──────────────────────────
-        $activePromos = (int) (DB::selectOne("
-            SELECT COUNT(*) as cnt FROM promotions
-            WHERE organization_id = ? AND is_active = true AND (valid_to IS NULL OR valid_to >= ?)
-        ", [$organizationId, $today])->cnt ?? 0);
+        $expenses = empty($storeIds) ? null : DB::table('expenses')
+            ->whereIn('store_id', $storeIds)
+            ->where('expense_date', '>=', $thirtyDaysAgo)
+            ->selectRaw('COALESCE(SUM(amount), 0) AS total, COUNT(*) AS cnt')
+            ->first();
 
-        // ─── Build context for template interpolation ───
+        $activePromos = (int) (DB::selectOne(
+            "SELECT COUNT(*) AS cnt FROM promotions
+             WHERE organization_id = ? AND is_active = true AND (valid_to IS NULL OR valid_to >= ?)",
+            [$organizationId, $todayDate]
+        )->cnt ?? 0);
+
+        // ── Returns / orders / sessions ─────────────────────────────
+        $returns = $this->returnsAgg($storeIds, $thirtyDaysAgo);
+        $orders = $this->ordersAgg($storeIds, $thirtyDaysAgo);
+        $openSessions = empty($storeIds) ? 0 : (int) DB::table('pos_sessions')
+            ->whereIn('store_id', $storeIds)
+            ->whereNull('closed_at')
+            ->count();
+
+        $scope = $primaryStoreId ? 'store' : 'organization';
+
         return [
-            'store_name' => $storeName,
-            'store_name_ar' => $storeNameAr,
+            'scope' => $scope,
+            'display_name' => $displayName,
             'currency' => $currency,
-            'city' => $city,
-            'timezone' => $timezone,
-            'is_main_branch' => $isMainBranch ? 'Yes' : 'No',
+            'timezone' => $tz,
+            'now_local' => $now->toDateTimeString(),
             'organization_name' => $orgName,
             'business_type' => $businessType,
-            'branch_count' => $branchCount,
+            'branch_count_total' => $branchCount,
+            'branch_count_active_in_scope' => $activeBranchCount,
+            'primary_store_city' => $primaryStore->city ?? null,
+            'is_main_branch' => $primaryStore->is_main_branch ?? null,
 
-            'store_profile' => json_encode([
-                'store_name' => $storeName,
-                'store_name_ar' => $storeNameAr,
-                'organization' => $orgName,
-                'business_type' => $businessType,
-                'city' => $city,
-                'timezone' => $timezone,
-                'currency' => $currency,
-                'branch_count' => $branchCount,
-                'is_main_branch' => $isMainBranch,
-                'active_staff' => $staffCount,
-                'active_promotions' => $activePromos,
-                'product_categories' => $categoryNames,
-            ], JSON_UNESCAPED_UNICODE),
+            'sales_today' => $today,
+            'sales_yesterday' => $yesterday,
+            'sales_last_7d' => $last7d,
+            'sales_last_30d' => $last30d,
+            'sales_month_to_date' => $mtd,
+            'sales_last_month' => $lastMonth,
+            'sales_year_to_date' => $ytd,
+            'sales_last_year' => $lastYear,
 
-            'sales_snapshot' => json_encode([
-                'today_transactions' => $todaySales->cnt ?? 0,
-                'today_revenue' => number_format((float) ($todaySales->total ?? 0), 2),
-                'last_30d_transactions' => $salesStats->total_transactions ?? 0,
-                'last_30d_revenue' => number_format((float) ($salesStats->total_revenue ?? 0), 2),
-                'avg_transaction' => number_format((float) ($salesStats->avg_transaction ?? 0), 2),
-                'max_transaction' => number_format((float) ($salesStats->max_transaction ?? 0), 2),
-                'total_discounts' => number_format((float) ($salesStats->total_discounts ?? 0), 2),
-                'total_tax' => number_format((float) ($salesStats->total_tax ?? 0), 2),
-            ], JSON_UNESCAPED_UNICODE),
+            'daily_series_14d' => $dailySeries,
+            'monthly_series_12m' => $monthlySeries,
 
-            'top_products_summary' => $topProductsText ?: 'No sales data available.',
+            'top_products_30d' => $topProducts,
+            'top_categories_30d' => $topCategories,
+            'per_store_breakdown_30d' => $perStoreBreakdown,
 
-            'inventory_snapshot' => json_encode([
-                'total_skus' => $inventory->total_skus ?? 0,
-                'total_units' => $inventory->total_units ?? 0,
-                'low_stock_count' => $inventory->low_stock_count ?? 0,
-                'out_of_stock_count' => $inventory->out_of_stock_count ?? 0,
-                'expiring_within_30d' => $expiringCount,
-            ], JSON_UNESCAPED_UNICODE),
+            'inventory' => $inventory + ['expiring_within_30d' => $expiringCount],
+            'low_stock_samples' => $lowStockSamples,
 
-            'product_catalog_summary' => json_encode([
-                'total_products' => $productStats->total_products ?? 0,
-                'inactive_count' => $productStats->inactive_count ?? 0,
-                'avg_price' => number_format((float) ($productStats->avg_price ?? 0), 2),
-                'categories' => $categoryNames,
-            ], JSON_UNESCAPED_UNICODE),
+            'catalog' => [
+                'total_products' => (int) ($catalog->total_products ?? 0),
+                'inactive_count' => (int) ($catalog->inactive_count ?? 0),
+                'avg_price' => round((float) ($catalog->avg_price ?? 0), 2),
+                'top_level_categories' => $categoryNames,
+            ],
 
-            'customer_summary' => json_encode([
-                'total_customers' => $customers->total_customers ?? 0,
-                'active_last_30d' => $customers->active_30d ?? 0,
-                'lifetime_spend' => number_format((float) ($customers->lifetime_spend ?? 0), 2),
-                'avg_visits' => number_format((float) ($customers->avg_visits ?? 0), 1),
-            ], JSON_UNESCAPED_UNICODE),
+            'customers' => [
+                'total' => (int) ($customers->total_customers ?? 0),
+                'active_last_30d' => (int) ($customers->active_30d ?? 0),
+                'lifetime_spend' => round((float) ($customers->lifetime_spend ?? 0), 2),
+                'avg_visits' => round((float) ($customers->avg_visits ?? 0), 1),
+                'top' => array_map(fn ($c) => [
+                    'name' => trim((string) ($c->name ?? '')),
+                    'spend' => round((float) $c->total_spend, 2),
+                    'visits' => (int) $c->visit_count,
+                ], $topCustomers),
+            ],
 
-            'payment_methods_summary' => $paymentText ?: 'No payment data available.',
-
-            'expenses_summary' => json_encode([
-                'total_expenses_30d' => number_format((float) ($expenses->total_expenses ?? 0), 2),
-                'expense_count_30d' => $expenses->cnt ?? 0,
-            ], JSON_UNESCAPED_UNICODE),
-
-            'staff_count' => $staffCount,
+            'staff_active_count' => $staffCount,
+            'open_pos_sessions' => $openSessions,
             'active_promotions' => $activePromos,
+            'payment_methods_30d' => $payments,
+            'expenses_30d' => [
+                'total' => round((float) ($expenses->total ?? 0), 2),
+                'count' => (int) ($expenses->cnt ?? 0),
+            ],
+            'returns_30d' => $returns,
+            'orders_30d' => $orders,
         ];
     }
 
-    /**
-     * Build a formatted system prompt block from store context.
-     * Used by AIChatService for the enriched system prompt.
-     */
-    public function buildStoreContextPrompt(string $storeId, string $organizationId): string
-    {
-        $ctx = $this->getStoreContext($storeId, $organizationId);
+    // ─────────────────────────────────────────────────────────────────
+    //  Aggregation helpers
+    // ─────────────────────────────────────────────────────────────────
 
-        $salesSnapshot = json_decode($ctx['sales_snapshot'], true);
-        $inventorySnapshot = json_decode($ctx['inventory_snapshot'], true);
-        $productCatalog = json_decode($ctx['product_catalog_summary'], true);
-        $customerSummary = json_decode($ctx['customer_summary'], true);
-        $expensesSummary = json_decode($ctx['expenses_summary'], true);
+    private function salesAgg(array $storeIds, string $start, ?string $end): array
+    {
+        if (empty($storeIds)) {
+            return $this->emptySales();
+        }
+        $q = DB::table('transactions')
+            ->whereIn('store_id', $storeIds)
+            ->where('status', 'completed')
+            ->where('created_at', '>=', $start);
+        if ($end) {
+            $q->where('created_at', '<=', $end);
+        }
+        $row = $q->selectRaw("
+            COUNT(*) AS cnt,
+            COALESCE(SUM(total_amount), 0) AS revenue,
+            COALESCE(AVG(total_amount), 0) AS avg_ticket,
+            COALESCE(MAX(total_amount), 0) AS max_ticket,
+            COALESCE(SUM(discount_amount), 0) AS discounts,
+            COALESCE(SUM(tax_amount), 0) AS tax
+        ")->first();
+
+        return [
+            'transactions' => (int) ($row->cnt ?? 0),
+            'revenue' => round((float) ($row->revenue ?? 0), 2),
+            'avg_ticket' => round((float) ($row->avg_ticket ?? 0), 2),
+            'max_ticket' => round((float) ($row->max_ticket ?? 0), 2),
+            'discounts' => round((float) ($row->discounts ?? 0), 2),
+            'tax' => round((float) ($row->tax ?? 0), 2),
+        ];
+    }
+
+    private function emptySales(): array
+    {
+        return [
+            'transactions' => 0, 'revenue' => 0.0, 'avg_ticket' => 0.0,
+            'max_ticket' => 0.0, 'discounts' => 0.0, 'tax' => 0.0,
+        ];
+    }
+
+    private function dailySeries(array $storeIds, Carbon $from): array
+    {
+        if (empty($storeIds)) {
+            return [];
+        }
+        $rows = DB::table('transactions')
+            ->whereIn('store_id', $storeIds)
+            ->where('status', 'completed')
+            ->where('created_at', '>=', $from->copy()->utc()->toDateTimeString())
+            ->selectRaw("DATE(created_at) AS d, COUNT(*) AS cnt, COALESCE(SUM(total_amount), 0) AS rev")
+            ->groupBy('d')
+            ->orderBy('d')
+            ->get();
+
+        return $rows->map(fn ($r) => [
+            'date' => (string) $r->d,
+            'transactions' => (int) $r->cnt,
+            'revenue' => round((float) $r->rev, 2),
+        ])->values()->all();
+    }
+
+    private function monthlySeries(array $storeIds, Carbon $from): array
+    {
+        if (empty($storeIds)) {
+            return [];
+        }
+        $driver = DB::connection()->getDriverName();
+        $monthExpr = match ($driver) {
+            'pgsql' => "TO_CHAR(created_at, 'YYYY-MM')",
+            'mysql' => "DATE_FORMAT(created_at, '%Y-%m')",
+            default => "strftime('%Y-%m', created_at)",
+        };
+
+        $rows = DB::table('transactions')
+            ->whereIn('store_id', $storeIds)
+            ->where('status', 'completed')
+            ->where('created_at', '>=', $from->copy()->utc()->toDateTimeString())
+            ->selectRaw("{$monthExpr} AS m, COUNT(*) AS cnt, COALESCE(SUM(total_amount), 0) AS rev")
+            ->groupBy('m')
+            ->orderBy('m')
+            ->get();
+
+        return $rows->map(fn ($r) => [
+            'month' => (string) $r->m,
+            'transactions' => (int) $r->cnt,
+            'revenue' => round((float) $r->rev, 2),
+        ])->values()->all();
+    }
+
+    private function topProducts(array $storeIds, string $since, int $limit): array
+    {
+        if (empty($storeIds)) {
+            return [];
+        }
+        $rows = DB::table('transaction_items as ti')
+            ->join('transactions as t', 't.id', '=', 'ti.transaction_id')
+            ->whereIn('t.store_id', $storeIds)
+            ->where('t.status', 'completed')
+            ->where('t.created_at', '>=', $since)
+            ->groupBy('ti.product_name')
+            ->orderByRaw('SUM(ti.line_total) DESC')
+            ->limit($limit)
+            ->get(['ti.product_name', DB::raw('SUM(ti.quantity) AS qty'), DB::raw('SUM(ti.line_total) AS revenue')]);
+
+        return $rows->map(fn ($r) => [
+            'name' => (string) $r->product_name,
+            'qty' => round((float) $r->qty, 2),
+            'revenue' => round((float) $r->revenue, 2),
+        ])->values()->all();
+    }
+
+    private function topCategories(array $storeIds, string $since, int $limit): array
+    {
+        if (empty($storeIds) || !Schema::hasColumn('transaction_items', 'category_name')) {
+            return [];
+        }
+        $rows = DB::table('transaction_items as ti')
+            ->join('transactions as t', 't.id', '=', 'ti.transaction_id')
+            ->whereIn('t.store_id', $storeIds)
+            ->where('t.status', 'completed')
+            ->where('t.created_at', '>=', $since)
+            ->whereNotNull('ti.category_name')
+            ->groupBy('ti.category_name')
+            ->orderByRaw('SUM(ti.line_total) DESC')
+            ->limit($limit)
+            ->get(['ti.category_name', DB::raw('SUM(ti.quantity) AS qty'), DB::raw('SUM(ti.line_total) AS revenue')]);
+
+        return $rows->map(fn ($r) => [
+            'category' => (string) $r->category_name,
+            'qty' => round((float) $r->qty, 2),
+            'revenue' => round((float) $r->revenue, 2),
+        ])->values()->all();
+    }
+
+    private function perStoreBreakdown(array $storeIds, string $since): array
+    {
+        if (count($storeIds) <= 1) {
+            return [];
+        }
+        $rows = DB::table('transactions as t')
+            ->leftJoin('stores as s', 's.id', '=', 't.store_id')
+            ->whereIn('t.store_id', $storeIds)
+            ->where('t.status', 'completed')
+            ->where('t.created_at', '>=', $since)
+            ->groupBy('t.store_id', 's.name')
+            ->orderByRaw('SUM(t.total_amount) DESC')
+            ->get([
+                't.store_id',
+                's.name as store_name',
+                DB::raw('COUNT(*) AS cnt'),
+                DB::raw('COALESCE(SUM(t.total_amount), 0) AS revenue'),
+            ]);
+
+        return $rows->map(fn ($r) => [
+            'store_id' => (string) $r->store_id,
+            'store_name' => (string) ($r->store_name ?? 'Unknown'),
+            'transactions' => (int) $r->cnt,
+            'revenue' => round((float) $r->revenue, 2),
+        ])->values()->all();
+    }
+
+    private function inventorySnapshot(array $storeIds): array
+    {
+        if (empty($storeIds)) {
+            return ['total_skus' => 0, 'total_units' => 0, 'low_stock_count' => 0, 'out_of_stock_count' => 0];
+        }
+        $row = DB::table('stock_levels')
+            ->whereIn('store_id', $storeIds)
+            ->selectRaw("
+                COUNT(*) AS total_skus,
+                COALESCE(SUM(quantity), 0) AS total_units,
+                COUNT(CASE WHEN quantity <= reorder_point AND reorder_point > 0 THEN 1 END) AS low_stock_count,
+                COUNT(CASE WHEN quantity = 0 THEN 1 END) AS out_of_stock_count
+            ")
+            ->first();
+
+        return [
+            'total_skus' => (int) ($row->total_skus ?? 0),
+            'total_units' => round((float) ($row->total_units ?? 0), 2),
+            'low_stock_count' => (int) ($row->low_stock_count ?? 0),
+            'out_of_stock_count' => (int) ($row->out_of_stock_count ?? 0),
+        ];
+    }
+
+    private function expiringCount(array $storeIds, string $today, string $until): int
+    {
+        if (empty($storeIds)) {
+            return 0;
+        }
+        return (int) DB::table('stock_batches')
+            ->whereIn('store_id', $storeIds)
+            ->whereNotNull('expiry_date')
+            ->where('expiry_date', '>=', $today)
+            ->where('expiry_date', '<=', $until)
+            ->where('quantity', '>', 0)
+            ->count();
+    }
+
+    private function lowStockSamples(array $storeIds, int $limit): array
+    {
+        if (empty($storeIds)) {
+            return [];
+        }
+        $rows = DB::table('stock_levels as sl')
+            ->leftJoin('products as p', 'p.id', '=', 'sl.product_id')
+            ->whereIn('sl.store_id', $storeIds)
+            ->whereColumn('sl.quantity', '<=', 'sl.reorder_point')
+            ->where('sl.reorder_point', '>', 0)
+            ->orderBy('sl.quantity')
+            ->limit($limit)
+            ->get(['sl.product_id', 'p.name', 'sl.quantity', 'sl.reorder_point']);
+
+        return $rows->map(fn ($r) => [
+            'product_id' => (string) $r->product_id,
+            'name' => (string) ($r->name ?? 'Unknown'),
+            'quantity' => round((float) $r->quantity, 2),
+            'reorder_point' => round((float) $r->reorder_point, 2),
+        ])->values()->all();
+    }
+
+    private function paymentsBreakdown(array $storeIds, string $since): array
+    {
+        if (empty($storeIds)) {
+            return [];
+        }
+        $rows = DB::table('payments as p')
+            ->join('transactions as t', 't.id', '=', 'p.transaction_id')
+            ->whereIn('t.store_id', $storeIds)
+            ->where('t.status', 'completed')
+            ->where('t.created_at', '>=', $since)
+            ->groupBy('p.method')
+            ->orderByRaw('SUM(p.amount) DESC')
+            ->get(['p.method', DB::raw('COUNT(*) AS cnt'), DB::raw('SUM(p.amount) AS total')]);
+
+        return $rows->map(fn ($r) => [
+            'method' => (string) $r->method,
+            'transactions' => (int) $r->cnt,
+            'total' => round((float) $r->total, 2),
+        ])->values()->all();
+    }
+
+    private function returnsAgg(array $storeIds, string $since): array
+    {
+        if (empty($storeIds) || !Schema::hasTable('sale_returns')) {
+            return ['count' => 0, 'amount' => 0.0];
+        }
+        $amountColumn = Schema::hasColumn('sale_returns', 'total_refund_amount')
+            ? 'total_refund_amount'
+            : (Schema::hasColumn('sale_returns', 'refund_amount') ? 'refund_amount' : null);
+
+        $q = DB::table('sale_returns')
+            ->whereIn('store_id', $storeIds)
+            ->where('created_at', '>=', $since);
+
+        $amount = $amountColumn
+            ? (float) $q->clone()->sum($amountColumn)
+            : 0.0;
+
+        return [
+            'count' => (int) $q->count(),
+            'amount' => round($amount, 2),
+        ];
+    }
+
+    private function ordersAgg(array $storeIds, string $since): array
+    {
+        if (empty($storeIds) || !Schema::hasTable('orders')) {
+            return ['count' => 0, 'amount' => 0.0, 'by_status' => []];
+        }
+        // Real column is `total` (no `_amount` suffix in some schemas).
+        $amountCol = Schema::hasColumn('orders', 'total_amount') ? 'total_amount'
+            : (Schema::hasColumn('orders', 'total') ? 'total' : null);
+
+        $base = DB::table('orders')
+            ->whereIn('store_id', $storeIds)
+            ->where('created_at', '>=', $since);
+
+        $count = (int) $base->count();
+        $amount = $amountCol ? (float) $base->clone()->sum($amountCol) : 0.0;
+
+        $byStatus = $base->clone()
+            ->groupBy('status')
+            ->get(['status', DB::raw('COUNT(*) AS cnt')])
+            ->map(fn ($r) => ['status' => (string) $r->status, 'count' => (int) $r->cnt])
+            ->values()->all();
+
+        return [
+            'count' => $count,
+            'amount' => round($amount, 2),
+            'by_status' => $byStatus,
+        ];
+    }
+
+    private function resolveTimezone(string $organizationId, ?string $storeId): string
+    {
+        if ($storeId) {
+            $tz = DB::table('stores')->where('id', $storeId)->value('timezone');
+            if ($tz) {
+                return (string) $tz;
+            }
+        }
+        return (string) (DB::table('stores')
+            ->where('organization_id', $organizationId)
+            ->where('is_active', true)
+            ->orderByDesc('is_main_branch')
+            ->value('timezone') ?? config('app.timezone', 'Asia/Riyadh'));
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    //  Prompt builder — turns the context array into a system prompt.
+    // ─────────────────────────────────────────────────────────────────
+
+    private function buildPrompt(array $ctx): string
+    {
+        $cur = $ctx['currency'];
+        $isOrg = $ctx['scope'] === 'organization';
+        $scopeLabel = $isOrg
+            ? "the organization \"{$ctx['organization_name']}\" (covering {$ctx['branch_count_active_in_scope']} active branch(es))"
+            : "the store \"{$ctx['display_name']}\"" . ($ctx['primary_store_city'] ? " in {$ctx['primary_store_city']}" : '');
+
+        $fmtSales = function (string $label, array $s) use ($cur) {
+            return sprintf(
+                '- %s: %d transactions, revenue %s %s, avg ticket %s %s, discounts %s %s, tax %s %s',
+                $label,
+                $s['transactions'],
+                $cur, number_format($s['revenue'], 2),
+                $cur, number_format($s['avg_ticket'], 2),
+                $cur, number_format($s['discounts'], 2),
+                $cur, number_format($s['tax'], 2)
+            );
+        };
+
+        $salesBlock = implode("\n", [
+            $fmtSales('Today',         $ctx['sales_today']),
+            $fmtSales('Yesterday',     $ctx['sales_yesterday']),
+            $fmtSales('Last 7 days',   $ctx['sales_last_7d']),
+            $fmtSales('Last 30 days',  $ctx['sales_last_30d']),
+            $fmtSales('Month-to-date', $ctx['sales_month_to_date']),
+            $fmtSales('Last month',    $ctx['sales_last_month']),
+            $fmtSales('Year-to-date',  $ctx['sales_year_to_date']),
+            $fmtSales('Last year',     $ctx['sales_last_year']),
+        ]);
+
+        $fmtNum = fn (float $n): string => rtrim(rtrim(number_format($n, 2), '0'), '.');
+
+        $dailyBlock = empty($ctx['daily_series_14d'])
+            ? '  (no sales in the last 14 days)'
+            : implode("\n", array_map(
+                fn ($d) => sprintf('  %s — %d txns, %s %s', $d['date'], $d['transactions'], $cur, number_format($d['revenue'], 2)),
+                $ctx['daily_series_14d']
+            ));
+
+        $monthlyBlock = empty($ctx['monthly_series_12m'])
+            ? '  (no sales in the last 12 months)'
+            : implode("\n", array_map(
+                fn ($m) => sprintf('  %s — %d txns, %s %s', $m['month'], $m['transactions'], $cur, number_format($m['revenue'], 2)),
+                $ctx['monthly_series_12m']
+            ));
+
+        $topProductsBlock = empty($ctx['top_products_30d'])
+            ? '  (no product sales in the last 30 days)'
+            : implode("\n", array_map(
+                fn ($p, $i) => sprintf('  %d. %s — %s units, %s %s', $i + 1, $p['name'], $fmtNum((float) $p['qty']), $cur, number_format($p['revenue'], 2)),
+                $ctx['top_products_30d'],
+                array_keys($ctx['top_products_30d'])
+            ));
+
+        $topCatBlock = empty($ctx['top_categories_30d'])
+            ? '  (category breakdown not available)'
+            : implode("\n", array_map(
+                fn ($c) => sprintf('  - %s: %s units, %s %s', $c['category'], $fmtNum((float) $c['qty']), $cur, number_format($c['revenue'], 2)),
+                $ctx['top_categories_30d']
+            ));
+
+        $perStoreBlock = empty($ctx['per_store_breakdown_30d'])
+            ? ''
+            : "\n═══ PER-STORE BREAKDOWN (last 30 days) ═══\n" . implode("\n", array_map(
+                fn ($s) => sprintf('  - %s: %d txns, %s %s', $s['store_name'], $s['transactions'], $cur, number_format($s['revenue'], 2)),
+                $ctx['per_store_breakdown_30d']
+            ));
+
+        $paymentBlock = empty($ctx['payment_methods_30d'])
+            ? '  (no payment data)'
+            : implode("\n", array_map(
+                fn ($p) => sprintf('  - %s: %d txns, %s %s', $p['method'], $p['transactions'], $cur, number_format($p['total'], 2)),
+                $ctx['payment_methods_30d']
+            ));
+
+        $lowStockBlock = empty($ctx['low_stock_samples'])
+            ? '  (no low-stock items)'
+            : implode("\n", array_map(
+                fn ($i) => sprintf('  - %s: %s on hand (reorder at %s)', $i['name'], $fmtNum((float) $i['quantity']), $fmtNum((float) $i['reorder_point'])),
+                $ctx['low_stock_samples']
+            ));
+
+        $topCustomersBlock = empty($ctx['customers']['top'])
+            ? '  (no top customers)'
+            : implode("\n", array_map(
+                fn ($c) => sprintf('  - %s: %s %s lifetime, %d visits', $c['name'] !== '' ? $c['name'] : 'Unknown', $cur, number_format($c['spend'], 2), $c['visits']),
+                $ctx['customers']['top']
+            ));
+
+        $ordersBlock = $ctx['orders_30d']['count'] > 0
+            ? sprintf('  - Orders (30d): %d, value %s %s', $ctx['orders_30d']['count'], $cur, number_format($ctx['orders_30d']['amount'], 2))
+                . (empty($ctx['orders_30d']['by_status']) ? '' : "\n  - By status: " . implode(', ', array_map(fn ($s) => "{$s['status']}={$s['count']}", $ctx['orders_30d']['by_status'])))
+            : '  (no online/external orders in the last 30 days)';
+
+        $catalog = $ctx['catalog'];
+        $customers = $ctx['customers'];
+        $inventory = $ctx['inventory'];
+        $expenses = $ctx['expenses_30d'];
+        $returns = $ctx['returns_30d'];
 
         return <<<PROMPT
-You are Wameed AI, an intelligent POS assistant for "{$ctx['store_name']}" in {$ctx['city']}. Timezone: {$ctx['timezone']}. Currency: {$ctx['currency']}.
-The business ({$ctx['business_type']}) has {$ctx['branch_count']} branch(es). Organization: {$ctx['organization_name']}.
+You are Wameed AI, an intelligent point-of-sale and business assistant for {$scopeLabel}.
+Organization: "{$ctx['organization_name']}" — business type: {$ctx['business_type']}. Currency: {$ctx['currency']}. Timezone: {$ctx['timezone']}. Local time now: {$ctx['now_local']}.
 
-═══ TODAY'S SNAPSHOT ═══
-- Transactions today: {$salesSnapshot['today_transactions']}, Revenue: {$ctx['currency']} {$salesSnapshot['today_revenue']}
+═══ SALES BY PERIOD ═══
+{$salesBlock}
 
-═══ LAST 30 DAYS SALES ═══
-- Total transactions: {$salesSnapshot['last_30d_transactions']}
-- Total revenue: {$ctx['currency']} {$salesSnapshot['last_30d_revenue']}
-- Average transaction: {$ctx['currency']} {$salesSnapshot['avg_transaction']}
-- Largest transaction: {$ctx['currency']} {$salesSnapshot['max_transaction']}
-- Total discounts given: {$ctx['currency']} {$salesSnapshot['total_discounts']}
-- Total tax collected: {$ctx['currency']} {$salesSnapshot['total_tax']}
+═══ DAILY SALES (last 14 days) ═══
+{$dailyBlock}
 
-═══ TOP SELLING PRODUCTS (30 days) ═══
-{$ctx['top_products_summary']}
-═══ INVENTORY STATUS ═══
-- Total SKUs tracked: {$inventorySnapshot['total_skus']}
-- Total units in stock: {$inventorySnapshot['total_units']}
-- Products at/below reorder point: {$inventorySnapshot['low_stock_count']}
-- Out of stock: {$inventorySnapshot['out_of_stock_count']}
-- Expiring within 30 days: {$inventorySnapshot['expiring_within_30d']}
+═══ MONTHLY SALES (last 12 months) ═══
+{$monthlyBlock}
+
+═══ TOP 10 PRODUCTS (last 30 days, by revenue) ═══
+{$topProductsBlock}
+
+═══ TOP CATEGORIES (last 30 days) ═══
+{$topCatBlock}
+{$perStoreBlock}
+
+═══ INVENTORY ═══
+- Total SKUs tracked: {$inventory['total_skus']}
+- Total units in stock: {$inventory['total_units']}
+- Low-stock SKUs (≤ reorder point): {$inventory['low_stock_count']}
+- Out of stock: {$inventory['out_of_stock_count']}
+- Expiring within 30 days: {$inventory['expiring_within_30d']}
+
+Low-stock examples:
+{$lowStockBlock}
 
 ═══ PRODUCT CATALOG ═══
-- Total products: {$productCatalog['total_products']} (inactive: {$productCatalog['inactive_count']})
-- Average sell price: {$ctx['currency']} {$productCatalog['avg_price']}
-- Categories: {$productCatalog['categories']}
+- Active products: {$catalog['total_products']} (inactive: {$catalog['inactive_count']})
+- Average sell price: {$cur} {$catalog['avg_price']}
+- Top-level categories: {$catalog['top_level_categories']}
 
 ═══ CUSTOMERS ═══
-- Total customers: {$customerSummary['total_customers']}
-- Active in last 30 days: {$customerSummary['active_last_30d']}
-- Lifetime spend: {$ctx['currency']} {$customerSummary['lifetime_spend']}
-- Average visits per customer: {$customerSummary['avg_visits']}
+- Total customers: {$customers['total']}
+- Active in last 30 days: {$customers['active_last_30d']}
+- Lifetime spend (all time): {$cur} {$customers['lifetime_spend']}
+- Average visits per customer: {$customers['avg_visits']}
 
-═══ STAFF & OPERATIONS ═══
-- Active staff: {$ctx['staff_count']}
+Top customers by lifetime spend:
+{$topCustomersBlock}
+
+═══ PAYMENT METHODS (last 30 days) ═══
+{$paymentBlock}
+
+═══ ORDERS / RETURNS (last 30 days) ═══
+{$ordersBlock}
+- Sale returns: {$returns['count']} (refund value {$cur} {$returns['amount']})
+
+═══ OPERATIONS ═══
+- Active staff in scope: {$ctx['staff_active_count']}
+- Open POS sessions right now: {$ctx['open_pos_sessions']}
 - Active promotions: {$ctx['active_promotions']}
+- Expenses (last 30 days): {$cur} {$expenses['total']} across {$expenses['count']} entries
 
-═══ PAYMENT METHODS (30 days) ═══
-{$ctx['payment_methods_summary']}
-═══ EXPENSES (30 days) ═══
-- Total expenses: {$ctx['currency']} {$expensesSummary['total_expenses_30d']} ({$expensesSummary['expense_count_30d']} entries)
-
-═══ GUIDELINES ═══
-- Always respond in the SAME LANGUAGE the user writes in (Arabic or English).
-- Use {$ctx['currency']} for all monetary values.
-- Be concise but thorough. Use tables, bullet points, and structured formatting.
-- Provide actionable recommendations backed by the data above.
-- If a question requires data you don't have, say so clearly.
-- When comparing periods, note that your data covers the last 30 days.
+═══ RESPONSE GUIDELINES ═══
+- Always reply in the SAME language the user writes in (Arabic or English).
+- Always use {$cur} for monetary values and the local timezone {$ctx['timezone']} for dates.
+- Be concise but data-driven: cite exact numbers from the sections above when relevant.
+- Use markdown (tables, bullet lists, headings) to make answers easy to scan.
+- When data needed for an answer is not in the context above, say so clearly instead of guessing.
+- Provide actionable recommendations grounded in the figures shown.
 PROMPT;
     }
 }
