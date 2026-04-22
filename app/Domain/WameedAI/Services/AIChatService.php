@@ -21,11 +21,12 @@ class AIChatService
     ) {}
 
     /**
-     * Create a new chat.
+     * Create a new chat. store_id is OPTIONAL: org-level users (no store)
+     * create org-scoped chats; store-bound users tag the chat with their store.
      */
     public function createChat(
         string $organizationId,
-        string $storeId,
+        ?string $storeId,
         string $userId,
         ?string $llmModelId = null,
         ?string $title = null,
@@ -53,26 +54,59 @@ class AIChatService
     }
 
     /**
-     * List chats for a user/store sorted by last message.
+     * List chats. Filtering rules:
+     *  - storeId provided  → only chats for that store
+     *  - accessibleStoreIds provided AND storeId null → all chats in those
+     *    stores PLUS the user's own org-level chats (store_id IS NULL)
+     *  - neither           → only chats where user_id matches (legacy)
      */
-    public function listChats(string $storeId, string $userId, int $perPage = 20): mixed
-    {
-        return AIChat::where('store_id', $storeId)
-            ->where('user_id', $userId)
-            ->with('llmModel:id,provider,model_id,display_name')
-            ->orderByDesc('last_message_at')
-            ->paginate($perPage);
+    public function listChats(
+        string $organizationId,
+        ?string $storeId,
+        string $userId,
+        ?array $accessibleStoreIds = null,
+        int $perPage = 20,
+    ): mixed {
+        $q = AIChat::where('organization_id', $organizationId)
+            ->with(['llmModel:id,provider,model_id,display_name', 'store:id,name'])
+            ->orderByDesc('last_message_at');
+
+        if ($storeId) {
+            $q->where('store_id', $storeId)->where('user_id', $userId);
+        } elseif (!empty($accessibleStoreIds)) {
+            // Org-scope: see chats across all accessible stores (any user) + own org-level chats
+            $q->where(function ($w) use ($accessibleStoreIds, $userId) {
+                $w->whereIn('store_id', $accessibleStoreIds)
+                  ->orWhere(function ($ww) use ($userId) {
+                      $ww->whereNull('store_id')->where('user_id', $userId);
+                  });
+            });
+        } else {
+            $q->where('user_id', $userId);
+        }
+
+        return $q->paginate($perPage);
     }
 
     /**
-     * Get chat with messages.
+     * Get chat with messages. Allows access if the chat belongs to the user OR
+     * if the user is org-scoped and the chat belongs to a store they can access.
      */
-    public function getChat(string $chatId, string $userId): ?AIChat
+    public function getChat(string $chatId, string $userId, ?array $accessibleStoreIds = null): ?AIChat
     {
-        return AIChat::where('id', $chatId)
-            ->where('user_id', $userId)
-            ->with(['messages' => fn ($q) => $q->orderBy('created_at'), 'llmModel'])
-            ->first();
+        $q = AIChat::where('id', $chatId)
+            ->with(['messages' => fn ($qq) => $qq->orderBy('created_at'), 'llmModel', 'store:id,name']);
+
+        if (!empty($accessibleStoreIds)) {
+            $q->where(function ($w) use ($accessibleStoreIds, $userId) {
+                $w->whereIn('store_id', $accessibleStoreIds)
+                  ->orWhere('user_id', $userId);
+            });
+        } else {
+            $q->where('user_id', $userId);
+        }
+
+        return $q->first();
     }
 
     /**
@@ -86,8 +120,10 @@ class AIChatService
         ?string $imageBase64 = null,
         ?array $attachments = null,
     ): ?AIChatMessage {
-        // 1. Save user message
+        // 1. Save user message (denormalize org/store for filtering)
         $userMsg = $chat->messages()->create([
+            'organization_id' => $chat->organization_id,
+            'store_id' => $chat->store_id,
             'role' => 'user',
             'content' => $userMessage,
             'feature_slug' => $featureSlug,
@@ -128,6 +164,8 @@ class AIChatService
         if (!$response) {
             // Save error message
             return $chat->messages()->create([
+                'organization_id' => $chat->organization_id,
+                'store_id' => $chat->store_id,
                 'role' => 'assistant',
                 'content' => 'I apologize, but I encountered an error processing your request. Please try again.',
                 'model_used' => $chat->llmModel?->model_id ?? 'unknown',
@@ -140,6 +178,8 @@ class AIChatService
 
         // 4. Save assistant message
         $assistantMsg = $chat->messages()->create([
+            'organization_id' => $chat->organization_id,
+            'store_id' => $chat->store_id,
             'role' => 'assistant',
             'content' => $response['content'],
             'feature_slug' => $featureSlug,
@@ -235,12 +275,18 @@ class AIChatService
 
     private function buildFallbackSystemPrompt(AIChat $chat, ?string $featureSlug): string
     {
-        $storeName = 'your store';
+        $storeName = 'your organization';
         $currency = 'SAR';
         try {
-            $store = DB::selectOne("SELECT name, currency FROM stores WHERE id = ?", [$chat->store_id]);
-            $storeName = $store->name ?? $storeName;
-            $currency = $store->currency ?? $currency;
+            if ($chat->store_id) {
+                $store = DB::selectOne("SELECT name, currency FROM stores WHERE id = ?", [$chat->store_id]);
+                $storeName = $store->name ?? $storeName;
+                $currency = $store->currency ?? $currency;
+            } elseif ($chat->organization_id) {
+                $org = DB::selectOne("SELECT name, currency FROM organizations WHERE id = ?", [$chat->organization_id]);
+                $storeName = $org->name ?? $storeName;
+                $currency = $org->currency ?? $currency;
+            }
         } catch (\Throwable) {}
 
         $prompt = "You are Wameed AI, an intelligent POS assistant for \"{$storeName}\". Currency: {$currency}.\n"
@@ -258,6 +304,12 @@ class AIChatService
 
     private function buildEnrichedSystemPrompt(AIChat $chat, ?string $featureSlug): string
     {
+        // Org-level chats (no store) fall back to the lightweight prompt — the
+        // store-context aggregator requires a specific store_id.
+        if (!$chat->store_id) {
+            return $this->buildFallbackSystemPrompt($chat, $featureSlug);
+        }
+
         $prompt = $this->storeDataService->buildStoreContextPrompt($chat->store_id, $chat->organization_id);
 
         if ($featureSlug) {

@@ -17,6 +17,7 @@ class AICache extends Model
     protected $fillable = [
         'cache_key',
         'feature_slug',
+        'organization_id',
         'store_id',
         'response_text',
         'tokens_used',

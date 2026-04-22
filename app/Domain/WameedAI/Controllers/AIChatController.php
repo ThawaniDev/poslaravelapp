@@ -16,15 +16,46 @@ class AIChatController extends BaseApiController
     ) {}
 
     /**
+     * Resolve a chat the current request is allowed to act on.
+     * Accepts the chat if (a) it belongs to the user, OR (b) the request is
+     * org-scoped (no specific store) and the chat belongs to a store the
+     * user can access.
+     */
+    private function findAccessibleChat(Request $request, string $chatId): ?AIChat
+    {
+        $userId = $request->user()->id;
+        $orgId = $this->resolveOrganizationId($request);
+
+        $q = AIChat::where('id', $chatId)->where('organization_id', $orgId);
+
+        if ($this->resolveStoreId($request)) {
+            $q->where('user_id', $userId);
+        } else {
+            $accessible = $this->resolveAccessibleStoreIds($request);
+            $q->where(function ($w) use ($accessible, $userId) {
+                $w->where('user_id', $userId);
+                if (!empty($accessible)) {
+                    $w->orWhereIn('store_id', $accessible);
+                }
+            });
+        }
+
+        return $q->first();
+    }
+
+    /**
      * GET /wameed-ai/chats — List user's chats.
      */
     public function index(Request $request): JsonResponse
     {
         $storeId = $this->resolveStoreId($request);
+        $orgId = $this->resolveOrganizationId($request);
         $userId = $request->user()->id;
         $perPage = (int) $request->query('per_page', 20);
+        // Org-scoped users (no store selected) see chats across all accessible stores.
+        $accessibleStoreIds = $storeId ? null : $this->resolveAccessibleStoreIds($request);
 
-        $chats = $this->chatService->listChats($storeId, $userId, $perPage);
+        $chats = $this->chatService->listChats($orgId, $storeId, $userId, $accessibleStoreIds, $perPage);
 
         return $this->success([
             'chats' => $chats->items(),
@@ -45,14 +76,14 @@ class AIChatController extends BaseApiController
         ]);
 
         $chat = $this->chatService->createChat(
-            organizationId: $request->user()->organization_id,
+            organizationId: $this->resolveOrganizationId($request),
             storeId: $this->resolveStoreId($request),
             userId: $request->user()->id,
             llmModelId: $request->input('llm_model_id'),
             title: $request->input('title'),
         );
 
-        return $this->created($chat->load('llmModel'));
+        return $this->created($chat->load(['llmModel', 'store:id,name']));
     }
 
     /**
@@ -60,7 +91,10 @@ class AIChatController extends BaseApiController
      */
     public function show(Request $request, string $chatId): JsonResponse
     {
-        $chat = $this->chatService->getChat($chatId, $request->user()->id);
+        $accessibleStoreIds = $this->resolveStoreId($request)
+            ? null
+            : $this->resolveAccessibleStoreIds($request);
+        $chat = $this->chatService->getChat($chatId, $request->user()->id, $accessibleStoreIds);
 
         if (!$chat) {
             return $this->notFound('Chat not found');
@@ -81,9 +115,7 @@ class AIChatController extends BaseApiController
             'image' => 'nullable|string',
         ]);
 
-        $chat = AIChat::where('id', $chatId)
-            ->where('user_id', $request->user()->id)
-            ->first();
+        $chat = $this->findAccessibleChat($request, $chatId);
 
         if (!$chat) {
             return $this->notFound('Chat not found');
@@ -134,9 +166,7 @@ class AIChatController extends BaseApiController
             'params' => 'nullable|array',
         ]);
 
-        $chat = AIChat::where('id', $chatId)
-            ->where('user_id', $request->user()->id)
-            ->first();
+        $chat = $this->findAccessibleChat($request, $chatId);
 
         if (!$chat) {
             return $this->notFound('Chat not found');
@@ -180,9 +210,7 @@ class AIChatController extends BaseApiController
             'llm_model_id' => 'required|uuid|exists:ai_llm_models,id',
         ]);
 
-        $chat = AIChat::where('id', $chatId)
-            ->where('user_id', $request->user()->id)
-            ->first();
+        $chat = $this->findAccessibleChat($request, $chatId);
 
         if (!$chat) {
             return $this->notFound('Chat not found');
@@ -200,9 +228,7 @@ class AIChatController extends BaseApiController
      */
     public function destroy(Request $request, string $chatId): JsonResponse
     {
-        $chat = AIChat::where('id', $chatId)
-            ->where('user_id', $request->user()->id)
-            ->first();
+        $chat = $this->findAccessibleChat($request, $chatId);
 
         if (!$chat) {
             return $this->notFound('Chat not found');
@@ -222,9 +248,7 @@ class AIChatController extends BaseApiController
             'title' => 'required|string|max:255',
         ]);
 
-        $chat = AIChat::where('id', $chatId)
-            ->where('user_id', $request->user()->id)
-            ->first();
+        $chat = $this->findAccessibleChat($request, $chatId);
 
         if (!$chat) {
             return $this->notFound('Chat not found');

@@ -31,6 +31,51 @@ abstract class BaseApiController extends Controller
     }
 
     /**
+     * Resolve the organization_id for the current request.
+     *
+     * Always returns a non-null UUID for authenticated users, since every user
+     * belongs to an organization. Used by features (Wameed AI, billing) that
+     * must work even when the user has no store assignment.
+     */
+    protected function resolveOrganizationId(Request $request): ?string
+    {
+        $user = $request->user();
+        if (!$user) return null;
+        return $user->organization_id
+            ?? \App\Domain\Core\Models\Store::where('id', $user->store_id)->value('organization_id');
+    }
+
+    /**
+     * Returns the list of store IDs the request has access to.
+     *
+     * Branch users → [their own store_id].
+     * Org users    → all stores in their organization.
+     * Used to filter list endpoints when the request is org-scoped (no
+     * specific store selected).
+     */
+    protected function resolveAccessibleStoreIds(Request $request): array
+    {
+        if ($request->attributes->has('accessible_store_ids')) {
+            return (array) $request->attributes->get('accessible_store_ids');
+        }
+        $user = $request->user();
+        if (!$user) return [];
+        if ($user->store_id) return [$user->store_id];
+        return $user->organization_id
+            ? \App\Domain\Core\Models\Store::where('organization_id', $user->organization_id)
+                ->pluck('id')->toArray()
+            : [];
+    }
+
+    /**
+     * True when the request is organization-scoped (no specific store selected).
+     */
+    protected function isOrgScoped(Request $request): bool
+    {
+        return $this->resolveStoreId($request) === null;
+    }
+
+    /**
      * Resolve the business_types.id (UUID) for the authenticated store.
      *
      * The Store model stores business_type as an enum slug (grocery, pharmacy, etc.),

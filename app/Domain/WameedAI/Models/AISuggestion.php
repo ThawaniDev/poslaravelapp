@@ -18,6 +18,7 @@ class AISuggestion extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'organization_id',
         'store_id',
         'feature_slug',
         'suggestion_type',
@@ -45,5 +46,10 @@ class AISuggestion extends Model
     public function store(): BelongsTo
     {
         return $this->belongsTo(\App\Domain\Core\Models\Store::class);
+    }
+
+    public function organization(): BelongsTo
+    {
+        return $this->belongsTo(\App\Domain\Core\Models\Organization::class, 'organization_id');
     }
 }

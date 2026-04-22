@@ -17,6 +17,7 @@ class AIFeedback extends Model
 
     protected $fillable = [
         'ai_usage_log_id',
+        'organization_id',
         'store_id',
         'user_id',
         'rating',

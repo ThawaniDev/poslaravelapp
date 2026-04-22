@@ -53,6 +53,7 @@ Route::prefix('wameed-ai')->middleware(['auth:sanctum', 'plan.feature:wameed_ai'
     // ─── Billing (store-side) ────────────────────────────────
     Route::get('/billing/summary', [WameedAIController::class, 'billingSummary'])->middleware('permission:wameed_ai.view');
     Route::get('/billing/invoices', [WameedAIController::class, 'billingInvoices'])->middleware('permission:wameed_ai.view');
+    Route::post('/billing/invoices/bulk-pay', [WameedAIController::class, 'billingBulkPay'])->middleware('permission:wameed_ai.manage');
     Route::get('/billing/invoices/{invoiceId}', [WameedAIController::class, 'billingInvoiceDetail'])->middleware('permission:wameed_ai.view');
 
     // ─── Inventory Features ──────────────────────────────────

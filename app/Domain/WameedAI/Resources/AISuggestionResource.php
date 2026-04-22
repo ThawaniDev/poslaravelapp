@@ -12,6 +12,8 @@ class AISuggestionResource extends JsonResource
         return [
             'id'              => $this->id,
             'store_id'        => $this->store_id,
+            'store_name'      => $this->whenLoaded('store', fn () => $this->store?->name),
+            'scope'           => $this->store_id ? 'store' : 'organization',
             'feature_slug'    => $this->feature_slug,
             'suggestion_type' => $this->suggestion_type,
             'title'           => $this->title,

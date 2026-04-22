@@ -71,12 +71,23 @@ class AIStoreBillingConfig extends Model
         return $currentCostUsd < $storeLimit;
     }
 
-    public static function getOrCreateForStore(string $storeId, string $organizationId): self
+    public static function getOrCreateForStore(?string $storeId, string $organizationId): self
     {
+        if ($storeId) {
+            return static::firstOrCreate(
+                ['store_id' => $storeId],
+                [
+                    'organization_id' => $organizationId,
+                    'is_ai_enabled' => true,
+                    'monthly_limit_usd' => 0,
+                ],
+            );
+        }
+
+        // Org-level config: one row per org with NULL store_id.
         return static::firstOrCreate(
-            ['store_id' => $storeId],
+            ['organization_id' => $organizationId, 'store_id' => null],
             [
-                'organization_id' => $organizationId,
                 'is_ai_enabled' => true,
                 'monthly_limit_usd' => 0,
             ],

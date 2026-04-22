@@ -169,7 +169,7 @@ class AIGatewayService
 
             $response = $this->callLlm($llmModel, $messages, $prompt);
             if (!$response) {
-                $this->logUsage($chat->store->organization_id ?? '', $chat->store_id, $chat->user_id, null, 'error', 0, 0, 0, 0, (int) ((microtime(true) - $startTime) * 1000), 'API call failed after retries');
+                $this->logUsage($chat->organization_id ?? ($chat->store->organization_id ?? ''), $chat->store_id, $chat->user_id, null, 'error', 0, 0, 0, 0, (int) ((microtime(true) - $startTime) * 1000), 'API call failed after retries');
                 return null;
             }
 
@@ -182,7 +182,7 @@ class AIGatewayService
             // Log usage for chat calls
             $feature = $featureSlug ? AIFeatureDefinition::where('slug', $featureSlug)->first() : null;
             $this->logUsage(
-                $chat->store->organization_id ?? '',
+                $chat->organization_id ?? ($chat->store->organization_id ?? ''),
                 $chat->store_id,
                 $chat->user_id,
                 $feature,
@@ -210,7 +210,7 @@ class AIGatewayService
             ];
         } catch (\Throwable $e) {
             Log::error("WameedAI Chat Error: {$e->getMessage()}", ['chat_id' => $chat->id]);
-            $this->logUsage($chat->store->organization_id ?? '', $chat->store_id, $chat->user_id, null, 'error', 0, 0, 0, 0, (int) ((microtime(true) - $startTime) * 1000), $e->getMessage());
+            $this->logUsage($chat->organization_id ?? ($chat->store->organization_id ?? ''), $chat->store_id, $chat->user_id, null, 'error', 0, 0, 0, 0, (int) ((microtime(true) - $startTime) * 1000), $e->getMessage());
             return null;
         }
     }
@@ -580,7 +580,7 @@ class AIGatewayService
 
     private function logUsage(
         string $organizationId,
-        string $storeId,
+        ?string $storeId,
         ?string $userId,
         ?AIFeatureDefinition $feature,
         string $status,
@@ -598,7 +598,9 @@ class AIGatewayService
     ): void {
         try {
             // Apply margin from settings to get billed cost
-            $config = AIStoreBillingConfig::where('store_id', $storeId)->first();
+            $config = $storeId
+                ? AIStoreBillingConfig::where('store_id', $storeId)->first()
+                : AIStoreBillingConfig::where('organization_id', $organizationId)->whereNull('store_id')->first();
             $marginPercentage = ($config && $config->custom_margin_percentage !== null)
                 ? (float) $config->custom_margin_percentage
                 : AIBillingSetting::getFloat('margin_percentage', 20.0);

@@ -10,12 +10,14 @@ use Illuminate\Support\Facades\DB;
 
 class AIUsageTrackingService
 {
-    public function getTodayUsage(string $storeId): array
+    public function getTodayUsage(?string $storeId, ?string $organizationId = null): array
     {
         $today = now()->toDateString();
 
-        $stats = AIUsageLog::where('store_id', $storeId)
-            ->where('created_at', '>=', now()->startOfDay())
+        $base = AIUsageLog::query()->where('created_at', '>=', now()->startOfDay());
+        $this->applyScope($base, $storeId, $organizationId);
+
+        $stats = (clone $base)
             ->selectRaw("
                 COUNT(*) as total_requests,
                 SUM(CASE WHEN response_cached = true THEN 1 ELSE 0 END) as cached_requests,
@@ -25,8 +27,7 @@ class AIUsageTrackingService
             ")
             ->first();
 
-        $byFeature = AIUsageLog::where('store_id', $storeId)
-            ->where('created_at', '>=', now()->startOfDay())
+        $byFeature = (clone $base)
             ->groupBy('feature_slug')
             ->selectRaw('feature_slug, COUNT(*) as count, SUM(total_tokens) as tokens')
             ->get()
@@ -44,23 +45,17 @@ class AIUsageTrackingService
         ];
     }
 
-    public function getMonthlyUsage(string $storeId, ?string $month = null): array
+    public function getMonthlyUsage(?string $storeId, ?string $month = null, ?string $organizationId = null): array
     {
         $monthDate = $month ? \Carbon\Carbon::parse($month)->startOfMonth() : now()->startOfMonth();
 
-        $summary = AIMonthlyUsageSummary::where('store_id', $storeId)
-            ->where('month', $monthDate->toDateString())
-            ->first();
-
-        if ($summary) {
-            return $summary->toArray();
-        }
-
-        // Fall back to real-time aggregation
-        $stats = AIUsageLog::where('store_id', $storeId)
+        // Real-time aggregation (skip pre-aggregated table to keep org/store unified).
+        $base = AIUsageLog::query()
             ->where('created_at', '>=', $monthDate)
-            ->where('created_at', '<', $monthDate->copy()->addMonth())
-            ->selectRaw("
+            ->where('created_at', '<', $monthDate->copy()->addMonth());
+        $this->applyScope($base, $storeId, $organizationId);
+
+        $stats = $base->selectRaw("
                 COUNT(*) as total_requests,
                 SUM(CASE WHEN response_cached = true THEN 1 ELSE 0 END) as cached_requests,
                 SUM(CASE WHEN status = 'error' THEN 1 ELSE 0 END) as failed_requests,
@@ -81,18 +76,24 @@ class AIUsageTrackingService
         ];
     }
 
-    public function getUsageByFeature(string $storeId, ?string $period = 'last_30_days'): array
+    public function getUsageByFeature(?string $storeId, $period = 'last_30_days', ?string $organizationId = null): array
     {
-        $since = match ($period) {
-            'last_7_days' => now()->subDays(7),
-            'last_30_days' => now()->subDays(30),
-            'this_month' => now()->startOfMonth(),
-            default => now()->subDays(30),
-        };
+        // Backward compat: $period can also be an int (days).
+        if (is_int($period) || ctype_digit((string) $period)) {
+            $since = now()->subDays((int) $period);
+        } else {
+            $since = match ($period) {
+                'last_7_days' => now()->subDays(7),
+                'last_30_days' => now()->subDays(30),
+                'this_month' => now()->startOfMonth(),
+                default => now()->subDays(30),
+            };
+        }
 
-        return AIUsageLog::where('store_id', $storeId)
-            ->where('created_at', '>=', $since)
-            ->groupBy('feature_slug')
+        $q = AIUsageLog::query()->where('created_at', '>=', $since);
+        $this->applyScope($q, $storeId, $organizationId);
+
+        return $q->groupBy('feature_slug')
             ->selectRaw("
                 feature_slug,
                 COUNT(*) as total_requests,
@@ -104,6 +105,18 @@ class AIUsageTrackingService
             ->orderByDesc('total_requests')
             ->get()
             ->toArray();
+    }
+
+    /**
+     * Scope a usage-log query: prefer specific store_id, otherwise org-aggregate.
+     */
+    private function applyScope($query, ?string $storeId, ?string $organizationId): void
+    {
+        if ($storeId) {
+            $query->where('store_id', $storeId);
+        } elseif ($organizationId) {
+            $query->where('organization_id', $organizationId);
+        }
     }
 
     public function aggregateDaily(string $date): void

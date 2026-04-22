@@ -16,6 +16,8 @@ class AIChatMessage extends Model
 
     protected $fillable = [
         'chat_id',
+        'organization_id',
+        'store_id',
         'role',
         'content',
         'feature_slug',

@@ -35,9 +35,39 @@ class BranchScope
         }
 
         $storeId = $user->store_id;
+
+        // Org-level users (no assigned store) — typically owners. They can
+        // access every store in their organization, OR work at org-level
+        // (resolved_store_id = null) for features that support it (e.g. AI).
         if (!$storeId) {
+            $accessibleStoreIds = $user->organization_id
+                ? \App\Domain\Core\Models\Store::where('organization_id', $user->organization_id)
+                    ->where('is_active', true)
+                    ->pluck('id')
+                    ->toArray()
+                : [];
+
+            $requestedStoreId = $request->input('store_id')
+                ?? $request->header('X-Store-Id')
+                ?? null;
+            if ($requestedStoreId === '' || $requestedStoreId === 'all' || $requestedStoreId === 'null') {
+                $requestedStoreId = null;
+            }
+            if ($requestedStoreId !== null && !in_array($requestedStoreId, $accessibleStoreIds, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have access to this branch.',
+                ], 403);
+            }
+
+            $request->attributes->set('branch_scope', 'organization');
+            $request->attributes->set('accessible_store_ids', $accessibleStoreIds);
+            $request->attributes->set('resolved_store_id', $requestedStoreId);
+            $request->attributes->set('resolved_store_ids', $requestedStoreId ? [$requestedStoreId] : $accessibleStoreIds);
+
             return $next($request);
         }
+
         $scope = $this->roleService->getUserBranchScope($user, $storeId);
         $accessibleStoreIds = $this->roleService->getAccessibleStoreIds($user, $storeId);
 

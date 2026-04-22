@@ -19,10 +19,11 @@ class AIBillingService
     // ─── Billing Check (called before every AI request) ──────────
 
     /**
-     * Check if a store is allowed to use AI (billing-wise).
+     * Check if a store/org is allowed to use AI (billing-wise).
+     * $storeId may be null for org-level usage (no specific branch).
      * Returns [allowed, reason] tuple.
      */
-    public function canStoreUseAI(string $storeId, string $organizationId): array
+    public function canStoreUseAI(?string $storeId, string $organizationId): array
     {
         if (!AIBillingSetting::getBool('billing_enabled', true)) {
             return [true, null];
@@ -35,7 +36,7 @@ class AIBillingService
         }
 
         // Check monthly spending limit
-        $currentMonthCost = $this->getCurrentMonthBilledCost($storeId);
+        $currentMonthCost = $this->getCurrentMonthBilledCost($storeId, $organizationId);
         if (!$config->isWithinMonthlyLimit($currentMonthCost)) {
             return [false, 'monthly_limit_exceeded'];
         }
@@ -44,17 +45,24 @@ class AIBillingService
     }
 
     /**
-     * Get current month's billed cost (raw cost + margin) for a store.
+     * Get current month's billed cost (raw cost + margin).
+     * If $storeId provided → per-store; otherwise org-aggregate.
      */
-    public function getCurrentMonthBilledCost(string $storeId): float
+    public function getCurrentMonthBilledCost(?string $storeId, ?string $organizationId = null): float
     {
         $monthStart = now()->startOfMonth();
 
-        // Use pre-calculated billed_cost_usd from logs (margin applied at save time)
-        $billedCost = (float) AIUsageLog::where('store_id', $storeId)
+        $q = AIUsageLog::query()
             ->where('created_at', '>=', $monthStart)
-            ->where('status', 'success')
-            ->sum(DB::raw('CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd END'));
+            ->where('status', 'success');
+
+        if ($storeId) {
+            $q->where('store_id', $storeId);
+        } elseif ($organizationId) {
+            $q->where('organization_id', $organizationId);
+        }
+
+        $billedCost = (float) $q->sum(DB::raw('CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd END'));
 
         return round($billedCost, 5);
     }
@@ -501,12 +509,13 @@ class AIBillingService
 
     /**
      * Get detailed invoice for store view.
+     * Scoped by organization (org users see any invoice in their org).
      */
-    public function getInvoiceDetail(string $invoiceId, string $storeId): ?array
+    public function getInvoiceDetail(string $invoiceId, string $organizationId): ?array
     {
-        $invoice = AIBillingInvoice::with(['items', 'payments'])
+        $invoice = AIBillingInvoice::with(['items', 'payments', 'store:id,name'])
             ->where('id', $invoiceId)
-            ->where('store_id', $storeId)
+            ->where('organization_id', $organizationId)
             ->first();
 
         if (!$invoice) return null;
@@ -514,6 +523,9 @@ class AIBillingService
         return [
             'id' => $invoice->id,
             'invoice_number' => $invoice->invoice_number,
+            'store_id' => $invoice->store_id,
+            'store_name' => $invoice->store?->name,
+            'scope' => $invoice->store_id ? 'store' : 'organization',
             'year' => $invoice->year,
             'month' => $invoice->month,
             'period_start' => $invoice->period_start->toDateString(),
@@ -541,6 +553,160 @@ class AIBillingService
                 'notes' => $p->notes,
                 'created_at' => $p->created_at->toIso8601String(),
             ]),
+        ];
+    }
+
+    /**
+     * Aggregated billing summary for the current request.
+     * If $storeId is provided, returns the per-store summary (legacy).
+     * If $storeId is null, aggregates ALL invoices/usage for the org so an
+     * organization owner sees a unified dashboard across every branch.
+     */
+    public function getBillingSummary(string $organizationId, ?string $storeId = null): array
+    {
+        if ($storeId) {
+            return $this->getStoreBillingSummary($storeId, $organizationId);
+        }
+
+        $monthStart = now()->startOfMonth();
+        $marginPercentage = AIBillingSetting::getFloat('margin_percentage', 20.0);
+
+        $current = AIUsageLog::where('organization_id', $organizationId)
+            ->where('created_at', '>=', $monthStart)
+            ->where('status', 'success')
+            ->selectRaw("
+                COUNT(*) as total_requests,
+                SUM(total_tokens) as total_tokens,
+                SUM(estimated_cost_usd) as raw_cost,
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * (1 + ? / 100) END) as billed_cost
+            ", [$marginPercentage])
+            ->first();
+
+        $byFeature = AIUsageLog::where('organization_id', $organizationId)
+            ->where('created_at', '>=', $monthStart)
+            ->where('status', 'success')
+            ->groupBy('feature_slug')
+            ->selectRaw("
+                feature_slug,
+                COUNT(*) as request_count,
+                SUM(total_tokens) as total_tokens,
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * (1 + ? / 100) END) as billed_cost
+            ", [$marginPercentage])
+            ->orderByDesc('billed_cost')
+            ->get()
+            ->map(fn ($row) => [
+                'feature_slug' => $row->feature_slug,
+                'request_count' => (int) $row->request_count,
+                'total_tokens' => (int) $row->total_tokens,
+                'billed_cost_usd' => round((float) $row->billed_cost, 5),
+            ]);
+
+        $byStore = AIUsageLog::where('organization_id', $organizationId)
+            ->where('created_at', '>=', $monthStart)
+            ->where('status', 'success')
+            ->groupBy('store_id')
+            ->selectRaw("
+                store_id,
+                COUNT(*) as request_count,
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * (1 + ? / 100) END) as billed_cost
+            ", [$marginPercentage])
+            ->orderByDesc('billed_cost')
+            ->get()
+            ->map(function ($row) {
+                $name = $row->store_id
+                    ? \App\Domain\Core\Models\Store::where('id', $row->store_id)->value('name')
+                    : null;
+                return [
+                    'store_id' => $row->store_id,
+                    'store_name' => $name ?? 'Organization (no branch)',
+                    'request_count' => (int) $row->request_count,
+                    'billed_cost_usd' => round((float) $row->billed_cost, 5),
+                ];
+            });
+
+        $recent = AIBillingInvoice::where('organization_id', $organizationId)
+            ->with('store:id,name')
+            ->orderByDesc('year')->orderByDesc('month')
+            ->limit(12)
+            ->get();
+
+        $unpaidTotal = (float) AIBillingInvoice::where('organization_id', $organizationId)
+            ->whereIn('status', ['pending', 'overdue'])
+            ->sum('billed_amount_usd');
+
+        return [
+            'scope' => 'organization',
+            'current_month' => [
+                'year' => now()->year,
+                'month' => now()->month,
+                'total_requests' => (int) ($current->total_requests ?? 0),
+                'total_tokens' => (int) ($current->total_tokens ?? 0),
+                'raw_cost_usd' => round((float) ($current->raw_cost ?? 0), 5),
+                'billed_cost_usd' => round((float) ($current->billed_cost ?? 0), 5),
+                'by_feature' => $byFeature,
+                'by_store' => $byStore,
+            ],
+            'unpaid_total_usd' => round($unpaidTotal, 5),
+            'recent_invoices' => $recent->map(fn ($inv) => [
+                'id' => $inv->id,
+                'invoice_number' => $inv->invoice_number,
+                'store_id' => $inv->store_id,
+                'store_name' => $inv->store?->name,
+                'scope' => $inv->store_id ? 'store' : 'organization',
+                'year' => $inv->year,
+                'month' => $inv->month,
+                'billed_amount_usd' => (float) $inv->billed_amount_usd,
+                'status' => $inv->status,
+                'due_date' => $inv->due_date->toDateString(),
+                'paid_at' => $inv->paid_at?->toIso8601String(),
+            ]),
+        ];
+    }
+
+    /**
+     * Pay multiple invoices in one transaction. Restricted to invoices that
+     * belong to the given organization.
+     *
+     * @return array{paid: int, total_usd: float, invoice_ids: array<string>, skipped: array<string>}
+     */
+    public function bulkPayInvoices(
+        string $organizationId,
+        array $invoiceIds,
+        string $userId,
+        string $paymentMethod = 'manual',
+        ?string $reference = null,
+        ?string $notes = null,
+    ): array {
+        $invoices = AIBillingInvoice::where('organization_id', $organizationId)
+            ->whereIn('id', $invoiceIds)
+            ->whereIn('status', ['pending', 'overdue'])
+            ->get();
+
+        $paidIds = [];
+        $skipped = array_values(array_diff($invoiceIds, $invoices->pluck('id')->toArray()));
+        $totalPaid = 0.0;
+
+        foreach ($invoices as $invoice) {
+            DB::transaction(function () use ($invoice, $paymentMethod, $reference, $notes, $userId, &$totalPaid, &$paidIds) {
+                $remaining = (float) $invoice->billed_amount_usd
+                    - (float) $invoice->payments()->sum('amount_usd');
+                if ($remaining <= 0) {
+                    return;
+                }
+                $this->recordPayment(
+                    $invoice->id, $remaining, $paymentMethod,
+                    $reference, $notes, $userId,
+                );
+                $totalPaid += $remaining;
+                $paidIds[] = $invoice->id;
+            });
+        }
+
+        return [
+            'paid' => count($paidIds),
+            'total_usd' => round($totalPaid, 5),
+            'invoice_ids' => $paidIds,
+            'skipped' => $skipped,
         ];
     }
 

@@ -109,8 +109,17 @@ class WameedAIController extends BaseApiController
     public function features(Request $request): JsonResponse
     {
         $storeId = $this->resolveStoreId($request);
+        $orgId = $this->resolveOrganizationId($request);
         $features = AIFeatureDefinition::where('is_enabled', true)
-            ->when($storeId, fn ($q) => $q->with(['storeConfigs' => fn ($q2) => $q2->where('store_id', $storeId)]))
+            ->when($orgId, function ($q) use ($storeId, $orgId) {
+                $q->with(['storeConfigs' => function ($q2) use ($storeId, $orgId) {
+                    if ($storeId) {
+                        $q2->where('store_id', $storeId);
+                    } else {
+                        $q2->whereNull('store_id')->where('organization_id', $orgId);
+                    }
+                }]);
+            })
             ->orderBy('category')
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -124,8 +133,14 @@ class WameedAIController extends BaseApiController
     public function storeConfig(Request $request): JsonResponse
     {
         $storeId = $this->resolveStoreId($request);
-        $configs = AIStoreFeatureConfig::where('store_id', $storeId)
-            ->with('featureDefinition')
+        $orgId = $this->resolveOrganizationId($request);
+        $configs = AIStoreFeatureConfig::query()
+            ->where('organization_id', $orgId)
+            ->when($storeId,
+                fn ($q) => $q->where('store_id', $storeId),
+                fn ($q) => $q->whereNull('store_id'),
+            )
+            ->with(['featureDefinition', 'store:id,name'])
             ->get();
 
         return $this->success(AIStoreFeatureConfigResource::collection($configs));
@@ -134,12 +149,13 @@ class WameedAIController extends BaseApiController
     public function updateStoreConfig(UpdateFeatureConfigRequest $request, string $featureId): JsonResponse
     {
         $storeId = $this->resolveStoreId($request);
+        $orgId = $this->resolveOrganizationId($request);
         $config = AIStoreFeatureConfig::updateOrCreate(
-            ['store_id' => $storeId, 'ai_feature_definition_id' => $featureId],
-            $request->validated()
+            ['store_id' => $storeId, 'organization_id' => $orgId, 'ai_feature_definition_id' => $featureId],
+            array_merge($request->validated(), ['organization_id' => $orgId])
         );
 
-        return $this->success(new AIStoreFeatureConfigResource($config->load('featureDefinition')));
+        return $this->success(new AIStoreFeatureConfigResource($config->load(['featureDefinition', 'store:id,name'])));
     }
 
     // ─── Suggestions ───
@@ -147,10 +163,14 @@ class WameedAIController extends BaseApiController
     public function suggestions(Request $request): JsonResponse
     {
         $storeId = $this->resolveStoreId($request);
-        $suggestions = AISuggestion::where('store_id', $storeId)
+        $orgId = $this->resolveOrganizationId($request);
+        $suggestions = AISuggestion::query()
+            ->where('organization_id', $orgId)
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->when($request->query('feature'), fn ($q, $f) => $q->where('feature_slug', $f))
             ->when($request->query('status'), fn ($q, $s) => $q->where('status', $s))
             ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->with('store:id,name')
             ->orderByDesc('created_at')
             ->paginate($request->query('per_page', 20));
 
@@ -162,25 +182,27 @@ class WameedAIController extends BaseApiController
 
     public function updateSuggestionStatus(UpdateSuggestionStatusRequest $request, string $suggestionId): JsonResponse
     {
-        $suggestion = AISuggestion::where('store_id', $this->resolveStoreId($request))
+        $orgId = $this->resolveOrganizationId($request);
+        $storeId = $this->resolveStoreId($request);
+        $suggestion = AISuggestion::where('organization_id', $orgId)
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->findOrFail($suggestionId);
         $status = $request->validated()['status'];
         $suggestion->update(['status' => $status]);
 
         $userId = $request->user()->id;
-        $storeId = $this->resolveStoreId($request);
 
         if ($status === 'accepted') {
             event(new AISuggestionAccepted(
                 suggestionId: $suggestionId,
-                storeId: $storeId,
+                storeId: $suggestion->store_id ?? $orgId,
                 featureSlug: $suggestion->feature_slug,
                 userId: $userId,
             ));
         } elseif ($status === 'dismissed') {
             event(new AISuggestionDismissed(
                 suggestionId: $suggestionId,
-                storeId: $storeId,
+                storeId: $suggestion->store_id ?? $orgId,
                 featureSlug: $suggestion->feature_slug,
                 userId: $userId,
                 dismissalReason: $request->input('reason'),
@@ -197,6 +219,7 @@ class WameedAIController extends BaseApiController
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;
         $data['store_id'] = $this->resolveStoreId($request);
+        $data['organization_id'] = $this->resolveOrganizationId($request);
 
         $feedback = AIFeedback::create($data);
 
@@ -208,9 +231,10 @@ class WameedAIController extends BaseApiController
     public function usage(Request $request): JsonResponse
     {
         $storeId = $this->resolveStoreId($request);
-        $today = $this->usageService->getTodayUsage($storeId);
-        $monthly = $this->usageService->getMonthlyUsage($storeId);
-        $byFeature = $this->usageService->getUsageByFeature($storeId);
+        $orgId = $this->resolveOrganizationId($request);
+        $today = $this->usageService->getTodayUsage($storeId, $orgId);
+        $monthly = $this->usageService->getMonthlyUsage($storeId, null, $orgId);
+        $byFeature = $this->usageService->getUsageByFeature($storeId, 30, $orgId);
 
         return $this->success([
             'today'      => $today,
@@ -222,7 +246,10 @@ class WameedAIController extends BaseApiController
     public function usageHistory(Request $request): JsonResponse
     {
         $storeId = $this->resolveStoreId($request);
-        $summaries = AIDailyUsageSummary::where('store_id', $storeId)
+        $orgId = $this->resolveOrganizationId($request);
+        $summaries = AIDailyUsageSummary::query()
+            ->where('organization_id', $orgId)
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->where('date', '>=', $request->query('from', now()->subDays(30)->toDateString()))
             ->where('date', '<=', $request->query('to', now()->toDateString()))
             ->orderBy('date')
@@ -234,7 +261,10 @@ class WameedAIController extends BaseApiController
     public function usageLogs(Request $request): JsonResponse
     {
         $storeId = $this->resolveStoreId($request);
-        $logs = AIUsageLog::where('store_id', $storeId)
+        $orgId = $this->resolveOrganizationId($request);
+        $logs = AIUsageLog::query()
+            ->where('organization_id', $orgId)
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
             ->when($request->query('feature'), fn ($q, $f) => $q->where('feature_slug', $f))
             ->orderByDesc('created_at')
             ->paginate($request->query('per_page', 20));
@@ -247,16 +277,19 @@ class WameedAIController extends BaseApiController
     public function billingSummary(Request $request): JsonResponse
     {
         $storeId = $this->resolveStoreId($request);
-        $organizationId = $request->header('X-Organization-Id')
-            ?? \App\Domain\Core\Models\Store::where('id', $storeId)->value('organization_id');
+        $orgId = $this->resolveOrganizationId($request);
 
-        return $this->success($this->billingService->getStoreBillingSummary($storeId, $organizationId));
+        return $this->success($this->billingService->getBillingSummary($orgId, $storeId));
     }
 
     public function billingInvoices(Request $request): JsonResponse
     {
         $storeId = $this->resolveStoreId($request);
-        $invoices = \App\Domain\WameedAI\Models\AIBillingInvoice::forStore($storeId)
+        $orgId = $this->resolveOrganizationId($request);
+        $invoices = \App\Domain\WameedAI\Models\AIBillingInvoice::query()
+            ->where('organization_id', $orgId)
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
+            ->with('store:id,name')
             ->orderByDesc('year')
             ->orderByDesc('month')
             ->paginate($request->query('per_page', 20));
@@ -264,6 +297,9 @@ class WameedAIController extends BaseApiController
         $data = $invoices->getCollection()->map(fn ($inv) => [
             'id' => $inv->id,
             'invoice_number' => $inv->invoice_number,
+            'store_id' => $inv->store_id,
+            'store_name' => $inv->store?->name,
+            'scope' => $inv->store_id ? 'store' : 'organization',
             'year' => $inv->year,
             'month' => $inv->month,
             'total_requests' => $inv->total_requests,
@@ -278,14 +314,41 @@ class WameedAIController extends BaseApiController
 
     public function billingInvoiceDetail(Request $request, string $invoiceId): JsonResponse
     {
-        $storeId = $this->resolveStoreId($request);
-        $detail = $this->billingService->getInvoiceDetail($invoiceId, $storeId);
+        $orgId = $this->resolveOrganizationId($request);
+        $detail = $this->billingService->getInvoiceDetail($invoiceId, $orgId);
 
         if (!$detail) {
             return $this->notFound('Invoice not found');
         }
 
         return $this->success($detail);
+    }
+
+    /**
+     * POST /wameed-ai/billing/invoices/bulk-pay
+     * Body: { invoice_ids: [], payment_method?, reference?, notes? }
+     * Org-scoped users can pay multiple invoices across stores in one shot.
+     */
+    public function billingBulkPay(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'invoice_ids' => 'required|array|min:1',
+            'invoice_ids.*' => 'uuid',
+            'payment_method' => 'nullable|string|max:50',
+            'reference' => 'nullable|string|max:255',
+            'notes' => 'nullable|string|max:2000',
+        ]);
+        $orgId = $this->resolveOrganizationId($request);
+        $result = $this->billingService->bulkPayInvoices(
+            $orgId,
+            $data['invoice_ids'],
+            $request->user()->id,
+            $data['payment_method'] ?? 'manual',
+            $data['reference'] ?? null,
+            $data['notes'] ?? null,
+        );
+
+        return $this->success($result);
     }
 
     // ─── AI Features — Inventory ───

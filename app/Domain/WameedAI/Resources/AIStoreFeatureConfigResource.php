@@ -12,6 +12,8 @@ class AIStoreFeatureConfigResource extends JsonResource
         return [
             'id'                       => $this->id,
             'store_id'                 => $this->store_id,
+            'store_name'               => $this->whenLoaded('store', fn () => $this->store?->name),
+            'scope'                    => $this->store_id ? 'store' : 'organization',
             'ai_feature_definition_id' => $this->ai_feature_definition_id,
             'is_enabled'               => (bool) $this->is_enabled,
             'daily_limit'              => (int) $this->daily_limit,

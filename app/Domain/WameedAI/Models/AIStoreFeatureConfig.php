@@ -15,6 +15,7 @@ class AIStoreFeatureConfig extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
+        'organization_id',
         'store_id',
         'ai_feature_definition_id',
         'is_enabled',
