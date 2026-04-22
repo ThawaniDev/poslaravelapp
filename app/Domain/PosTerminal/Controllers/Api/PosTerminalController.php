@@ -6,11 +6,13 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Resources\ProductResource;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Resources\CustomerResource;
+use App\Domain\PosTerminal\Requests\BatchCloseSessionsRequest;
 use App\Domain\PosTerminal\Requests\CloseSessionRequest;
 use App\Domain\PosTerminal\Requests\CreateReturnRequest;
 use App\Domain\PosTerminal\Requests\CreateTransactionRequest;
 use App\Domain\PosTerminal\Requests\HoldCartRequest;
 use App\Domain\PosTerminal\Requests\OpenSessionRequest;
+use App\Domain\PosTerminal\Requests\UpdateTransactionNotesRequest;
 use App\Domain\PosTerminal\Resources\HeldCartResource;
 use App\Domain\PosTerminal\Resources\PosSessionResource;
 use App\Domain\PosTerminal\Resources\TransactionResource;
@@ -87,6 +89,52 @@ public function showSession(Request $request, string $session): JsonResponse
         }
     }
 
+    /**
+     * Reopen a previously closed session for corrections (manager-only).
+     */
+    public function reopenSession(Request $request, string $session): JsonResponse
+    {
+        try {
+            $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
+            $reopened = $this->sessionService->reopen($found);
+            return $this->success(new PosSessionResource($reopened));
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * End-of-day batch close: close every open session for the user's
+     * accessible store(s) using each session's expected_cash.
+     */
+    public function batchCloseSessions(BatchCloseSessionsRequest $request): JsonResponse
+    {
+        $accessible = $this->resolvedStoreIds($request);
+        $requested = $request->input('store_ids', []);
+        $storeIds = !empty($requested)
+            ? array_values(array_intersect($accessible, $requested))
+            : $accessible;
+
+        if (empty($storeIds)) {
+            return $this->error(__('subscription.organization_required'), 422);
+        }
+
+        return $this->success($this->sessionService->batchClose($storeIds));
+    }
+
+    /**
+     * Aggregated session stats by cashier and register.
+     */
+    public function sessionsSummary(Request $request): JsonResponse
+    {
+        $storeIds = $this->resolvedStoreIds($request);
+        return $this->success($this->sessionService->summary(
+            $storeIds,
+            $request->query('from'),
+            $request->query('to'),
+        ));
+    }
+
     // ─── Transactions ────────────────────────────────────────
 
     public function transactions(Request $request): JsonResponse
@@ -148,6 +196,32 @@ public function showSession(Request $request, string $session): JsonResponse
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
         }
+    }
+
+    /**
+     * Update editable fields (notes, customer_id) on an existing transaction.
+     */
+    public function updateTransactionNotes(UpdateTransactionNotesRequest $request, string $transaction): JsonResponse
+    {
+        try {
+            $found = $this->transactionService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $transaction);
+            $updated = $this->transactionService->updateNotes($found, $request->validated(), $request->user());
+            return $this->success(new TransactionResource($updated));
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * Stream a CSV export of transactions for the current store scope.
+     * Filters: type, status, from, to.
+     */
+    public function exportTransactions(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        return $this->transactionService->exportCsv(
+            $this->resolvedStoreIds($request),
+            $request->only(['type', 'status', 'from', 'to']),
+        );
     }
 
     public function returnTransaction(CreateReturnRequest $request): JsonResponse

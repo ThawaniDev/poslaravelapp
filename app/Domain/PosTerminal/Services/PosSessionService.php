@@ -115,6 +115,124 @@ class PosSessionService
     }
 
     /**
+     * Reopen a previously closed session for corrections (manager-only).
+     * Clears closing_cash / cash_difference so a fresh close-out is required.
+     */
+    public function reopen(PosSession $session): PosSession
+    {
+        if ($session->status === CashSessionStatus::Open) {
+            throw new \RuntimeException(__('pos.session_already_open'));
+        }
+
+        $session->update([
+            'status' => CashSessionStatus::Open,
+            'closing_cash' => null,
+            'cash_difference' => null,
+            'closed_at' => null,
+            'z_report_printed' => false,
+        ]);
+
+        return $session->fresh();
+    }
+
+    /**
+     * Close every open session for the given store(s) using each session's
+     * own expected_cash as the closing_cash (zero-difference end-of-day).
+     * Returns an array of closed session summaries.
+     */
+    public function batchClose(array $storeIds): array
+    {
+        $sessions = PosSession::whereIn('store_id', $storeIds)
+            ->where('status', CashSessionStatus::Open)
+            ->get();
+
+        $closed = [];
+        foreach ($sessions as $session) {
+            $expectedCash = ($session->opening_cash ?? 0)
+                + ($session->total_cash_sales ?? 0);
+            $session->update([
+                'status' => CashSessionStatus::Closed,
+                'closing_cash' => $expectedCash,
+                'expected_cash' => $expectedCash,
+                'cash_difference' => 0,
+                'closed_at' => now(),
+            ]);
+            $closed[] = [
+                'id' => $session->id,
+                'register_id' => $session->register_id,
+                'cashier_id' => $session->cashier_id,
+                'expected_cash' => (float) $expectedCash,
+            ];
+        }
+
+        return [
+            'closed_count' => count($closed),
+            'sessions' => $closed,
+        ];
+    }
+
+    /**
+     * Daily summary stats grouped by cashier and register, optionally
+     * scoped to a date range.
+     */
+    public function summary(array $storeIds, ?string $from = null, ?string $to = null): array
+    {
+        $query = PosSession::whereIn('store_id', $storeIds);
+
+        if ($from) {
+            $query->whereDate('opened_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('opened_at', '<=', $to);
+        }
+
+        $sessions = $query->with(['register:id,name', 'cashier:id,name'])->get();
+
+        $byCashier = $sessions->groupBy('cashier_id')->map(function ($group) {
+            $first = $group->first();
+            return [
+                'cashier_id' => $first->cashier_id,
+                'cashier_name' => $first->cashier?->name,
+                'session_count' => $group->count(),
+                'total_cash_sales' => (float) $group->sum('total_cash_sales'),
+                'total_card_sales' => (float) $group->sum('total_card_sales'),
+                'total_other_sales' => (float) $group->sum('total_other_sales'),
+                'total_refunds' => (float) $group->sum('total_refunds'),
+                'transaction_count' => (int) $group->sum('transaction_count'),
+                'cash_difference_total' => (float) $group->sum('cash_difference'),
+            ];
+        })->values();
+
+        $byRegister = $sessions->groupBy('register_id')->map(function ($group) {
+            $first = $group->first();
+            return [
+                'register_id' => $first->register_id,
+                'register_name' => $first->register?->name,
+                'session_count' => $group->count(),
+                'total_cash_sales' => (float) $group->sum('total_cash_sales'),
+                'total_card_sales' => (float) $group->sum('total_card_sales'),
+                'transaction_count' => (int) $group->sum('transaction_count'),
+            ];
+        })->values();
+
+        return [
+            'session_count' => $sessions->count(),
+            'open_count' => $sessions->where('status', CashSessionStatus::Open)->count(),
+            'closed_count' => $sessions->where('status', CashSessionStatus::Closed)->count(),
+            'totals' => [
+                'cash_sales' => (float) $sessions->sum('total_cash_sales'),
+                'card_sales' => (float) $sessions->sum('total_card_sales'),
+                'other_sales' => (float) $sessions->sum('total_other_sales'),
+                'refunds' => (float) $sessions->sum('total_refunds'),
+                'voids' => (float) $sessions->sum('total_voids'),
+                'transaction_count' => (int) $sessions->sum('transaction_count'),
+            ],
+            'by_cashier' => $byCashier,
+            'by_register' => $byRegister,
+        ];
+    }
+
+    /**
      * Record a cash drop (cash_out) or paid-in (cash_in) against an open
      * POS session. Writes a row in `cash_events` and adjusts the session's
      * `total_cash_sales` running balance so the close-shift expected_cash

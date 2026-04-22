@@ -73,4 +73,13 @@ return [
     'status_active'       => 'Active',
     'status_suspended'    => 'Suspended',
     'status_deactivated'  => 'Deactivated',
+
+    // Resource actions
+    'view_sessions'                  => 'View Sessions',
+    'view_transactions'              => 'View Transactions',
+    'clone_terminal'                 => 'Clone Terminal',
+    'clone_device_id_hint'           => 'Leave blank if the new terminal will register on first launch.',
+    'cloned'                         => 'Terminal cloned successfully.',
+    'bulk_toggle_softpos'            => 'Toggle SoftPOS for Selected',
+    'bulk_toggle_softpos_warning'    => 'This will flip the SoftPOS enablement flag for every selected terminal. Already-active SoftPOS terminals will be disabled.',
 ];

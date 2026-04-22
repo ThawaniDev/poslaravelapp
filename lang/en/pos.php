@@ -124,4 +124,11 @@ return [
     'payment_total_insufficient' => 'Payment total does not cover the amount due.',
     'return_qty_exceeds_original' => 'Return quantity for :product exceeds original (max: :max).',
     'only_completed_can_void' => 'Only completed transactions can be voided.',
+    'transaction_already_voided' => 'This transaction has already been voided and cannot be edited.',
+
+    // Session lifecycle
+    'session_already_open'   => 'This session is already open.',
+    'session_reopened'       => 'Session reopened successfully.',
+    'batch_close_success'    => ':count session(s) were closed.',
+    'notes_updated'          => 'Transaction details updated.',
 ];

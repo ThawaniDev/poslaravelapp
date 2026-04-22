@@ -375,6 +375,48 @@ class RegisterResource extends Resource
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
+                    Tables\Actions\Action::make('view_sessions')
+                        ->label(__('terminals.view_sessions'))
+                        ->icon('heroicon-o-clock')
+                        ->color('info')
+                        ->visible(fn () => auth('admin')->user()?->hasPermission('pos_sessions.view'))
+                        ->url(fn (Register $record) => PosSessionResource::getUrl('index', [
+                            'tableFilters' => ['register_id' => ['value' => $record->id]],
+                        ])),
+                    Tables\Actions\Action::make('view_transactions')
+                        ->label(__('terminals.view_transactions'))
+                        ->icon('heroicon-o-receipt-percent')
+                        ->color('info')
+                        ->visible(fn () => auth('admin')->user()?->hasPermission('transactions.view'))
+                        ->url(fn (Register $record) => TransactionResource::getUrl('index', [
+                            'tableFilters' => ['register_id' => ['value' => $record->id]],
+                        ])),
+                    Tables\Actions\Action::make('clone_terminal')
+                        ->label(__('terminals.clone_terminal'))
+                        ->icon('heroicon-o-document-duplicate')
+                        ->color('gray')
+                        ->visible(fn () => auth('admin')->user()?->hasPermission('terminals.create'))
+                        ->form([
+                            Forms\Components\TextInput::make('name')
+                                ->label(__('Name'))
+                                ->required()
+                                ->maxLength(255),
+                            Forms\Components\TextInput::make('device_id')
+                                ->label(__('Device ID'))
+                                ->maxLength(255)
+                                ->helperText(__('terminals.clone_device_id_hint')),
+                        ])
+                        ->action(function (Register $record, array $data) {
+                            $copy = $record->replicate([
+                                'last_sync_at', 'last_transaction_at', 'is_online',
+                                'softpos_activated_at', 'created_at', 'updated_at',
+                            ]);
+                            $copy->name = $data['name'];
+                            $copy->device_id = $data['device_id'] ?? null;
+                            $copy->softpos_status = 'pending';
+                            $copy->save();
+                            Notification::make()->title(__('terminals.cloned'))->success()->send();
+                        }),
                     Tables\Actions\Action::make('toggle_status')
                         ->label(fn (Register $record) => $record->is_active ? __('Deactivate') : __('Activate'))
                         ->icon(fn (Register $record) => $record->is_active ? 'heroicon-o-no-symbol' : 'heroicon-o-check-circle')
@@ -447,6 +489,17 @@ class RegisterResource extends Resource
                         ->deselectRecordsAfterCompletion()
                         ->visible(fn () => auth('admin')->user()?->hasPermission('terminals.edit'))
                         ->action(fn ($records) => $records->each(fn ($r) => $r->update(['is_active' => false]))),
+                    Tables\Actions\BulkAction::make('bulk_toggle_softpos')
+                        ->label(__('terminals.bulk_toggle_softpos'))
+                        ->icon('heroicon-o-bolt')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalDescription(__('terminals.bulk_toggle_softpos_warning'))
+                        ->deselectRecordsAfterCompletion()
+                        ->visible(fn () => auth('admin')->user()?->hasPermission('terminals.edit'))
+                        ->action(fn ($records) => $records->each(fn ($r) => $r->update([
+                            'softpos_enabled' => ! $r->softpos_enabled,
+                        ]))),
                     Tables\Actions\DeleteBulkAction::make()
                         ->visible(fn () => auth('admin')->user()?->hasPermission('terminals.delete')),
                 ]),

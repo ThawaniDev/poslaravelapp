@@ -371,7 +371,7 @@ class RoleService
             'permissions'     => [
                 // POS
                 'pos.shift_open', 'pos.shift_close', 'pos.sell', 'pos.discount', 'pos.approve_discount',
-                'pos.void', 'pos.void_transaction', 'pos.refund', 'pos.return', 'pos.tax_exempt',
+                'pos.void', 'pos.void_transaction', 'pos.edit_transaction', 'pos.refund', 'pos.return', 'pos.tax_exempt',
                 'pos.hold_recall', 'pos.reprint_receipt', 'pos.price_override', 'pos.no_sale',
                 'pos.view_sessions', 'pos.manage_terminals',
                 // Orders
@@ -594,7 +594,7 @@ class RoleService
             'permissions'     => [
                 // POS
                 'pos.shift_open', 'pos.shift_close', 'pos.sell', 'pos.discount', 'pos.approve_discount',
-                'pos.void', 'pos.void_transaction', 'pos.refund', 'pos.return',
+                'pos.void', 'pos.void_transaction', 'pos.edit_transaction', 'pos.refund', 'pos.return',
                 'pos.hold_recall', 'pos.reprint_receipt', 'pos.price_override', 'pos.view_sessions',
                 // Orders
                 'orders.view', 'orders.manage', 'orders.return', 'orders.void', 'orders.update_status',
@@ -640,7 +640,7 @@ class RoleService
             'permissions'     => [
                 // POS
                 'pos.shift_open', 'pos.shift_close', 'pos.sell', 'pos.discount', 'pos.approve_discount',
-                'pos.void', 'pos.void_transaction', 'pos.refund', 'pos.return',
+                'pos.void', 'pos.void_transaction', 'pos.edit_transaction', 'pos.refund', 'pos.return',
                 'pos.hold_recall', 'pos.reprint_receipt', 'pos.price_override', 'pos.no_sale',
                 'pos.view_sessions', 'pos.manage_terminals',
                 // Orders
@@ -880,7 +880,7 @@ class RoleService
             'permissions'     => [
                 // POS
                 'pos.shift_open', 'pos.shift_close', 'pos.sell', 'pos.discount', 'pos.approve_discount',
-                'pos.void', 'pos.void_transaction', 'pos.refund', 'pos.return',
+                'pos.void', 'pos.void_transaction', 'pos.edit_transaction', 'pos.refund', 'pos.return',
                 'pos.hold_recall', 'pos.reprint_receipt', 'pos.price_override', 'pos.view_sessions',
                 // Orders
                 'orders.view', 'orders.manage', 'orders.return', 'orders.void', 'orders.update_status',

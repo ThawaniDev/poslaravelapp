@@ -18,9 +18,12 @@ Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
     // Sessions
     Route::get('/sessions', [PosTerminalController::class, 'sessions'])->middleware('permission:pos.view_sessions');
     Route::get('/sessions/mine/open', [PosTerminalController::class, 'myOpenSessions'])->middleware('permission:pos.sell');
+    Route::get('/sessions/summary', [PosTerminalController::class, 'sessionsSummary'])->middleware('permission:pos.view_sessions');
     Route::post('/sessions', [PosTerminalController::class, 'openSession'])->middleware('permission:pos.shift_open');
+    Route::post('/sessions/batch-close', [PosTerminalController::class, 'batchCloseSessions'])->middleware('permission:pos.shift_close');
     Route::get('/sessions/{session}', [PosTerminalController::class, 'showSession'])->middleware('permission:pos.view_sessions');
     Route::put('/sessions/{session}/close', [PosTerminalController::class, 'closeSession'])->middleware('permission:pos.shift_close');
+    Route::put('/sessions/{session}/reopen', [PosTerminalController::class, 'reopenSession'])->middleware('permission:pos.shift_open');
 
     // Cash events (drop / payout / paid-in) on an open session
     Route::get('/sessions/{session}/cash-events', [PosTerminalController::class, 'cashEvents'])->middleware('permission:pos.view_sessions');
@@ -34,10 +37,12 @@ Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
     Route::get('/transactions', [PosTerminalController::class, 'transactions'])->middleware('permission:pos.sell');
     Route::post('/transactions', [PosTerminalController::class, 'createTransaction'])->middleware(['permission:pos.sell', 'plan.limit:transactions_per_month']);
     Route::post('/transactions/return', [PosTerminalController::class, 'returnTransaction'])->middleware('permission:pos.return');
+    Route::get('/transactions/export', [PosTerminalController::class, 'exportTransactions'])->middleware('permission:transactions.export');
     Route::get('/transactions/by-number/{number}', [PosTerminalController::class, 'showTransactionByNumber'])->middleware('permission:pos.sell');
     Route::get('/transactions/{transaction}', [PosTerminalController::class, 'showTransaction'])->middleware('permission:pos.sell');
     Route::get('/transactions/{transaction}/receipt', [PosTerminalController::class, 'transactionReceipt'])->middleware('permission:pos.sell');
     Route::post('/transactions/{transaction}/void', [PosTerminalController::class, 'voidTransaction'])->middleware('permission:pos.void_transaction');
+    Route::put('/transactions/{transaction}/notes', [PosTerminalController::class, 'updateTransactionNotes'])->middleware('permission:pos.edit_transaction');
     Route::post('/transactions/exchange', [PosTerminalController::class, 'exchangeTransaction'])->middleware('permission:pos.return');
 
     // Held Carts

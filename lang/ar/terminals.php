@@ -73,4 +73,13 @@ return [
     'status_active'       => 'نشط',
     'status_suspended'    => 'موقوف',
     'status_deactivated'  => 'معطل',
+
+    // Resource actions
+    'view_sessions'                  => 'عرض الجلسات',
+    'view_transactions'              => 'عرض المعاملات',
+    'clone_terminal'                 => 'نسخ جهاز نقطة البيع',
+    'clone_device_id_hint'           => 'اتركه فارغًا إذا سيتم تسجيل الجهاز عند أول تشغيل.',
+    'cloned'                         => 'تم نسخ جهاز نقطة البيع بنجاح.',
+    'bulk_toggle_softpos'            => 'تبديل SoftPOS للمحدد',
+    'bulk_toggle_softpos_warning'    => 'سيتم عكس حالة تفعيل SoftPOS لكل جهاز محدد. سيتم تعطيل الأجهزة المفعّل عليها SoftPOS حاليًا.',
 ];

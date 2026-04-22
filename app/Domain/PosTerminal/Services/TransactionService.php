@@ -17,6 +17,7 @@ use App\Domain\Payment\Models\Payment;
 use App\Domain\PosTerminal\Enums\TransactionStatus;
 use App\Domain\PosTerminal\Enums\TransactionType;
 use App\Domain\PosTerminal\Models\Transaction;
+use App\Domain\PosTerminal\Models\TransactionAuditLog;
 use App\Domain\PosTerminal\Models\TransactionItem;
 use App\Domain\PosTerminal\Models\PosSession;
 use App\Domain\Report\Models\DailySalesSummary;
@@ -383,6 +384,13 @@ class TransactionService
                 $session->increment('total_voids', (float) $transaction->total_amount);
             }
         }
+
+        TransactionAuditLog::record(
+            $transaction->id,
+            $actor->id,
+            'voided',
+            ['total_amount' => (float) $transaction->total_amount],
+        );
 
         return $transaction->fresh(['transactionItems', 'payments']);
     }
@@ -1095,5 +1103,106 @@ class TransactionService
         }
 
         return $number;
+    }
+
+    /**
+     * Update editable fields on an existing transaction (notes, customer link).
+     * Only `notes` and `customer_id` are mutable post-creation. Voided
+     * transactions are immutable.
+     */
+    public function updateNotes(Transaction $transaction, array $data, User $actor): Transaction
+    {
+        if ($transaction->status === TransactionStatus::Voided) {
+            throw new \RuntimeException(__('pos.transaction_already_voided'));
+        }
+
+        $payload = [];
+        if (array_key_exists('notes', $data)) {
+            $payload['notes'] = $data['notes'];
+        }
+        if (array_key_exists('customer_id', $data)) {
+            $payload['customer_id'] = $data['customer_id'];
+        }
+
+        if (empty($payload)) {
+            return $transaction;
+        }
+
+        $payload['sync_version'] = ($transaction->sync_version ?? 0) + 1;
+        $transaction->update($payload);
+
+        TransactionAuditLog::record(
+            $transaction->id,
+            $actor->id,
+            'notes_updated',
+            $payload,
+        );
+
+        return $transaction->fresh();
+    }
+
+    /**
+     * Stream a CSV export of transactions for the given store(s) and filters.
+     * Returns a StreamedResponse so the request memory footprint stays small
+     * even on large date ranges.
+     */
+    public function exportCsv(array $storeIds, array $filters = []): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $query = Transaction::whereIn('store_id', $storeIds)
+            ->with(['store:id,name', 'register:id,name', 'cashier:id,name', 'customer:id,name,phone']);
+
+        if (!empty($filters['type'])) {
+            $query->where('type', $filters['type']);
+        }
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+        if (!empty($filters['from'])) {
+            $query->whereDate('created_at', '>=', $filters['from']);
+        }
+        if (!empty($filters['to'])) {
+            $query->whereDate('created_at', '<=', $filters['to']);
+        }
+
+        $filename = 'transactions-' . now()->format('Ymd-His') . '.csv';
+
+        return response()->streamDownload(function () use ($query) {
+            $out = fopen('php://output', 'w');
+            // BOM so Excel opens UTF-8 correctly.
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, [
+                'Transaction #', 'Date', 'Type', 'Status',
+                'Store', 'Register', 'Cashier', 'Customer', 'Customer Phone',
+                'Subtotal', 'Discount', 'Tax', 'Tip', 'Total',
+                'ZATCA Status', 'Notes',
+            ]);
+
+            $query->orderByDesc('created_at')->chunk(500, function ($rows) use ($out) {
+                foreach ($rows as $tx) {
+                    fputcsv($out, [
+                        $tx->transaction_number,
+                        optional($tx->created_at)->toIso8601String(),
+                        $tx->type?->value,
+                        $tx->status?->value,
+                        $tx->store?->name,
+                        $tx->register?->name,
+                        $tx->cashier?->name,
+                        $tx->customer?->name,
+                        $tx->customer?->phone,
+                        $tx->subtotal,
+                        $tx->discount_amount,
+                        $tx->tax_amount,
+                        $tx->tip_amount,
+                        $tx->total_amount,
+                        $tx->zatca_status?->value,
+                        $tx->notes,
+                    ]);
+                }
+            });
+
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 }

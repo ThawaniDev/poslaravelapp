@@ -124,4 +124,11 @@ return [
     'payment_total_insufficient' => 'إجمالي المدفوعات لا يغطي المبلغ المطلوب.',
     'return_qty_exceeds_original' => 'كمية الإرجاع للمنتج :product تتجاوز الأصلية (الحد الأقصى: :max).',
     'only_completed_can_void' => 'يمكن إلغاء المعاملات المكتملة فقط.',
+    'transaction_already_voided' => 'تم إلغاء هذه المعاملة بالفعل ولا يمكن تعديلها.',
+
+    // دورة حياة الجلسة
+    'session_already_open'   => 'هذه الجلسة مفتوحة بالفعل.',
+    'session_reopened'       => 'تمت إعادة فتح الجلسة بنجاح.',
+    'batch_close_success'    => 'تم إغلاق :count جلسة.',
+    'notes_updated'          => 'تم تحديث تفاصيل المعاملة.',
 ];
