@@ -11,10 +11,11 @@ class PosSessionResource extends JsonResource
         return [
             'id' => $this->id,
             'store_id' => $this->store_id,
+            'store_name' => $this->whenLoaded('store', fn () => $this->store?->name),
             'register_id' => $this->register_id,
             'register_name' => $this->whenLoaded('register', fn () => $this->register?->name),
             'cashier_id' => $this->cashier_id,
-            'cashier_name' => $this->whenLoaded('cashier', fn () => $this->cashier->name),
+            'cashier_name' => $this->whenLoaded('cashier', fn () => $this->cashier?->name),
             'status' => $this->status?->value ?? $this->status,
             'opening_cash' => (float) $this->opening_cash,
             'closing_cash' => $this->closing_cash !== null ? (float) $this->closing_cash : null,

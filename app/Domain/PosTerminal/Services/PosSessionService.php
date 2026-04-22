@@ -16,6 +16,7 @@ class PosSessionService
     public function list(string $storeId, int $perPage = 20): LengthAwarePaginator
     {
         return PosSession::where('store_id', $storeId)
+            ->with(['store:id,name', 'register:id,name', 'cashier:id,name'])
             ->orderByDesc('opened_at')
             ->paginate($perPage);
     }
@@ -36,7 +37,9 @@ class PosSessionService
 
     public function find(string $sessionId, string $storeId): PosSession
     {
-        return PosSession::where('store_id', $storeId)->with('transactions')->findOrFail($sessionId);
+        return PosSession::where('store_id', $storeId)
+            ->with(['store:id,name', 'register:id,name', 'cashier:id,name', 'transactions'])
+            ->findOrFail($sessionId);
     }
 
     public function open(array $data, User $actor): PosSession
@@ -85,7 +88,7 @@ class PosSessionService
             'transaction_count' => 0,
             'opened_at' => now(),
             'z_report_printed' => false,
-        ]);
+        ])->load(['store:id,name', 'register:id,name', 'cashier:id,name']);
     }
 
     public function close(PosSession $session, array $data): PosSession
@@ -111,7 +114,7 @@ class PosSessionService
             'closed_at' => now(),
         ]);
 
-        return $session->fresh();
+        return $session->fresh(['store:id,name', 'register:id,name', 'cashier:id,name']);
     }
 
     /**
@@ -132,7 +135,7 @@ class PosSessionService
             'z_report_printed' => false,
         ]);
 
-        return $session->fresh();
+        return $session->fresh(['store:id,name', 'register:id,name', 'cashier:id,name']);
     }
 
     /**
