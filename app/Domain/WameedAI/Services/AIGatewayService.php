@@ -26,7 +26,7 @@ class AIGatewayService
      */
     public function call(
         string $featureSlug,
-        string $storeId,
+        ?string $storeId,
         string $organizationId,
         array $contextData,
         ?string $userId = null,
@@ -43,10 +43,16 @@ class AIGatewayService
                 return null;
             }
 
-            // 2. Check store-level config
-            $storeConfig = AIStoreFeatureConfig::where('store_id', $storeId)
-                ->where('ai_feature_definition_id', $feature->id)
-                ->first();
+            // 2. Check store-level config (skipped for org-scoped calls;
+            //    org-level configs are looked up by organization_id only).
+            $storeConfig = $storeId
+                ? AIStoreFeatureConfig::where('store_id', $storeId)
+                    ->where('ai_feature_definition_id', $feature->id)
+                    ->first()
+                : AIStoreFeatureConfig::whereNull('store_id')
+                    ->where('organization_id', $organizationId)
+                    ->where('ai_feature_definition_id', $feature->id)
+                    ->first();
 
             if ($storeConfig && !$storeConfig->is_enabled) {
                 return null;
@@ -504,38 +510,43 @@ class AIGatewayService
         ];
     }
 
-    private function checkRateLimit(string $storeId, string $featureId, ?AIStoreFeatureConfig $config): bool
+    private function checkRateLimit(?string $storeId, string $featureId, ?AIStoreFeatureConfig $config): bool
     {
         $dailyLimit = $config?->daily_limit ?? 100;
         $monthlyLimit = $config?->monthly_limit ?? 3000;
 
-        $todayCount = AIUsageLog::where('store_id', $storeId)
-            ->where('ai_feature_definition_id', $featureId)
+        $base = AIUsageLog::where('ai_feature_definition_id', $featureId)
+            ->whereIn('status', ['success', 'cached']);
+        if ($storeId) {
+            $base->where('store_id', $storeId);
+        } else {
+            $base->whereNull('store_id');
+        }
+
+        $todayCount = (clone $base)
             ->where('created_at', '>=', now()->startOfDay())
-            ->whereIn('status', ['success', 'cached'])
             ->count();
 
         if ($todayCount >= $dailyLimit) {
             return false;
         }
 
-        $monthCount = AIUsageLog::where('store_id', $storeId)
-            ->where('ai_feature_definition_id', $featureId)
+        $monthCount = (clone $base)
             ->where('created_at', '>=', now()->startOfMonth())
-            ->whereIn('status', ['success', 'cached'])
             ->count();
 
         return $monthCount < $monthlyLimit;
     }
 
-    private function buildCacheKey(string $featureSlug, string $storeId, array $contextData): string
+    private function buildCacheKey(string $featureSlug, ?string $storeId, array $contextData): string
     {
         $keyData = $contextData;
         if (isset($keyData['image_base64'])) {
             $keyData['image_base64'] = substr($keyData['image_base64'], 0, 64);
         }
         $dataHash = md5(json_encode($keyData));
-        return "wameed_ai:{$featureSlug}:{$storeId}:{$dataHash}";
+        $scope = $storeId ?: 'org';
+        return "wameed_ai:{$featureSlug}:{$scope}:{$dataHash}";
     }
 
     private function loadPrompt(string $featureSlug, ?string $customOverride = null): ?AIPrompt

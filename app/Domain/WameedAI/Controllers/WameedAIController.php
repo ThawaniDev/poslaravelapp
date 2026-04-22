@@ -588,7 +588,12 @@ class WameedAIController extends BaseApiController
                 'exception' => $e,
             ]);
 
-            return $this->error('An error occurred while processing the AI request.', 500);
+            $message = 'An error occurred while processing the AI request.';
+            if (config('app.debug')) {
+                $message .= ' [' . class_basename($e) . ': ' . $e->getMessage() . ']';
+            }
+
+            return $this->error($message, 500);
         }
     }
 }

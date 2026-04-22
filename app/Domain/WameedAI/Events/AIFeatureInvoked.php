@@ -10,7 +10,7 @@ class AIFeatureInvoked
     use Dispatchable, SerializesModels;
 
     public function __construct(
-        public readonly string $storeId,
+        public readonly ?string $storeId,
         public readonly string $featureSlug,
         public readonly string $userId,
         public readonly ?string $organizationId = null,
