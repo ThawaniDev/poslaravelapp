@@ -17,12 +17,15 @@ use App\Domain\PosTerminal\Resources\TransactionResource;
 use App\Domain\PosTerminal\Services\HeldCartService;
 use App\Domain\PosTerminal\Services\PosSessionService;
 use App\Domain\PosTerminal\Services\TransactionService;
+use App\Domain\Subscription\Traits\TracksSubscriptionUsage;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PosTerminalController extends BaseApiController
 {
+    use TracksSubscriptionUsage;
+
     public function __construct(
         private readonly PosSessionService $sessionService,
         private readonly TransactionService $transactionService,
@@ -106,6 +109,11 @@ public function showSession(Request $request, string $session): JsonResponse
                 $request->validated(),
                 $request->user(),
             );
+
+            if ($orgId = $this->resolveOrganizationId($request)) {
+                $this->refreshUsageFor($orgId, 'transactions_per_month');
+            }
+
             return $this->created(new TransactionResource($transaction));
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);

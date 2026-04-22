@@ -156,8 +156,9 @@ class PlanEnforcementService
                 ->where('is_active', true)
                 ->count(),
 
-            'transactions_per_month' => DB::table('orders')
+            'transactions_per_month' => DB::table('transactions')
                 ->whereIn('store_id', $storeIds)
+                ->whereNull('deleted_at')
                 ->where('created_at', '>=', now()->startOfMonth())
                 ->count(),
 

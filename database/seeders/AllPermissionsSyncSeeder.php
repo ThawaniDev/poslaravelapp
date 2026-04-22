@@ -50,6 +50,19 @@ class AllPermissionsSyncSeeder extends Seeder
         ['name' => 'terminals.edit',            'group' => 'terminals', 'description' => 'Edit POS terminal configuration'],
         ['name' => 'terminals.delete',          'group' => 'terminals', 'description' => 'Decommission POS terminals'],
 
+        // ── POS sessions (PosSessionResource) ───────────────────
+        ['name' => 'pos_sessions.view',         'group' => 'pos',       'description' => 'View POS shifts (sessions) across stores'],
+        ['name' => 'pos_sessions.manage',       'group' => 'pos',       'description' => 'Force-close POS shifts and reopen for corrections'],
+
+        // ── Transactions (TransactionResource) ──────────────────
+        ['name' => 'transactions.view',         'group' => 'pos',       'description' => 'View POS transactions across stores'],
+        ['name' => 'transactions.export',       'group' => 'pos',       'description' => 'Export POS transactions to CSV/PDF'],
+        ['name' => 'transactions.void',         'group' => 'pos',       'description' => 'Void completed POS transactions from admin'],
+
+        // ── Held carts (HeldCartResource) ───────────────────────
+        ['name' => 'held_carts.view',           'group' => 'pos',       'description' => 'View held carts across registers'],
+        ['name' => 'held_carts.manage',         'group' => 'pos',       'description' => 'Delete held carts (cleanup stale carts)'],
+
         // ── Thawani admin pages ─────────────────────────────────
         ['name' => 'thawani.manage_config',     'group' => 'integrations', 'description' => 'Manage Thawani product/column mappings and store connection'],
         ['name' => 'thawani.view_sync_logs',    'group' => 'integrations', 'description' => 'View Thawani sync logs'],

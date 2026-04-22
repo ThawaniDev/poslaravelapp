@@ -2,6 +2,11 @@
 
 namespace App\Domain\PosTerminal\Models;
 
+use App\Domain\Auth\Models\User;
+use App\Domain\Core\Models\Organization;
+use App\Domain\Core\Models\Register;
+use App\Domain\Core\Models\Store;
+use App\Domain\Customer\Models\Customer;
 use App\Domain\Order\Enums\ExternalOrderType;
 use App\Domain\Payment\Models\Payment;
 use App\Domain\ThawaniIntegration\Enums\SyncStatus;

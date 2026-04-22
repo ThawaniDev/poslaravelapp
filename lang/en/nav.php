@@ -55,6 +55,9 @@ return [
     'subscriptions'               => 'Subscriptions',
     'templates'                   => 'Templates',
     'terminals'                   => 'Terminals',
+    'pos_sessions'                => 'POS Shifts',
+    'transactions'                => 'Transactions',
+    'held_carts'                  => 'Held Carts',
     'trusted_devices'             => 'Trusted Devices',
 
     // Predefined Catalog

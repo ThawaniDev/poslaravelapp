@@ -2,6 +2,10 @@
 
 namespace App\Domain\PosTerminal\Models;
 
+use App\Domain\Auth\Models\User;
+use App\Domain\Core\Models\Register;
+use App\Domain\Core\Models\Store;
+use App\Domain\Customer\Models\Customer;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

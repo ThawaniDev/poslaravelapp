@@ -55,6 +55,9 @@ return [
     'subscriptions'               => 'الاشتراكات',
     'templates'                   => 'القوالب',
     'terminals'                   => 'الأجهزة الطرفية',
+    'pos_sessions'                => 'ورديات نقاط البيع',
+    'transactions'                => 'المعاملات',
+    'held_carts'                  => 'السلال المعلّقة',
     'trusted_devices'             => 'الأجهزة الموثوقة',
 
     // الكتالوج المحدد مسبقاً
