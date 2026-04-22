@@ -87,10 +87,17 @@ public function send(Request $request, string $purchaseOrder): JsonResponse
     public function receive(ReceivePurchaseOrderRequest $request, string $purchaseOrder): JsonResponse
     {
         try {
+            // Idempotency: prefer client-supplied header, otherwise derive a
+            // deterministic key from the request body so an accidental retry
+            // of the same payload doesn't double-credit stock.
+            $idempotencyKey = $request->header('Idempotency-Key')
+                ?: substr(hash('sha256', $purchaseOrder . ':' . json_encode($request->validated()['items'])), 0, 64);
+
             $po = $this->purchaseOrderService->receive(
                 $purchaseOrder,
                 $this->resolvedStoreId($request) ?? $request->user()->store_id,
                 $request->validated()['items'],
+                $idempotencyKey,
             );
 
             return $this->success(new PurchaseOrderResource($po), 'Purchase order received.');

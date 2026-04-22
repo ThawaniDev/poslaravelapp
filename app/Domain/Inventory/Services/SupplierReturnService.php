@@ -181,6 +181,15 @@ class SupplierReturnService
                 throw new \RuntimeException('Only approved returns can be completed.');
             }
 
+            // Pre-check: every line must have enough on-hand stock to ship back.
+            foreach ($return->items as $item) {
+                $this->stockService->assertSufficientStock(
+                    storeId: $return->store_id,
+                    productId: $item->product_id,
+                    needed: (float) $item->quantity,
+                );
+            }
+
             foreach ($return->items as $item) {
                 $this->stockService->adjustStock(
                     storeId: $return->store_id,

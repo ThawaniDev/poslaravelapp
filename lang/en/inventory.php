@@ -48,4 +48,7 @@ return [
 
     // ─── Expiry ──────────────────────────────────────────
     'expiry_alerts_retrieved' => 'Expiry alerts retrieved',
+
+    // ─── Errors ──────────────────────────────────────────
+    'insufficient_stock' => 'Insufficient stock for :product. Available: :available, Requested: :requested.',
 ];

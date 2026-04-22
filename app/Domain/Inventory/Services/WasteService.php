@@ -48,6 +48,13 @@ class WasteService
                 $unitCost = (float) $level->average_cost;
             }
 
+            // Block waste exceeding available stock unless allow_negative_stock.
+            $this->stockService->assertSufficientStock(
+                storeId: $data['store_id'],
+                productId: $data['product_id'],
+                needed: (float) $data['quantity'],
+            );
+
             $waste = WasteRecord::create([
                 'store_id' => $data['store_id'],
                 'product_id' => $data['product_id'],

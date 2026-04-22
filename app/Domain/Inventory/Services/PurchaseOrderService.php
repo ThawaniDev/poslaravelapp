@@ -101,14 +101,18 @@ class PurchaseOrderService
      *
      * The delta in this call ($receivedItems[i]['quantity_received']) is what
      * is added to stock — NOT the cumulative quantity_received on the line.
-     * This makes partial receipts safe to call repeatedly without double-
-     * counting.
+     *
+     * Safety guarantees:
+     *  - Cumulative quantity_received is capped at quantity_ordered per line.
+     *  - When $idempotencyKey is supplied (typically a hash of the request
+     *    body or a client-supplied UUID), a duplicate call returns the same
+     *    PO state without re-applying stock changes.
      */
-    public function receive(string $id, string $storeId, array $receivedItems): PurchaseOrder
+    public function receive(string $id, string $storeId, array $receivedItems, ?string $idempotencyKey = null): PurchaseOrder
     {
-        return DB::transaction(function () use ($id, $storeId, $receivedItems) {
+        return DB::transaction(function () use ($id, $storeId, $receivedItems, $idempotencyKey) {
             $po = PurchaseOrder::where('store_id', $storeId)
-                ->with('purchaseOrderItems')->findOrFail($id);
+                ->with('purchaseOrderItems')->lockForUpdate()->findOrFail($id);
 
             if (!in_array($po->status, [PurchaseOrderStatus::Sent, PurchaseOrderStatus::PartiallyReceived])) {
                 throw new \RuntimeException('Only sent or partially-received POs can be received.');
@@ -126,14 +130,43 @@ class PurchaseOrderService
             foreach ($po->purchaseOrderItems as $item) {
                 $delta = $receivedLookup[$item->product_id] ?? 0.0;
 
+                // Per-line idempotency key (combines request key with product
+                // so re-sending the same payload is a no-op for each line).
+                $perLineKey = $idempotencyKey
+                    ? substr(hash('sha256', $idempotencyKey . ':' . $item->product_id), 0, 64)
+                    : null;
+
+                // If this exact line+key was already applied, skip ALL of:
+                // line-bump, cap-check, and stock cascade. Makes the whole
+                // receive() call safe to retry verbatim.
+                if ($delta > 0 && $perLineKey) {
+                    $alreadyApplied = \App\Domain\Inventory\Models\StockMovement::where('reference_type', \App\Domain\Inventory\Enums\StockReferenceType::PurchaseOrder)
+                        ->where('reference_id', $po->id)
+                        ->where('idempotency_key', $perLineKey)
+                        ->exists();
+                    if ($alreadyApplied) {
+                        if (($item->quantity_received ?? 0) < $item->quantity_ordered) {
+                            $allFullyReceived = false;
+                        }
+                        continue;
+                    }
+                }
+
                 if ($delta > 0) {
+                    // Cap so cumulative quantity_received never exceeds quantity_ordered.
+                    $remaining = (float) $item->quantity_ordered - (float) ($item->quantity_received ?? 0);
+                    if ($delta > $remaining) {
+                        throw new \RuntimeException(
+                            "Cannot receive {$delta} of product {$item->product_id}: "
+                            . "only {$remaining} remaining on this PO line."
+                        );
+                    }
+
                     // 1. Bump the cumulative quantity_received on the PO line.
                     $item->quantity_received = ($item->quantity_received ?? 0) + $delta;
                     $item->save();
 
                     // 2. Apply the delta to stock_levels + stock_movements.
-                    //    Receipt movement type triggers WAC recalculation in
-                    //    StockService using this line's unit_cost.
                     $this->stockService->adjustStock(
                         storeId: $storeId,
                         productId: $item->product_id,
@@ -144,6 +177,7 @@ class PurchaseOrderService
                         referenceId: $po->id,
                         reason: 'Purchase order receipt',
                         performedBy: $performedBy,
+                        idempotencyKey: $perLineKey,
                     );
                 }
 

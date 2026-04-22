@@ -30,6 +30,7 @@ class StockMovement extends Model
         'reference_id',
         'reason',
         'performed_by',
+        'idempotency_key',
     ];
 
     protected $casts = [

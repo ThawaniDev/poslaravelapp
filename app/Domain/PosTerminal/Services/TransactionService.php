@@ -12,6 +12,7 @@ use App\Domain\Inventory\Enums\StockMovementType;
 use App\Domain\Inventory\Enums\StockReferenceType;
 use App\Domain\Inventory\Models\StockLevel;
 use App\Domain\Inventory\Models\StockMovement;
+use App\Domain\Inventory\Services\RecipeService;
 use App\Domain\Payment\Models\Payment;
 use App\Domain\PosTerminal\Enums\TransactionStatus;
 use App\Domain\PosTerminal\Enums\TransactionType;
@@ -25,6 +26,10 @@ use Illuminate\Support\Facades\DB;
 
 class TransactionService
 {
+    public function __construct(
+        private readonly RecipeService $recipeService,
+    ) {}
+
     public function list(string $storeId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
         $query = Transaction::where('store_id', $storeId);
@@ -661,13 +666,15 @@ class TransactionService
 
             if ($stockLevel) {
                 $newQuantity = (float) $stockLevel->quantity + $stockChange;
+                // Available = on-hand minus stock reserved for in-transit transfers.
+                $newAvailable = $newQuantity - (float) ($stockLevel->reserved_quantity ?? 0);
 
-                // Enforce: allow_negative_stock — prevent stock going below zero
-                if ($settings && !$settings->allow_negative_stock && $newQuantity < 0 && !$isReturn) {
+                // Enforce: allow_negative_stock — prevent available stock going below zero on a sale.
+                if ($settings && !$settings->allow_negative_stock && $newAvailable < 0 && !$isReturn) {
                     throw new \RuntimeException(
                         __('pos.insufficient_stock', [
                             'product' => $item->product_name,
-                            'available' => $stockLevel->quantity,
+                            'available' => $stockLevel->quantity - (float) ($stockLevel->reserved_quantity ?? 0),
                             'requested' => $qty,
                         ])
                     );
@@ -690,6 +697,40 @@ class TransactionService
                 'reason' => $reason,
                 'performed_by' => $transaction->cashier_id,
             ]);
+
+            // Cascade recipe ingredient deduction / restoration when the
+            // sold/returned product has an active recipe. Without this, an
+            // organization selling composite products (e.g. a burger combo)
+            // would never see flour/cheese/tomato stock decrease.
+            $product = $item->product()->first();
+            $organizationId = $product?->organization_id ?? optional($transaction->store)->organization_id;
+            if ($organizationId) {
+                $recipe = $this->recipeService->findByProductId($item->product_id, $organizationId);
+                if ($recipe) {
+                    $idempotencyKey = substr(hash('sha256', $transaction->id . ':' . $item->id), 0, 64);
+                    if ($isReturn || $item->is_return_item) {
+                        $this->recipeService->reverseIngredients(
+                            recipeId: $recipe->id,
+                            storeId: $storeId,
+                            quantitySold: $qty,
+                            performedBy: $transaction->cashier_id,
+                            referenceType: StockReferenceType::Transaction,
+                            referenceId: $transaction->id,
+                            idempotencyKey: $idempotencyKey,
+                        );
+                    } else {
+                        $this->recipeService->deductIngredients(
+                            recipeId: $recipe->id,
+                            storeId: $storeId,
+                            quantitySold: $qty,
+                            performedBy: $transaction->cashier_id,
+                            referenceType: StockReferenceType::Transaction,
+                            referenceId: $transaction->id,
+                            idempotencyKey: $idempotencyKey,
+                        );
+                    }
+                }
+            }
         }
     }
 
@@ -742,6 +783,42 @@ class TransactionService
                 'reason' => $reason,
                 'performed_by' => $transaction->cashier_id,
             ]);
+
+            // Mirror the recipe-ingredient cascade: voiding a sale restores
+            // ingredients, voiding a return re-deducts them. Idempotency key
+            // is distinct from the original sale's key so the void writes
+            // its own movements.
+            $product = $item->product()->first();
+            $organizationId = $product?->organization_id ?? optional($transaction->store)->organization_id;
+            if ($organizationId) {
+                $recipe = $this->recipeService->findByProductId($item->product_id, $organizationId);
+                if ($recipe) {
+                    $idempotencyKey = substr(hash('sha256', $transaction->id . ':void:' . $item->id), 0, 64);
+                    if ($isReturn || $item->is_return_item) {
+                        // Voiding a return = re-deduct ingredients.
+                        $this->recipeService->deductIngredients(
+                            recipeId: $recipe->id,
+                            storeId: $storeId,
+                            quantitySold: $qty,
+                            performedBy: $transaction->cashier_id,
+                            referenceType: StockReferenceType::Transaction,
+                            referenceId: $transaction->id,
+                            idempotencyKey: $idempotencyKey,
+                        );
+                    } else {
+                        // Voiding a sale = restore ingredients.
+                        $this->recipeService->reverseIngredients(
+                            recipeId: $recipe->id,
+                            storeId: $storeId,
+                            quantitySold: $qty,
+                            performedBy: $transaction->cashier_id,
+                            referenceType: StockReferenceType::Transaction,
+                            referenceId: $transaction->id,
+                            idempotencyKey: $idempotencyKey,
+                        );
+                    }
+                }
+            }
         }
     }
 

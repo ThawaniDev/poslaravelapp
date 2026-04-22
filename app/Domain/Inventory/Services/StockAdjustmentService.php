@@ -62,6 +62,15 @@ class StockAdjustmentService
                     ? StockMovementType::AdjustmentIn
                     : StockMovementType::AdjustmentOut;
 
+                // For decreases, refuse to drive stock negative unless allowed.
+                if ($type === StockAdjustmentType::Decrease) {
+                    $this->stockService->assertSufficientStock(
+                        storeId: $data['store_id'],
+                        productId: $item['product_id'],
+                        needed: (float) $item['quantity'],
+                    );
+                }
+
                 $this->stockService->adjustStock(
                     storeId: $data['store_id'],
                     productId: $item['product_id'],

@@ -63,48 +63,29 @@ class StockTransferService
     }
 
     /**
-     * Approve transfer → status = in_transit, deduct from source store.
+     * Approve transfer → status = in_transit. Source stock is RESERVED (moved
+     * from `quantity` minus into `reserved_quantity`) so it can no longer be
+     * sold or wasted, but the on-hand `quantity` stays put until the
+     * destination receives. The actual TransferOut movement is written on
+     * receive(), giving us a true 2-phase commit across stores.
      */
     public function approve(string $id, string $organizationId, string $userId): StockTransfer
     {
         return DB::transaction(function () use ($id, $organizationId, $userId) {
             $transfer = StockTransfer::where('organization_id', $organizationId)
-                ->with('stockTransferItems')->findOrFail($id);
+                ->with('stockTransferItems')->lockForUpdate()->findOrFail($id);
 
             if ($transfer->status !== StockTransferStatus::Pending) {
                 throw new \RuntimeException('Only pending transfers can be approved.');
             }
 
-            // Verify stock availability at source store before transferring
+            // Reserve source stock per line — fails if any line lacks
+            // sufficient available (quantity - reserved) at source.
             foreach ($transfer->stockTransferItems as $item) {
-                $stockLevel = \App\Domain\Inventory\Models\StockLevel::where('store_id', $transfer->from_store_id)
-                    ->where('product_id', $item->product_id)
-                    ->lockForUpdate()
-                    ->first();
-
-                $available = $stockLevel ? (float) $stockLevel->quantity : 0;
-                if ($available < (float) $item->quantity_sent) {
-                    $productName = $item->product?->name ?? $item->product_id;
-                    throw new \RuntimeException(
-                        __('inventory.insufficient_stock_for_transfer', [
-                            'product' => $productName,
-                            'available' => $available,
-                            'requested' => $item->quantity_sent,
-                        ])
-                    );
-                }
-            }
-
-            // Deduct stock from source store
-            foreach ($transfer->stockTransferItems as $item) {
-                $this->stockService->adjustStock(
+                $this->stockService->reserve(
                     storeId: $transfer->from_store_id,
                     productId: $item->product_id,
-                    type: StockMovementType::TransferOut,
-                    quantity: (float) $item->quantity_sent,
-                    referenceType: StockReferenceType::Transfer,
-                    referenceId: $transfer->id,
-                    performedBy: $userId,
+                    qty: (float) $item->quantity_sent,
                 );
             }
 
@@ -118,14 +99,18 @@ class StockTransferService
     }
 
     /**
-     * Receive transfer → status = completed, add to destination store.
-     * Accepts received quantities (may differ from sent = variance).
+     * Receive transfer → status = completed.
+     *  - Cap received_qty <= sent_qty (no over-receive into destination).
+     *  - Variance = sent - received is recorded on the line for audit
+     *    (in-transit loss / damage). Source still loses the full sent qty
+     *    (it left the store), destination only credits what arrived.
+     *  - Reservation at source is released (it has now physically left).
      */
     public function receive(string $id, string $organizationId, string $userId, array $receivedItems = []): StockTransfer
     {
         return DB::transaction(function () use ($id, $organizationId, $userId, $receivedItems) {
             $transfer = StockTransfer::where('organization_id', $organizationId)
-                ->with('stockTransferItems')->findOrFail($id);
+                ->with('stockTransferItems')->lockForUpdate()->findOrFail($id);
 
             if ($transfer->status !== StockTransferStatus::InTransit) {
                 throw new \RuntimeException('Only in-transit transfers can be received.');
@@ -138,20 +123,58 @@ class StockTransferService
             }
 
             foreach ($transfer->stockTransferItems as $item) {
-                $receivedQty = $receivedLookup[$item->product_id] ?? (float) $item->quantity_sent;
+                $sentQty = (float) $item->quantity_sent;
+                $receivedQty = $receivedLookup[$item->product_id] ?? $sentQty;
+
+                if ($receivedQty < 0) {
+                    throw new \RuntimeException("Received quantity cannot be negative for product {$item->product_id}.");
+                }
+                if ($receivedQty > $sentQty) {
+                    throw new \RuntimeException(
+                        "Cannot receive {$receivedQty} of product {$item->product_id}: "
+                        . "only {$sentQty} were sent."
+                    );
+                }
+
+                $variance = $sentQty - $receivedQty;
                 $item->quantity_received = $receivedQty;
+                if ($variance > 0) {
+                    $item->variance_qty = $variance;
+                    $item->variance_reason = 'In-transit loss / damage';
+                }
                 $item->save();
 
-                // Add stock to destination store
-                $this->stockService->adjustStock(
-                    storeId: $transfer->to_store_id,
+                // Release source reservation, then deduct full sent qty from
+                // source on-hand (TransferOut). Destination credits only what
+                // arrived (TransferIn).
+                $this->stockService->releaseReservation(
+                    storeId: $transfer->from_store_id,
                     productId: $item->product_id,
-                    type: StockMovementType::TransferIn,
-                    quantity: $receivedQty,
+                    qty: $sentQty,
+                );
+
+                $this->stockService->adjustStock(
+                    storeId: $transfer->from_store_id,
+                    productId: $item->product_id,
+                    type: StockMovementType::TransferOut,
+                    quantity: $sentQty,
                     referenceType: StockReferenceType::Transfer,
                     referenceId: $transfer->id,
+                    reason: $variance > 0 ? "Transfer out (variance: -{$variance})" : null,
                     performedBy: $userId,
                 );
+
+                if ($receivedQty > 0) {
+                    $this->stockService->adjustStock(
+                        storeId: $transfer->to_store_id,
+                        productId: $item->product_id,
+                        type: StockMovementType::TransferIn,
+                        quantity: $receivedQty,
+                        referenceType: StockReferenceType::Transfer,
+                        referenceId: $transfer->id,
+                        performedBy: $userId,
+                    );
+                }
             }
 
             $transfer->status = StockTransferStatus::Completed;
@@ -164,19 +187,35 @@ class StockTransferService
     }
 
     /**
-     * Cancel a pending transfer (cannot cancel once in-transit or completed).
+     * Cancel a transfer.
+     *  - Pending: simple status change.
+     *  - InTransit: release the source reservation (stock returns to free pool).
+     *  - Completed/Cancelled: not allowed.
      */
     public function cancel(string $id, string $organizationId): StockTransfer
     {
-        $transfer = StockTransfer::where('organization_id', $organizationId)->findOrFail($id);
+        return DB::transaction(function () use ($id, $organizationId) {
+            $transfer = StockTransfer::where('organization_id', $organizationId)
+                ->with('stockTransferItems')->lockForUpdate()->findOrFail($id);
 
-        if ($transfer->status !== StockTransferStatus::Pending) {
-            throw new \RuntimeException('Only pending transfers can be cancelled.');
-        }
+            if (!in_array($transfer->status, [StockTransferStatus::Pending, StockTransferStatus::InTransit], true)) {
+                throw new \RuntimeException('Only pending or in-transit transfers can be cancelled.');
+            }
 
-        $transfer->status = StockTransferStatus::Cancelled;
-        $transfer->save();
+            if ($transfer->status === StockTransferStatus::InTransit) {
+                foreach ($transfer->stockTransferItems as $item) {
+                    $this->stockService->releaseReservation(
+                        storeId: $transfer->from_store_id,
+                        productId: $item->product_id,
+                        qty: (float) $item->quantity_sent,
+                    );
+                }
+            }
 
-        return $transfer;
+            $transfer->status = StockTransferStatus::Cancelled;
+            $transfer->save();
+
+            return $transfer;
+        });
     }
 }

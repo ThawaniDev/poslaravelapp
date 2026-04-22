@@ -123,7 +123,11 @@ class StocktakeService
     public function apply(string $id, string $userId): Stocktake
     {
         return DB::transaction(function () use ($id, $userId) {
-            $stocktake = Stocktake::with('stocktakeItems')->findOrFail($id);
+            // Row-level lock so two concurrent applies can't both pass the
+            // status check and double-apply variances.
+            $stocktake = Stocktake::with('stocktakeItems')
+                ->lockForUpdate()
+                ->findOrFail($id);
 
             if ($stocktake->status === StocktakeStatus::Completed) {
                 throw new \RuntimeException('Stocktake is already completed.');

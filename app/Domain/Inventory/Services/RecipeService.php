@@ -104,28 +104,117 @@ class RecipeService
     }
 
     /**
+     * Find the active recipe whose product is being sold (or null if none).
+     */
+    public function findByProductId(string $productId, string $organizationId): ?Recipe
+    {
+        return Recipe::where('organization_id', $organizationId)
+            ->where('product_id', $productId)
+            ->where('is_active', true)
+            ->with('recipeIngredients')
+            ->first();
+    }
+
+    /**
      * Deduct ingredients from stock when a recipe product is sold.
      * Uses waste_percent to calculate actual deduction.
+     *
+     * Pass referenceType/referenceId so the resulting stock_movements link
+     * back to the originating transaction (or production order). Pass
+     * idempotencyKey so a retry of the same sale doesn't double-deduct.
      */
-    public function deductIngredients(string $recipeId, string $storeId, float $quantitySold, string $performedBy): void
-    {
-        $recipe = Recipe::with('recipeIngredients')->findOrFail($recipeId);
+    public function deductIngredients(
+        string $recipeId,
+        string $storeId,
+        float $quantitySold,
+        string $performedBy,
+        ?StockReferenceType $referenceType = null,
+        ?string $referenceId = null,
+        ?string $idempotencyKey = null,
+    ): void {
+        $recipe = Recipe::with('recipeIngredients.ingredientProduct')->findOrFail($recipeId);
+        $yield = (float) ($recipe->yield_quantity ?: 1);
+        if ($yield <= 0) {
+            return; // Defensive: skip recipes with no yield to avoid divide-by-zero.
+        }
 
-        DB::transaction(function () use ($recipe, $storeId, $quantitySold, $performedBy) {
+        DB::transaction(function () use ($recipe, $storeId, $quantitySold, $performedBy, $referenceType, $referenceId, $idempotencyKey, $yield) {
+            // Pre-check every ingredient so we either deduct all or none.
             foreach ($recipe->recipeIngredients as $ingredient) {
-                // Calculate quantity including waste
-                $baseQty = $ingredient->quantity * $quantitySold / ($recipe->yield_quantity ?: 1);
-                $wasteMultiplier = 1 + (($ingredient->waste_percent ?? 0) / 100);
+                $baseQty = (float) $ingredient->quantity * $quantitySold / $yield;
+                $wasteMultiplier = 1 + (((float) ($ingredient->waste_percent ?? 0)) / 100);
                 $deductQty = $baseQty * $wasteMultiplier;
+
+                $this->stockService->assertSufficientStock(
+                    storeId: $storeId,
+                    productId: $ingredient->ingredient_product_id,
+                    needed: $deductQty,
+                    productName: $ingredient->ingredientProduct?->name,
+                );
+            }
+
+            foreach ($recipe->recipeIngredients as $ingredient) {
+                $baseQty = (float) $ingredient->quantity * $quantitySold / $yield;
+                $wasteMultiplier = 1 + (((float) ($ingredient->waste_percent ?? 0)) / 100);
+                $deductQty = $baseQty * $wasteMultiplier;
+
+                $perIngredientKey = $idempotencyKey
+                    ? substr(hash('sha256', $idempotencyKey . ':deduct:' . $ingredient->ingredient_product_id), 0, 64)
+                    : null;
 
                 $this->stockService->adjustStock(
                     storeId: $storeId,
                     productId: $ingredient->ingredient_product_id,
                     type: StockMovementType::RecipeDeduction,
                     quantity: $deductQty,
-                    referenceType: StockReferenceType::Recipe,
-                    referenceId: $recipe->id,
+                    referenceType: $referenceType ?? StockReferenceType::Recipe,
+                    referenceId: $referenceId ?? $recipe->id,
                     performedBy: $performedBy,
+                    idempotencyKey: $perIngredientKey,
+                );
+            }
+        });
+    }
+
+    /**
+     * Restore ingredients to stock when a sale that consumed this recipe
+     * is voided/refunded. Mirror of deductIngredients (same WAC math).
+     */
+    public function reverseIngredients(
+        string $recipeId,
+        string $storeId,
+        float $quantitySold,
+        string $performedBy,
+        ?StockReferenceType $referenceType = null,
+        ?string $referenceId = null,
+        ?string $idempotencyKey = null,
+    ): void {
+        $recipe = Recipe::with('recipeIngredients')->findOrFail($recipeId);
+        $yield = (float) ($recipe->yield_quantity ?: 1);
+        if ($yield <= 0) {
+            return;
+        }
+
+        DB::transaction(function () use ($recipe, $storeId, $quantitySold, $performedBy, $referenceType, $referenceId, $idempotencyKey, $yield) {
+            foreach ($recipe->recipeIngredients as $ingredient) {
+                $baseQty = (float) $ingredient->quantity * $quantitySold / $yield;
+                $wasteMultiplier = 1 + (((float) ($ingredient->waste_percent ?? 0)) / 100);
+                $restoreQty = $baseQty * $wasteMultiplier;
+
+                $perIngredientKey = $idempotencyKey
+                    ? substr(hash('sha256', $idempotencyKey . ':reverse:' . $ingredient->ingredient_product_id), 0, 64)
+                    : null;
+
+                $this->stockService->adjustStock(
+                    storeId: $storeId,
+                    productId: $ingredient->ingredient_product_id,
+                    type: StockMovementType::AdjustmentIn,
+                    quantity: $restoreQty,
+                    referenceType: $referenceType ?? StockReferenceType::Recipe,
+                    referenceId: $referenceId ?? $recipe->id,
+                    reason: 'Recipe deduction reversal',
+                    performedBy: $performedBy,
+                    idempotencyKey: $perIngredientKey,
                 );
             }
         });
