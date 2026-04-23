@@ -11,6 +11,7 @@ use App\Domain\Promotion\Models\PromotionCategory;
 use App\Domain\Promotion\Models\PromotionCustomerGroup;
 use App\Domain\Promotion\Models\PromotionProduct;
 use App\Domain\Promotion\Models\PromotionUsageLog;
+use App\Domain\Promotion\Resources\PromotionResource;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 
@@ -298,6 +299,335 @@ class PromotionService
         ];
     }
 
+    // ─── Duplicate ──────────────────────────────────────────
+
+    public function duplicate(Promotion $source): Promotion
+    {
+        $data = $source->only([
+            'organization_id', 'description', 'type', 'discount_value',
+            'buy_quantity', 'get_quantity', 'get_discount_percent', 'bundle_price',
+            'min_order_total', 'min_item_quantity', 'valid_from', 'valid_to',
+            'active_days', 'active_time_from', 'active_time_to',
+            'max_uses', 'max_uses_per_customer', 'is_stackable',
+        ]);
+        $data['name'] = $source->name . ' (Copy)';
+        $data['is_active'] = false;
+        $data['is_coupon'] = false;
+        $data['usage_count'] = 0;
+        $data['sync_version'] = 1;
+
+        $new = Promotion::create($data);
+
+        $productIds = PromotionProduct::where('promotion_id', $source->id)->pluck('product_id')->all();
+        $this->syncProducts($new, $productIds);
+        $categoryIds = PromotionCategory::where('promotion_id', $source->id)->pluck('category_id')->all();
+        $this->syncCategories($new, $categoryIds);
+        $groupIds = PromotionCustomerGroup::where('promotion_id', $source->id)->pluck('customer_group_id')->all();
+        $this->syncCustomerGroups($new, $groupIds);
+        $bundles = BundleProduct::where('promotion_id', $source->id)->get()
+            ->map(fn ($bp) => ['product_id' => $bp->product_id, 'quantity' => $bp->quantity])->all();
+        $this->syncBundleProducts($new, $bundles);
+
+        return $new->fresh([
+            'couponCodes', 'promotionProducts', 'promotionCategories',
+            'promotionCustomerGroups', 'bundleProducts',
+        ]);
+    }
+
+    // ─── Coupon Management ──────────────────────────────────
+
+    public function listCoupons(Promotion $promotion, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $query = CouponCode::where('promotion_id', $promotion->id);
+        if (!empty($filters['search'])) {
+            $query->where('code', 'like', '%' . strtoupper($filters['search']) . '%');
+        }
+        if (isset($filters['is_active'])) {
+            $query->where('is_active', filter_var($filters['is_active'], FILTER_VALIDATE_BOOLEAN));
+        }
+        return $query->orderByDesc('created_at')->paginate($perPage);
+    }
+
+    public function deleteCoupon(CouponCode $coupon): void
+    {
+        $coupon->delete();
+    }
+
+    // ─── POS Delta Sync ─────────────────────────────────────
+
+    /**
+     * Returns promotions that changed since the given timestamp. Also includes
+     * every coupon code so the terminal can validate offline.
+     */
+    public function posSync(string $orgId, ?\DateTimeInterface $since): array
+    {
+        $query = Promotion::where('organization_id', $orgId)
+            ->with(['couponCodes', 'promotionProducts', 'promotionCategories',
+                'promotionCustomerGroups', 'bundleProducts']);
+        if ($since) {
+            $query->where('updated_at', '>', $since);
+        }
+        $rows = $query->orderBy('updated_at')->get();
+
+        return [
+            'server_time' => now()->toIso8601String(),
+            'promotions'  => PromotionResource::collection($rows)->resolve(),
+        ];
+    }
+
+    // ─── Cart Evaluation (Online Engine) ────────────────────
+
+    /**
+     * Evaluate a cart against active promotions and return the applicable
+     * discounts. The cart payload is:
+     *   [
+     *     'items' => [ ['product_id' => uuid, 'category_id' => uuid|null,
+     *                   'unit_price' => float, 'quantity' => int] ],
+     *     'customer_id' => uuid|null,
+     *     'customer_group_ids' => uuid[],
+     *     'coupon_code' => string|null,
+     *   ]
+     *
+     * Returns:
+     *   [ 'applied' => [ ... ], 'total_discount' => float ]
+     */
+    public function evaluateCart(string $orgId, array $cart): array
+    {
+        $items = $cart['items'] ?? [];
+        $customerId = $cart['customer_id'] ?? null;
+        $groupIds = array_map('strval', $cart['customer_group_ids'] ?? []);
+        $couponCode = $cart['coupon_code'] ?? null;
+        $now = now();
+
+        $subtotal = 0.0;
+        foreach ($items as $it) {
+            $subtotal += (float) ($it['unit_price'] ?? 0) * (int) ($it['quantity'] ?? 0);
+        }
+
+        $applicablePromotions = Promotion::where('organization_id', $orgId)
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->where('is_coupon', false);
+            })
+            ->with(['promotionProducts', 'promotionCategories', 'promotionCustomerGroups', 'bundleProducts'])
+            ->get()
+            ->filter(fn ($p) => $this->isEligible($p, $items, $subtotal, $customerId, $groupIds, $now));
+
+        $applied = [];
+        $totalDiscount = 0.0;
+
+        foreach ($applicablePromotions as $promo) {
+            $detail = $this->applyToCart($promo, $items, $subtotal);
+            if (($detail['discount'] ?? 0) > 0) {
+                $applied[] = $detail;
+                $totalDiscount += (float) $detail['discount'];
+                if (!$promo->is_stackable) {
+                    break; // non-stackable: single best promo only
+                }
+            }
+        }
+
+        // Coupon code — if provided, layers on top (respecting stackable flag)
+        if ($couponCode) {
+            $coupon = CouponCode::where('code', strtoupper($couponCode))
+                ->whereHas('promotion', fn ($q) => $q->where('organization_id', $orgId))
+                ->with('promotion')
+                ->first();
+            if ($coupon && $coupon->is_active && $coupon->promotion && $coupon->promotion->is_active) {
+                $promo = $coupon->promotion;
+                if ($this->isEligible($promo, $items, $subtotal, $customerId, $groupIds, $now)) {
+                    $detail = $this->applyToCart($promo, $items, $subtotal);
+                    if (($detail['discount'] ?? 0) > 0) {
+                        $detail['coupon_code_id'] = $coupon->id;
+                        $detail['coupon_code'] = $coupon->code;
+                        $applied[] = $detail;
+                        $totalDiscount += (float) $detail['discount'];
+                    }
+                }
+            }
+        }
+
+        // Stacking cap: cannot exceed subtotal
+        $totalDiscount = min($totalDiscount, $subtotal);
+
+        return [
+            'subtotal'        => round($subtotal, 2),
+            'total_discount'  => round($totalDiscount, 2),
+            'total_after'     => round(max(0, $subtotal - $totalDiscount), 2),
+            'applied'         => $applied,
+        ];
+    }
+
+    private function isEligible(Promotion $p, array $items, float $subtotal, ?string $customerId, array $groupIds, \DateTimeInterface $now): bool
+    {
+        if ($p->valid_from && $now < $p->valid_from) return false;
+        if ($p->valid_to && $now > $p->valid_to) return false;
+        if ($p->max_uses && $p->usage_count >= $p->max_uses) return false;
+        if ($p->min_order_total && $subtotal < (float) $p->min_order_total) return false;
+        $totalQty = array_sum(array_map(fn ($it) => (int) ($it['quantity'] ?? 0), $items));
+        if ($p->min_item_quantity && $totalQty < $p->min_item_quantity) return false;
+
+        // Active days
+        $days = $p->active_days ?? [];
+        if (!empty($days)) {
+            $today = strtolower($now->format('l'));
+            if (!in_array($today, array_map('strtolower', $days), true)) return false;
+        }
+
+        // Active time window
+        if ($p->active_time_from && $p->active_time_to) {
+            $nowT = $now->format('H:i');
+            if (!($nowT >= $p->active_time_from && $nowT <= $p->active_time_to)) {
+                return false;
+            }
+        }
+
+        // Customer group restriction
+        $requiredGroups = $p->promotionCustomerGroups->pluck('customer_group_id')->all();
+        if (!empty($requiredGroups)) {
+            if (empty(array_intersect($requiredGroups, $groupIds))) return false;
+        }
+
+        // Per-customer limit
+        if ($customerId && $p->max_uses_per_customer) {
+            $used = PromotionUsageLog::where('promotion_id', $p->id)
+                ->where('customer_id', $customerId)
+                ->count();
+            if ($used >= $p->max_uses_per_customer) return false;
+        }
+
+        // Product / category restriction: at least one qualifying item must be in cart
+        $productIds = $p->promotionProducts->pluck('product_id')->all();
+        $catIds = $p->promotionCategories->pluck('category_id')->all();
+        if (!empty($productIds) || !empty($catIds)) {
+            $hasMatch = false;
+            foreach ($items as $it) {
+                $pid = $it['product_id'] ?? null;
+                $cid = $it['category_id'] ?? null;
+                if ($pid && in_array($pid, $productIds, true)) { $hasMatch = true; break; }
+                if ($cid && in_array($cid, $catIds, true))    { $hasMatch = true; break; }
+            }
+            if (!$hasMatch) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Applies the promotion's discount formula to the cart and returns the
+     * detail envelope that the POS displays on the receipt.
+     */
+    private function applyToCart(Promotion $promo, array $items, float $subtotal): array
+    {
+        $discount = 0.0;
+        $productIds = $promo->promotionProducts->pluck('product_id')->all();
+        $catIds = $promo->promotionCategories->pluck('category_id')->all();
+
+        // Qualifying items
+        $qualifying = [];
+        foreach ($items as $it) {
+            $pid = $it['product_id'] ?? null;
+            $cid = $it['category_id'] ?? null;
+            $matchesProduct = !empty($productIds) && $pid && in_array($pid, $productIds, true);
+            $matchesCategory = !empty($catIds) && $cid && in_array($cid, $catIds, true);
+            $matchesAll = empty($productIds) && empty($catIds);
+            if ($matchesProduct || $matchesCategory || $matchesAll) {
+                $qualifying[] = $it;
+            }
+        }
+        $qualifyingTotal = array_sum(array_map(
+            fn ($it) => (float) ($it['unit_price'] ?? 0) * (int) ($it['quantity'] ?? 0),
+            $qualifying
+        ));
+
+        switch ($promo->type) {
+            case PromotionType::Percentage:
+                $discount = round($qualifyingTotal * (float) $promo->discount_value / 100, 2);
+                break;
+
+            case PromotionType::FixedAmount:
+                $discount = min((float) $promo->discount_value, $qualifyingTotal);
+                break;
+
+            case PromotionType::HappyHour:
+                $discount = round($qualifyingTotal * (float) ($promo->discount_value ?? 0) / 100, 2);
+                break;
+
+            case PromotionType::Bogo:
+                $buy = (int) ($promo->buy_quantity ?? 0);
+                $get = (int) ($promo->get_quantity ?? 0);
+                $getPct = (float) ($promo->get_discount_percent ?? 100);
+                if ($buy > 0 && $get > 0 && !empty($qualifying)) {
+                    // Expand qualifying items into unit-priced line items sorted ascending
+                    // so the cheapest receive the "get" discount (per business rule #6).
+                    $units = [];
+                    foreach ($qualifying as $it) {
+                        $qty = (int) ($it['quantity'] ?? 0);
+                        $p = (float) ($it['unit_price'] ?? 0);
+                        for ($i = 0; $i < $qty; $i++) $units[] = $p;
+                    }
+                    sort($units);
+                    $group = $buy + $get;
+                    $groupCount = intdiv(count($units), $group);
+                    $discountUnits = 0;
+                    for ($g = 0; $g < $groupCount; $g++) {
+                        for ($j = 0; $j < $get; $j++) {
+                            $discount += $units[$g * $group + $j] * ($getPct / 100);
+                            $discountUnits++;
+                        }
+                    }
+                    $discount = round($discount, 2);
+                }
+                break;
+
+            case PromotionType::Bundle:
+                $bundleRows = $promo->bundleProducts;
+                if ($bundleRows->isNotEmpty() && (float) $promo->bundle_price > 0) {
+                    // How many complete bundles fit in the cart?
+                    $bundlesPossible = PHP_INT_MAX;
+                    $qtyByProduct = [];
+                    foreach ($items as $it) {
+                        $pid = $it['product_id'] ?? null;
+                        if ($pid) $qtyByProduct[$pid] = ($qtyByProduct[$pid] ?? 0) + (int) ($it['quantity'] ?? 0);
+                    }
+                    $priceByProduct = [];
+                    foreach ($items as $it) {
+                        $pid = $it['product_id'] ?? null;
+                        if ($pid && !isset($priceByProduct[$pid])) {
+                            $priceByProduct[$pid] = (float) ($it['unit_price'] ?? 0);
+                        }
+                    }
+                    foreach ($bundleRows as $bp) {
+                        $need = max(1, (int) $bp->quantity);
+                        $have = $qtyByProduct[$bp->product_id] ?? 0;
+                        $bundlesPossible = min($bundlesPossible, intdiv($have, $need));
+                    }
+                    if ($bundlesPossible > 0 && $bundlesPossible !== PHP_INT_MAX) {
+                        $regularPricePerBundle = 0.0;
+                        foreach ($bundleRows as $bp) {
+                            $regularPricePerBundle += ($priceByProduct[$bp->product_id] ?? 0) * max(1, (int) $bp->quantity);
+                        }
+                        $saving = $regularPricePerBundle - (float) $promo->bundle_price;
+                        if ($saving > 0) {
+                            $discount = round($saving * $bundlesPossible, 2);
+                        }
+                    }
+                }
+                break;
+        }
+
+        // Floor discount at qualifying total (cannot make item negative)
+        $discount = max(0.0, min($discount, $qualifyingTotal));
+
+        return [
+            'promotion_id'   => $promo->id,
+            'promotion_name' => $promo->name,
+            'type'           => $promo->type->value,
+            'discount'       => round($discount, 2),
+            'is_stackable'   => (bool) $promo->is_stackable,
+        ];
+    }
+
     // ─── Private Helpers ────────────────────────────────────
 
     private function calculateDiscount(Promotion $promo, float $orderTotal): float
@@ -305,9 +635,8 @@ class PromotionService
         return match ($promo->type) {
             PromotionType::Percentage => round($orderTotal * (float) $promo->discount_value / 100, 2),
             PromotionType::FixedAmount => min((float) $promo->discount_value, $orderTotal),
-            PromotionType::Bogo, PromotionType::HappyHour => round($orderTotal * ((float) ($promo->get_discount_percent ?? 100)) / 100, 2),
+            PromotionType::Bogo, PromotionType::HappyHour => round($orderTotal * ((float) ($promo->get_discount_percent ?? $promo->discount_value ?? 100)) / 100, 2),
             PromotionType::Bundle => max(0, $orderTotal - (float) $promo->bundle_price),
-            default => 0,
         };
     }
 
