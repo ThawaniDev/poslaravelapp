@@ -22,9 +22,9 @@ class LabelController extends BaseApiController
         return $this->success(LabelTemplateResource::collection($templates));
     }
 
-    public function presets(): JsonResponse
+    public function presets(Request $request): JsonResponse
     {
-        $presets = $this->labelService->getPresets();
+        $presets = $this->labelService->getPresets($request->user()->organization_id);
         return $this->success(LabelTemplateResource::collection($presets));
     }
 

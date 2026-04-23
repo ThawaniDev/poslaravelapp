@@ -403,6 +403,48 @@ class LabelApiTest extends TestCase
         $this->assertEquals('Standard Preset', $data[0]['name']);
     }
 
+    public function test_presets_auto_seed_when_org_has_none(): void
+    {
+        // Sanity: org starts with zero presets
+        $this->assertSame(0, LabelTemplate::where('organization_id', $this->org->id)
+            ->where('is_preset', true)->count());
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/labels/templates/presets');
+
+        $response->assertOk();
+        $names = collect($response->json('data'))->pluck('name')->all();
+        $this->assertContains('Standard Product', $names);
+        $this->assertContains('Shelf Edge', $names);
+        $this->assertContains('Weighable Item', $names);
+    }
+
+    public function test_presets_isolated_per_organization(): void
+    {
+        // Preset belonging to another org must not be visible.
+        $otherOrg = Organization::create([
+            'name' => 'Other Org',
+            'business_type' => 'grocery',
+            'country' => 'OM',
+        ]);
+        LabelTemplate::create([
+            'organization_id' => $otherOrg->id,
+            'name' => 'Foreign Preset',
+            'label_width_mm' => 50,
+            'label_height_mm' => 30,
+            'layout_json' => ['fields' => []],
+            'is_preset' => true,
+            'sync_version' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/labels/templates/presets');
+
+        $response->assertOk();
+        $names = collect($response->json('data'))->pluck('name')->all();
+        $this->assertNotContains('Foreign Preset', $names);
+    }
+
     // ─── Permissions ─────────────────────────────────────────
 
     public function test_record_print_history_validation(): void
