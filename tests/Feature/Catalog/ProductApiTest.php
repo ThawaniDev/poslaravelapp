@@ -1102,4 +1102,211 @@ class ProductApiTest extends TestCase
         $response->assertOk();
         $this->assertArrayNotHasKey('cost_price', $response->json('data'));
     }
+
+    // ─── Combo Products ────────────────────────────────────────
+
+    public function test_can_sync_combo_definition_for_product(): void
+    {
+        $combo = Product::create([
+            'organization_id' => $this->org->id,
+            'category_id' => $this->category->id,
+            'name' => 'Breakfast Combo',
+            'sell_price' => 25.00,
+            'sync_version' => 1,
+        ]);
+
+        $burger = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Burger',
+            'sell_price' => 15.00,
+            'sync_version' => 1,
+        ]);
+        $fries = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Fries',
+            'sell_price' => 7.00,
+            'sync_version' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->putJson("/api/v2/catalog/products/{$combo->id}/combo", [
+                'name' => 'Big Breakfast',
+                'combo_price' => 19.99,
+                'items' => [
+                    ['product_id' => $burger->id, 'quantity' => 1, 'is_optional' => false],
+                    ['product_id' => $fries->id, 'quantity' => 2, 'is_optional' => true],
+                ],
+            ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.is_combo', true)
+            ->assertJsonPath('data.combo.name', 'Big Breakfast')
+            ->assertJsonPath('data.combo.combo_price', 19.99);
+
+        $items = $response->json('data.combo.items');
+        $this->assertCount(2, $items);
+        $this->assertEquals($burger->id, $items[0]['product_id']);
+        $this->assertEquals(1.0, $items[0]['quantity']);
+        $this->assertFalse($items[0]['is_optional']);
+        $this->assertEquals(2.0, $items[1]['quantity']);
+        $this->assertTrue($items[1]['is_optional']);
+
+        $this->assertDatabaseHas('combo_products', [
+            'product_id' => $combo->id,
+            'name' => 'Big Breakfast',
+        ]);
+        $this->assertDatabaseHas('combo_product_items', [
+            'product_id' => $burger->id,
+            'quantity' => 1,
+        ]);
+
+        $combo->refresh();
+        $this->assertTrue((bool) $combo->is_combo);
+        $this->assertGreaterThan(1, $combo->sync_version);
+    }
+
+    public function test_combo_sync_replaces_previous_items(): void
+    {
+        $combo = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Combo',
+            'sell_price' => 10.00,
+            'sync_version' => 1,
+        ]);
+        $a = Product::create(['organization_id' => $this->org->id, 'name' => 'A', 'sell_price' => 1, 'sync_version' => 1]);
+        $b = Product::create(['organization_id' => $this->org->id, 'name' => 'B', 'sell_price' => 2, 'sync_version' => 1]);
+        $c = Product::create(['organization_id' => $this->org->id, 'name' => 'C', 'sell_price' => 3, 'sync_version' => 1]);
+
+        $this->withToken($this->token)->putJson("/api/v2/catalog/products/{$combo->id}/combo", [
+            'items' => [['product_id' => $a->id, 'quantity' => 1]],
+        ])->assertOk();
+
+        // Re-sync with a different item set.
+        $this->withToken($this->token)->putJson("/api/v2/catalog/products/{$combo->id}/combo", [
+            'items' => [
+                ['product_id' => $b->id, 'quantity' => 1],
+                ['product_id' => $c->id, 'quantity' => 3],
+            ],
+        ])->assertOk();
+
+        $this->assertDatabaseMissing('combo_product_items', ['product_id' => $a->id]);
+        $this->assertDatabaseHas('combo_product_items', ['product_id' => $b->id, 'quantity' => 1]);
+        $this->assertDatabaseHas('combo_product_items', ['product_id' => $c->id, 'quantity' => 3]);
+        // Only one combo_products row should remain.
+        $this->assertEquals(1, \DB::table('combo_products')->where('product_id', $combo->id)->count());
+    }
+
+    public function test_get_combo_returns_definition_and_items(): void
+    {
+        $combo = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Combo',
+            'sell_price' => 10.00,
+            'sync_version' => 1,
+        ]);
+        $item = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Soup',
+            'name_ar' => 'حساء',
+            'sell_price' => 4.00,
+            'sync_version' => 1,
+        ]);
+
+        $this->withToken($this->token)->putJson("/api/v2/catalog/products/{$combo->id}/combo", [
+            'name' => 'Soup Combo',
+            'combo_price' => 5.5,
+            'items' => [['product_id' => $item->id, 'quantity' => 1.5]],
+        ])->assertOk();
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/catalog/products/{$combo->id}/combo");
+
+        $response->assertOk()
+            ->assertJsonPath('data.is_combo', true)
+            ->assertJsonPath('data.combo.name', 'Soup Combo')
+            ->assertJsonPath('data.combo.combo_price', 5.5)
+            ->assertJsonPath('data.combo.items.0.product_id', $item->id)
+            ->assertJsonPath('data.combo.items.0.product_name', 'Soup')
+            ->assertJsonPath('data.combo.items.0.product_name_ar', 'حساء')
+            ->assertJsonPath('data.combo.items.0.quantity', 1.5);
+    }
+
+    public function test_combo_clear_removes_items_and_resets_flag(): void
+    {
+        $combo = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Combo',
+            'sell_price' => 10.00,
+            'sync_version' => 1,
+        ]);
+        $item = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'X',
+            'sell_price' => 1.00,
+            'sync_version' => 1,
+        ]);
+
+        $this->withToken($this->token)->putJson("/api/v2/catalog/products/{$combo->id}/combo", [
+            'items' => [['product_id' => $item->id, 'quantity' => 1]],
+        ])->assertOk();
+
+        $this->assertDatabaseHas('combo_products', ['product_id' => $combo->id]);
+
+        $this->withToken($this->token)
+            ->deleteJson("/api/v2/catalog/products/{$combo->id}/combo")
+            ->assertOk()
+            ->assertJsonPath('data.is_combo', false);
+
+        $this->assertDatabaseMissing('combo_products', ['product_id' => $combo->id]);
+        $combo->refresh();
+        $this->assertFalse((bool) $combo->is_combo);
+    }
+
+    public function test_combo_sync_rejects_cross_org_items(): void
+    {
+        $combo = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Combo',
+            'sell_price' => 10.00,
+            'sync_version' => 1,
+        ]);
+
+        $otherOrg = Organization::create([
+            'name' => 'Other Org',
+            'business_type' => 'grocery',
+            'country' => 'OM',
+        ]);
+        $foreign = Product::create([
+            'organization_id' => $otherOrg->id,
+            'name' => 'Foreign',
+            'sell_price' => 1.0,
+            'sync_version' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->putJson("/api/v2/catalog/products/{$combo->id}/combo", [
+                'items' => [['product_id' => $foreign->id, 'quantity' => 1]],
+            ]);
+
+        $response->assertStatus(422);
+        $this->assertDatabaseMissing('combo_products', ['product_id' => $combo->id]);
+    }
+
+    public function test_combo_sync_validates_required_items_array(): void
+    {
+        $combo = Product::create([
+            'organization_id' => $this->org->id,
+            'name' => 'Combo',
+            'sell_price' => 10.00,
+            'sync_version' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->putJson("/api/v2/catalog/products/{$combo->id}/combo", [
+                'items' => [],
+            ]);
+
+        $response->assertStatus(422);
+    }
 }

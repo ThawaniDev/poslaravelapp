@@ -354,6 +354,71 @@ class ProductService
         });
     }
 
+    // ─── Combo Products ─────────────────────────────────────────
+
+    /**
+     * Replace the combo definition (single combo per product) and
+     * its items. Marks the product as `is_combo = true` and bumps
+     * sync_version.
+     *
+     * @param  array{name?: string, combo_price?: float|null, items: array<int, array{product_id: string, quantity: float, is_optional?: bool}>}  $data
+     */
+    public function syncCombo(Product $product, array $data): Product
+    {
+        return DB::transaction(function () use ($product, $data) {
+            // Wipe existing combo (and cascading items)
+            foreach ($product->comboProducts as $existing) {
+                $existing->comboProductItems()->delete();
+                $existing->delete();
+            }
+
+            $combo = $product->comboProducts()->create([
+                'name' => $data['name'] ?? $product->name,
+                'combo_price' => $data['combo_price'] ?? null,
+            ]);
+
+            foreach ($data['items'] ?? [] as $item) {
+                if (($item['product_id'] ?? null) === $product->id) {
+                    // Refuse to add the combo to itself.
+                    continue;
+                }
+
+                $combo->comboProductItems()->create([
+                    'product_id' => $item['product_id'],
+                    'quantity' => $item['quantity'] ?? 1,
+                    'is_optional' => $item['is_optional'] ?? false,
+                ]);
+            }
+
+            $product->update([
+                'is_combo' => true,
+                'sync_version' => ($product->sync_version ?? 0) + 1,
+            ]);
+
+            return $product->fresh(['comboProducts.comboProductItems.product']);
+        });
+    }
+
+    /**
+     * Remove the combo definition and reset is_combo flag.
+     */
+    public function clearCombo(Product $product): Product
+    {
+        return DB::transaction(function () use ($product) {
+            foreach ($product->comboProducts as $existing) {
+                $existing->comboProductItems()->delete();
+                $existing->delete();
+            }
+
+            $product->update([
+                'is_combo' => false,
+                'sync_version' => ($product->sync_version ?? 0) + 1,
+            ]);
+
+            return $product->fresh(['comboProducts']);
+        });
+    }
+
     // ─── Product Suppliers ──────────────────────────────────────
 
     public function syncSuppliers(Product $product, array $suppliers): Product

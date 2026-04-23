@@ -387,4 +387,98 @@ class ProductController extends BaseApiController
             'available_fields' => ProductImportService::FIELDS,
         ]);
     }
+
+    // ─── Combo Products ─────────────────────────────────────────
+
+    public function combo(Request $request, string $product): JsonResponse
+    {
+        $found = $this->productService->find($product);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Product not found.');
+        }
+
+        $found->load('comboProducts.comboProductItems.product');
+
+        $combo = $found->comboProducts->first();
+
+        return $this->success([
+            'is_combo' => (bool) $found->is_combo,
+            'combo' => $combo ? [
+                'id' => $combo->id,
+                'name' => $combo->name,
+                'combo_price' => $combo->combo_price !== null ? (float) $combo->combo_price : null,
+                'items' => $combo->comboProductItems->map(fn ($item) => [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product?->name,
+                    'product_name_ar' => $item->product?->name_ar,
+                    'quantity' => (float) $item->quantity,
+                    'is_optional' => (bool) $item->is_optional,
+                ])->values(),
+            ] : null,
+        ]);
+    }
+
+    public function syncCombo(Request $request, string $product): JsonResponse
+    {
+        $found = $this->productService->find($product);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Product not found.');
+        }
+
+        $request->validate([
+            'name' => ['nullable', 'string', 'max:255'],
+            'combo_price' => ['nullable', 'numeric', 'min:0'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'uuid', 'exists:products,id'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0.001'],
+            'items.*.is_optional' => ['sometimes', 'boolean'],
+        ]);
+
+        // Cross-org guard: every component must belong to the same org.
+        $componentIds = collect($request->input('items'))->pluck('product_id')->unique()->values();
+        $foreign = \App\Domain\Catalog\Models\Product::whereIn('id', $componentIds)
+            ->where('organization_id', '!=', $request->user()->organization_id)
+            ->exists();
+
+        if ($foreign) {
+            return $this->error('All combo items must belong to the same organisation.', 422);
+        }
+
+        $updated = $this->productService->syncCombo($found, $request->only(['name', 'combo_price', 'items']));
+
+        return $this->success([
+            'is_combo' => true,
+            'combo' => [
+                'id' => $updated->comboProducts->first()?->id,
+                'name' => $updated->comboProducts->first()?->name,
+                'combo_price' => $updated->comboProducts->first()?->combo_price !== null
+                    ? (float) $updated->comboProducts->first()->combo_price
+                    : null,
+                'items' => $updated->comboProducts->first()?->comboProductItems->map(fn ($item) => [
+                    'id' => $item->id,
+                    'product_id' => $item->product_id,
+                    'product_name' => $item->product?->name,
+                    'product_name_ar' => $item->product?->name_ar,
+                    'quantity' => (float) $item->quantity,
+                    'is_optional' => (bool) $item->is_optional,
+                ])->values() ?? [],
+            ],
+        ], 'Combo updated.');
+    }
+
+    public function clearCombo(Request $request, string $product): JsonResponse
+    {
+        $found = $this->productService->find($product);
+
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Product not found.');
+        }
+
+        $this->productService->clearCombo($found);
+
+        return $this->success(['is_combo' => false], 'Combo cleared.');
+    }
 }

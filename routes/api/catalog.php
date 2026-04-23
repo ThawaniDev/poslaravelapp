@@ -40,6 +40,9 @@ Route::prefix('catalog')->middleware('auth:sanctum')->group(function () {
         Route::put('/{product}/store-prices', [ProductController::class, 'syncStorePrices'])->middleware('permission:products.manage_pricing');
         Route::get('/{product}/suppliers', [ProductController::class, 'suppliers'])->middleware('permission:products.view');
         Route::put('/{product}/suppliers', [ProductController::class, 'syncSuppliers'])->middleware('permission:products.manage_suppliers');
+        Route::get('/{product}/combo', [ProductController::class, 'combo'])->middleware('permission:products.view');
+        Route::put('/{product}/combo', [ProductController::class, 'syncCombo'])->middleware('permission:products.manage');
+        Route::delete('/{product}/combo', [ProductController::class, 'clearCombo'])->middleware('permission:products.manage');
     });
 
     // ─── Categories ──────────────────────────────────────────
