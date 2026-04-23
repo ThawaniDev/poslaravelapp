@@ -87,6 +87,15 @@ class AdminUser extends Authenticatable implements FilamentUser
         return $this->loadPermissions()->contains($permissionName);
     }
 
+    /**
+     * Alias for hasPermission() to match the Spatie/Filament conventional name
+     * used throughout the admin panel resources.
+     */
+    public function hasPermissionTo(string $permissionName, ?string $guardName = null): bool
+    {
+        return $this->hasPermission($permissionName);
+    }
+
     public function hasAnyPermission(array $permissionNames): bool
     {
         if ($this->isSuperAdmin()) {
