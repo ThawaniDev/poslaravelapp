@@ -103,6 +103,12 @@ class SubscriptionPlanSeeder extends Seeder
                     ['feature_key' => 'companion_app',          'name' => 'Companion App',               'name_ar' => 'تطبيق المالك',                    'is_enabled' => false],
                     ['feature_key' => 'installments',           'name' => 'Installment Payments',        'name_ar' => 'الدفع بالتقسيط',                 'is_enabled' => false],
                     ['feature_key' => 'accounting',             'name' => 'Accounting',                  'name_ar' => 'المحاسبة',                        'is_enabled' => false],
+                    // Catalog add-ons
+                    ['feature_key' => 'product_modifiers',      'name' => 'Product Modifiers',           'name_ar' => 'إضافات المنتج',                   'is_enabled' => true],
+                    ['feature_key' => 'supplier_management',    'name' => 'Supplier Management',         'name_ar' => 'إدارة الموردين',                  'is_enabled' => true],
+                    ['feature_key' => 'product_variants',       'name' => 'Product Variants',            'name_ar' => 'متغيرات المنتج',                  'is_enabled' => false],
+                    ['feature_key' => 'combo_products',         'name' => 'Combo Products',              'name_ar' => 'منتجات الكومبو',                  'is_enabled' => false],
+                    ['feature_key' => 'bulk_import',            'name' => 'Bulk CSV Import',             'name_ar' => 'استيراد CSV الجماعي',            'is_enabled' => false],
                     // Industry verticals
                     ['feature_key' => 'industry_restaurant',    'name' => 'Restaurant Features',         'name_ar' => 'ميزات المطاعم',                  'is_enabled' => false],
                     ['feature_key' => 'industry_bakery',        'name' => 'Bakery Features',             'name_ar' => 'ميزات المخابز',                  'is_enabled' => false],
@@ -169,6 +175,12 @@ class SubscriptionPlanSeeder extends Seeder
                     ['feature_key' => 'companion_app',          'name' => 'Companion App',               'name_ar' => 'تطبيق المالك',                    'is_enabled' => true],
                     ['feature_key' => 'installments',           'name' => 'Installment Payments',        'name_ar' => 'الدفع بالتقسيط',                 'is_enabled' => true],
                     ['feature_key' => 'accounting',             'name' => 'Accounting',                  'name_ar' => 'المحاسبة',                        'is_enabled' => true],
+                    // Catalog add-ons
+                    ['feature_key' => 'product_modifiers',      'name' => 'Product Modifiers',           'name_ar' => 'إضافات المنتج',                   'is_enabled' => true],
+                    ['feature_key' => 'supplier_management',    'name' => 'Supplier Management',         'name_ar' => 'إدارة الموردين',                  'is_enabled' => true],
+                    ['feature_key' => 'product_variants',       'name' => 'Product Variants',            'name_ar' => 'متغيرات المنتج',                  'is_enabled' => true],
+                    ['feature_key' => 'combo_products',         'name' => 'Combo Products',              'name_ar' => 'منتجات الكومبو',                  'is_enabled' => true],
+                    ['feature_key' => 'bulk_import',            'name' => 'Bulk CSV Import',             'name_ar' => 'استيراد CSV الجماعي',            'is_enabled' => true],
                     // Industry verticals
                     ['feature_key' => 'industry_restaurant',    'name' => 'Restaurant Features',         'name_ar' => 'ميزات المطاعم',                  'is_enabled' => true],
                     ['feature_key' => 'industry_bakery',        'name' => 'Bakery Features',             'name_ar' => 'ميزات المخابز',                  'is_enabled' => true],
@@ -235,6 +247,12 @@ class SubscriptionPlanSeeder extends Seeder
                     ['feature_key' => 'companion_app',          'name' => 'Companion App',               'name_ar' => 'تطبيق المالك',                    'is_enabled' => true],
                     ['feature_key' => 'installments',           'name' => 'Installment Payments',        'name_ar' => 'الدفع بالتقسيط',                 'is_enabled' => true],
                     ['feature_key' => 'accounting',             'name' => 'Accounting',                  'name_ar' => 'المحاسبة',                        'is_enabled' => true],
+                    // Catalog add-ons
+                    ['feature_key' => 'product_modifiers',      'name' => 'Product Modifiers',           'name_ar' => 'إضافات المنتج',                   'is_enabled' => true],
+                    ['feature_key' => 'supplier_management',    'name' => 'Supplier Management',         'name_ar' => 'إدارة الموردين',                  'is_enabled' => true],
+                    ['feature_key' => 'product_variants',       'name' => 'Product Variants',            'name_ar' => 'متغيرات المنتج',                  'is_enabled' => true],
+                    ['feature_key' => 'combo_products',         'name' => 'Combo Products',              'name_ar' => 'منتجات الكومبو',                  'is_enabled' => true],
+                    ['feature_key' => 'bulk_import',            'name' => 'Bulk CSV Import',             'name_ar' => 'استيراد CSV الجماعي',            'is_enabled' => true],
                     // Industry verticals
                     ['feature_key' => 'industry_restaurant',    'name' => 'Restaurant Features',         'name_ar' => 'ميزات المطاعم',                  'is_enabled' => true],
                     ['feature_key' => 'industry_bakery',        'name' => 'Bakery Features',             'name_ar' => 'ميزات المخابز',                  'is_enabled' => true],
