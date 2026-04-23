@@ -3,7 +3,7 @@
 use App\Domain\LabelPrinting\Controllers\Api\LabelController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('labels')->middleware('auth:sanctum')->group(function () {
+Route::prefix('labels')->middleware(['auth:sanctum', 'plan.feature:barcode_label_printing'])->group(function () {
 
     // Templates
     Route::get('/templates', [LabelController::class, 'index'])->middleware('permission:labels.view');
