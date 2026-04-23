@@ -91,6 +91,73 @@ class LabelService
             ],
         ];
 
+        // Industry-specific add-ons (spec section 2 — Industry-Specific Workflows).
+        // Looks up the org's business_type when available and appends matching presets.
+        $businessType = \App\Domain\Core\Models\Organization::query()
+            ->whereKey($orgId)
+            ->value('business_type');
+
+        if ($businessType !== null) {
+            $type = strtolower(is_object($businessType) && property_exists($businessType, 'value')
+                ? (string) $businessType->value
+                : (string) $businessType);
+            if (str_contains($type, 'pharm')) {
+                $defaults[] = [
+                    'name' => 'Pharmacy Label',
+                    'label_width_mm' => 60,
+                    'label_height_mm' => 40,
+                    'layout_json' => [
+                        'preset_slug' => 'pharmacy',
+                        'industry' => 'pharmacy',
+                        'elements' => [
+                            ['type' => 'product_name', 'x' => 2.0, 'y' => 2.0, 'width' => 56.0, 'height' => 5.0, 'config' => ['font_size' => 10]],
+                            ['type' => 'custom_text', 'x' => 2.0, 'y' => 8.0, 'width' => 56.0, 'height' => 4.0, 'config' => ['font_size' => 8, 'binding' => 'dosage']],
+                            ['type' => 'expiry_date', 'x' => 2.0, 'y' => 13.0, 'width' => 28.0, 'height' => 4.0, 'config' => ['font_size' => 8]],
+                            ['type' => 'custom_text', 'x' => 30.0, 'y' => 13.0, 'width' => 28.0, 'height' => 4.0, 'config' => ['font_size' => 8, 'binding' => 'batch']],
+                            ['type' => 'barcode', 'x' => 2.0, 'y' => 18.0, 'width' => 40.0, 'height' => 18.0, 'config' => ['format' => 'code128', 'show_text' => true]],
+                            ['type' => 'price', 'x' => 44.0, 'y' => 22.0, 'width' => 14.0, 'height' => 8.0, 'config' => ['font_size' => 14, 'show_currency' => true]],
+                        ],
+                    ],
+                ];
+            }
+            if (str_contains($type, 'jewel') || str_contains($type, 'gold')) {
+                $defaults[] = [
+                    'name' => 'Jewelry Tag',
+                    'label_width_mm' => 40,
+                    'label_height_mm' => 20,
+                    'layout_json' => [
+                        'preset_slug' => 'jewelry',
+                        'industry' => 'jewelry',
+                        'elements' => [
+                            ['type' => 'product_name', 'x' => 1.0, 'y' => 1.0, 'width' => 38.0, 'height' => 4.0, 'config' => ['font_size' => 8]],
+                            ['type' => 'custom_text', 'x' => 1.0, 'y' => 5.0, 'width' => 18.0, 'height' => 3.0, 'config' => ['font_size' => 7, 'binding' => 'karat']],
+                            ['type' => 'weight', 'x' => 20.0, 'y' => 5.0, 'width' => 19.0, 'height' => 3.0, 'config' => ['font_size' => 7]],
+                            ['type' => 'barcode', 'x' => 1.0, 'y' => 9.0, 'width' => 38.0, 'height' => 8.0, 'config' => ['format' => 'code128', 'show_text' => false]],
+                            ['type' => 'price', 'x' => 1.0, 'y' => 17.0, 'width' => 38.0, 'height' => 3.0, 'config' => ['font_size' => 9, 'show_currency' => true]],
+                        ],
+                    ],
+                ];
+            }
+            if (str_contains($type, 'bake') || str_contains($type, 'restaurant') || str_contains($type, 'food')) {
+                $defaults[] = [
+                    'name' => 'Bakery / Food Label',
+                    'label_width_mm' => 58,
+                    'label_height_mm' => 40,
+                    'layout_json' => [
+                        'preset_slug' => 'bakery',
+                        'industry' => 'bakery',
+                        'elements' => [
+                            ['type' => 'product_name', 'x' => 2.0, 'y' => 2.0, 'width' => 54.0, 'height' => 5.0, 'config' => ['font_size' => 10]],
+                            ['type' => 'custom_text', 'x' => 2.0, 'y' => 8.0, 'width' => 27.0, 'height' => 4.0, 'config' => ['font_size' => 7, 'binding' => 'production_date', 'label' => 'Prod']],
+                            ['type' => 'expiry_date', 'x' => 30.0, 'y' => 8.0, 'width' => 26.0, 'height' => 4.0, 'config' => ['font_size' => 7]],
+                            ['type' => 'barcode', 'x' => 2.0, 'y' => 13.0, 'width' => 36.0, 'height' => 22.0, 'config' => ['format' => 'code128', 'show_text' => true]],
+                            ['type' => 'price', 'x' => 40.0, 'y' => 18.0, 'width' => 16.0, 'height' => 14.0, 'config' => ['font_size' => 16, 'show_currency' => true]],
+                        ],
+                    ],
+                ];
+            }
+        }
+
         foreach ($defaults as $def) {
             LabelTemplate::firstOrCreate(
                 [
