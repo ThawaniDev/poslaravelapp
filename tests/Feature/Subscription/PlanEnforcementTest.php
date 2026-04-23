@@ -13,6 +13,7 @@ use App\Domain\Subscription\Models\PlanLimit;
 use App\Domain\Subscription\Models\SubscriptionPlan;
 use App\Domain\Subscription\Services\PlanEnforcementService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class PlanEnforcementTest extends TestCase
@@ -140,14 +141,20 @@ class PlanEnforcementTest extends TestCase
 
     public function test_cannot_perform_action_at_limit(): void
     {
-        // Record usage at the limit
-        SubscriptionUsageSnapshot::create([
-            'organization_id' => $this->org->id,
-            'resource_type' => 'products',
-            'current_count' => 50,
-            'plan_limit' => 50,
-            'snapshot_date' => today(),
-        ]);
+        // products uses live count; insert 50 active products to reach the limit.
+        for ($i = 0; $i < 50; $i++) {
+            DB::table('products')->insert([
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'organization_id' => $this->org->id,
+
+                'name' => "Product {$i}",
+                'sku' => "SKU-{$i}",
+                'sell_price' => 1.00,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         $this->assertFalse($this->enforcement->canPerformAction($this->org->id, 'products'));
     }
@@ -173,13 +180,19 @@ class PlanEnforcementTest extends TestCase
 
     public function test_remaining_quota_calculated_correctly(): void
     {
-        SubscriptionUsageSnapshot::create([
-            'organization_id' => $this->org->id,
-            'resource_type' => 'products',
-            'current_count' => 35,
-            'plan_limit' => 50,
-            'snapshot_date' => today(),
-        ]);
+        for ($i = 0; $i < 35; $i++) {
+            DB::table('products')->insert([
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'organization_id' => $this->org->id,
+
+                'name' => "Product {$i}",
+                'sku' => "SKU-{$i}",
+                'sell_price' => 1.00,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         $remaining = $this->enforcement->getRemainingQuota($this->org->id, 'products');
         $this->assertEquals(15, $remaining);
@@ -193,13 +206,19 @@ class PlanEnforcementTest extends TestCase
 
     public function test_remaining_quota_never_negative(): void
     {
-        SubscriptionUsageSnapshot::create([
-            'organization_id' => $this->org->id,
-            'resource_type' => 'products',
-            'current_count' => 100,
-            'plan_limit' => 50,
-            'snapshot_date' => today(),
-        ]);
+        for ($i = 0; $i < 100; $i++) {
+            DB::table('products')->insert([
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'organization_id' => $this->org->id,
+
+                'name' => "Product {$i}",
+                'sku' => "SKU-{$i}",
+                'sell_price' => 1.00,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         $remaining = $this->enforcement->getRemainingQuota($this->org->id, 'products');
         $this->assertEquals(0, $remaining);
@@ -292,13 +311,19 @@ class PlanEnforcementTest extends TestCase
 
     public function test_usage_summary_calculates_percentage(): void
     {
-        SubscriptionUsageSnapshot::create([
-            'organization_id' => $this->org->id,
-            'resource_type' => 'products',
-            'current_count' => 25,
-            'plan_limit' => 50,
-            'snapshot_date' => today(),
-        ]);
+        for ($i = 0; $i < 25; $i++) {
+            DB::table('products')->insert([
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'organization_id' => $this->org->id,
+
+                'name' => "Product {$i}",
+                'sku' => "SKU-{$i}",
+                'sell_price' => 1.00,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         $summary = $this->enforcement->getUsageSummary($this->org->id);
         $products = collect($summary)->firstWhere('limit_key', 'products');
@@ -349,13 +374,19 @@ class PlanEnforcementTest extends TestCase
 
     public function test_api_check_limit_exceeded(): void
     {
-        SubscriptionUsageSnapshot::create([
-            'organization_id' => $this->org->id,
-            'resource_type' => 'products',
-            'current_count' => 50,
-            'plan_limit' => 50,
-            'snapshot_date' => today(),
-        ]);
+        for ($i = 0; $i < 50; $i++) {
+            DB::table('products')->insert([
+                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'organization_id' => $this->org->id,
+
+                'name' => "Product {$i}",
+                'sku' => "SKU-{$i}",
+                'sell_price' => 1.00,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
 
         $response = $this->withToken($this->token)
             ->getJson('/api/v2/subscription/check-limit/products');

@@ -402,23 +402,52 @@ class PlanEnforcementService
             ];
         }
 
+        $status = $subscription->status->value;
+        $expiresAt = $subscription->current_period_end?->toIso8601String();
+        $trialEndsAt = $subscription->trial_ends_at?->toIso8601String();
+        $gracePeriodEndsAt = $subscription->status === SubscriptionStatus::Grace
+            ? $expiresAt
+            : null;
+
         return [
             'has_subscription' => true,
-            'status' => $subscription->status->value,
+            // Flat top-level fields (preserved for backward compatibility with existing callers).
+            'status' => $status,
             'plan_code' => $plan->slug,
             'plan_name' => $plan->name,
             'plan_name_ar' => $plan->name_ar,
             'plan_id' => $plan->id,
             'billing_cycle' => $subscription->billing_cycle?->value,
-            'expires_at' => $subscription->current_period_end?->toIso8601String(),
-            'trial_ends_at' => $subscription->trial_ends_at?->toIso8601String(),
-            'grace_period_ends_at' => $subscription->status === SubscriptionStatus::Grace
-                ? $subscription->current_period_end?->toIso8601String()
-                : null,
+            'expires_at' => $expiresAt,
+            'trial_ends_at' => $trialEndsAt,
+            'grace_period_ends_at' => $gracePeriodEndsAt,
             'features' => $features,
             'limits' => $limits,
             'softpos' => $softposInfo,
             'is_softpos_free' => $subscription->is_softpos_free,
+            // Nested objects consumed by the Flutter FeatureGateService cache.
+            'subscription' => [
+                'id' => $subscription->id,
+                'status' => $status,
+                'billing_cycle' => $subscription->billing_cycle?->value,
+                'expires_at' => $expiresAt,
+                'current_period_start' => $subscription->current_period_start?->toIso8601String(),
+                'current_period_end' => $expiresAt,
+                'trial_ends_at' => $trialEndsAt,
+                'grace_period_ends_at' => $gracePeriodEndsAt,
+                'cancelled_at' => $subscription->cancelled_at?->toIso8601String(),
+                'is_softpos_free' => $subscription->is_softpos_free,
+            ],
+            'plan' => [
+                'id' => $plan->id,
+                'slug' => $plan->slug,
+                'name' => $plan->name,
+                'name_ar' => $plan->name_ar,
+                'tier' => $plan->tier?->value,
+                'monthly_price' => $plan->monthly_price,
+                'annual_price' => $plan->annual_price,
+                'softpos_free_eligible' => (bool) $plan->softpos_free_eligible,
+            ],
         ];
     }
 
