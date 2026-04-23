@@ -24,6 +24,7 @@ class TransactionAuditLog extends Model
         'actor_id',
         'action',
         'payload',
+        'created_at',
     ];
 
     protected $casts = [

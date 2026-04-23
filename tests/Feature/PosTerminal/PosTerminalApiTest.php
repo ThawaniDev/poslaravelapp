@@ -338,7 +338,7 @@ class PosTerminalApiTest extends TestCase
         ]);
 
         $response = $this->withToken($this->token)
-            ->postJson("/api/v2/pos/transactions/{$txn->id}/void");
+            ->postJson("/api/v2/pos/transactions/{$txn->id}/void", ['reason' => 'wrong customer charged']);
 
         $response->assertOk()
             ->assertJsonPath('data.status', 'voided');
@@ -363,7 +363,7 @@ class PosTerminalApiTest extends TestCase
         ]);
 
         $response = $this->withToken($this->token)
-            ->postJson("/api/v2/pos/transactions/{$txn->id}/void");
+            ->postJson("/api/v2/pos/transactions/{$txn->id}/void", ['reason' => 'duplicate void test']);
 
         $response->assertStatus(422);
     }

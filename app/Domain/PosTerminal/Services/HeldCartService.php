@@ -47,4 +47,38 @@ class HeldCartService
     {
         $cart->delete();
     }
+
+    /**
+     * Delete every held cart that has been sitting in `held_carts` longer
+     * than the per-store `held_cart_expiry_hours` setting (default 24h)
+     * and has not been recalled. Returns the number of rows deleted so the
+     * scheduler / command can log it.
+     */
+    public function purgeExpired(): int
+    {
+        $totalDeleted = 0;
+        $stores = \App\Domain\Core\Models\StoreSettings::query()
+            ->select(['store_id', 'held_cart_expiry_hours'])
+            ->get();
+
+        // Delete per-store using each store's threshold so configurations that
+        // intentionally keep carts longer (e.g. 72h for B2B quotes) are honoured.
+        foreach ($stores as $row) {
+            $hours = max(1, (int) ($row->held_cart_expiry_hours ?? 24));
+            $cutoff = now()->subHours($hours);
+            $totalDeleted += HeldCart::where('store_id', $row->store_id)
+                ->whereNull('recalled_at')
+                ->where('held_at', '<', $cutoff)
+                ->delete();
+        }
+
+        // Stores with no settings row: fall back to the global 24h default.
+        $cutoff24 = now()->subHours(24);
+        $totalDeleted += HeldCart::whereNull('recalled_at')
+            ->where('held_at', '<', $cutoff24)
+            ->whereNotIn('store_id', $stores->pluck('store_id'))
+            ->delete();
+
+        return $totalDeleted;
+    }
 }

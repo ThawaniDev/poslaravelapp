@@ -19,6 +19,7 @@ class Register extends Model
     protected $fillable = [
         'store_id',
         'name',
+        'code',
         'device_id',
         'app_version',
         'platform',

@@ -6,13 +6,17 @@ use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Resources\ProductResource;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Resources\CustomerResource;
+use App\Domain\PosTerminal\Requests\ApplyInventoryAdjustmentsRequest;
 use App\Domain\PosTerminal\Requests\BatchCloseSessionsRequest;
+use App\Domain\PosTerminal\Requests\BatchTransactionsRequest;
 use App\Domain\PosTerminal\Requests\CloseSessionRequest;
 use App\Domain\PosTerminal\Requests\CreateReturnRequest;
 use App\Domain\PosTerminal\Requests\CreateTransactionRequest;
 use App\Domain\PosTerminal\Requests\HoldCartRequest;
 use App\Domain\PosTerminal\Requests\OpenSessionRequest;
 use App\Domain\PosTerminal\Requests\UpdateTransactionNotesRequest;
+use App\Domain\PosTerminal\Requests\VerifyManagerPinRequest;
+use App\Domain\PosTerminal\Requests\VoidTransactionRequest;
 use App\Domain\PosTerminal\Resources\HeldCartResource;
 use App\Domain\PosTerminal\Resources\PosSessionResource;
 use App\Domain\PosTerminal\Resources\TransactionResource;
@@ -187,11 +191,11 @@ public function showSession(Request $request, string $session): JsonResponse
         }
     }
 
-    public function voidTransaction(Request $request, string $transaction): JsonResponse
+    public function voidTransaction(VoidTransactionRequest $request, string $transaction): JsonResponse
     {
         try {
             $found = $this->transactionService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $transaction);
-            $voided = $this->transactionService->void($found, $request->user());
+            $voided = $this->transactionService->void($found, $request->user(), $request->validated('reason'));
             return $this->success(new TransactionResource($voided));
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
@@ -237,13 +241,39 @@ public function showSession(Request $request, string $session): JsonResponse
         }
     }
 
-    public function exchangeTransaction(CreateTransactionRequest $request): JsonResponse
+    public function exchangeTransaction(\Illuminate\Http\Request $request): JsonResponse
     {
+        $validated = $request->validate([
+            'return_transaction_id' => ['required', 'string', 'exists:transactions,id'],
+            'register_id' => ['nullable', 'string'],
+            'pos_session_id' => ['nullable', 'string'],
+            'customer_id' => ['nullable', 'string'],
+            'returned_items' => ['required', 'array', 'min:1'],
+            'returned_items.*.product_id' => ['nullable', 'string'],
+            'returned_items.*.product_name' => ['required', 'string'],
+            'returned_items.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'returned_items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'returned_items.*.line_total' => ['required', 'numeric'],
+            'returned_items.*.tax_amount' => ['nullable', 'numeric', 'min:0'],
+            'new_items' => ['required', 'array', 'min:1'],
+            'new_items.*.product_id' => ['nullable', 'string'],
+            'new_items.*.product_name' => ['required', 'string'],
+            'new_items.*.quantity' => ['required', 'numeric', 'min:0.01'],
+            'new_items.*.unit_price' => ['required', 'numeric', 'min:0'],
+            'new_items.*.line_total' => ['required', 'numeric'],
+            'new_items.*.tax_amount' => ['nullable', 'numeric', 'min:0'],
+            'payments' => ['nullable', 'array'],
+            'payments.*.method' => ['required_with:payments', 'string'],
+            'payments.*.amount' => ['required_with:payments', 'numeric', 'min:0.01'],
+        ]);
+
         try {
-            $data = $request->validated();
-            $data['type'] = 'exchange';
-            $transaction = $this->transactionService->create($data, $request->user());
-            return $this->created(new TransactionResource($transaction));
+            $result = $this->transactionService->createExchange($validated, $request->user());
+            return $this->created([
+                'return_transaction' => new TransactionResource($result['return_transaction']),
+                'new_transaction' => new TransactionResource($result['new_transaction']),
+                'net_amount' => $result['net_amount'],
+            ]);
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
         }
@@ -414,5 +444,166 @@ public function showSession(Request $request, string $session): JsonResponse
         $result = $paginator->toArray();
         $result['data'] = CustomerResource::collection($paginator->items())->resolve();
         return $this->success($result);
+    }
+
+    /**
+     * Quick-add a customer from the POS without leaving the cashier screen.
+     * Reuses CustomerService so loyalty defaults, phone normalization and
+     * organization scoping all stay consistent with the customers feature.
+     */
+    public function quickAddCustomer(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:200'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:200'],
+            'loyalty_code' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        try {
+            $customer = app(\App\Domain\Customer\Services\CustomerService::class)
+                ->create($data, $request->user());
+            return $this->created(new CustomerResource($customer));
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    // ─── Manager-PIN step-up ─────────────────────────────────
+
+    public function verifyManagerPin(VerifyManagerPinRequest $request): JsonResponse
+    {
+        try {
+            [$token, $approverId] = app(\App\Domain\PosTerminal\Services\ManagerPinService::class)
+                ->verify($request->user(), $request->validated('pin'), $request->validated('action'));
+
+            return $this->success([
+                'approval_token' => $token,
+                'approver_id' => $approverId,
+                'expires_in' => 300,
+            ]);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    // ─── Offline sync ────────────────────────────────────────
+
+    /**
+     * Bulk upload of transactions captured while the register was offline.
+     * Idempotent on `client_uuid`. Returns per-entry status so the client can
+     * retry only the failures.
+     */
+    public function batchTransactions(BatchTransactionsRequest $request): JsonResponse
+    {
+        $results = $this->transactionService->createBatch(
+            $request->validated('transactions'),
+            $request->user(),
+        );
+
+        $created = collect($results)->where('status', 'created')->count();
+        if ($created > 0) {
+            if ($orgId = $this->resolveOrganizationId($request)) {
+                $this->refreshUsageFor($orgId, 'transactions_per_month');
+            }
+        }
+
+        return $this->success([
+            'results' => array_map(function ($r) {
+                if (isset($r['transaction'])) {
+                    $r['transaction'] = (new TransactionResource($r['transaction']))->resolve();
+                }
+                return $r;
+            }, $results),
+        ]);
+    }
+
+    /**
+     * Delta-sync products: returns every product (and its inventory levels for
+     * the user's accessible stores) updated since `?since=<ISO8601>`. When
+     * `since` is omitted, returns the entire active catalog.
+     */
+    public function productChanges(\Illuminate\Http\Request $request): JsonResponse
+    {
+        $since = $request->query('since');
+        $orgId = $request->user()->organization_id;
+        $storeIds = $this->resolvedStoreIds($request);
+
+        $query = Product::where('organization_id', $orgId);
+        if ($since) {
+            try {
+                $cutoff = \Carbon\Carbon::parse($since);
+                $query->where('updated_at', '>=', $cutoff);
+            } catch (\Throwable $e) {
+                return $this->error(__('pos.invalid_since_parameter'), 422);
+            }
+        }
+
+        $products = $query->orderBy('updated_at')->limit((int) $request->query('limit', 500))->get();
+
+        // Pull stock levels in a single query keyed by product_id+store_id.
+        $stocks = \App\Domain\Inventory\Models\StockLevel::query()
+            ->whereIn('product_id', $products->pluck('id'))
+            ->whereIn('store_id', $storeIds)
+            ->get(['product_id', 'store_id', 'quantity', 'reserved_quantity']);
+
+        return $this->success([
+            'products' => ProductResource::collection($products)->resolve(),
+            'stocks' => $stocks->map(fn ($s) => [
+                'product_id' => $s->product_id,
+                'store_id' => $s->store_id,
+                'quantity' => (float) $s->quantity,
+                'reserved_quantity' => (float) ($s->reserved_quantity ?? 0),
+            ])->values(),
+            'server_time' => now()->toISOString(),
+        ]);
+    }
+
+    /**
+     * Apply a batch of inventory adjustments synced from offline registers.
+     * Each adjustment carries a `reason` for the audit trail and writes to
+     * `stock_movements` via the canonical StockService.
+     */
+    public function applyInventoryAdjustments(ApplyInventoryAdjustmentsRequest $request): JsonResponse
+    {
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $stockService = app(\App\Domain\Inventory\Services\StockService::class);
+
+        $results = [];
+        foreach ($request->validated('adjustments') as $adj) {
+            try {
+                $type = $adj['direction'] === 'in'
+                    ? \App\Domain\Inventory\Enums\StockMovementType::AdjustmentIn
+                    : \App\Domain\Inventory\Enums\StockMovementType::AdjustmentOut;
+
+                $movement = $stockService->adjustStock(
+                    storeId: $storeId,
+                    productId: $adj['product_id'],
+                    type: $type,
+                    quantity: (float) $adj['quantity'],
+                    unitCost: $adj['unit_cost'] ?? null,
+                    referenceType: \App\Domain\Inventory\Enums\StockReferenceType::Adjustment,
+                    referenceId: null,
+                    reason: $adj['reason'],
+                    performedBy: $request->user()->id,
+                    idempotencyKey: $adj['client_uuid'] ?? null,
+                );
+                $results[] = [
+                    'product_id' => $adj['product_id'],
+                    'client_uuid' => $adj['client_uuid'] ?? null,
+                    'status' => 'applied',
+                    'movement_id' => $movement->id,
+                ];
+            } catch (\Throwable $e) {
+                $results[] = [
+                    'product_id' => $adj['product_id'],
+                    'client_uuid' => $adj['client_uuid'] ?? null,
+                    'status' => 'failed',
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return $this->success(['results' => $results]);
     }
 }

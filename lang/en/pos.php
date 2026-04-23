@@ -119,6 +119,18 @@ return [
     'discount_exceeds_maximum' => 'Discount cannot exceed :max%.',
     'insufficient_stock' => 'Insufficient stock for :product. Available: :available, Requested: :requested.',
     'refunds_disabled' => 'Refunds are disabled for this store.',
+    'return_without_receipt_denied' => 'Returns without an original receipt are not allowed at this store.',
+    'return_without_receipt_exchange_only' => 'Without an original receipt this store only allows exchanges, not refunds.',
+    'return_without_receipt_credit_note' => 'Refund issued as store credit (no original receipt).',
+    'exchange_requires_original' => 'An original transaction must be selected for the exchange.',
+    'exchange_requires_items' => 'Exchange requires at least one returned item and one new item.',
+    'exchange_payment_short' => 'Payments do not cover the additional amount due (:amount).',
+    'exchange_return_leg' => 'Exchange — return leg',
+    'exchange_sale_leg' => 'Exchange — new sale leg',
+    'manager_pin_invalid' => 'Manager PIN is incorrect.',
+    'manager_pin_unknown_action' => 'Unknown step-up action.',
+    'manager_pin_insufficient_permission' => 'The supplied PIN does not have permission for this action.',
+    'invalid_since_parameter' => 'Invalid `since` timestamp; expected ISO-8601.',
 
     // Payment validation
     'payment_total_insufficient' => 'Payment total does not cover the amount due.',

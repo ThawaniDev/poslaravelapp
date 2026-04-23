@@ -56,6 +56,15 @@ Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
 
     // Customers (POS search)
     Route::get('/customers', [PosTerminalController::class, 'customers'])->middleware('permission:pos.sell');
+    Route::post('/customers', [PosTerminalController::class, 'quickAddCustomer'])->middleware('permission:pos.sell');
+
+    // Manager-PIN step-up
+    Route::post('/auth/verify-pin', [PosTerminalController::class, 'verifyManagerPin'])->middleware('permission:pos.sell');
+
+    // Offline-first sync
+    Route::post('/transactions/batch', [PosTerminalController::class, 'batchTransactions'])->middleware(['permission:pos.sell', 'plan.limit:transactions_per_month']);
+    Route::get('/products/changes', [PosTerminalController::class, 'productChanges'])->middleware('permission:pos.sell');
+    Route::post('/inventory/adjustments', [PosTerminalController::class, 'applyInventoryAdjustments'])->middleware('permission:pos.sell');
 
     // Registers (read-only for cashiers to select during shift opening)
     Route::get('/registers', [RegisterController::class, 'listActive'])->middleware('permission:pos.sell');

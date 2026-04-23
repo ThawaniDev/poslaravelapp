@@ -38,6 +38,8 @@ class TransactionItem extends Model
         'notes',
         'is_return_item',
         'age_verified',
+        'age_verified_at',
+        'age_verified_by',
     ];
 
     protected $casts = [
@@ -45,6 +47,7 @@ class TransactionItem extends Model
         'modifier_selections' => 'array',
         'is_return_item' => 'boolean',
         'age_verified' => 'boolean',
+        'age_verified_at' => 'datetime',
         'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'cost_price' => 'decimal:2',

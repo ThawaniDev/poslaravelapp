@@ -186,3 +186,10 @@ Schedule::command('notifications:fire-scheduled')
     ->dailyAt('00:30')
     ->withoutOverlapping()
     ->onOneServer();
+
+// ─── POS housekeeping ────────────────────────────────────────
+// Purge held carts older than the per-store expiry threshold (default 24h).
+Schedule::command('pos:purge-expired-held-carts')
+    ->hourly()
+    ->withoutOverlapping()
+    ->onOneServer();

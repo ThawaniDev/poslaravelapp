@@ -119,6 +119,18 @@ return [
     'discount_exceeds_maximum' => 'لا يمكن أن يتجاوز الخصم :max%.',
     'insufficient_stock' => 'المخزون غير كافٍ لـ :product. المتاح: :available، المطلوب: :requested.',
     'refunds_disabled' => 'المرتجعات معطلة لهذا المتجر.',
+    'return_without_receipt_denied' => 'لا يُسمح بالإرجاع بدون إيصال أصلي في هذا المتجر.',
+    'return_without_receipt_exchange_only' => 'بدون إيصال أصلي يسمح هذا المتجر بالاستبدال فقط دون استرداد المبلغ.',
+    'return_without_receipt_credit_note' => 'تم إصدار الاسترداد كرصيد متجر (بدون إيصال أصلي).',
+    'exchange_requires_original' => 'يجب اختيار معاملة أصلية لإجراء الاستبدال.',
+    'exchange_requires_items' => 'يتطلب الاستبدال وجود صنف مُرجَع واحد على الأقل وصنف جديد واحد.',
+    'exchange_payment_short' => 'المدفوعات لا تغطي المبلغ الإضافي المستحق (:amount).',
+    'exchange_return_leg' => 'استبدال — جزء الإرجاع',
+    'exchange_sale_leg' => 'استبدال — جزء البيع الجديد',
+    'manager_pin_invalid' => 'رمز PIN المدير غير صحيح.',
+    'manager_pin_unknown_action' => 'إجراء التحقق غير معروف.',
+    'manager_pin_insufficient_permission' => 'الرمز المُدخل لا يمتلك صلاحية لهذا الإجراء.',
+    'invalid_since_parameter' => 'قيمة since غير صالحة؛ يجب أن تكون بصيغة ISO-8601.',
 
     // Payment validation
     'payment_total_insufficient' => 'إجمالي المدفوعات لا يغطي المبلغ المطلوب.',

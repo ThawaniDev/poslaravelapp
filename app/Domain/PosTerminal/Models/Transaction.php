@@ -53,6 +53,8 @@ class Transaction extends Model
         'zatca_status',
         'sync_status',
         'sync_version',
+        'approver_id',
+        'void_reason',
     ];
 
     protected $casts = [

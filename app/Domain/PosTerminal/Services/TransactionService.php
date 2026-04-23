@@ -117,6 +117,17 @@ class TransactionService
                 $registerId = $session?->register_id;
             }
 
+            // Resolve approver from a manager-PIN approval token (one-time use,
+            // see ManagerPinService). Required for elevated actions when the
+            // store enforces them; here we just record the approver if present.
+            $approverId = null;
+            if (!empty($data['approval_token'])) {
+                $approverId = \App\Domain\PosTerminal\Services\ManagerPinService::consume(
+                    $data['approval_token'],
+                    null,
+                );
+            }
+
             $transaction = Transaction::create([
                 'organization_id' => $actor->organization_id,
                 'store_id' => $actor->store_id,
@@ -124,7 +135,7 @@ class TransactionService
                 'pos_session_id' => $sessionId,
                 'cashier_id' => $actor->id,
                 'customer_id' => $data['customer_id'] ?? null,
-                'transaction_number' => $data['transaction_number'] ?? $this->generateNumber($actor->store_id),
+                'transaction_number' => $data['transaction_number'] ?? $this->generateNumber($actor->store_id, $registerId),
                 'type' => $data['type'] ?? TransactionType::Sale->value,
                 'status' => $data['status'] ?? TransactionStatus::Completed->value,
                 'subtotal' => $data['subtotal'] ?? 0,
@@ -134,13 +145,18 @@ class TransactionService
                 'total_amount' => $data['total_amount'] ?? 0,
                 'is_tax_exempt' => $data['is_tax_exempt'] ?? false,
                 'return_transaction_id' => $data['return_transaction_id'] ?? null,
+                'external_id' => $data['external_id'] ?? null,
+                'external_type' => $data['external_type'] ?? null,
                 'notes' => $data['notes'] ?? null,
+                'approver_id' => $approverId,
                 'sync_version' => 1,
             ]);
 
             // Create transaction items
+            $isExempt = (bool) ($data['is_tax_exempt'] ?? false);
             if (!empty($data['items'])) {
                 foreach ($data['items'] as $item) {
+                    $ageVerified = (bool) ($item['age_verified'] ?? false);
                     TransactionItem::create([
                         'transaction_id' => $transaction->id,
                         'product_id' => $item['product_id'] ?? null,
@@ -151,12 +167,35 @@ class TransactionService
                         'unit_price' => $item['unit_price'],
                         'cost_price' => $item['cost_price'] ?? 0,
                         'discount_amount' => $item['discount_amount'] ?? 0,
-                        'tax_rate' => $item['tax_rate'] ?? $storeTaxRate,
-                        'tax_amount' => $item['tax_amount'] ?? 0,
+                        // When the parent transaction is tax-exempt, every line
+                        // is forced to a 0% rate / 0 tax regardless of what the
+                        // client posted, so the receipt and totals stay honest.
+                        'tax_rate' => $isExempt ? 0 : ($item['tax_rate'] ?? $storeTaxRate),
+                        'tax_amount' => $isExempt ? 0 : ($item['tax_amount'] ?? 0),
                         'line_total' => $item['line_total'],
                         'is_return_item' => $item['is_return_item'] ?? false,
+                        'age_verified' => $ageVerified,
+                        'age_verified_at' => $ageVerified ? now() : null,
+                        'age_verified_by' => $ageVerified ? $actor->id : null,
                     ]);
                 }
+            }
+
+            // Persist tax-exemption details when the cashier flagged the sale
+            // as exempt. Without a row in `tax_exemptions` we cannot prove the
+            // exemption to ZATCA / auditors. Schema requires `customer_id`,
+            // so when the cashier omitted one we attach the transaction's
+            // customer (if any) and otherwise raise a 422 surfaced by create().
+            if ($isExempt && !empty($data['tax_exemption'])) {
+                $exempt = $data['tax_exemption'];
+                \App\Domain\PosTerminal\Models\TaxExemption::create([
+                    'transaction_id' => $transaction->id,
+                    'customer_id' => $data['customer_id'] ?? null,
+                    'exemption_type' => $exempt['exemption_type'] ?? null,
+                    'customer_tax_id' => $exempt['customer_tax_id'] ?? null,
+                    'certificate_number' => $exempt['certificate_number'] ?? null,
+                    'notes' => $exempt['notes'] ?? null,
+                ]);
             }
 
             // Create payment records
@@ -244,6 +283,28 @@ class TransactionService
         $settings = StoreSettings::where('store_id', $actor->store_id)->first();
         if ($settings && !$settings->enable_refunds) {
             throw new \RuntimeException(__('pos.refunds_disabled'));
+        }
+
+        // ── Return-without-receipt policy ────────────────────────────────
+        // When no original transaction is supplied, the store-level policy
+        // dictates whether the operation is allowed at all and in what form.
+        if (empty($data['return_transaction_id'])) {
+            $policy = $settings?->return_without_receipt_policy ?? 'deny';
+            if ($policy === 'deny') {
+                throw new \RuntimeException(__('pos.return_without_receipt_denied'));
+            }
+            if ($policy === 'exchange_only') {
+                throw new \RuntimeException(__('pos.return_without_receipt_exchange_only'));
+            }
+            // 'refund_to_credit' — force payment method to store_credit and
+            // allow the return through without anchoring to an original sale.
+            $data['payments'] = [[
+                'method' => 'store_credit',
+                'amount' => (float) ($data['total_amount'] ?? 0),
+            ]];
+            $data['type'] = TransactionType::Return->value;
+            $data['notes'] = trim(($data['notes'] ?? '') . "\n" . __('pos.return_without_receipt_credit_note'));
+            return $this->create($data, $actor);
         }
 
         $originalTransaction = $this->find($actor->store_id, $data['return_transaction_id']);
@@ -350,7 +411,7 @@ class TransactionService
         }
     }
 
-    public function void(Transaction $transaction, User $actor): Transaction
+    public function void(Transaction $transaction, User $actor, string $reason): Transaction
     {
         if ($transaction->status === TransactionStatus::Voided) {
             throw new \RuntimeException(__('pos.transaction_already_voided'));
@@ -362,6 +423,7 @@ class TransactionService
 
         $transaction->update([
             'status' => TransactionStatus::Voided,
+            'void_reason' => $reason,
             'sync_version' => ($transaction->sync_version ?? 0) + 1,
         ]);
 
@@ -389,7 +451,7 @@ class TransactionService
             $transaction->id,
             $actor->id,
             'voided',
-            ['total_amount' => (float) $transaction->total_amount],
+            ['total_amount' => (float) $transaction->total_amount, 'reason' => $reason],
         );
 
         return $transaction->fresh(['transactionItems', 'payments']);
@@ -1073,17 +1135,25 @@ class TransactionService
         }
     }
 
-    private function generateNumber(string $storeId): string
+    private function generateNumber(string $storeId, ?string $registerId = null): string
     {
         $date   = now()->format('Ymd');
-        $prefix = "TXN-{$date}-";
+        $code   = 'REG';
+        if ($registerId) {
+            $code = (string) (DB::table('registers')->where('id', $registerId)->value('code') ?: 'REG');
+        }
+        // Sanitize: alphanumeric, max 8 chars
+        $code = strtoupper(preg_replace('/[^A-Z0-9]/i', '', $code) ?: 'REG');
+        $code = substr($code, 0, 8);
 
-        // Postgres rejects `SELECT count(*) ... FOR UPDATE`. Use a per-(store,date)
+        $prefix = "{$code}-{$date}-";
+
+        // Postgres rejects `SELECT count(*) ... FOR UPDATE`. Use a per-(store,register,date)
         // advisory lock so concurrent transactions serialize on the counter without
         // locking aggregate rows. SQLite/MySQL fall back to a no-op lock.
         $driver = DB::connection()->getDriverName();
         if ($driver === 'pgsql') {
-            $lockKey = crc32($storeId . '|' . $date);
+            $lockKey = crc32($storeId . '|' . $code . '|' . $date);
             DB::statement('SELECT pg_advisory_xact_lock(?)', [$lockKey]);
         }
 
@@ -1092,14 +1162,14 @@ class TransactionService
             ->where('transaction_number', 'like', "{$prefix}%")
             ->count();
 
-        $number = sprintf('TXN-%s-%04d', $date, $count + 1);
+        $number = sprintf('%s-%s-%04d', $code, $date, $count + 1);
 
         // Retry with incrementing suffix if collision occurs (defence-in-depth).
         $maxRetries = 5;
         $attempt    = 0;
         while (Transaction::where('transaction_number', $number)->exists() && $attempt < $maxRetries) {
             $attempt++;
-            $number = sprintf('TXN-%s-%04d', $date, $count + 1 + $attempt);
+            $number = sprintf('%s-%s-%04d', $code, $date, $count + 1 + $attempt);
         }
 
         return $number;
@@ -1204,5 +1274,152 @@ class TransactionService
         }, $filename, [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    // ─── Exchange ─────────────────────────────────────────────────────────
+
+    /**
+     * Create an exchange: returns selected items from an original sale and
+     * sells the replacement items in the same atomic operation. Computes
+     * `net_amount = new_sale.total - return.total` and writes a row in
+     * `exchange_transactions` linking the two legs. When net_amount is
+     * positive the customer owes the difference (covered by `payments`);
+     * when negative it represents store credit / refund owed.
+     */
+    public function createExchange(array $data, User $actor): array
+    {
+        return DB::transaction(function () use ($data, $actor) {
+            $originalId = $data['return_transaction_id'] ?? null;
+            if (!$originalId) {
+                throw new \RuntimeException(__('pos.exchange_requires_original'));
+            }
+            $original = $this->find($actor->store_id, $originalId);
+
+            $returnedItems = $data['returned_items'] ?? [];
+            $newItems = $data['new_items'] ?? [];
+
+            if (empty($returnedItems) && empty($newItems)) {
+                throw new \RuntimeException(__('pos.exchange_requires_items'));
+            }
+
+            // ─── Leg 1: return ────────────────────────────────────────────
+            $returnSubtotal = collect($returnedItems)->sum(fn ($i) => (float) ($i['line_total'] ?? 0));
+            $returnTax = collect($returnedItems)->sum(fn ($i) => (float) ($i['tax_amount'] ?? 0));
+            $returnTotal = $returnSubtotal + $returnTax;
+
+            $returnTx = $this->createReturn([
+                'return_transaction_id' => $original->id,
+                'register_id' => $data['register_id'] ?? $original->register_id,
+                'pos_session_id' => $data['pos_session_id'] ?? $original->pos_session_id,
+                'subtotal' => $returnSubtotal,
+                'tax_amount' => $returnTax,
+                'total_amount' => $returnTotal,
+                'items' => $returnedItems,
+                'payments' => [['method' => 'store_credit', 'amount' => $returnTotal]],
+                'notes' => __('pos.exchange_return_leg'),
+            ], $actor);
+
+            // ─── Leg 2: new sale ──────────────────────────────────────────
+            $newSubtotal = collect($newItems)->sum(fn ($i) => (float) ($i['line_total'] ?? 0));
+            $newTax = collect($newItems)->sum(fn ($i) => (float) ($i['tax_amount'] ?? 0));
+            $newTotal = $newSubtotal + $newTax;
+
+            $netAmount = round($newTotal - $returnTotal, 2);
+
+            $payments = $data['payments'] ?? [];
+            // If the customer needs to pay extra, ensure payments cover the gap.
+            if ($netAmount > 0) {
+                $paid = collect($payments)->sum(fn ($p) => (float) ($p['amount'] ?? 0));
+                if ($paid + 0.01 < $netAmount) {
+                    throw new \RuntimeException(__('pos.exchange_payment_short', ['amount' => $netAmount]));
+                }
+            } elseif ($netAmount < 0 && empty($payments)) {
+                // Refund leg paid via store credit by default.
+                $payments = [['method' => 'store_credit', 'amount' => abs($netAmount)]];
+            }
+
+            $newSale = $this->create([
+                'type' => TransactionType::Exchange->value,
+                'register_id' => $data['register_id'] ?? $original->register_id,
+                'pos_session_id' => $data['pos_session_id'] ?? $original->pos_session_id,
+                'customer_id' => $data['customer_id'] ?? $original->customer_id,
+                'subtotal' => $newSubtotal,
+                'tax_amount' => $newTax,
+                'total_amount' => $newTotal,
+                'items' => $newItems,
+                'payments' => $payments,
+                'notes' => __('pos.exchange_sale_leg'),
+            ], $actor);
+
+            // ─── Link the two legs ────────────────────────────────────────
+            \App\Domain\PosTerminal\Models\ExchangeTransaction::create([
+                'sale_transaction_id' => $newSale->id,
+                'return_transaction_id' => $returnTx->id,
+                'net_amount' => $netAmount,
+            ]);
+
+            return [
+                'return_transaction' => $returnTx->fresh(['transactionItems', 'payments']),
+                'new_transaction' => $newSale->fresh(['transactionItems', 'payments']),
+                'net_amount' => $netAmount,
+            ];
+        });
+    }
+
+    // ─── Offline batch sync ───────────────────────────────────────────────
+
+    /**
+     * Persist a batch of transactions captured offline. Idempotent on
+     * `client_uuid` (stored in `external_id` with prefix "offline:") so
+     * retried batches do not create duplicates.
+     *
+     * Returns a per-entry result array: { client_uuid, status, transaction|error }.
+     */
+    public function createBatch(array $entries, User $actor): array
+    {
+        $results = [];
+        foreach ($entries as $entry) {
+            $clientUuid = $entry['client_uuid'] ?? null;
+            $externalKey = $clientUuid ? 'offline:' . $clientUuid : null;
+
+            // Idempotency check
+            if ($externalKey) {
+                $existing = Transaction::where('store_id', $actor->store_id)
+                    ->where('external_id', $externalKey)
+                    ->first();
+                if ($existing) {
+                    $results[] = [
+                        'client_uuid' => $clientUuid,
+                        'status' => 'duplicate',
+                        'transaction' => $existing,
+                    ];
+                    continue;
+                }
+            }
+
+            try {
+                $payload = $entry;
+                unset($payload['client_uuid']);
+                if ($externalKey) {
+                    $payload['external_id'] = $externalKey;
+                }
+                $tx = $this->create($payload, $actor);
+                if ($externalKey) {
+                    $tx->update(['external_id' => $externalKey, 'sync_status' => 'synced']);
+                }
+                $results[] = [
+                    'client_uuid' => $clientUuid,
+                    'status' => 'created',
+                    'transaction' => $tx->fresh(['transactionItems', 'payments']),
+                ];
+            } catch (\Throwable $e) {
+                $results[] = [
+                    'client_uuid' => $clientUuid,
+                    'status' => 'failed',
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+        return $results;
     }
 }
