@@ -974,4 +974,132 @@ class ProductApiTest extends TestCase
         $response->assertOk();
         $this->assertCount(1, $response->json('data'));
     }
+
+    // ─── Bulk Import ─────────────────────────────────────────
+
+    public function test_can_bulk_import_products_from_csv(): void
+    {
+        $csv = "name,name_ar,sku,barcode,sell_price,cost_price,unit\n"
+            . "Imported A,منتج أ,SKU-A,1111,12.50,8.00,piece\n"
+            . "Imported B,منتج ب,SKU-B,2222,7.25,4.00,kg\n";
+
+        $tmp = tempnam(sys_get_temp_dir(), 'import_').'.csv';
+        file_put_contents($tmp, $csv);
+        $upload = new \Illuminate\Http\Testing\File('products.csv', fopen($tmp, 'r'));
+
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/catalog/products/bulk-import', [
+                'file' => $upload,
+                'mapping' => [
+                    'name' => 0, 'name_ar' => 1, 'sku' => 2,
+                    'barcode' => 3, 'sell_price' => 4,
+                    'cost_price' => 5, 'unit' => 6,
+                ],
+            ]);
+
+        @unlink($tmp);
+
+        $response->assertOk()
+            ->assertJsonPath('data.created', 2)
+            ->assertJsonPath('data.failed', 0);
+
+        $this->assertDatabaseHas('products', ['name' => 'Imported A', 'organization_id' => $this->org->id]);
+        $this->assertDatabaseHas('products', ['name' => 'Imported B', 'organization_id' => $this->org->id]);
+    }
+
+    public function test_bulk_import_records_invalid_rows(): void
+    {
+        $csv = "name,sell_price\nGood,10.00\n,5.00\nBad,\n";
+
+        $tmp = tempnam(sys_get_temp_dir(), 'import_').'.csv';
+        file_put_contents($tmp, $csv);
+        $upload = new \Illuminate\Http\Testing\File('products.csv', fopen($tmp, 'r'));
+
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/catalog/products/bulk-import', [
+                'file' => $upload,
+                'mapping' => ['name' => 0, 'sell_price' => 1],
+            ]);
+
+        @unlink($tmp);
+
+        $response->assertOk()
+            ->assertJsonPath('data.created', 1)
+            ->assertJsonPath('data.failed', 2);
+    }
+
+    public function test_import_preview_returns_header_and_rows(): void
+    {
+        $csv = "name,sell_price\nA,10\nB,20\n";
+
+        $tmp = tempnam(sys_get_temp_dir(), 'import_').'.csv';
+        file_put_contents($tmp, $csv);
+        $upload = new \Illuminate\Http\Testing\File('products.csv', fopen($tmp, 'r'));
+
+        $response = $this->withToken($this->token)
+            ->postJson('/api/v2/catalog/products/import-preview', ['file' => $upload]);
+
+        @unlink($tmp);
+
+        $response->assertOk()
+            ->assertJsonPath('data.header.0', 'name')
+            ->assertJsonPath('data.header.1', 'sell_price')
+            ->assertJsonPath('data.total_rows', 2);
+    }
+
+    // ─── Cost Price Visibility ───────────────────────────────
+
+    public function test_owner_sees_cost_price(): void
+    {
+        $product = Product::create([
+            'organization_id' => $this->org->id,
+            'category_id' => $this->category->id,
+            'name' => 'With Cost',
+            'sell_price' => 10.00,
+            'cost_price' => 4.50,
+            'sync_version' => 1,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/catalog/products/{$product->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.cost_price', 4.5);
+    }
+
+    public function test_non_owner_without_view_margin_does_not_see_cost_price(): void
+    {
+        // Create a non-owner user without reports.view_margin permission.
+        $cashier = User::create([
+            'name' => 'Cashier',
+            'email' => 'cashier@catalog.com',
+            'password_hash' => bcrypt('password'),
+            'store_id' => $this->store->id,
+            'organization_id' => $this->org->id,
+            'role' => 'cashier',
+            'is_active' => true,
+        ]);
+        $cashierToken = $cashier->createToken('test', ['*'])->plainTextToken;
+
+        $product = Product::create([
+            'organization_id' => $this->org->id,
+            'category_id' => $this->category->id,
+            'name' => 'Cost Hidden',
+            'sell_price' => 10.00,
+            'cost_price' => 4.50,
+            'sync_version' => 1,
+        ]);
+
+        // Cashier may not have products.view either, which would 403 — give it directly.
+        $perm = \Spatie\Permission\Models\Permission::firstOrCreate(
+            ['name' => 'products.view', 'guard_name' => 'sanctum'],
+        );
+        $cashier->givePermissionTo($perm);
+
+        $response = $this->withToken($cashierToken)
+            ->getJson("/api/v2/catalog/products/{$product->id}");
+
+        $response->assertOk();
+        $this->assertArrayNotHasKey('cost_price', $response->json('data'));
+    }
 }

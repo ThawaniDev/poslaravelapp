@@ -11,6 +11,7 @@ use App\Domain\Catalog\Resources\ProductResource;
 use App\Domain\Catalog\Resources\StorePriceResource;
 use App\Domain\Catalog\Resources\ProductSupplierResource;
 use App\Domain\Catalog\Services\ProductService;
+use App\Domain\Catalog\Services\ProductImportService;
 use App\Domain\Subscription\Traits\TracksSubscriptionUsage;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
@@ -21,6 +22,7 @@ class ProductController extends BaseApiController
     use TracksSubscriptionUsage;
     public function __construct(
         private readonly ProductService $productService,
+        private readonly ProductImportService $importService,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -341,5 +343,48 @@ class ProductController extends BaseApiController
         $updated = $this->productService->syncSuppliers($found, $request->validated()['suppliers']);
 
         return $this->success(ProductSupplierResource::collection($updated->productSuppliers));
+    }
+
+    // ─── Bulk Import ────────────────────────────────────────────
+
+    public function bulkImport(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:10240'],
+            'mapping' => ['required', 'array'],
+            'mapping.*' => ['integer', 'min:0'],
+        ]);
+
+        $orgId = $request->user()->organization_id;
+
+        $result = $this->importService->import(
+            organizationId: $orgId,
+            file: $request->file('file'),
+            mapping: $request->input('mapping', []),
+        );
+
+        $orgIdResolved = $this->resolveOrganizationId($request);
+        if ($orgIdResolved) {
+            $this->refreshUsageFor($orgIdResolved, 'products');
+        }
+
+        return $this->success($result, "Imported {$result['created']} of ".($result['created'] + $result['failed'])." rows.");
+    }
+
+    public function importPreview(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt,xlsx,xls', 'max:10240'],
+        ]);
+
+        $parsed = $this->importService->parseFile($request->file('file'));
+        $preview = array_slice($parsed['rows'], 0, 10);
+
+        return $this->success([
+            'header' => $parsed['header'],
+            'preview' => $preview,
+            'total_rows' => count($parsed['rows']),
+            'available_fields' => ProductImportService::FIELDS,
+        ]);
     }
 }

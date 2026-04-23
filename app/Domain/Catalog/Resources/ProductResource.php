@@ -9,6 +9,10 @@ class ProductResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $user = $request->user();
+        $canSeeCost = $user
+            && (($user->role->value ?? null) === 'owner' || $user->can('reports.view_margin'));
+
         return [
             'id' => $this->id,
             'organization_id' => $this->organization_id,
@@ -20,7 +24,10 @@ class ProductResource extends JsonResource
             'sku' => $this->sku,
             'barcode' => $this->barcode,
             'sell_price' => (float) $this->sell_price,
-            'cost_price' => $this->cost_price !== null ? (float) $this->cost_price : null,
+            'cost_price' => $this->when(
+                $canSeeCost,
+                fn () => $this->cost_price !== null ? (float) $this->cost_price : null,
+            ),
             'unit' => $this->unit?->value,
             'tax_rate' => $this->tax_rate !== null ? (float) $this->tax_rate : null,
             'is_weighable' => (bool) $this->is_weighable,

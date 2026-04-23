@@ -24,6 +24,8 @@ Route::prefix('catalog')->middleware('auth:sanctum')->group(function () {
         Route::get('/catalog', [ProductController::class, 'catalog'])->middleware('permission:products.view');
         Route::get('/changes', [ProductController::class, 'changes'])->middleware('permission:products.view');
         Route::post('/bulk-action', [ProductController::class, 'bulkAction'])->middleware('permission:products.manage');
+        Route::post('/bulk-import', [ProductController::class, 'bulkImport'])->middleware(['permission:products.import', 'plan.limit:products']);
+        Route::post('/import-preview', [ProductController::class, 'importPreview'])->middleware('permission:products.import');
         Route::get('/{product}', [ProductController::class, 'show'])->middleware('permission:products.view');
         Route::put('/{product}', [ProductController::class, 'update'])->middleware('permission:products.manage');
         Route::delete('/{product}', [ProductController::class, 'destroy'])->middleware('permission:products.manage');

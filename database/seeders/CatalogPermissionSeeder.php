@@ -6,28 +6,26 @@ use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
+/**
+ * Seeds catalog permissions.
+ *
+ * Permission names use dot-notation that matches routes/api/catalog.php
+ * `permission:` middleware declarations exactly.
+ */
 class CatalogPermissionSeeder extends Seeder
 {
     public function run(): void
     {
         $permissions = [
-            // Product permissions
-            'product_view',
-            'product_create',
-            'product_update',
-            'product_delete',
-            'product_export',
-            'product_import',
-            // Category permissions
-            'category_view',
-            'category_create',
-            'category_update',
-            'category_delete',
-            // Supplier permissions
-            'supplier_view',
-            'supplier_create',
-            'supplier_update',
-            'supplier_delete',
+            'products.view',
+            'products.manage',
+            'products.manage_pricing',
+            'products.manage_categories',
+            'products.manage_suppliers',
+            'products.import',
+            'products.export',
+            'inventory.view',
+            'reports.view_margin',
         ];
 
         foreach ($permissions as $permission) {
@@ -36,37 +34,40 @@ class CatalogPermissionSeeder extends Seeder
             );
         }
 
-        // Assign all catalog permissions to Owner role
-        $ownerRole = Role::where('name', 'owner')->first();
-        if ($ownerRole) {
-            $ownerRole->givePermissionTo($permissions);
+        if ($owner = Role::where('name', 'owner')->first()) {
+            $owner->givePermissionTo($permissions);
         }
 
-        // Assign view + create + update to Branch Manager
-        $branchManager = Role::where('name', 'branch_manager')->first();
-        if ($branchManager) {
+        if ($branchManager = Role::where('name', 'branch_manager')->first()) {
             $branchManager->givePermissionTo([
-                'product_view', 'product_create', 'product_update',
-                'category_view', 'category_create', 'category_update',
-                'supplier_view', 'supplier_create', 'supplier_update',
+                'products.view',
+                'products.manage',
+                'products.manage_pricing',
+                'products.manage_categories',
+                'products.manage_suppliers',
+                'products.import',
+                'products.export',
+                'inventory.view',
+                'reports.view_margin',
             ]);
         }
 
-        // Assign view-only to Cashier
-        $cashier = Role::where('name', 'cashier')->first();
-        if ($cashier) {
-            $cashier->givePermissionTo([
-                'product_view', 'category_view', 'supplier_view',
-            ]);
-        }
-
-        // Assign view + update to Inventory Clerk
-        $inventoryClerk = Role::where('name', 'inventory_clerk')->first();
-        if ($inventoryClerk) {
+        if ($inventoryClerk = Role::where('name', 'inventory_clerk')->first()) {
             $inventoryClerk->givePermissionTo([
-                'product_view', 'product_create', 'product_update', 'product_export',
-                'category_view',
-                'supplier_view', 'supplier_create', 'supplier_update',
+                'products.view',
+                'products.manage',
+                'products.manage_categories',
+                'products.manage_suppliers',
+                'products.import',
+                'products.export',
+                'inventory.view',
+            ]);
+        }
+
+        if ($cashier = Role::where('name', 'cashier')->first()) {
+            $cashier->givePermissionTo([
+                'products.view',
+                'inventory.view',
             ]);
         }
     }
