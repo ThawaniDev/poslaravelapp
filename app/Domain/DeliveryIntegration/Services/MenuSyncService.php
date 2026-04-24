@@ -24,7 +24,7 @@ class MenuSyncService
         ]);
 
         try {
-            $result = $adapter->syncMenu($config->getCredentials(), $products);
+            $result = $adapter->syncMenu($config->store_id, $products, $config->getCredentials());
             $duration = round(microtime(true) - $startTime, 2);
 
             $log->update([
@@ -70,6 +70,6 @@ class MenuSyncService
     {
         $adapter = DeliveryAdapterFactory::make($config);
 
-        return $adapter->toggleProductAvailability($config->getCredentials(), $productId, $available);
+        return $adapter->toggleProductAvailability($productId, $available, $config->getCredentials());
     }
 }

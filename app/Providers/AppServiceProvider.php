@@ -111,6 +111,10 @@ class AppServiceProvider extends ServiceProvider
         Product::observe(ThawaniProductObserver::class);
         Category::observe(ThawaniCategoryObserver::class);
 
+        // Delivery integration observers (Spec Rules #2 + #3)
+        Product::observe(\App\Domain\DeliveryIntegration\Observers\ProductMenuSyncObserver::class);
+        StockLevel::observe(\App\Domain\DeliveryIntegration\Observers\StockLevelDeliveryObserver::class);
+
         // Register notification observers for FCM push
         Order::observe(OrderNotificationObserver::class);
         StockLevel::observe(StockLevelNotificationObserver::class);

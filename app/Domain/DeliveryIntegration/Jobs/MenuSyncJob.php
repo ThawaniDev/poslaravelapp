@@ -34,6 +34,22 @@ class MenuSyncJob implements ShouldQueue
             return;
         }
 
-        $service->syncMenu($config, $this->products, $this->trigger);
+        $products = $this->products;
+
+        // If dispatched without an explicit catalog (e.g. by ProductMenuSyncObserver
+        // or the hourly auto-sync command), load the active catalogue for the
+        // store's organization at handle time.
+        if (empty($products)) {
+            $store = \App\Domain\Core\Models\Store::find($config->store_id);
+            if ($store) {
+                $products = \App\Domain\Catalog\Models\Product::query()
+                    ->where('organization_id', $store->organization_id)
+                    ->where('is_active', true)
+                    ->get()
+                    ->toArray();
+            }
+        }
+
+        $service->syncMenu($config, $products, $this->trigger);
     }
 }

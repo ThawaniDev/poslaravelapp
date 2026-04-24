@@ -45,6 +45,9 @@ class DeliveryPlatformConfig extends Model
         'sync_menu_on_product_change' => 'boolean',
         'last_menu_sync_at' => 'datetime',
         'last_order_received_at' => 'datetime',
+        // Spec Rule #10: AES-256 encryption-at-rest for credentials
+        'api_key' => 'encrypted',
+        'webhook_secret' => 'encrypted',
     ];
 
     protected $hidden = ['api_key', 'webhook_secret'];
@@ -103,5 +106,23 @@ class DeliveryPlatformConfig extends Model
     {
         $this->increment('daily_order_count');
         $this->update(['last_order_received_at' => now()]);
+    }
+
+    /**
+     * Returns decrypted credentials for adapters.
+     * Uses encrypted casts above (AES-256), so reads are transparent.
+     */
+    public function getCredentials(): array
+    {
+        return [
+            'platform' => $this->platform instanceof DeliveryConfigPlatform
+                ? $this->platform->value
+                : (string) $this->platform,
+            'store_id' => $this->store_id,
+            'api_key' => $this->api_key,
+            'merchant_id' => $this->merchant_id,
+            'webhook_secret' => $this->webhook_secret,
+            'branch_id' => $this->branch_id_on_platform,
+        ];
     }
 }
