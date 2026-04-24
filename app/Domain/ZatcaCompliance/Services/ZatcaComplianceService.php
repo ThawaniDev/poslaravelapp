@@ -86,6 +86,22 @@ class ZatcaComplianceService
         $previousHash = $lastInvoice?->invoice_hash ?? hash('sha256', '0');
         $invoiceHash = hash('sha256', json_encode($data) . $previousHash);
 
+        // Spec Rule #10 — when an order belongs to a B2B customer (i.e. the
+        // customer profile carries a tax_registration_number) we embed that
+        // VAT number on the ZATCA invoice so the buyer is identifiable.
+        $buyerTaxNumber = $data['buyer_tax_number'] ?? null;
+        $buyerName = $data['buyer_name'] ?? null;
+        if (! $buyerTaxNumber && ! empty($data['order_id'])) {
+            $order = \App\Domain\Order\Models\Order::find($data['order_id']);
+            if ($order && $order->customer_id) {
+                $customer = \App\Domain\Customer\Models\Customer::find($order->customer_id);
+                if ($customer) {
+                    $buyerTaxNumber = $customer->tax_registration_number ?: null;
+                    $buyerName = $customer->name ?: null;
+                }
+            }
+        }
+
         $invoice = ZatcaInvoice::create([
             'store_id' => $storeId,
             'order_id' => $data['order_id'],
@@ -100,6 +116,8 @@ class ZatcaComplianceService
             'vat_amount' => $data['vat_amount'],
             'submission_status' => ZatcaSubmissionStatus::Pending,
             'created_at' => now(),
+            'buyer_tax_number' => $buyerTaxNumber,
+            'buyer_name' => $buyerName,
         ]);
 
         // Simulate ZATCA API call – in production this would call the actual ZATCA endpoint

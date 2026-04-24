@@ -26,13 +26,36 @@ class CustomerController extends BaseApiController
     {
         $paginator = $this->customerService->list(
             $request->user()->organization_id,
-            $request->only(['search', 'group_id']),
+            $request->only(['search', 'group_id', 'has_loyalty', 'last_visit_from', 'last_visit_to']),
             (int) $request->get('per_page', 20),
         );
 
         $result = $paginator->toArray();
         $result['data'] = CustomerResource::collection($paginator->items())->resolve();
         return $this->success($result);
+    }
+
+    /**
+     * Spec §4.1 — bulk action: assign many customers to a group.
+     * POST /api/customers/bulk/assign-group  { customer_ids: [...], group_id: "" }
+     */
+    public function bulkAssignGroup(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'customer_ids' => 'required|array|min:1',
+            'customer_ids.*' => 'string',
+            'group_id' => 'nullable|string',
+        ]);
+        try {
+            $count = $this->customerService->bulkAssignGroup(
+                $request->user()->organization_id,
+                $data['customer_ids'],
+                $data['group_id'] ?? null,
+            );
+            return $this->success(['updated' => $count]);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
     }
 
     public function store(CreateCustomerRequest $request): JsonResponse

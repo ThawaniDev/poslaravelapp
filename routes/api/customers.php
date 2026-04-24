@@ -11,6 +11,7 @@ Route::prefix('customers')
         // Customer CRUD
         Route::get('/', [CustomerController::class, 'index'])->middleware('permission:customers.view');
         Route::get('/search', [CustomerController::class, 'search'])->middleware('permission:customers.view');
+        Route::post('/bulk/assign-group', [CustomerController::class, 'bulkAssignGroup'])->middleware('permission:customers.manage');
         Route::post('/', [CustomerController::class, 'store'])->middleware('permission:customers.manage');
         Route::get('/{customer}', [CustomerController::class, 'show'])->middleware('permission:customers.view');
         Route::put('/{customer}', [CustomerController::class, 'update'])->middleware('permission:customers.manage');

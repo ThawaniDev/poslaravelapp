@@ -6,6 +6,7 @@ use App\Domain\Auth\Models\User;
 use App\Domain\Core\Models\StoreSettings;
 use App\Domain\Customer\Enums\LoyaltyTransactionType;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Customer\Models\CustomerGroup;
 use App\Domain\Customer\Models\LoyaltyConfig;
 use App\Domain\Customer\Services\LoyaltyService;
 use App\Domain\Inventory\Enums\StockMovementType;
@@ -240,6 +241,13 @@ class TransactionService
                         $session->increment('total_refunds', (float) $transaction->total_amount);
                     }
                 }
+            }
+
+            // Spec Rule #6: auto-apply customer group discount BEFORE downstream
+            // calculations (loyalty earn, customer stats, sales summaries) so
+            // the discount is reflected in net amount and reporting.
+            if ($isSale && $transaction->customer_id) {
+                $this->applyCustomerGroupDiscount($transaction);
             }
 
             // Update sales summary tables for reports/dashboard
@@ -954,6 +962,58 @@ class TransactionService
     }
 
     /**
+     * Spec Rule #6: customer group discount is applied to each line item BEFORE
+     * promotion/coupon discounts. The total discount per line is floored at 0
+     * (cannot exceed the line price). The transaction subtotal stays the same;
+     * `discount_amount` is increased and `total_amount` decreased by the
+     * additional group discount applied across items.
+     */
+    private function applyCustomerGroupDiscount(Transaction $transaction): void
+    {
+        $customer = Customer::find($transaction->customer_id);
+        if (! $customer || ! $customer->group_id) {
+            return;
+        }
+        $group = CustomerGroup::find($customer->group_id);
+        if (! $group || (float) $group->discount_percent <= 0) {
+            return;
+        }
+        $pct = (float) $group->discount_percent / 100.0;
+        $extraDiscount = 0.0;
+
+        foreach ($transaction->transactionItems()->get() as $item) {
+            $base = max(0.0, (float) $item->unit_price * (float) $item->quantity);
+            $existingDiscount = (float) $item->discount_amount;
+            $remaining = max(0.0, $base - $existingDiscount);
+            $groupCut = round($remaining * $pct, 2);
+            if ($groupCut <= 0) {
+                continue;
+            }
+            $newDiscount = $existingDiscount + $groupCut;
+            $newDiscount = min($newDiscount, $base); // floor line at 0
+            $appliedCut = $newDiscount - $existingDiscount;
+            if ($appliedCut <= 0) {
+                continue;
+            }
+            $newTax = $base - $newDiscount > 0
+                ? round(($base - $newDiscount) * ((float) $item->tax_rate / 100.0), 2)
+                : 0.0;
+            $newLineTotal = max(0.0, $base - $newDiscount + $newTax);
+            $item->discount_amount = $newDiscount;
+            $item->tax_amount = $newTax;
+            $item->line_total = $newLineTotal;
+            $item->save();
+            $extraDiscount += $appliedCut;
+        }
+
+        if ($extraDiscount > 0) {
+            $transaction->discount_amount = (float) $transaction->discount_amount + $extraDiscount;
+            $transaction->total_amount = max(0.0, (float) $transaction->total_amount - $extraDiscount);
+            $transaction->save();
+        }
+    }
+
+    /**
      * Auto-earn loyalty points based on LoyaltyConfig for the organization.
      */
     private function earnLoyaltyPoints(Transaction $transaction, User $actor): void
@@ -963,8 +1023,34 @@ class TransactionService
             return;
         }
 
-        $totalAmount = (float) $transaction->total_amount;
-        $earnedPoints = (int) floor($totalAmount * $config->points_per_sar);
+        // Spec Rule #2: points earned on NET amount (after discounts, before tax).
+        $netAmount = max(0.0, (float) $transaction->subtotal - (float) $transaction->discount_amount);
+
+        // Spec §4.5: subtract value of items in excluded categories before earning.
+        $excluded = (array) ($config->excluded_category_ids ?? []);
+        if (! empty($excluded)) {
+            $excludedNet = 0.0;
+            foreach ($transaction->transactionItems()->get() as $item) {
+                if (! $item->product_id) {
+                    continue;
+                }
+                $catId = DB::table('products')->where('id', $item->product_id)->value('category_id');
+                if ($catId && in_array((string) $catId, array_map('strval', $excluded), true)) {
+                    $base = max(0.0, (float) $item->unit_price * (float) $item->quantity);
+                    $excludedNet += max(0.0, $base - (float) $item->discount_amount);
+                }
+            }
+            $netAmount = max(0.0, $netAmount - $excludedNet);
+        }
+
+        $earnedPoints = (int) floor($netAmount * (float) $config->points_per_sar);
+
+        // Spec §4.5: double-points day multiplier (ISO weekday 1=Mon ... 7=Sun).
+        $doubleDays = array_map('intval', (array) ($config->double_points_days ?? []));
+        if (! empty($doubleDays) && in_array((int) now()->isoWeekday(), $doubleDays, true)) {
+            $earnedPoints *= 2;
+        }
+
         if ($earnedPoints <= 0) {
             return;
         }
@@ -1041,14 +1127,15 @@ class TransactionService
             return;
         }
 
-        $totalAmount = (float) $transaction->total_amount;
+        // Spec Rule #2: use NET amount, mirroring earn/refund.
+        $netAmount = max(0.0, (float) $transaction->subtotal - (float) $transaction->discount_amount);
         $isReturn = $transaction->type === TransactionType::Return
             || $transaction->type === TransactionType::Return->value;
 
         if ($isReturn) {
             // Voiding a refund should restore the points we deducted in
             // refundLoyaltyPoints so the customer's balance snaps back.
-            $pointsToRestore = (int) floor($totalAmount * $config->points_per_sar);
+            $pointsToRestore = (int) floor($netAmount * (float) $config->points_per_sar);
             if ($pointsToRestore <= 0) {
                 return;
             }
@@ -1073,7 +1160,7 @@ class TransactionService
             return;
         }
 
-        $earnedPoints = (int) floor($totalAmount * $config->points_per_sar);
+        $earnedPoints = (int) floor($netAmount * (float) $config->points_per_sar);
         if ($earnedPoints <= 0) {
             return;
         }
@@ -1110,8 +1197,9 @@ class TransactionService
             return;
         }
 
-        $refundAmount = (float) $transaction->total_amount;
-        $pointsToDeduct = (int) floor($refundAmount * $config->points_per_sar);
+        // Spec Rule #2: refund deduction proportional to NET (after discounts, before tax).
+        $refundAmount = max(0.0, (float) $transaction->subtotal - (float) $transaction->discount_amount);
+        $pointsToDeduct = (int) floor($refundAmount * (float) $config->points_per_sar);
         if ($pointsToDeduct <= 0) {
             return;
         }

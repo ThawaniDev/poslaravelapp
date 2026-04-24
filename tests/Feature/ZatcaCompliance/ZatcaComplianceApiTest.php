@@ -31,7 +31,8 @@ class ZatcaComplianceApiTest extends TestCase
 
         // ZATCA migration skips SQLite — create tables manually for tests
         if (Schema::getConnection()->getDriverName() === 'sqlite') {
-            Schema::create('zatca_invoices', function ($table) {
+            if (!Schema::hasTable('zatca_invoices')) {
+                Schema::create('zatca_invoices', function ($table) {
                 $table->uuid('id')->primary();
                 $table->uuid('store_id');
                 $table->uuid('order_id');
@@ -50,8 +51,10 @@ class ZatcaComplianceApiTest extends TestCase
                 $table->timestamp('submitted_at')->nullable();
                 $table->timestamp('created_at')->nullable();
             });
+            }
 
-            Schema::create('zatca_certificates', function ($table) {
+            if (!Schema::hasTable('zatca_certificates')) {
+                Schema::create('zatca_certificates', function ($table) {
                 $table->uuid('id')->primary();
                 $table->uuid('store_id');
                 $table->string('certificate_type', 20);
@@ -62,6 +65,7 @@ class ZatcaComplianceApiTest extends TestCase
                 $table->string('status', 20)->default('active');
                 $table->timestamp('created_at')->nullable();
             });
+            }
         }
 
         $this->org = Organization::create([

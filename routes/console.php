@@ -193,3 +193,11 @@ Schedule::command('pos:purge-expired-held-carts')
     ->hourly()
     ->withoutOverlapping()
     ->onOneServer();
+
+// ─── Customer / Loyalty housekeeping ─────────────────────────
+// Spec Rule #4: nightly cron to expire loyalty points older than the
+// configured points_expiry_months window per organisation.
+Schedule::command('loyalty:expire-points')
+    ->dailyAt('02:30')
+    ->withoutOverlapping()
+    ->onOneServer();

@@ -28,7 +28,57 @@ class CustomerService
             $query->where('group_id', $filters['group_id']);
         }
 
+        // Spec §4.1 — "Has loyalty" toggle filter (loyalty_points > 0).
+        if (array_key_exists('has_loyalty', $filters) && $filters['has_loyalty'] !== null && $filters['has_loyalty'] !== '') {
+            $hasLoyalty = filter_var($filters['has_loyalty'], FILTER_VALIDATE_BOOLEAN);
+            $hasLoyalty
+                ? $query->where('loyalty_points', '>', 0)
+                : $query->where(function ($q) {
+                    $q->whereNull('loyalty_points')->orWhere('loyalty_points', '<=', 0);
+                });
+        }
+
+        // Spec §4.1 — "Last visit date range" filter.
+        if (!empty($filters['last_visit_from'])) {
+            try {
+                $query->where('last_visit_at', '>=', \Carbon\Carbon::parse($filters['last_visit_from'])->startOfDay());
+            } catch (\Throwable) {
+            }
+        }
+        if (!empty($filters['last_visit_to'])) {
+            try {
+                $query->where('last_visit_at', '<=', \Carbon\Carbon::parse($filters['last_visit_to'])->endOfDay());
+            } catch (\Throwable) {
+            }
+        }
+
         return $query->orderBy('name')->paginate($perPage);
+    }
+
+    /**
+     * Spec §4.1 — bulk operation: assign many customers to a group at once.
+     * Returns the number of customers updated.
+     */
+    public function bulkAssignGroup(string $orgId, array $customerIds, ?string $groupId): int
+    {
+        if (empty($customerIds)) {
+            return 0;
+        }
+        if ($groupId !== null) {
+            $exists = CustomerGroup::where('organization_id', $orgId)
+                ->where('id', $groupId)
+                ->exists();
+            if (! $exists) {
+                throw new \RuntimeException(__('customers.group_not_found'));
+            }
+        }
+        return Customer::where('organization_id', $orgId)
+            ->whereIn('id', $customerIds)
+            ->update([
+                'group_id' => $groupId,
+                'updated_at' => now(),
+                'sync_version' => \DB::raw('COALESCE(sync_version, 0) + 1'),
+            ]);
     }
 
     public function find(string $organizationId, string $customerId): Customer
@@ -167,9 +217,42 @@ class CustomerService
         $customer->save();
     }
 
+    /**
+     * Spec Rule #8: deleting a customer soft-deletes the record and
+     * anonymises references in past orders / transactions so reporting
+     * integrity is preserved while personal data is removed.
+     */
     public function delete(Customer $customer): void
     {
-        $customer->delete(); // soft delete
+        \DB::transaction(function () use ($customer) {
+            // Detach the customer from past orders and transactions so their
+            // PII (name/phone/email) is no longer reachable from history,
+            // while keeping the rows themselves for sales reporting.
+            \DB::table('orders')
+                ->where('customer_id', $customer->id)
+                ->update(['customer_id' => null]);
+
+            \DB::table('transactions')
+                ->where('customer_id', $customer->id)
+                ->update(['customer_id' => null]);
+
+            // Scrub PII directly on the customer row before soft-delete so
+            // that a hypothetical row read still cannot expose the data.
+            \DB::table('customers')
+                ->where('id', $customer->id)
+                ->update([
+                    'name' => 'ANONYMISED',
+                    'phone' => 'ANON-' . substr($customer->id, 0, 8),
+                    'email' => null,
+                    'address' => null,
+                    'date_of_birth' => null,
+                    'notes' => null,
+                    'tax_registration_number' => null,
+                    'updated_at' => now(),
+                ]);
+
+            $customer->refresh()->delete();
+        });
     }
 
     // ─── Groups ─────────────────────────────────────────────

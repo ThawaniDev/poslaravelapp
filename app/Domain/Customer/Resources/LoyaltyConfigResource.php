@@ -17,6 +17,7 @@ class LoyaltyConfigResource extends JsonResource
             'min_redemption_points' => (int) $this->min_redemption_points,
             'points_expiry_months'  => (int) $this->points_expiry_months,
             'excluded_category_ids' => $this->excluded_category_ids,
+            'double_points_days'    => $this->double_points_days,
             'is_active'             => (bool) $this->is_active,
             'created_at'            => $this->created_at?->toIso8601String(),
             'updated_at'            => $this->updated_at?->toIso8601String(),

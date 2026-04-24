@@ -2303,6 +2303,7 @@ return new class extends Migration
             $table->integer('min_redemption_points')->default(100);
             $table->integer('points_expiry_months')->default(12);
             $table->json('excluded_category_ids')->nullable();
+            $table->json('double_points_days')->nullable();
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
@@ -3806,6 +3807,8 @@ return new class extends Migration
                 $table->text('zatca_response_message')->nullable();
                 $table->timestamp('submitted_at')->nullable();
                 $table->timestamp('created_at')->nullable();
+                $table->string('buyer_tax_number', 50)->nullable();
+                $table->string('buyer_name', 255)->nullable();
             });
         }
 

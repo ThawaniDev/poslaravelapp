@@ -35,6 +35,9 @@ class LoyaltyController extends BaseApiController
             'min_redemption_points' => ['sometimes', 'integer', 'min:1'],
             'points_expiry_months' => ['sometimes', 'integer', 'min:1'],
             'excluded_category_ids' => ['sometimes', 'array'],
+            'excluded_category_ids.*' => ['string'],
+            'double_points_days' => ['sometimes', 'array'],
+            'double_points_days.*' => ['integer', 'between:1,7'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 

@@ -34,6 +34,9 @@ class ZatcaInvoice extends Model
         'zatca_response_message',
         'submitted_at',
         'created_at',
+        // Spec Rule #10 — B2B buyer VAT details captured at submission time.
+        'buyer_tax_number',
+        'buyer_name',
     ];
 
     protected $casts = [

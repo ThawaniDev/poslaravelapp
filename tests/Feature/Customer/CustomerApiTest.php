@@ -401,4 +401,110 @@ class CustomerApiTest extends TestCase
         ]);
         $this->withToken($this->token)->getJson('/api/v2/customers/'.$c->id)->assertStatus(404);
     }
+
+    // ─── New behaviour: bulk + filters + anonymisation + cron ─────────
+
+    public function test_bulk_assign_group_updates_many_customers(): void
+    {
+        $g = CustomerGroup::create([
+            'organization_id' => $this->org->id,
+            'name' => 'VIP',
+            'discount_percent' => 10,
+        ]);
+        $c1 = $this->makeCustomer(['name' => 'A']);
+        $c2 = $this->makeCustomer(['name' => 'B']);
+        $c3 = $this->makeCustomer(['name' => 'C']);
+
+        $r = $this->withToken($this->token)->postJson('/api/v2/customers/bulk/assign-group', [
+            'customer_ids' => [$c1->id, $c2->id, $c3->id],
+            'group_id' => $g->id,
+        ]);
+        $r->assertOk();
+        $this->assertSame(3, $r->json('data.updated'));
+        $this->assertSame($g->id, $c1->refresh()->group_id);
+        $this->assertSame($g->id, $c2->refresh()->group_id);
+        $this->assertSame($g->id, $c3->refresh()->group_id);
+
+        // null group_id removes
+        $this->withToken($this->token)->postJson('/api/v2/customers/bulk/assign-group', [
+            'customer_ids' => [$c1->id],
+            'group_id' => null,
+        ])->assertOk();
+        $this->assertNull($c1->refresh()->group_id);
+    }
+
+    public function test_index_filters_by_has_loyalty_and_date_range(): void
+    {
+        $with = $this->makeCustomer(['name' => 'WithPoints', 'loyalty_points' => 50, 'last_visit_at' => now()->subDays(2)]);
+        $without = $this->makeCustomer(['name' => 'NoPoints', 'loyalty_points' => 0, 'last_visit_at' => now()->subYears(2)]);
+
+        $r1 = $this->withToken($this->token)->getJson('/api/v2/customers?has_loyalty=true');
+        $r1->assertOk();
+        $names = array_column($r1->json('data.data'), 'name');
+        $this->assertContains('WithPoints', $names);
+        $this->assertNotContains('NoPoints', $names);
+
+        $r2 = $this->withToken($this->token)->getJson(
+            '/api/v2/customers?last_visit_from='.now()->subDays(7)->toDateString()
+                .'&last_visit_to='.now()->toDateString()
+        );
+        $r2->assertOk();
+        $names2 = array_column($r2->json('data.data'), 'name');
+        $this->assertContains('WithPoints', $names2);
+        $this->assertNotContains('NoPoints', $names2);
+
+        // Suppress unused warning
+        $this->assertNotNull($with->id);
+        $this->assertNotNull($without->id);
+    }
+
+    public function test_delete_anonymises_pii(): void
+    {
+        $c = $this->makeCustomer([
+            'name' => 'Real Name',
+            'email' => 'real@x.com',
+            'address' => '123 St',
+            'notes' => 'sensitive',
+        ]);
+        $this->withToken($this->token)->deleteJson('/api/v2/customers/'.$c->id)->assertOk();
+        $row = \DB::table('customers')->where('id', $c->id)->first();
+        $this->assertNotNull($row, 'row should still exist (soft-delete)');
+        $this->assertSame('ANONYMISED', $row->name);
+        $this->assertNull($row->email);
+        $this->assertNull($row->address);
+        $this->assertNull($row->notes);
+        $this->assertNotNull($row->deleted_at);
+    }
+
+    public function test_loyalty_expire_points_command_runs(): void
+    {
+        // Just ensure the command exists and exits 0.
+        $exit = \Artisan::call('loyalty:expire-points');
+        $this->assertSame(0, $exit);
+    }
+
+    public function test_loyalty_config_accepts_double_points_days_and_excluded_categories(): void
+    {
+        $r = $this->withToken($this->token)->putJson('/api/v2/customers/loyalty/config', [
+            'points_per_sar' => 1,
+            'sar_per_point' => 0.05,
+            'min_redemption_points' => 50,
+            'points_expiry_months' => 12,
+            'excluded_category_ids' => ['cat-1', 'cat-2'],
+            'double_points_days' => [1, 5],
+            'is_active' => true,
+        ]);
+        $r->assertOk();
+        $cfg = LoyaltyConfig::where('organization_id', $this->org->id)->first();
+        $this->assertSame(['cat-1', 'cat-2'], $cfg->excluded_category_ids);
+        $this->assertSame([1, 5], $cfg->double_points_days);
+    }
+
+    public function test_loyalty_config_rejects_invalid_double_points_day(): void
+    {
+        $this->withToken($this->token)->putJson('/api/v2/customers/loyalty/config', [
+            'points_per_sar' => 1,
+            'double_points_days' => [9], // out of range
+        ])->assertStatus(422);
+    }
 }

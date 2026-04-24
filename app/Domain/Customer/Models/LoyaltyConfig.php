@@ -21,11 +21,13 @@ class LoyaltyConfig extends Model
         'min_redemption_points',
         'points_expiry_months',
         'excluded_category_ids',
+        'double_points_days',
         'is_active',
     ];
 
     protected $casts = [
         'excluded_category_ids' => 'array',
+        'double_points_days' => 'array',
         'is_active' => 'boolean',
         'points_per_sar' => 'decimal:2',
         'sar_per_point' => 'decimal:2',
