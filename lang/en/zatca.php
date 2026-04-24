@@ -16,4 +16,8 @@ return [
     'device_tamper_reset' => 'ZATCA device tamper flag reset; chain re-seeded',
     'chain_verified' => 'Hash chain verification completed',
     'dashboard_retrieved' => 'ZATCA dashboard retrieved successfully',
+    'invoice_retrieved' => 'ZATCA invoice retrieved successfully',
+    'invoice_retry_attempted' => 'ZATCA submission retry attempted',
+    'connection_retrieved' => 'ZATCA connection status retrieved successfully',
+    'admin_overview_retrieved' => 'ZATCA cross-store overview retrieved successfully',
 ];

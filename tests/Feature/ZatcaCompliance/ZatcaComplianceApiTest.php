@@ -643,4 +643,111 @@ class ZatcaComplianceApiTest extends TestCase
         $response->assertOk();
         $this->assertEquals(0, (float) $response->json('data.total_amount'));
     }
+
+    // ─── Phase 2 provider visibility ──────────────────────────────
+
+    public function test_invoice_detail_returns_xml_qr_and_response(): void
+    {
+        $order = $this->createOrder();
+        $submit = $this->postJson('/api/v2/zatca/submit-invoice', [
+            'order_id' => $order->id,
+            'invoice_number' => 'DETAIL-001',
+            'invoice_type' => 'standard',
+            'total_amount' => 115.00,
+            'vat_amount' => 15.00,
+        ], $this->authHeader())->assertStatus(201);
+
+        $invoiceId = $submit->json('data.invoice_id');
+        $response = $this->getJson("/api/v2/zatca/invoices/{$invoiceId}", $this->authHeader());
+        $response->assertOk()
+            ->assertJsonStructure(['data' => ['invoice', 'qr_code_base64', 'xml']]);
+        $this->assertNotEmpty($response->json('data.xml'));
+    }
+
+    public function test_invoice_detail_data_isolation(): void
+    {
+        $order = $this->createOrder();
+        $submit = $this->postJson('/api/v2/zatca/submit-invoice', [
+            'order_id' => $order->id,
+            'invoice_number' => 'DETAIL-ISO-001',
+            'invoice_type' => 'standard',
+            'total_amount' => 115.00,
+            'vat_amount' => 15.00,
+        ], $this->authHeader())->assertStatus(201);
+
+        $invoiceId = $submit->json('data.invoice_id');
+        $this->app['auth']->forgetGuards();
+        $this->getJson("/api/v2/zatca/invoices/{$invoiceId}", $this->authHeader($this->otherToken))
+            ->assertNotFound();
+    }
+
+    public function test_retry_submission_reports_already_accepted(): void
+    {
+        $order = $this->createOrder();
+        $submit = $this->postJson('/api/v2/zatca/submit-invoice', [
+            'order_id' => $order->id,
+            'invoice_number' => 'RETRY-001',
+            'invoice_type' => 'standard',
+            'total_amount' => 115.00,
+            'vat_amount' => 15.00,
+        ], $this->authHeader())->assertStatus(201);
+
+        $invoiceId = $submit->json('data.invoice_id');
+        $response = $this->postJson("/api/v2/zatca/invoices/{$invoiceId}/retry", [], $this->authHeader());
+        $response->assertOk()
+            ->assertJsonPath('data.submission_status', 'accepted');
+    }
+
+    public function test_retry_submission_404_for_unknown_invoice(): void
+    {
+        $this->postJson('/api/v2/zatca/invoices/00000000-0000-0000-0000-000000000000/retry', [], $this->authHeader())
+            ->assertNotFound();
+    }
+
+    public function test_connection_status_unconnected_when_no_certificate(): void
+    {
+        $response = $this->getJson('/api/v2/zatca/connection', $this->authHeader());
+        $response->assertOk()
+            ->assertJsonPath('data.connected', false)
+            ->assertJsonStructure(['data' => [
+                'environment', 'is_production', 'is_healthy', 'connected',
+                'certificate', 'devices', 'queue_depth', 'last_success', 'last_error',
+            ]]);
+    }
+
+    public function test_connection_status_after_submission(): void
+    {
+        $order = $this->createOrder();
+        $this->postJson('/api/v2/zatca/submit-invoice', [
+            'order_id' => $order->id,
+            'invoice_number' => 'CONN-001',
+            'invoice_type' => 'standard',
+            'total_amount' => 115.00,
+            'vat_amount' => 15.00,
+        ], $this->authHeader())->assertStatus(201);
+
+        $response = $this->getJson('/api/v2/zatca/connection', $this->authHeader())->assertOk();
+        $this->assertTrue($response->json('data.connected'));
+        $this->assertNotNull($response->json('data.certificate.expires_at'));
+        $this->assertSame(0, $response->json('data.devices.tampered'));
+        $this->assertNotNull($response->json('data.last_success.invoice_number'));
+    }
+
+    public function test_admin_overview_aggregates_caller_org_stores(): void
+    {
+        $order = $this->createOrder();
+        $this->postJson('/api/v2/zatca/submit-invoice', [
+            'order_id' => $order->id,
+            'invoice_number' => 'OVR-001',
+            'invoice_type' => 'standard',
+            'total_amount' => 115.00,
+            'vat_amount' => 15.00,
+        ], $this->authHeader())->assertStatus(201);
+
+        $response = $this->getJson('/api/v2/admin/zatca/overview', $this->authHeader())->assertOk();
+        $totals = $response->json('data.totals');
+        $this->assertGreaterThanOrEqual(1, $totals['stores']);
+        $this->assertGreaterThanOrEqual(1, $totals['accepted']);
+        $this->assertIsArray($response->json('data.stores'));
+    }
 }

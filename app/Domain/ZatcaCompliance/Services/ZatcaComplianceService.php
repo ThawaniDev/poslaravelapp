@@ -355,6 +355,203 @@ class ZatcaComplianceService
         ];
     }
 
+    /**
+     * Manually re-attempt submission for a failed/pending invoice.
+     * Re-uses the existing signed XML + hash + UUID — does NOT re-sign or
+     * re-allocate ICV (that would break the chain). Returns the updated
+     * invoice payload.
+     */
+    public function retrySubmission(string $storeId, string $invoiceId): ?array
+    {
+        $invoice = ZatcaInvoice::where('store_id', $storeId)
+            ->where('id', $invoiceId)
+            ->first();
+        if (! $invoice) {
+            return null;
+        }
+        if (in_array($invoice->submission_status, [
+            ZatcaSubmissionStatus::Accepted,
+            ZatcaSubmissionStatus::Reported,
+        ], true)) {
+            return [
+                'invoice_id' => $invoice->id,
+                'submission_status' => $invoice->submission_status->value,
+                'message' => 'already_accepted',
+            ];
+        }
+
+        $store = Store::findOrFail($storeId);
+        $material = $this->resolveMaterial($store);
+        $flow = $invoice->flow === ZatcaInvoiceFlow::Clearance->value
+            ? ZatcaInvoiceFlow::Clearance
+            : ZatcaInvoiceFlow::Reporting;
+
+        $resp = $flow === ZatcaInvoiceFlow::Clearance
+            ? $this->api->clearInvoice($invoice->invoice_xml, $invoice->invoice_hash, $invoice->uuid, $material['certificate']->certificate_pem)
+            : $this->api->reportInvoice($invoice->invoice_xml, $invoice->invoice_hash, $invoice->uuid, $material['certificate']->certificate_pem);
+
+        $accepted = $flow === ZatcaInvoiceFlow::Clearance ? ! empty($resp['cleared']) : ! empty($resp['reported']);
+        $attempts = (int) ($invoice->submission_attempts ?? 0) + 1;
+        $invoice->update([
+            'submission_status' => $accepted ? ZatcaSubmissionStatus::Accepted : ZatcaSubmissionStatus::Rejected,
+            'cleared_xml' => $flow === ZatcaInvoiceFlow::Clearance ? ($resp['cleared_xml'] ?? $invoice->cleared_xml) : $invoice->cleared_xml,
+            'zatca_response_code' => $resp['response_code'] ?? null,
+            'zatca_response_message' => $resp['message'] ?? null,
+            'submitted_at' => $accepted ? now() : $invoice->submitted_at,
+            'submission_attempts' => $attempts,
+            'last_attempt_at' => now(),
+            'next_attempt_at' => $accepted ? null : RetryFailedSubmissionJob::nextAttemptAt($attempts),
+            'rejection_errors' => $accepted ? null : ($resp['errors'] ?? $invoice->rejection_errors),
+        ]);
+        $invoice->refresh();
+
+        return [
+            'invoice_id' => $invoice->id,
+            'submission_status' => $invoice->submission_status->value,
+            'submission_attempts' => $attempts,
+            'submitted_at' => $invoice->submitted_at?->toIso8601String(),
+            'response_code' => $invoice->zatca_response_code,
+            'response_message' => $invoice->zatca_response_message,
+            'errors' => $invoice->rejection_errors,
+        ];
+    }
+
+    /**
+     * Connection / health snapshot a tenant uses to confirm they are
+     * actually wired up to ZATCA: environment, certificate state with
+     * days-to-expiry, last successful submission, last error, queue
+     * depth and whether any device is locked.
+     */
+    public function connectionStatus(string $storeId): array
+    {
+        $cert = ZatcaCertificate::where('store_id', $storeId)
+            ->where('status', ZatcaCertificateStatus::Active)
+            ->latest('issued_at')
+            ->first();
+
+        $devices = ZatcaDevice::where('store_id', $storeId)->get();
+        $tampered = $devices->where('is_tampered', true)->count();
+        $active = $devices->where('status', \App\Domain\ZatcaCompliance\Enums\ZatcaDeviceStatus::Active)->count();
+
+        $lastSuccess = ZatcaInvoice::where('store_id', $storeId)
+            ->whereIn('submission_status', [ZatcaSubmissionStatus::Accepted, ZatcaSubmissionStatus::Reported])
+            ->orderByDesc('submitted_at')
+            ->first(['id', 'invoice_number', 'submitted_at', 'flow']);
+
+        $lastError = ZatcaInvoice::where('store_id', $storeId)
+            ->where('submission_status', ZatcaSubmissionStatus::Rejected)
+            ->orderByDesc('last_attempt_at')
+            ->first(['id', 'invoice_number', 'last_attempt_at', 'zatca_response_code', 'zatca_response_message', 'rejection_errors']);
+
+        $queueDepth = ZatcaInvoice::where('store_id', $storeId)
+            ->whereIn('submission_status', [ZatcaSubmissionStatus::Pending, ZatcaSubmissionStatus::Rejected])
+            ->where(function ($q) {
+                $q->whereNull('next_attempt_at')->orWhere('next_attempt_at', '<=', now());
+            })
+            ->count();
+
+        $env = $cert?->certificate_type->value ?? config('zatca.environment', 'sandbox');
+        $isProd = $env === 'production';
+        $daysToExpiry = $cert ? (int) round(now()->diffInDays($cert->expires_at, false)) : null;
+
+        $healthy = $cert !== null
+            && ($daysToExpiry === null || $daysToExpiry > 7)
+            && $tampered === 0;
+
+        return [
+            'environment' => $env,
+            'is_production' => $isProd,
+            'is_healthy' => $healthy,
+            'connected' => $cert !== null,
+            'certificate' => $cert ? [
+                'id' => $cert->id,
+                'type' => $cert->certificate_type->value,
+                'ccsid' => $cert->ccsid,
+                'pcsid' => $cert->pcsid,
+                'issued_at' => $cert->issued_at->toIso8601String(),
+                'expires_at' => $cert->expires_at->toIso8601String(),
+                'days_until_expiry' => $daysToExpiry,
+                'expiring_soon' => $daysToExpiry !== null && $daysToExpiry <= 30,
+                'expired' => $daysToExpiry !== null && $daysToExpiry < 0,
+            ] : null,
+            'devices' => [
+                'total' => $devices->count(),
+                'active' => $active,
+                'tampered' => $tampered,
+            ],
+            'queue_depth' => $queueDepth,
+            'last_success' => $lastSuccess ? [
+                'id' => $lastSuccess->id,
+                'invoice_number' => $lastSuccess->invoice_number,
+                'submitted_at' => $lastSuccess->submitted_at?->toIso8601String(),
+                'flow' => $lastSuccess->flow,
+            ] : null,
+            'last_error' => $lastError ? [
+                'id' => $lastError->id,
+                'invoice_number' => $lastError->invoice_number,
+                'last_attempt_at' => $lastError->last_attempt_at?->toIso8601String(),
+                'response_code' => $lastError->zatca_response_code,
+                'message' => $lastError->zatca_response_message,
+                'errors' => $lastError->rejection_errors,
+            ] : null,
+        ];
+    }
+
+    /**
+     * SaaS-admin cross-tenant overview: aggregate stats across every
+     * store the caller can see plus a per-store row with health status.
+     *
+     * @param  array<int,string>|null  $storeIds Restrict to these stores. null = all.
+     */
+    public function adminOverview(?array $storeIds = null): array
+    {
+        $storesQuery = Store::query();
+        if ($storeIds !== null) {
+            $storesQuery->whereIn('id', $storeIds);
+        }
+        $stores = $storesQuery->get(['id', 'name', 'country_code']);
+
+        $rows = [];
+        $totals = ['stores' => 0, 'connected' => 0, 'healthy' => 0, 'tampered' => 0,
+            'invoices' => 0, 'accepted' => 0, 'rejected' => 0, 'pending' => 0];
+
+        foreach ($stores as $store) {
+            $status = $this->connectionStatus($store->id);
+            $summary = $this->complianceSummary($store->id);
+            $rows[] = [
+                'store_id' => $store->id,
+                'store_name' => $store->name,
+                'environment' => $status['environment'],
+                'connected' => $status['connected'],
+                'is_healthy' => $status['is_healthy'],
+                'tampered_devices' => $status['devices']['tampered'],
+                'queue_depth' => $status['queue_depth'],
+                'expiring_soon' => $status['certificate']['expiring_soon'] ?? false,
+                'days_until_expiry' => $status['certificate']['days_until_expiry'] ?? null,
+                'total_invoices' => $summary['total_invoices'],
+                'accepted' => $summary['accepted'],
+                'rejected' => $summary['rejected'],
+                'pending' => $summary['pending'],
+                'success_rate' => $summary['success_rate'],
+                'last_success_at' => $status['last_success']['submitted_at'] ?? null,
+                'last_error_message' => $status['last_error']['message'] ?? null,
+            ];
+            $totals['stores']++;
+            $totals['connected'] += $status['connected'] ? 1 : 0;
+            $totals['healthy'] += $status['is_healthy'] ? 1 : 0;
+            $totals['tampered'] += $status['devices']['tampered'] > 0 ? 1 : 0;
+            $totals['invoices'] += $summary['total_invoices'];
+            $totals['accepted'] += $summary['accepted'];
+            $totals['rejected'] += $summary['rejected'];
+            $totals['pending'] += $summary['pending'];
+        }
+
+        return [
+            'totals' => $totals,
+            'stores' => $rows,
+        ];
+    }
+
     // ─── Helpers ───────────────────────────────────────────────
 
     /** @return array{0:string,1:?string,2:bool,3:?string} */

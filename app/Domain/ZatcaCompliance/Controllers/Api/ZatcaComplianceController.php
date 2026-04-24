@@ -179,4 +179,49 @@ class ZatcaComplianceController extends BaseApiController
             'recent_invoices' => $recent['data'],
         ], __('zatca.dashboard_retrieved'));
     }
+
+    public function invoiceDetail(Request $request, string $invoiceId)
+    {
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $detail = $this->service->getInvoiceFull($storeId, $invoiceId);
+        if (! $detail) {
+            return $this->notFound(__('zatca.invoice_not_found'));
+        }
+        return $this->success($detail, __('zatca.invoice_retrieved'));
+    }
+
+    public function retrySubmission(Request $request, string $invoiceId)
+    {
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $result = $this->service->retrySubmission($storeId, $invoiceId);
+        if ($result === null) {
+            return $this->notFound(__('zatca.invoice_not_found'));
+        }
+        return $this->success($result, __('zatca.invoice_retry_attempted'));
+    }
+
+    public function connectionStatus(Request $request)
+    {
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $status = $this->service->connectionStatus($storeId);
+        return $this->success($status, __('zatca.connection_retrieved'));
+    }
+
+    public function adminOverview(Request $request)
+    {
+        $user = $request->user();
+        $storeIds = null;
+        if (! $user->hasRole(['super-admin', 'platform-admin'])) {
+            // Restrict to stores within the caller's organization.
+            $storeIds = \App\Domain\Core\Models\Store::query()
+                ->when(
+                    $user->organization_id ?? null,
+                    fn ($q, $orgId) => $q->where('organization_id', $orgId),
+                )
+                ->pluck('id')
+                ->all();
+        }
+        $overview = $this->service->adminOverview($storeIds);
+        return $this->success($overview, __('zatca.admin_overview_retrieved'));
+    }
 }

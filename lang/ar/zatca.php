@@ -16,4 +16,8 @@ return [
     'device_tamper_reset' => 'تم إعادة تعيين علامة العبث للجهاز وإعادة تهيئة السلسلة',
     'chain_verified' => 'تم التحقق من سلسلة التجزئة',
     'dashboard_retrieved' => 'تم استرجاع لوحة فاتورة بنجاح',
+    'invoice_retrieved' => 'تم استرجاع الفاتورة بنجاح',
+    'invoice_retry_attempted' => 'تمت إعادة محاولة إرسال الفاتورة',
+    'connection_retrieved' => 'تم استرجاع حالة الاتصال بفاتورة',
+    'admin_overview_retrieved' => 'تم استرجاع نظرة عامة على ZATCA لجميع المتاجر',
 ];
