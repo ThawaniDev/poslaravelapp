@@ -3360,9 +3360,11 @@ return new class extends Migration
             $table->string('branch_id_on_platform', 100)->nullable();
             $table->boolean('is_enabled')->default(false);
             $table->boolean('auto_accept')->default(true);
+            $table->unsignedInteger('auto_accept_timeout_seconds')->default(300);
             $table->integer('throttle_limit')->nullable();
             $table->integer('max_daily_orders')->nullable();
             $table->boolean('operating_hours_synced')->default(false);
+            $table->json('operating_hours_json')->nullable();
             $table->timestamp('last_order_received_at')->nullable();
             $table->integer('daily_order_count')->default(0);
             $table->boolean('sync_menu_on_product_change')->default(true);

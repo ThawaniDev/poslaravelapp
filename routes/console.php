@@ -232,3 +232,10 @@ Schedule::command('delivery:cleanup-logs')
     ->dailyAt('03:00')
     ->withoutOverlapping()
     ->onOneServer();
+
+// Push operating hours to platforms every 6 hours so any change to the
+// store schedule propagates without manual intervention.
+Schedule::command('delivery:sync-operating-hours')
+    ->everySixHours()
+    ->withoutOverlapping()
+    ->onOneServer();

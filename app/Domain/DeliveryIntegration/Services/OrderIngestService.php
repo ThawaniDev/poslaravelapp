@@ -86,6 +86,13 @@ class OrderIngestService
 
         event(new DeliveryOrderReceived($order));
 
+        // Spec Rule #6: schedule auto-rejection for manual-accept orders.
+        if (! $config->auto_accept) {
+            $timeout = (int) ($config->auto_accept_timeout_seconds ?? 300);
+            \App\Domain\DeliveryIntegration\Jobs\AutoRejectStaleOrderJob::dispatch($order->id)
+                ->delay(now()->addSeconds($timeout));
+        }
+
         return $order;
     }
 

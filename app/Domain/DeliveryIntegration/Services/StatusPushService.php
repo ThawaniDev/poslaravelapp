@@ -40,9 +40,9 @@ class StatusPushService
         try {
             $adapter = DeliveryAdapterFactory::make($config);
             $result = $adapter->pushOrderStatus(
-                $config->getCredentials(),
                 $order->external_order_id,
                 $newStatus,
+                $config->getCredentials(),
                 $extra,
             );
 
