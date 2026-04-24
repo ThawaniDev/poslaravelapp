@@ -160,13 +160,60 @@ class CertificateService
             'ST' => $store->city ?? 'Riyadh',
             'L' => $store->city ?? 'Riyadh',
         ];
-        $csrResource = openssl_csr_new($dn, $key, ['digest_alg' => 'sha256']);
+
+        // ZATCA requires the CSR to carry a certificateTemplateName
+        // extension (1.3.6.1.4.1.311.20.2). The exact value differs
+        // per environment per the Fatoora Portal User Manual v3:
+        //   production  -> ZATCA-Code-Signing
+        //   simulation  -> PREZATCA-Code-Signing
+        //   sandbox     -> PREZATCA-Code-Signing (also accepted by stub)
+        $template = (string) config('zatca.csr_template', 'PREZATCA-Code-Signing');
+        $opensslCnf = $this->buildOpensslCnf($template);
+        $csrConfig = [
+            'digest_alg' => 'sha256',
+            'config' => $opensslCnf,
+            'req_extensions' => 'v3_req',
+        ];
+        $csrResource = openssl_csr_new($dn, $key, $csrConfig);
+        if ($csrResource === false) {
+            // Fallback if the platform openssl build cannot load our cnf
+            // (the resulting CSR will lack the template extension and
+            // will be rejected by real ZATCA, but is fine for stub mode).
+            $csrResource = openssl_csr_new($dn, $key, ['digest_alg' => 'sha256']);
+        }
         $csrPem = '';
         if ($csrResource !== false) {
             openssl_csr_export($csrResource, $csrPem);
         }
+        @unlink($opensslCnf);
 
         return [$privatePem, $publicPem, $csrPem];
+    }
+
+    /**
+     * Write a temporary openssl.cnf that adds the ZATCA
+     * `certificateTemplateName` extension to the v3_req section. Returns
+     * the absolute path to the temp file (caller must unlink).
+     */
+    private function buildOpensslCnf(string $template): string
+    {
+        $cnf = <<<CNF
+[ req ]
+default_bits = 2048
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[ req_distinguished_name ]
+
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment
+1.3.6.1.4.1.311.20.2 = ASN1:PRINTABLESTRING:{$template}
+CNF;
+        $path = tempnam(sys_get_temp_dir(), 'zatca_csr_');
+        file_put_contents($path, $cnf);
+        return $path;
     }
 
     private function selfSignFromCsr(string $csrPem, string $privatePem, Store $store, int $days): string

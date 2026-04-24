@@ -23,16 +23,24 @@ class ZatcaApiClient
     private function baseUrl(): ?string
     {
         $url = config('zatca.api_url');
+        // The developer-portal hostname is a documentation placeholder, not
+        // a callable endpoint, so treat it as stub mode.
         if (! $url || str_contains($url, 'developer-portal')) {
-            return null; // treat developer-portal placeholder as sandbox
+            return null;
         }
         return rtrim($url, '/');
     }
 
+    /**
+     * Stub mode = no real HTTP calls (used by tests + sandbox tenants).
+     * `simulation` is a REAL ZATCA environment per the Fatoora User Manual
+     * v3 (https://gw-fatoora.zatca.gov.sa/e-invoicing/simulation/...) and
+     * therefore makes real calls just like `production`.
+     */
     private function isSandbox(): bool
     {
         return $this->baseUrl() === null
-            || in_array(config('zatca.environment'), ['sandbox', 'simulation'], true);
+            || config('zatca.environment') === 'sandbox';
     }
 
     /**
