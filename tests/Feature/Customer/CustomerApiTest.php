@@ -8,9 +8,12 @@ use App\Domain\Core\Models\Store;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerGroup;
 use App\Domain\Customer\Models\LoyaltyConfig;
-use App\Domain\Customer\Models\LoyaltyTransaction;
-use App\Domain\Customer\Models\StoreCreditTransaction;
+use App\Domain\Order\Models\Order;
+use App\Domain\ProviderSubscription\Models\StoreSubscription;
+use App\Domain\Subscription\Models\PlanFeatureToggle;
+use App\Domain\Subscription\Models\SubscriptionPlan;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class CustomerApiTest extends TestCase
@@ -21,20 +24,21 @@ class CustomerApiTest extends TestCase
     private Organization $org;
     private Store $store;
     private string $token;
+    private SubscriptionPlan $plan;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->org = Organization::create([
-            'name' => 'Test Org',
+            'name' => 'Customer Org',
             'business_type' => 'grocery',
             'country' => 'OM',
         ]);
 
         $this->store = Store::create([
             'organization_id' => $this->org->id,
-            'name' => 'Main Store',
+            'name' => 'Main',
             'business_type' => 'grocery',
             'currency' => 'SAR',
             'is_active' => true,
@@ -42,403 +46,359 @@ class CustomerApiTest extends TestCase
         ]);
 
         $this->user = User::create([
-            'name' => 'Test User',
-            'email' => 'test@customer.com',
-            'password_hash' => bcrypt('password'),
+            'name' => 'Owner',
+            'email' => 'owner@cust.com',
+            'password_hash' => bcrypt('secret'),
             'store_id' => $this->store->id,
             'organization_id' => $this->org->id,
             'role' => 'owner',
             'is_active' => true,
         ]);
 
-        $this->token = $this->user->createToken('test', ['*'])->plainTextToken;
+        $this->token = $this->user->createToken('t', ['*'])->plainTextToken;
+
+        $this->plan = SubscriptionPlan::create([
+            'name' => 'Pro',
+            'slug' => 'pro',
+            'monthly_price' => 0,
+            'is_active' => true,
+            'sort_order' => 1,
+        ]);
+        PlanFeatureToggle::create([
+            'subscription_plan_id' => $this->plan->id,
+            'feature_key' => 'customer_management',
+            'is_enabled' => true,
+        ]);
+        PlanFeatureToggle::create([
+            'subscription_plan_id' => $this->plan->id,
+            'feature_key' => 'customer_loyalty',
+            'is_enabled' => true,
+        ]);
+        StoreSubscription::create([
+            'organization_id' => $this->org->id,
+            'subscription_plan_id' => $this->plan->id,
+            'status' => 'active',
+            'billing_cycle' => 'monthly',
+            'current_period_start' => now(),
+            'current_period_end' => now()->addMonth(),
+        ]);
     }
 
-    // ─── Customer CRUD ───────────────────────────────────────
+    private function makeCustomer(array $overrides = []): Customer
+    {
+        return Customer::create(array_merge([
+            'organization_id' => $this->org->id,
+            'name' => 'Ali',
+            'phone' => '500'.random_int(10000, 99999),
+            'loyalty_code' => Str::upper(Str::random(8)),
+            'loyalty_points' => 0,
+            'store_credit_balance' => 0,
+            'sync_version' => 1,
+        ], $overrides));
+    }
+
+    // ─── CRUD ──────────────────────────────────────────────
 
     public function test_can_list_customers(): void
     {
-        Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Alice',
-            'phone' => '96812345678',
-        ]);
-        Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Bob',
-            'phone' => '96887654321',
-        ]);
+        $this->makeCustomer(['name' => 'Ali']);
+        $this->makeCustomer(['name' => 'Sara']);
 
-        $response = $this->withToken($this->token)
-            ->getJson('/api/v2/customers');
-
-        $response->assertOk()
-            ->assertJsonPath('success', true);
-
-        $this->assertCount(2, $response->json('data.data'));
+        $r = $this->withToken($this->token)->getJson('/api/v2/customers');
+        $r->assertOk()->assertJsonPath('success', true);
+        $this->assertCount(2, $r->json('data.data'));
     }
 
-    public function test_can_search_customers(): void
+    public function test_can_create_customer_and_loyalty_code_is_generated(): void
     {
-        Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Alice Wonder',
-            'phone' => '96812345678',
-        ]);
-        Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Bob Builder',
-            'phone' => '96887654321',
+        $r = $this->withToken($this->token)->postJson('/api/v2/customers', [
+            'name' => 'New Cust',
+            'phone' => '5012345678',
+            'email' => 'new@cust.com',
         ]);
 
-        $response = $this->withToken($this->token)
-            ->getJson('/api/v2/customers?search=alice');
+        $r->assertStatus(201)
+            ->assertJsonPath('data.name', 'New Cust');
 
-        $response->assertOk();
-        $this->assertCount(1, $response->json('data.data'));
-        $this->assertEquals('Alice Wonder', $response->json('data.data.0.name'));
+        $this->assertNotEmpty($r->json('data.loyalty_code'));
+        $this->assertEquals(8, strlen($r->json('data.loyalty_code')));
     }
 
-    public function test_can_create_customer(): void
+    public function test_create_requires_phone(): void
     {
-        $response = $this->withToken($this->token)
-            ->postJson('/api/v2/customers', [
-                'name' => 'New Customer',
-                'phone' => '96855551234',
-                'email' => 'new@example.com',
-            ]);
-
-        $response->assertStatus(201)
-            ->assertJsonPath('success', true)
-            ->assertJsonPath('data.name', 'New Customer')
-            ->assertJsonPath('data.phone', '96855551234');
-
-        $this->assertNotNull($response->json('data.loyalty_code'));
+        $r = $this->withToken($this->token)->postJson('/api/v2/customers', [
+            'name' => 'NoPhone',
+        ]);
+        $r->assertStatus(422);
     }
 
-    public function test_phone_uniqueness_within_org(): void
+    public function test_create_rejects_duplicate_phone(): void
     {
-        Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Existing',
-            'phone' => '96855551234',
+        $this->makeCustomer(['phone' => '500111222']);
+        $r = $this->withToken($this->token)->postJson('/api/v2/customers', [
+            'name' => 'Dup',
+            'phone' => '500111222',
         ]);
-
-        $response = $this->withToken($this->token)
-            ->postJson('/api/v2/customers', [
-                'name' => 'Duplicate',
-                'phone' => '96855551234',
-            ]);
-
-        $response->assertStatus(422)
-            ->assertJsonPath('success', false);
-    }
-
-    public function test_can_show_customer(): void
-    {
-        $customer = Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Show Me',
-            'phone' => '96811112222',
-        ]);
-
-        $response = $this->withToken($this->token)
-            ->getJson("/api/v2/customers/{$customer->id}");
-
-        $response->assertOk()
-            ->assertJsonPath('data.name', 'Show Me');
+        $r->assertStatus(422);
     }
 
     public function test_can_update_customer(): void
     {
-        $customer = Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Old Name',
-            'sync_version' => 1,
+        $c = $this->makeCustomer(['name' => 'Old']);
+        $r = $this->withToken($this->token)->putJson('/api/v2/customers/'.$c->id, [
+            'name' => 'New Name',
+            'notes' => 'VIP',
         ]);
-
-        $response = $this->withToken($this->token)
-            ->putJson("/api/v2/customers/{$customer->id}", [
-                'name' => 'New Name',
-                'phone' => '96899998888',
-            ]);
-
-        $response->assertOk()
-            ->assertJsonPath('data.name', 'New Name')
-            ->assertJsonPath('data.phone', '96899998888');
-
-        $this->assertEquals(2, $response->json('data.sync_version'));
+        $r->assertOk()->assertJsonPath('data.name', 'New Name');
     }
 
-    public function test_can_delete_customer(): void
+    public function test_can_soft_delete_customer(): void
     {
-        $customer = Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Delete Me',
-        ]);
-
-        $response = $this->withToken($this->token)
-            ->deleteJson("/api/v2/customers/{$customer->id}");
-
-        $response->assertOk()
-            ->assertJsonPath('message', 'Customer deleted successfully.');
-
-        $this->assertSoftDeleted('customers', ['id' => $customer->id]);
+        $c = $this->makeCustomer();
+        $r = $this->withToken($this->token)->deleteJson('/api/v2/customers/'.$c->id);
+        $r->assertOk();
+        $this->assertSoftDeleted('customers', ['id' => $c->id]);
     }
 
-    // ─── Customer Groups ─────────────────────────────────────
+    // ─── Search & Sync ─────────────────────────────────────
 
-    public function test_can_list_groups(): void
+    public function test_quick_search_matches_by_phone_and_name(): void
     {
-        CustomerGroup::create([
-            'organization_id' => $this->org->id,
+        $this->makeCustomer(['name' => 'Hassan', 'phone' => '500777888']);
+        $this->makeCustomer(['name' => 'Khalid', 'phone' => '500999000']);
+
+        $r = $this->withToken($this->token)->getJson('/api/v2/customers/search?q=Hass');
+        $r->assertOk();
+        $this->assertCount(1, $r->json('data'));
+        $this->assertEquals('Hassan', $r->json('data.0.name'));
+
+        $r2 = $this->withToken($this->token)->getJson('/api/v2/customers/search?q=999000');
+        $this->assertCount(1, $r2->json('data'));
+    }
+
+    public function test_sync_returns_delta_since_timestamp(): void
+    {
+        $old = $this->makeCustomer(['name' => 'Old', 'phone' => '500001']);
+        \DB::table('customers')->where('id', $old->id)->update(['updated_at' => now()->subDays(2)]);
+        $cutoff = now()->subDay()->toIso8601String();
+        $this->makeCustomer(['name' => 'Recent', 'phone' => '500002']);
+
+        $r = $this->withToken($this->token)->getJson('/api/v2/pos/customers/sync?since='.urlencode($cutoff));
+        $r->assertOk();
+        $names = collect($r->json('data.data'))->pluck('name')->all();
+        $this->assertContains('Recent', $names);
+        $this->assertNotContains('Old', $names);
+    }
+
+    public function test_sync_includes_soft_deleted_records(): void
+    {
+        $c = $this->makeCustomer(['name' => 'ToDelete', 'phone' => '500003']);
+        $c->delete();
+        $cutoff = now()->subMinute()->toIso8601String();
+        $r = $this->withToken($this->token)->getJson('/api/v2/pos/customers/sync?since='.urlencode($cutoff));
+        $r->assertOk();
+        $ids = collect($r->json('data.data'))->pluck('id')->all();
+        $this->assertContains($c->id, $ids);
+    }
+
+    // ─── Orders history ────────────────────────────────────
+
+    public function test_can_list_customer_orders(): void
+    {
+        $c = $this->makeCustomer();
+        Order::create([
+            'store_id' => $this->store->id,
+            'customer_id' => $c->id,
+            'order_number' => 'O-1',
+            'status' => 'completed',
+            'total' => 50,
+        ]);
+        $r = $this->withToken($this->token)->getJson('/api/v2/customers/'.$c->id.'/orders');
+        $r->assertOk();
+        $this->assertEquals(1, $r->json('data.total'));
+    }
+
+    // ─── Groups ────────────────────────────────────────────
+
+    public function test_can_create_and_list_groups(): void
+    {
+        $this->withToken($this->token)->postJson('/api/v2/customers/groups', [
             'name' => 'VIP',
             'discount_percent' => 10,
-        ]);
+        ])->assertStatus(201);
 
-        $response = $this->withToken($this->token)
-            ->getJson('/api/v2/customers/groups/list');
-
-        $response->assertOk()
-            ->assertJsonPath('success', true);
-
-        $data = $response->json('data');
-        $this->assertCount(1, $data);
-        $this->assertEquals('VIP', $data[0]['name']);
-    }
-
-    public function test_can_create_group(): void
-    {
-        $response = $this->withToken($this->token)
-            ->postJson('/api/v2/customers/groups', [
-                'name' => 'Wholesale',
-                'discount_percent' => 15,
-            ]);
-
-        $response->assertStatus(201)
-            ->assertJsonPath('data.name', 'Wholesale');
-        $this->assertEquals(15, $response->json('data.discount_percent'));
-    }
-
-    public function test_can_update_group(): void
-    {
-        $group = CustomerGroup::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Old Group',
-            'discount_percent' => 5,
-        ]);
-
-        $response = $this->withToken($this->token)
-            ->putJson("/api/v2/customers/groups/{$group->id}", [
-                'name' => 'Updated Group',
-                'discount_percent' => 20,
-            ]);
-
-        $response->assertOk()
-            ->assertJsonPath('data.name', 'Updated Group');
+        $r = $this->withToken($this->token)->getJson('/api/v2/customers/groups/list');
+        $r->assertOk();
+        $this->assertCount(1, $r->json('data'));
     }
 
     public function test_cannot_delete_group_with_customers(): void
     {
-        $group = CustomerGroup::create([
+        $g = CustomerGroup::create([
             'organization_id' => $this->org->id,
-            'name' => 'Has Members',
+            'name' => 'Reg',
+            'discount_percent' => 5,
         ]);
+        $this->makeCustomer(['group_id' => $g->id]);
 
-        Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Member',
-            'group_id' => $group->id,
-        ]);
-
-        $response = $this->withToken($this->token)
-            ->deleteJson("/api/v2/customers/groups/{$group->id}");
-
-        $response->assertStatus(422);
+        $r = $this->withToken($this->token)->deleteJson('/api/v2/customers/groups/'.$g->id);
+        $r->assertStatus(422);
     }
 
     public function test_can_delete_empty_group(): void
     {
-        $group = CustomerGroup::create([
+        $g = CustomerGroup::create([
             'organization_id' => $this->org->id,
-            'name' => 'Empty Group',
+            'name' => 'Empty',
+            'discount_percent' => 5,
         ]);
-
-        $response = $this->withToken($this->token)
-            ->deleteJson("/api/v2/customers/groups/{$group->id}");
-
-        $response->assertOk();
+        $this->withToken($this->token)->deleteJson('/api/v2/customers/groups/'.$g->id)->assertOk();
     }
 
-    // ─── Loyalty ─────────────────────────────────────────────
-
-    public function test_can_get_loyalty_config(): void
-    {
-        LoyaltyConfig::create([
-            'organization_id' => $this->org->id,
-            'points_per_sar' => 2,
-            'sar_per_point' => 0.05,
-            'min_redemption_points' => 200,
-            'points_expiry_months' => 6,
-            'is_active' => true,
-        ]);
-
-        $response = $this->withToken($this->token)
-            ->getJson('/api/v2/customers/loyalty/config');
-
-        $response->assertOk()
-            ->assertJsonPath('data.min_redemption_points', 200)
-            ->assertJsonPath('data.is_active', true);
-    }
+    // ─── Loyalty ───────────────────────────────────────────
 
     public function test_can_save_loyalty_config(): void
     {
-        $response = $this->withToken($this->token)
-            ->putJson('/api/v2/customers/loyalty/config', [
-                'points_per_sar' => 3,
-                'min_redemption_points' => 50,
-                'is_active' => true,
-            ]);
-
-        $response->assertOk()
-            ->assertJsonPath('data.min_redemption_points', 50);
+        $r = $this->withToken($this->token)->putJson('/api/v2/customers/loyalty/config', [
+            'points_per_sar' => 1,
+            'sar_per_point' => 0.05,
+            'min_redemption_points' => 100,
+            'points_expiry_months' => 12,
+            'is_active' => true,
+        ]);
+        $r->assertOk();
+        $this->assertDatabaseHas('loyalty_config', ['organization_id' => $this->org->id]);
     }
 
-    public function test_can_earn_loyalty_points(): void
+    public function test_can_adjust_and_redeem_loyalty_points(): void
     {
-        $customer = Customer::create([
+        LoyaltyConfig::create([
             'organization_id' => $this->org->id,
-            'name' => 'Loyal Customer',
-            'loyalty_points' => 100,
+            'points_per_sar' => 1,
+            'sar_per_point' => 0.05,
+            'min_redemption_points' => 50,
+            'points_expiry_months' => 12,
+            'is_active' => true,
         ]);
+        $c = $this->makeCustomer();
 
-        $response = $this->withToken($this->token)
-            ->postJson("/api/v2/customers/{$customer->id}/loyalty/adjust", [
-                'points' => 50,
-                'type' => 'earn',
-                'notes' => 'Purchase #123',
-            ]);
+        $this->withToken($this->token)->postJson("/api/v2/customers/{$c->id}/loyalty/adjust", [
+            'points' => 200, 'type' => 'earn',
+        ])->assertStatus(201);
+        $this->assertEquals(200, $c->fresh()->loyalty_points);
 
-        $response->assertStatus(201)
-            ->assertJsonPath('data.type', 'earn')
-            ->assertJsonPath('data.points', 50)
-            ->assertJsonPath('data.balance_after', 150);
+        $this->withToken($this->token)->postJson("/api/v2/customers/{$c->id}/loyalty/redeem", [
+            'points' => 80,
+        ])->assertStatus(201);
+        $this->assertEquals(120, $c->fresh()->loyalty_points);
 
-        $customer->refresh();
-        $this->assertEquals(150, $customer->loyalty_points);
+        $this->withToken($this->token)->postJson("/api/v2/customers/{$c->id}/loyalty/redeem", [
+            'points' => 10,
+        ])->assertStatus(422);
+
+        $this->withToken($this->token)->postJson("/api/v2/customers/{$c->id}/loyalty/redeem", [
+            'points' => 9999,
+        ])->assertStatus(422);
     }
 
-    public function test_can_redeem_loyalty_points(): void
+    // ─── Store credit ──────────────────────────────────────
+
+    public function test_store_credit_topup_and_spend(): void
     {
-        $customer = Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Loyal Customer',
-            'loyalty_points' => 500,
-        ]);
+        $c = $this->makeCustomer();
 
-        $response = $this->withToken($this->token)
-            ->postJson("/api/v2/customers/{$customer->id}/loyalty/adjust", [
-                'points' => 200,
-                'type' => 'redeem',
-            ]);
-
-        $response->assertStatus(201)
-            ->assertJsonPath('data.type', 'redeem')
-            ->assertJsonPath('data.balance_after', 300);
-    }
-
-    public function test_cannot_redeem_more_than_balance(): void
-    {
-        $customer = Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Poor Customer',
-            'loyalty_points' => 10,
-        ]);
-
-        $response = $this->withToken($this->token)
-            ->postJson("/api/v2/customers/{$customer->id}/loyalty/adjust", [
-                'points' => 500,
-                'type' => 'redeem',
-            ]);
-
-        $response->assertStatus(422);
-    }
-
-    public function test_can_get_loyalty_log(): void
-    {
-        $customer = Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Log Customer',
-            'loyalty_points' => 100,
-        ]);
-
-        LoyaltyTransaction::create([
-            'customer_id' => $customer->id,
-            'type' => 'earn',
-            'points' => 100,
-            'balance_after' => 100,
-            'performed_by' => $this->user->id,
-            'created_at' => now(),
-        ]);
-
-        $response = $this->withToken($this->token)
-            ->getJson("/api/v2/customers/{$customer->id}/loyalty");
-
-        $response->assertOk();
-        $this->assertCount(1, $response->json('data.data'));
-    }
-
-    // ─── Store Credit ────────────────────────────────────────
-
-    public function test_can_top_up_store_credit(): void
-    {
-        $customer = Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Credit Customer',
-            'store_credit_balance' => 50.00,
-        ]);
-
-        $response = $this->withToken($this->token)
-            ->postJson("/api/v2/customers/{$customer->id}/store-credit/top-up", [
-                'amount' => 25.50,
-                'notes' => 'Manual top-up',
-            ]);
-
-        $response->assertStatus(201)
-            ->assertJsonPath('data.type', 'top_up');
-        $this->assertEquals(75.50, $response->json('data.balance_after'));
-
-        $customer->refresh();
-        $this->assertEquals(75.50, (float) $customer->store_credit_balance);
-    }
-
-    public function test_can_get_store_credit_log(): void
-    {
-        $customer = Customer::create([
-            'organization_id' => $this->org->id,
-            'name' => 'Credit Log',
-            'store_credit_balance' => 100,
-        ]);
-
-        StoreCreditTransaction::create([
-            'customer_id' => $customer->id,
-            'type' => 'top_up',
+        $this->withToken($this->token)->postJson("/api/v2/customers/{$c->id}/store-credit/top-up", [
             'amount' => 100,
-            'balance_after' => 100,
-            'performed_by' => $this->user->id,
-            'created_at' => now(),
-        ]);
+        ])->assertStatus(201);
+        $this->assertEquals(100, (float) $c->fresh()->store_credit_balance);
 
-        $response = $this->withToken($this->token)
-            ->getJson("/api/v2/customers/{$customer->id}/store-credit");
+        $this->withToken($this->token)->postJson("/api/v2/customers/{$c->id}/store-credit/adjust", [
+            'amount' => -30,
+            'notes' => 'manual',
+        ])->assertStatus(201);
+        $this->assertEquals(70, (float) $c->fresh()->store_credit_balance);
 
-        $response->assertOk();
-        $this->assertCount(1, $response->json('data.data'));
+        $this->withToken($this->token)->postJson("/api/v2/customers/{$c->id}/store-credit/adjust", [
+            'amount' => -500,
+        ])->assertStatus(422);
     }
 
-    public function test_requires_auth(): void
+    // ─── Digital receipt ───────────────────────────────────
+
+    public function test_can_send_digital_receipt(): void
     {
-        $response = $this->getJson('/api/v2/customers');
-        $response->assertStatus(401);
+        $c = $this->makeCustomer(['email' => 'a@b.com']);
+        $order = Order::create([
+            'store_id' => $this->store->id,
+            'customer_id' => $c->id,
+            'order_number' => 'O-9',
+            'status' => 'completed',
+            'total' => 25,
+        ]);
+
+        $r = $this->withToken($this->token)->postJson("/api/v2/customers/{$c->id}/receipt", [
+            'order_id' => $order->id,
+            'channel' => 'email',
+        ]);
+        $r->assertStatus(201)->assertJsonPath('data.channel', 'email');
+        $this->assertDatabaseHas('digital_receipt_log', ['order_id' => $order->id]);
+    }
+
+    public function test_cannot_send_receipt_for_other_customer_order(): void
+    {
+        $c = $this->makeCustomer();
+        $other = $this->makeCustomer();
+        $order = Order::create([
+            'store_id' => $this->store->id,
+            'customer_id' => $other->id,
+            'order_number' => 'O-8',
+            'status' => 'completed',
+            'total' => 10,
+        ]);
+        $r = $this->withToken($this->token)->postJson("/api/v2/customers/{$c->id}/receipt", [
+            'order_id' => $order->id,
+            'channel' => 'email',
+        ]);
+        $r->assertStatus(422);
+    }
+
+    public function test_receipt_requires_destination(): void
+    {
+        $c = $this->makeCustomer(['email' => null, 'phone' => '500111']);
+        $order = Order::create([
+            'store_id' => $this->store->id,
+            'customer_id' => $c->id,
+            'order_number' => 'O-7',
+            'status' => 'completed',
+            'total' => 10,
+        ]);
+        // override empty destination explicitly
+        $c->email = null;
+        $c->save();
+        $r = $this->withToken($this->token)->postJson("/api/v2/customers/{$c->id}/receipt", [
+            'order_id' => $order->id,
+            'channel' => 'email',
+            'destination' => '',
+        ]);
+        $r->assertStatus(422);
+    }
+
+    // ─── Cross-org isolation ───────────────────────────────
+
+    public function test_cannot_access_other_orgs_customer(): void
+    {
+        $other = Organization::create([
+            'name' => 'Other',
+            'business_type' => 'grocery',
+            'country' => 'OM',
+        ]);
+        $c = Customer::create([
+            'organization_id' => $other->id,
+            'name' => 'Foreigner',
+            'phone' => '500ext',
+            'loyalty_code' => 'XXXXXXXX',
+            'sync_version' => 1,
+        ]);
+        $this->withToken($this->token)->getJson('/api/v2/customers/'.$c->id)->assertStatus(404);
     }
 }

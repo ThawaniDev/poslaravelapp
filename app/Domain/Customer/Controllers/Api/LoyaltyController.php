@@ -112,4 +112,45 @@ class LoyaltyController extends BaseApiController
 
         return $this->created(new StoreCreditTransactionResource($txn));
     }
+
+    public function adjustCredit(Request $request, string $customer): JsonResponse
+    {
+        $data = $request->validate([
+            'amount' => ['required', 'numeric'],
+            'notes' => ['nullable', 'string'],
+        ]);
+        try {
+            $txn = $this->loyaltyService->adjustCredit(
+                $customer,
+                (float) $data['amount'],
+                $request->user(),
+                $data['notes'] ?? null,
+            );
+            return $this->created(new StoreCreditTransactionResource($txn));
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * Dedicated redemption endpoint (separate from generic adjust).
+     */
+    public function redeemPoints(Request $request, string $customer): JsonResponse
+    {
+        $data = $request->validate([
+            'points' => ['required', 'integer', 'min:1'],
+            'order_id' => ['nullable', 'uuid'],
+        ]);
+        try {
+            $txn = $this->loyaltyService->redeemPoints(
+                $customer,
+                (int) $data['points'],
+                $request->user(),
+                $data['order_id'] ?? null,
+            );
+            return $this->created(new LoyaltyTransactionResource($txn));
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
 }

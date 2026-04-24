@@ -803,7 +803,10 @@ class ComprehensiveTestDataSeeder extends Seeder
             ['name' => 'reports.view', 'display_name' => 'View Reports', 'module' => 'reports', 'guard_name' => 'web', 'requires_pin' => false],
             ['name' => 'staff.manage', 'display_name' => 'Manage Staff', 'module' => 'staff', 'guard_name' => 'web', 'requires_pin' => false],
             ['name' => 'settings.manage', 'display_name' => 'Manage Settings', 'module' => 'settings', 'guard_name' => 'web', 'requires_pin' => true],
+            ['name' => 'customers.view', 'display_name' => 'View Customers', 'module' => 'customers', 'guard_name' => 'web', 'requires_pin' => false],
             ['name' => 'customers.manage', 'display_name' => 'Manage Customers', 'module' => 'customers', 'guard_name' => 'web', 'requires_pin' => false],
+            ['name' => 'customers.manage_loyalty', 'display_name' => 'Manage Loyalty', 'module' => 'customers', 'guard_name' => 'web', 'requires_pin' => true],
+            ['name' => 'customers.manage_credit', 'display_name' => 'Manage Store Credit', 'module' => 'customers', 'guard_name' => 'web', 'requires_pin' => true],
             ['name' => 'delivery.view', 'display_name' => 'View Delivery', 'module' => 'delivery', 'guard_name' => 'web', 'requires_pin' => false],
             ['name' => 'delivery.manage', 'display_name' => 'Manage Delivery', 'module' => 'delivery', 'guard_name' => 'web', 'requires_pin' => false],
         ];
