@@ -22,6 +22,27 @@ class SubmitInvoiceRequest extends FormRequest
             'qr_code_data' => ['nullable', 'string'],
             'total_amount' => ['required', 'numeric', 'min:0'],
             'vat_amount' => ['required', 'numeric', 'min:0'],
+
+            // Phase 2 optional inputs
+            'is_b2b' => ['sometimes', 'boolean'],
+            'buyer_name' => ['sometimes', 'string', 'max:255'],
+            'buyer_tax_number' => ['sometimes', 'string', 'max:50'],
+            'customer_id' => ['sometimes', 'uuid'],
+            'reference_invoice_uuid' => [
+                'required_if:invoice_type,credit_note',
+                'required_if:invoice_type,debit_note',
+                'nullable', 'string', 'max:64',
+            ],
+            'adjustment_reason' => [
+                'required_if:invoice_type,debit_note',
+                'nullable', 'string', 'max:255',
+            ],
+            'lines' => ['sometimes', 'array'],
+            'lines.*.name' => ['required_with:lines', 'string', 'max:255'],
+            'lines.*.name_ar' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'lines.*.quantity' => ['required_with:lines', 'numeric', 'min:0'],
+            'lines.*.unit_price' => ['required_with:lines', 'numeric', 'min:0'],
+            'lines.*.tax_percent' => ['sometimes', 'numeric', 'min:0', 'max:100'],
         ];
     }
 }

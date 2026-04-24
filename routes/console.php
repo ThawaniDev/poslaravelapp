@@ -239,3 +239,11 @@ Schedule::command('delivery:sync-operating-hours')
     ->everySixHours()
     ->withoutOverlapping()
     ->onOneServer();
+
+// ─── ZATCA Phase 2 retry pump ────────────────────────────────
+// Re-dispatch any rejected invoice whose backoff window has elapsed
+// (Spec Sec 9.2 escalating retries: 30s → 2m → 10m → 1h → 6h).
+Schedule::command('zatca:retry-failed')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();

@@ -3857,6 +3857,22 @@ return new class extends Migration
                 $table->timestamp('created_at')->nullable();
                 $table->string('buyer_tax_number', 50)->nullable();
                 $table->string('buyer_name', 255)->nullable();
+                // Phase 2 engine
+                $table->string('uuid', 36)->nullable();
+                $table->bigInteger('icv')->nullable();
+                $table->uuid('device_id')->nullable();
+                $table->uuid('customer_id')->nullable();
+                $table->boolean('is_b2b')->default(false);
+                $table->string('reference_invoice_uuid', 36)->nullable();
+                $table->string('adjustment_reason', 255)->nullable();
+                $table->text('cleared_xml')->nullable();
+                $table->string('cleared_hash', 128)->nullable();
+                $table->text('tlv_qr_base64')->nullable();
+                $table->integer('submission_attempts')->default(0);
+                $table->timestamp('last_attempt_at')->nullable();
+                $table->timestamp('next_attempt_at')->nullable();
+                $table->json('rejection_errors')->nullable();
+                $table->string('flow', 20)->default('reporting');
             });
         }
 
@@ -3871,6 +3887,29 @@ return new class extends Migration
                 $table->string('status', 20)->default('active');
                 $table->timestamp('issued_at')->nullable();
                 $table->timestamp('expires_at')->nullable();
+                $table->text('csr_pem')->nullable();
+                $table->text('private_key_pem')->nullable();
+                $table->text('public_key_pem')->nullable();
+                $table->string('compliance_request_id', 128)->nullable();
+                $table->timestamps();
+            });
+        }
+
+        if (!Schema::hasTable('zatca_devices')) {
+            Schema::create('zatca_devices', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->string('device_uuid', 64)->unique();
+                $table->string('hardware_serial', 128)->nullable();
+                $table->string('activation_code', 32)->nullable();
+                $table->timestamp('activated_at')->nullable();
+                $table->string('environment', 20)->default('sandbox');
+                $table->string('status', 20)->default('pending');
+                $table->boolean('is_tampered')->default(false);
+                $table->text('tamper_reason')->nullable();
+                $table->bigInteger('current_icv')->default(0);
+                $table->string('current_pih', 128)->nullable();
+                $table->uuid('certificate_id')->nullable();
                 $table->timestamps();
             });
         }

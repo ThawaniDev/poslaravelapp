@@ -9,4 +9,11 @@ return [
     'invoice_not_found' => 'ZATCA invoice not found',
     'summary_retrieved' => 'ZATCA compliance summary retrieved successfully',
     'vat_report_retrieved' => 'VAT report retrieved successfully',
+    'devices_retrieved' => 'ZATCA devices retrieved successfully',
+    'device_provisioned' => 'ZATCA device provisioned. Save the activation code.',
+    'device_activated' => 'ZATCA device activated successfully',
+    'device_not_found' => 'ZATCA device not found',
+    'device_tamper_reset' => 'ZATCA device tamper flag reset; chain re-seeded',
+    'chain_verified' => 'Hash chain verification completed',
+    'dashboard_retrieved' => 'ZATCA dashboard retrieved successfully',
 ];

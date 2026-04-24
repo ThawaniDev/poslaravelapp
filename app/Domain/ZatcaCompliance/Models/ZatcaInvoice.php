@@ -37,6 +37,22 @@ class ZatcaInvoice extends Model
         // Spec Rule #10 — B2B buyer VAT details captured at submission time.
         'buyer_tax_number',
         'buyer_name',
+        // Phase 2 engine fields
+        'uuid',
+        'icv',
+        'device_id',
+        'customer_id',
+        'is_b2b',
+        'reference_invoice_uuid',
+        'adjustment_reason',
+        'cleared_xml',
+        'cleared_hash',
+        'tlv_qr_base64',
+        'submission_attempts',
+        'last_attempt_at',
+        'next_attempt_at',
+        'rejection_errors',
+        'flow',
     ];
 
     protected $casts = [
@@ -45,6 +61,12 @@ class ZatcaInvoice extends Model
         'total_amount' => 'decimal:2',
         'vat_amount' => 'decimal:2',
         'submitted_at' => 'datetime',
+        'last_attempt_at' => 'datetime',
+        'next_attempt_at' => 'datetime',
+        'is_b2b' => 'boolean',
+        'icv' => 'integer',
+        'submission_attempts' => 'integer',
+        'rejection_errors' => 'array',
     ];
 
     public function store(): BelongsTo
