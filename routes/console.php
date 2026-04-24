@@ -201,3 +201,34 @@ Schedule::command('loyalty:expire-points')
     ->dailyAt('02:30')
     ->withoutOverlapping()
     ->onOneServer();
+
+// ─── Delivery Integration housekeeping ───────────────────────
+// Spec Rule #1 (polling fallback): poll active platform configs for new orders every minute
+Schedule::call(function () {
+    \App\Domain\DeliveryIntegration\Models\DeliveryPlatformConfig::where('is_enabled', true)
+        ->each(function ($cfg) {
+            \App\Domain\DeliveryIntegration\Jobs\PollPlatformOrdersJob::dispatch($cfg->id);
+        });
+})
+    ->name('delivery:poll-platform-orders')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Spec Rule #2: auto-sync menus hourly for configs whose interval has elapsed
+Schedule::command('delivery:auto-sync-menus')
+    ->hourly()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Reset daily order counts at midnight
+Schedule::command('delivery:reset-daily-counts')
+    ->dailyAt('00:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Cleanup delivery logs older than 90 days at 03:00 daily
+Schedule::command('delivery:cleanup-logs')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->onOneServer();

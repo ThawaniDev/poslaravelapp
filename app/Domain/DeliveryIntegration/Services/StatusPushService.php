@@ -21,15 +21,17 @@ class StatusPushService
             'delivery_order_mapping_id' => $order->id,
             'platform' => $order->platform,
             'status_pushed' => $newStatus,
-            'attempt' => $this->getNextAttempt($order->id, $newStatus),
+            'attempt_number' => $this->getNextAttempt($order->id, $newStatus),
+            'request_payload' => array_merge(['status' => $newStatus], $extra),
+            'pushed_at' => now(),
         ]);
 
         if (! $config) {
             $log->update([
                 'success' => false,
-                'response_code' => null,
-                'response_body' => ['error' => 'No active platform config found'],
-                'pushed_at' => now(),
+                'http_status_code' => null,
+                'response_payload' => ['error' => 'No active platform config found'],
+                'error_message' => 'No active platform config found',
             ]);
 
             return $log;
@@ -44,25 +46,34 @@ class StatusPushService
                 $extra,
             );
 
+            $success = $result['success'] ?? false;
+
             $log->update([
-                'success' => $result['success'] ?? false,
-                'response_code' => $result['status_code'] ?? null,
-                'response_body' => $result,
-                'pushed_at' => now(),
+                'success' => $success,
+                'http_status_code' => $result['status_code'] ?? null,
+                'response_payload' => $result,
+                'error_message' => $success ? null : ($result['message'] ?? 'Push failed'),
             ]);
+
+            if (! $success) {
+                throw new \RuntimeException($result['message'] ?? 'Status push returned failure');
+            }
         } catch (\Throwable $e) {
             Log::error('Status push failed', [
                 'order_id' => $order->id,
                 'platform' => $order->platform,
                 'status' => $newStatus,
+                'attempt' => $log->attempt_number,
                 'error' => $e->getMessage(),
             ]);
 
             $log->update([
                 'success' => false,
-                'response_body' => ['error' => $e->getMessage()],
-                'pushed_at' => now(),
+                'response_payload' => ['error' => $e->getMessage()],
+                'error_message' => $e->getMessage(),
             ]);
+
+            throw $e;
         }
 
         return $log->fresh();

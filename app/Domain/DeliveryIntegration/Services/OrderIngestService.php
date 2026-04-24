@@ -53,6 +53,9 @@ class OrderIngestService
         }
 
         $order = DB::transaction(function () use ($dto, $config) {
+            $commissionPercent = $this->resolveCommissionPercent($dto->platform);
+            $commissionAmount = round(((float) $dto->totalAmount) * $commissionPercent / 100, 2);
+
             $order = DeliveryOrderMapping::create([
                 'store_id' => $dto->storeId,
                 'platform' => $dto->platform,
@@ -71,6 +74,8 @@ class OrderIngestService
                 'estimated_prep_minutes' => $dto->estimatedPrepMinutes,
                 'notes' => $dto->notes,
                 'raw_payload' => $dto->rawPayload,
+                'commission_percent' => $commissionPercent,
+                'commission_amount' => $commissionAmount,
                 'accepted_at' => $config->auto_accept ? now() : null,
             ]);
 
@@ -96,5 +101,32 @@ class OrderIngestService
         );
 
         return $this->ingest($dto);
+    }
+
+    /**
+     * Resolve commission percentage from registry or platform integration table.
+     * Falls back to 0 if not configured.
+     */
+    private function resolveCommissionPercent(string $platformSlug): float
+    {
+        $percent = \App\Domain\DeliveryPlatformRegistry\Models\DeliveryPlatform::where('slug', $platformSlug)
+            ->value('default_commission_percent');
+
+        if ($percent !== null) {
+            return (float) $percent;
+        }
+
+        // Fall back to platform_delivery_integrations table
+        if (\Illuminate\Support\Facades\Schema::hasTable('platform_delivery_integrations')) {
+            $percent = \Illuminate\Support\Facades\DB::table('platform_delivery_integrations')
+                ->where('platform_slug', $platformSlug)
+                ->value('default_commission_percent');
+
+            if ($percent !== null) {
+                return (float) $percent;
+            }
+        }
+
+        return 0.0;
     }
 }

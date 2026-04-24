@@ -3420,6 +3420,52 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
         });
 
+        Schema::create('delivery_status_push_logs', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('delivery_order_mapping_id');
+            $table->string('status_pushed', 30);
+            $table->string('platform', 50);
+            $table->integer('http_status_code')->nullable();
+            $table->json('request_payload')->nullable();
+            $table->json('response_payload')->nullable();
+            $table->boolean('success')->default(false);
+            $table->integer('attempt_number')->default(1);
+            $table->text('error_message')->nullable();
+            $table->timestamp('pushed_at')->nullable();
+        });
+
+        Schema::create('delivery_webhook_logs', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('platform', 50);
+            $table->uuid('store_id')->nullable();
+            $table->string('event_type', 50);
+            $table->string('external_order_id', 100)->nullable();
+            $table->json('payload');
+            $table->json('headers')->nullable();
+            $table->boolean('signature_valid')->nullable();
+            $table->boolean('processed')->default(false);
+            $table->string('processing_result', 30)->nullable();
+            $table->text('error_message')->nullable();
+            $table->string('ip_address', 45)->nullable();
+            $table->timestamp('received_at')->nullable();
+        });
+
+        Schema::create('platform_delivery_integrations', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('platform_slug', 50)->unique();
+            $table->string('display_name', 100);
+            $table->string('display_name_ar', 100)->nullable();
+            $table->text('api_base_url')->nullable();
+            $table->text('client_id')->nullable();
+            $table->text('client_secret_encrypted')->nullable();
+            $table->text('webhook_secret_encrypted')->nullable();
+            $table->decimal('default_commission_percent', 5, 2)->default(0);
+            $table->boolean('is_active')->default(false);
+            $table->json('supported_countries')->nullable();
+            $table->text('logo_url')->nullable();
+            $table->timestamps();
+        });
+
         // ─── Thawani Integration ────────────────────────────
         Schema::create('thawani_store_config', function (Blueprint $table) {
             $table->uuid('id')->primary();

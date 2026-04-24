@@ -16,16 +16,29 @@ class StatusPushJob implements ShouldQueue
 
     public int $tries = 3;
 
-    public int $backoff = 30;
-
     public function __construct(
         private readonly PushOrderStatusDTO $dto,
     ) {
         $this->queue = 'delivery';
     }
 
+    /** Exponential backoff: 30s, 2min, 10min */
+    public function backoff(): array
+    {
+        return [30, 120, 600];
+    }
+
     public function handle(StatusPushService $service): void
     {
         $service->pushStatusForDTO($this->dto);
+    }
+
+    public function failed(\Throwable $e): void
+    {
+        \Illuminate\Support\Facades\Log::error('StatusPushJob permanently failed', [
+            'order_mapping_id' => $this->dto->orderMappingId,
+            'status' => $this->dto->status,
+            'error' => $e->getMessage(),
+        ]);
     }
 }
