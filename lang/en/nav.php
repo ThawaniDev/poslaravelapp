@@ -12,6 +12,7 @@ return [
     'group_updates'               => 'Updates',
     'group_security'              => 'Security',
     'group_settings'              => 'Settings',
+    'group_zatca'                 => 'ZATCA',
     'group_analytics'             => 'Analytics',
     'group_infrastructure'        => 'Infrastructure',
     'group_ui_management'         => 'UI Management',

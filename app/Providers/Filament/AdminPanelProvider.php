@@ -59,6 +59,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()->label(fn () => __('nav.group_updates')),
                 NavigationGroup::make()->label(fn () => __('nav.group_security')),
                 NavigationGroup::make()->label(fn () => __('nav.group_settings')),
+                NavigationGroup::make()->label(fn () => __('nav.group_zatca')),
                 NavigationGroup::make()->label(fn () => __('nav.group_analytics')),
                 NavigationGroup::make()->label(fn () => __('nav.group_infrastructure')),
                 NavigationGroup::make()->label(fn () => __('nav.group_ui_management')),

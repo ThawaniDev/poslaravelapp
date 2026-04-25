@@ -2,9 +2,11 @@
 
 namespace App\Domain\ZatcaCompliance\Models;
 
+use App\Domain\Core\Models\Store;
 use App\Domain\ZatcaCompliance\Enums\ZatcaDeviceStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ZatcaDevice extends Model
 {
@@ -35,4 +37,14 @@ class ZatcaDevice extends Model
         'activated_at' => 'datetime',
         'current_icv' => 'integer',
     ];
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
+    }
+
+    public function certificate(): BelongsTo
+    {
+        return $this->belongsTo(ZatcaCertificate::class, 'certificate_id');
+    }
 }

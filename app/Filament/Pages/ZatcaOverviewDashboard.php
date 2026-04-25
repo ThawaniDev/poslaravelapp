@@ -23,17 +23,17 @@ class ZatcaOverviewDashboard extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return __('nav.group_analytics');
+        return __('nav.group_zatca');
     }
 
     public static function getNavigationLabel(): string
     {
-        return __('zatca.admin_overview') ?: 'ZATCA Overview';
+        return __('zatca.admin_overview');
     }
 
     public function getTitle(): string
     {
-        return __('zatca.admin_overview') ?: 'ZATCA Cross-Tenant Overview';
+        return __('zatca.admin_overview');
     }
 
     public static function canAccess(): bool

@@ -20,7 +20,7 @@ class ZatcaConfigurationPage extends Page implements HasForms
 
     public static function getNavigationGroup(): ?string
     {
-        return __('nav.group_settings');
+        return __('nav.group_zatca');
     }
     protected static ?int $navigationSort = 11;
     protected static string $view = 'filament.pages.settings-form';

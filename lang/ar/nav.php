@@ -12,6 +12,7 @@ return [
     'group_updates'               => 'التحديثات',
     'group_security'              => 'الأمان',
     'group_settings'              => 'الإعدادات',
+    'group_zatca'                 => 'زاتكا',
     'group_analytics'             => 'التحليلات',
     'group_infrastructure'        => 'البنية التحتية',
     'group_ui_management'         => 'إدارة الواجهة',
