@@ -21,3 +21,10 @@ Route::get('preview/label-template/{id}', [TemplatePreviewController::class, 'la
     ->name('preview.label-template');
 Route::get('preview/marketplace-listing/{id}', [TemplatePreviewController::class, 'marketplaceListing'])
     ->name('preview.marketplace-listing');
+
+// ─── Admin Documents ──────────────────────────────────────
+Route::middleware(['web', 'auth:admin'])->group(function () {
+    Route::get('admin/documents/zatca-store-setup-guide', function () {
+        return view('documents.zatca-store-setup-guide');
+    })->name('admin.documents.zatca-store-setup-guide');
+});

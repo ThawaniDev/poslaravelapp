@@ -2,6 +2,7 @@
 
 namespace App\Domain\ZatcaCompliance\Models;
 
+use App\Domain\Core\Models\Store;
 use App\Domain\ZatcaCompliance\Enums\ZatcaCertificateStatus;
 use App\Domain\ZatcaCompliance\Enums\ZatcaCertificateType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

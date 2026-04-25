@@ -47,6 +47,7 @@ return [
     'devices' => 'الأجهزة',
     'invoice' => 'فاتورة',
     'store_setup' => 'إعداد المتجر',
+    'setup_guide' => 'دليل الإعداد',
     'select_store' => 'اختر المتجر',
     'select_store_first' => 'الرجاء اختيار المتجر أولاً',
     'tax_identity' => 'الهوية الضريبية',

@@ -2,6 +2,7 @@
 
 namespace App\Domain\ZatcaCompliance\Models;
 
+use App\Domain\Core\Models\Store;
 use App\Domain\ZatcaCompliance\Enums\ZatcaInvoiceType;
 use App\Domain\ZatcaCompliance\Enums\ZatcaSubmissionStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

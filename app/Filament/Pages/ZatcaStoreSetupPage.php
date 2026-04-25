@@ -246,6 +246,12 @@ class ZatcaStoreSetupPage extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('setup_guide')
+                ->label(__('zatca.setup_guide'))
+                ->icon('heroicon-o-document-text')
+                ->color('gray')
+                ->url(route('admin.documents.zatca-store-setup-guide'), shouldOpenInNewTab: true),
+
             Action::make('enroll')
                 ->label(__('zatca.enroll_now'))
                 ->icon('heroicon-o-bolt')

@@ -47,6 +47,7 @@ return [
     'devices' => 'Devices',
     'invoice' => 'Invoice',
     'store_setup' => 'Store Setup',
+    'setup_guide' => 'Setup Guide',
     'select_store' => 'Select Store',
     'select_store_first' => 'Please select a store first',
     'tax_identity' => 'Tax Identity',
