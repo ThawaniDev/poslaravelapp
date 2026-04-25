@@ -509,7 +509,7 @@ class ZatcaComplianceService
         if ($storeIds !== null) {
             $storesQuery->whereIn('id', $storeIds);
         }
-        $stores = $storesQuery->get(['id', 'name', 'country_code']);
+        $stores = $storesQuery->get(['id', 'name', 'country']);
 
         $rows = [];
         $totals = ['stores' => 0, 'connected' => 0, 'healthy' => 0, 'tampered' => 0,
