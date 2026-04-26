@@ -7,6 +7,8 @@ use App\Domain\Security\Requests\RecordAuditRequest;
 use App\Domain\Security\Requests\RecordLoginAttemptRequest;
 use App\Domain\Security\Requests\RegisterDeviceRequest;
 use App\Domain\Security\Requests\SaveSecurityPolicyRequest;
+use App\Domain\Security\Resources\SecurityIncidentResource;
+use App\Domain\Security\Resources\SecuritySessionResource;
 use App\Domain\Security\Services\SecurityService;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
@@ -92,6 +94,29 @@ class SecurityController extends BaseApiController
         $stats = $this->service->auditStats($storeId, $days);
 
         return $this->success($stats, __('security.audit_stats_fetched'));
+    }
+
+    public function exportAuditLogs(Request $request): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $storeId = $request->query('store_id');
+        if (!$storeId) {
+            abort(422, __('security.store_required'));
+        }
+
+        $csv = $this->service->exportAuditLogs(
+            storeId: $storeId,
+            action: $request->query('action'),
+            severity: $request->query('severity'),
+            since: $request->query('since'),
+        );
+
+        $filename = 'audit-log-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(
+            function () use ($csv) { echo $csv; },
+            $filename,
+            ['Content-Type' => 'text/csv; charset=UTF-8'],
+        );
     }
 
     // ─── Devices ────────────────────────────────────────────────
@@ -231,7 +256,7 @@ class SecurityController extends BaseApiController
             $activeOnly !== null ? filter_var($activeOnly, FILTER_VALIDATE_BOOLEAN) : null,
         );
 
-        return $this->success($sessions, __('security.sessions_fetched'));
+        return $this->success(SecuritySessionResource::collection($sessions), __('security.sessions_fetched'));
     }
 
     public function startSession(Request $request): JsonResponse
@@ -248,7 +273,7 @@ class SecurityController extends BaseApiController
             ['user_id' => $request->user()->id],
         ));
 
-        return $this->created($session, __('security.session_started'));
+        return $this->created(new SecuritySessionResource($session), __('security.session_started'));
     }
 
     public function endSession(string $id, Request $request): JsonResponse
@@ -256,20 +281,23 @@ class SecurityController extends BaseApiController
         $reason = $request->input('reason', 'manual');
         $session = $this->service->endSession($id, $reason);
 
-        return $this->success($session, __('security.session_ended'));
+        return $this->success(new SecuritySessionResource($session), __('security.session_ended'));
     }
 
     public function endAllSessions(Request $request): JsonResponse
     {
         $request->validate([
             'store_id' => 'required|string|uuid',
-            'user_id' => 'required|string|uuid',
-            'reason' => 'nullable|string|max:100',
+            'user_id'  => ['nullable', 'string', 'uuid'],   // optional — falls back to the authenticated user
+            'reason'   => 'nullable|string|max:100',
         ]);
+
+        // Use the provided user_id or fall back to the authenticated user's ID
+        $userId = $request->input('user_id') ?? $request->user()->id;
 
         $count = $this->service->endAllSessions(
             $request->input('store_id'),
-            $request->input('user_id'),
+            $userId,
             $request->input('reason', 'force_logout'),
         );
 
@@ -280,7 +308,7 @@ class SecurityController extends BaseApiController
     {
         $session = $this->service->sessionHeartbeat($id);
 
-        return $this->success($session, __('security.session_heartbeat'));
+        return $this->success(new SecuritySessionResource($session), __('security.session_heartbeat'));
     }
 
     // ─── Incidents ──────────────────────────────────────────────
@@ -292,37 +320,48 @@ class SecurityController extends BaseApiController
             return $this->error(__('security.store_required'), 422);
         }
 
+        // Accept is_resolved boolean to translate to status filter (for Flutter compatibility)
+        $status = $request->query('status');
+        if ($status === null && $request->has('is_resolved')) {
+            $isResolved = filter_var($request->query('is_resolved'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($isResolved !== null) {
+                $status = $isResolved ? 'resolved' : 'open';
+            }
+        }
+
         $incidents = $this->service->listIncidents(
             storeId: $storeId,
-            status: $request->query('status'),
+            status: $status,
             severity: $request->query('severity'),
             type: $request->query('type'),
             perPage: (int) $request->query('per_page', 50),
         );
 
-        return $this->success($incidents, __('security.incidents_fetched'));
+        return $this->successPaginated(
+            SecurityIncidentResource::collection($incidents->items()),
+            $incidents,
+            __('security.incidents_fetched'),
+        );
     }
 
     public function createIncident(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'store_id' => 'required|string|uuid',
+            'store_id'      => 'required|string|uuid',
             'incident_type' => 'required|string|max:100',
-            'severity' => 'required|string|in:low,medium,high,critical',
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'device_id' => 'nullable|string|uuid',
-            'ip_address' => 'nullable|string|ip',
-            'metadata' => 'nullable|array',
+            'severity'      => 'required|string|in:low,medium,high,critical',
+            'title'         => 'required|string|max:255',
+            'description'   => 'nullable|string',
+            'device_id'     => 'nullable|string|uuid',
+            'ip_address'    => 'nullable|string|ip',
+            'metadata'      => 'nullable|array',
         ]);
 
         $incident = $this->service->createIncident(
-            array_merge($validated, [
-                'user_id' => $request->user()->id,
-            ]),
+            array_merge($validated, ['user_id' => $request->user()->id]),
         );
 
-        return $this->created($incident, __('security.incident_created'));
+        return $this->created(new SecurityIncidentResource($incident), __('security.incident_created'));
     }
 
     public function resolveIncident(string $id, Request $request): JsonResponse
@@ -337,6 +376,6 @@ class SecurityController extends BaseApiController
             $request->input('resolution_notes'),
         );
 
-        return $this->success($incident, __('security.incident_resolved'));
+        return $this->success(new SecurityIncidentResource($incident), __('security.incident_resolved'));
     }
 }

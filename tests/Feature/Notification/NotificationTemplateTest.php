@@ -15,6 +15,7 @@ use App\Domain\Notification\Models\NotificationTemplate;
 use App\Domain\Notification\Services\NotificationTemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 
@@ -317,6 +318,8 @@ class NotificationTemplateTest extends TestCase
 
     public function test_dispatch_updates_provider_success_stats(): void
     {
+        Mail::fake();
+
         NotificationTemplate::create([
             'event_key' => 'order.new',
             'channel' => NotificationChannel::Email,

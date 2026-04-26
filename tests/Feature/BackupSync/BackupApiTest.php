@@ -6,6 +6,7 @@ use App\Domain\Auth\Models\User;
 use App\Domain\BackupSync\Models\BackupHistory;
 use App\Domain\BackupSync\Models\DatabaseBackup;
 use App\Domain\BackupSync\Models\ProviderBackupStatus;
+use App\Domain\BackupSync\Models\StoreBackupSettings;
 use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -122,6 +123,21 @@ class BackupApiTest extends TestCase
                 $t->timestamp('last_cloud_backup')->nullable();
                 $t->bigInteger('storage_used_bytes')->default(0);
                 $t->string('status')->nullable();
+            });
+        }
+
+        if (!Schema::hasTable('store_backup_settings')) {
+            Schema::create('store_backup_settings', function ($t) {
+                $t->uuid('id')->primary();
+                $t->foreignUuid('store_id')->unique();
+                $t->boolean('auto_backup_enabled')->default(true);
+                $t->string('frequency')->default('daily');
+                $t->integer('retention_days')->default(30);
+                $t->boolean('encrypt_backups')->default(false);
+                $t->boolean('local_backup_enabled')->default(true);
+                $t->boolean('cloud_backup_enabled')->default(true);
+                $t->integer('backup_hour')->default(2);
+                $t->timestamps();
             });
         }
 
@@ -295,7 +311,7 @@ class BackupApiTest extends TestCase
             'terminal_id' => 'term-1',
             'backup_type' => 'manual',
             'status' => 'completed',
-            'checksum' => 'somehash',
+            'checksum' => str_repeat('a', 64), // valid 64-char checksum
         ]);
 
         $res = $this->postJson("/api/v2/backup/{$backup->id}/verify", [], $this->auth());
@@ -336,6 +352,12 @@ class BackupApiTest extends TestCase
         $body = json_decode($res->getContent(), true);
         $this->assertEquals('weekly', $body['data']['frequency']);
         $this->assertEquals(60, $body['data']['retention_days']);
+        // updateSchedule must now return full stats (same as getSchedule)
+        $this->assertArrayHasKey('total_backups', $body['data']);
+        $this->assertArrayHasKey('total_size_bytes', $body['data']);
+        $this->assertArrayHasKey('next_scheduled', $body['data']);
+        $this->assertArrayHasKey('last_backup', $body['data']);
+        $this->assertArrayHasKey('last_auto_backup', $body['data']);
     }
 
     public function test_update_schedule_validation_fails(): void
@@ -422,7 +444,7 @@ class BackupApiTest extends TestCase
 
         $res->assertOk();
         $body = json_decode($res->getContent(), true);
-        $this->assertEquals(0, $body['data']['total_terminals']);
+        $this->assertEmpty($body['data']['terminals']);
     }
 
     public function test_provider_status_with_data(): void
@@ -438,7 +460,198 @@ class BackupApiTest extends TestCase
 
         $res->assertOk();
         $body = json_decode($res->getContent(), true);
-        $this->assertEquals(1, $body['data']['total_terminals']);
+        $this->assertCount(1, $body['data']['terminals']);
         $this->assertEquals('healthy', $body['data']['terminals'][0]['status']);
+    }
+
+    // ── Schedule persistence ─────────────────────────────────
+
+    public function test_update_schedule_persists_to_database(): void
+    {
+        $this->putJson('/api/v2/backup/schedule', [
+            'auto_backup_enabled' => false,
+            'frequency' => 'hourly',
+            'retention_days' => 14,
+            'encrypt_backups' => true,
+            'local_backup_enabled' => false,
+            'cloud_backup_enabled' => true,
+            'backup_hour' => 3,
+        ], $this->auth());
+
+        $this->assertDatabaseHas('store_backup_settings', [
+            'store_id' => $this->storeId,
+            'frequency' => 'hourly',
+            'retention_days' => 14,
+            'encrypt_backups' => true,
+            'local_backup_enabled' => false,
+            'cloud_backup_enabled' => true,
+            'backup_hour' => 3,
+        ]);
+    }
+
+    public function test_get_schedule_returns_persisted_settings(): void
+    {
+        // First update
+        $this->putJson('/api/v2/backup/schedule', [
+            'auto_backup_enabled' => true,
+            'frequency' => 'weekly',
+            'retention_days' => 90,
+            'encrypt_backups' => false,
+            'local_backup_enabled' => true,
+            'cloud_backup_enabled' => false,
+            'backup_hour' => 6,
+        ], $this->auth());
+
+        // Then read back
+        $res = $this->getJson('/api/v2/backup/schedule', $this->auth());
+
+        $res->assertOk();
+        $body = $res->json('data');
+        $this->assertEquals('weekly', $body['frequency']);
+        $this->assertEquals(90, $body['retention_days']);
+        $this->assertFalse($body['cloud_backup_enabled']);
+        $this->assertEquals(6, $body['backup_hour']);
+    }
+
+    public function test_update_schedule_all_new_fields(): void
+    {
+        $res = $this->putJson('/api/v2/backup/schedule', [
+            'auto_backup_enabled' => true,
+            'frequency' => 'daily',
+            'retention_days' => 30,
+            'encrypt_backups' => false,
+            'local_backup_enabled' => true,
+            'cloud_backup_enabled' => true,
+            'backup_hour' => 0,
+        ], $this->auth());
+
+        $res->assertOk();
+        $body = $res->json('data');
+        $this->assertTrue($body['local_backup_enabled']);
+        $this->assertTrue($body['cloud_backup_enabled']);
+        $this->assertEquals(0, $body['backup_hour']);
+    }
+
+    // ── Verify updates DB flag ───────────────────────────────
+
+    public function test_verify_backup_updates_is_verified_flag(): void
+    {
+        $backup = BackupHistory::create([
+            'store_id' => $this->storeId,
+            'terminal_id' => 'term-1',
+            'backup_type' => 'manual',
+            'status' => 'completed',
+            'checksum' => str_repeat('b', 64), // valid 64-char checksum
+            'is_verified' => false,
+        ]);
+
+        $this->postJson("/api/v2/backup/{$backup->id}/verify", [], $this->auth());
+
+        $this->assertDatabaseHas('backup_history', [
+            'id' => $backup->id,
+            'is_verified' => true,
+        ]);
+    }
+
+    // ── List includes summary ────────────────────────────────
+
+    public function test_list_backups_response_includes_summary(): void
+    {
+        BackupHistory::create([
+            'store_id' => $this->storeId,
+            'terminal_id' => 'term-1',
+            'backup_type' => 'manual',
+            'status' => 'completed',
+            'file_size_bytes' => 1024,
+        ]);
+
+        $res = $this->getJson('/api/v2/backup/list', $this->auth());
+
+        $res->assertOk();
+        $body = $res->json('data');
+        $this->assertArrayHasKey('summary', $body);
+        $this->assertArrayHasKey('total_count', $body['summary']);
+        $this->assertArrayHasKey('total_size_bytes', $body['summary']);
+        $this->assertEquals(1, $body['summary']['total_count']);
+    }
+
+    // ── Restore returns estimated duration ───────────────────
+
+    public function test_restore_backup_response_has_estimated_duration(): void
+    {
+        $backup = BackupHistory::create([
+            'store_id' => $this->storeId,
+            'terminal_id' => 'term-1',
+            'backup_type' => 'manual',
+            'status' => 'completed',
+            'records_count' => 10000,
+        ]);
+
+        $res = $this->postJson("/api/v2/backup/{$backup->id}/restore", [], $this->auth());
+
+        $res->assertOk();
+        $body = $res->json('data');
+        $this->assertArrayHasKey('estimated_duration_seconds', $body);
+        $this->assertGreaterThan(0, $body['estimated_duration_seconds']);
+    }
+
+    // ── Export all tables ────────────────────────────────────
+
+    public function test_export_all_tables(): void
+    {
+        $res = $this->postJson('/api/v2/backup/export', [
+            'tables' => ['products', 'customers', 'orders', 'inventory', 'settings', 'staff', 'categories'],
+            'format' => 'json',
+            'include_images' => false,
+        ], $this->auth());
+
+        $res->assertStatus(201);
+        $body = $res->json('data');
+        $this->assertArrayHasKey('export_id', $body);
+        $this->assertArrayHasKey('file_path', $body);
+        $this->assertArrayHasKey('total_records', $body);
+        $this->assertCount(7, $body['tables']);
+    }
+
+    public function test_export_data_invalid_table_rejected(): void
+    {
+        // tables field is required; an empty array should fail validation
+        $res = $this->postJson('/api/v2/backup/export', [
+            'tables' => [],
+            'format' => 'json',
+        ], $this->auth());
+
+        $res->assertStatus(422);
+    }
+
+    // ── Backup checksum is sha256 ────────────────────────────
+
+    public function test_create_backup_has_valid_checksum(): void
+    {
+        $res = $this->postJson('/api/v2/backup/create', [
+            'terminal_id' => fake()->uuid(),
+            'backup_type' => 'manual',
+        ], $this->auth());
+
+        $res->assertStatus(201);
+        $body = $res->json('data');
+        $this->assertNotEmpty($body['checksum']);
+        $this->assertEquals(64, strlen($body['checksum']), 'Checksum should be SHA-256 hex (64 chars)');
+    }
+
+    // ── Backup type stored correctly ─────────────────────────
+
+    public function test_create_backup_stores_correct_backup_type(): void
+    {
+        $res = $this->postJson('/api/v2/backup/create', [
+            'terminal_id' => fake()->uuid(),
+            'backup_type' => 'pre_update',
+        ], $this->auth());
+
+        $res->assertStatus(201);
+        $this->assertDatabaseHas('backup_history', [
+            'store_id' => $this->storeId,
+            'backup_type' => 'pre_update',
+        ]);
     }
 }

@@ -18,13 +18,15 @@ class LabelController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
-        $templates = $this->labelService->listTemplates($request->user()->organization_id);
+        $templates = $this->labelService->listTemplates($request->user()->organization_id)
+            ->load('createdBy');
         return $this->success(LabelTemplateResource::collection($templates));
     }
 
     public function presets(Request $request): JsonResponse
     {
-        $presets = $this->labelService->getPresets($request->user()->organization_id);
+        $presets = $this->labelService->getPresets($request->user()->organization_id)
+            ->load('createdBy');
         return $this->success(LabelTemplateResource::collection($presets));
     }
 
@@ -34,21 +36,20 @@ class LabelController extends BaseApiController
             $request->validated(),
             $request->user(),
         );
+        $template->load('createdBy');
         return $this->created(new LabelTemplateResource($template));
     }
 
-    public function show(string $template): JsonResponse
+    public function show(Request $request, string $template): JsonResponse
     {
-        $found = $this->labelService->find($template);
+        $found = $this->labelService->findForOrg($template, $request->user()->organization_id);
+        $found->load('createdBy');
         return $this->success(new LabelTemplateResource($found));
     }
 
     public function update(Request $request, string $template): JsonResponse
     {
-        $found = $this->labelService->find($template);
-        if ($found->organization_id !== $request->user()->organization_id && !$found->is_preset) {
-            return $this->notFound('Template not found.');
-        }
+        $found = $this->labelService->findForOrg($template, $request->user()->organization_id);
 
         $data = $request->validate([
             'name'            => ['sometimes', 'string', 'max:255'],
@@ -60,6 +61,7 @@ class LabelController extends BaseApiController
 
         try {
             $updated = $this->labelService->update($found, $data);
+            $updated->load('createdBy');
             return $this->success(new LabelTemplateResource($updated));
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
@@ -68,10 +70,7 @@ class LabelController extends BaseApiController
 
     public function destroy(Request $request, string $template): JsonResponse
     {
-        $found = $this->labelService->find($template);
-        if ($found->organization_id !== $request->user()->organization_id) {
-            return $this->notFound('Template not found.');
-        }
+        $found = $this->labelService->findForOrg($template, $request->user()->organization_id);
         try {
             $this->labelService->delete($found);
         } catch (\RuntimeException $e) {
@@ -80,11 +79,29 @@ class LabelController extends BaseApiController
         return $this->success(null, 'Template deleted successfully.');
     }
 
+    public function duplicate(Request $request, string $template): JsonResponse
+    {
+        $found = $this->labelService->findForOrg($template, $request->user()->organization_id);
+        $copy = $this->labelService->duplicate($found, $request->user());
+        $copy->load('createdBy');
+        return $this->created(new LabelTemplateResource($copy));
+    }
+
+    public function setDefault(Request $request, string $template): JsonResponse
+    {
+        $found = $this->labelService->findForOrg($template, $request->user()->organization_id);
+        $updated = $this->labelService->setDefault($found, $request->user()->organization_id);
+        $updated->load('createdBy');
+        return $this->success(new LabelTemplateResource($updated));
+    }
+
     // ─── Print History ───────────────────────────────────────
 
     public function printHistory(Request $request): JsonResponse
     {
-        $paginator = $this->labelService->getPrintHistory($this->resolvedStoreId($request) ?? $request->user()->store_id);
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $paginator = $this->labelService->getPrintHistory($storeId);
+        $paginator->load(['template', 'printedBy']);
         $result = $paginator->toArray();
         $result['data'] = LabelPrintHistoryResource::collection($paginator->items())->resolve();
         return $this->success($result);
@@ -93,7 +110,7 @@ class LabelController extends BaseApiController
     public function recordPrint(Request $request): JsonResponse
     {
         $data = $request->validate([
-            'template_id'   => ['required', 'uuid'],
+            'template_id'   => ['nullable', 'uuid'],
             'product_count' => ['required', 'integer', 'min:1'],
             'total_labels'  => ['required', 'integer', 'min:1'],
             'printer_name'  => ['nullable', 'string', 'max:255'],
@@ -103,6 +120,7 @@ class LabelController extends BaseApiController
         $data['printed_by'] = $request->user()->id;
 
         $history = $this->labelService->recordPrintHistory($data);
+        $history->load(['template', 'printedBy']);
         return $this->created(new LabelPrintHistoryResource($history));
     }
 }

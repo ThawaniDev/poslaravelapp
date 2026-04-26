@@ -2,6 +2,7 @@
 
 namespace App\Domain\IndustryJewelry\Models;
 
+use App\Domain\Core\Models\Store;
 use App\Domain\IndustryJewelry\Enums\MetalType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

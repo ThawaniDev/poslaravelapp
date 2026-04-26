@@ -11,12 +11,12 @@ class BackupPermissionSeeder extends Seeder
     public function run(): void
     {
         $permissions = [
-            'backup_view',
-            'backup_create',
-            'backup_restore',
-            'backup_delete',
-            'sync_view',
-            'sync_resolve_conflict',
+            'backup.view',
+            'backup.create',
+            'backup.restore',
+            'backup.delete',
+            'sync.view',
+            'sync.manage',
         ];
 
         foreach ($permissions as $permission) {
@@ -33,10 +33,17 @@ class BackupPermissionSeeder extends Seeder
         $branchManager = Role::where('name', 'branch_manager')->first();
         if ($branchManager) {
             $branchManager->givePermissionTo([
-                'backup_view',
-                'backup_create',
-                'sync_view',
-                'sync_resolve_conflict',
+                'backup.view',
+                'backup.create',
+                'sync.view',
+                'sync.manage',
+            ]);
+        }
+
+        $cashier = Role::where('name', 'cashier')->first();
+        if ($cashier) {
+            $cashier->givePermissionTo([
+                'sync.view',
             ]);
         }
     }

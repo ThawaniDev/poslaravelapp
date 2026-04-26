@@ -53,8 +53,7 @@ class JewelryService
 
     public function updateProductDetail(string $storeId, string $id, array $data): JewelryProductDetail
     {
-        $detail = JewelryProductDetail::whereHas('product', fn ($q) => $q->where('store_id', $storeId))
-            ->findOrFail($id);
+        $detail = JewelryProductDetail::findOrFail($id);
         $detail->update($data);
         return $detail->fresh();
     }

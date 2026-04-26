@@ -16,7 +16,7 @@ class OpenTabResource extends JsonResource
             'table_id'      => $this->table_id,
             'opened_at'     => $this->opened_at?->toIso8601String(),
             'closed_at'     => $this->closed_at?->toIso8601String(),
-            'status'        => $this->status?->value,
+            'status'        => $this->status,
             'created_at'    => $this->created_at?->toIso8601String(),
             'updated_at'    => $this->updated_at?->toIso8601String(),
         ];

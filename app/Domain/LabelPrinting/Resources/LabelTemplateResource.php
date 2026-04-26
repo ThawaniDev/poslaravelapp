@@ -19,6 +19,7 @@ class LabelTemplateResource extends JsonResource
             'is_preset'        => (bool) $this->is_preset,
             'is_default'       => (bool) $this->is_default,
             'created_by'       => $this->created_by,
+            'created_by_name'  => $this->whenLoaded('createdBy', fn () => $this->createdBy?->name),
             'sync_version'     => $this->sync_version,
             'created_at'       => $this->created_at?->toIso8601String(),
             'updated_at'       => $this->updated_at?->toIso8601String(),

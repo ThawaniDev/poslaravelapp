@@ -14,6 +14,7 @@ Route::middleware('auth:sanctum')->prefix('security')->group(function () {
     // Audit Logs
     Route::get('audit-logs', [SecurityController::class, 'listAuditLogs'])->middleware('permission:security.view_audit');
     Route::post('audit-logs', [SecurityController::class, 'recordAudit'])->middleware('permission:security.view_audit');
+    Route::get('audit-logs/export', [SecurityController::class, 'exportAuditLogs'])->middleware(['permission:security.view_audit', 'throttle:5,60']);
     Route::get('audit-stats', [SecurityController::class, 'auditStats'])->middleware('permission:security.view_audit');
 
     // Devices

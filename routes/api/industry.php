@@ -28,6 +28,7 @@ Route::prefix('industry')->middleware('auth:sanctum')->group(function () {
         Route::get('drug-schedules', [PharmacyController::class, 'listDrugSchedules']);
         Route::post('drug-schedules', [PharmacyController::class, 'createDrugSchedule'])->middleware('permission:pharmacy.drug_schedules');
         Route::put('drug-schedules/{id}', [PharmacyController::class, 'updateDrugSchedule'])->middleware('permission:pharmacy.drug_schedules');
+        Route::get('expiry-alerts', [PharmacyController::class, 'expiryAlerts']);
     });
 
     // ── Jewelry ──────────────────────────────────────────
@@ -46,6 +47,7 @@ Route::prefix('industry')->middleware('auth:sanctum')->group(function () {
         Route::get('imei-records', [ElectronicsController::class, 'listImeiRecords']);
         Route::post('imei-records', [ElectronicsController::class, 'createImeiRecord'])->middleware('permission:mobile.imei');
         Route::put('imei-records/{id}', [ElectronicsController::class, 'updateImeiRecord'])->middleware('permission:mobile.imei');
+        Route::post('imei/validate', [ElectronicsController::class, 'validateImei']);
         Route::get('repair-jobs', [ElectronicsController::class, 'listRepairJobs']);
         Route::post('repair-jobs', [ElectronicsController::class, 'createRepairJob'])->middleware('permission:mobile.repairs');
         Route::put('repair-jobs/{id}', [ElectronicsController::class, 'updateRepairJob'])->middleware('permission:mobile.repairs');

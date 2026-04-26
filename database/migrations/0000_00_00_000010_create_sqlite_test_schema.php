@@ -843,8 +843,11 @@ return new class extends Migration
                 $table->uuid('terminal_id');
                 $table->string('direction', 10);
                 $table->integer('records_count')->default(0);
+                $table->integer('conflicts_count')->default(0);
                 $table->integer('duration_ms')->default(0);
                 $table->string('status', 20);
+                $table->string('sync_token', 255)->nullable();
+                $table->string('client_version', 20)->nullable();
                 $table->text('error_message')->nullable();
                 $table->timestamp('started_at')->nullable();
                 $table->timestamp('completed_at')->nullable();
@@ -858,9 +861,12 @@ return new class extends Migration
                 $table->uuid('store_id');
                 $table->string('table_name', 100);
                 $table->uuid('record_id');
+                $table->string('conflict_type', 20)->default('update_update');
                 $table->text('local_data');
                 $table->text('cloud_data');
                 $table->string('resolution', 20)->nullable();
+                $table->boolean('auto_resolved')->default(false);
+                $table->text('resolution_notes')->nullable();
                 $table->uuid('resolved_by')->nullable();
                 $table->timestamp('detected_at')->nullable();
                 $table->timestamp('resolved_at')->nullable();
@@ -878,6 +884,22 @@ return new class extends Migration
                 $table->bigInteger('storage_used_bytes')->default(0);
                 $table->string('status', 20)->default('unknown');
                 $table->timestamp('updated_at')->nullable();
+            });
+        }
+
+        // ─── BackupSync: store_backup_settings ───────────────
+        if (!Schema::hasTable('store_backup_settings')) {
+            Schema::create('store_backup_settings', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id')->unique();
+                $table->boolean('auto_backup_enabled')->default(true);
+                $table->string('frequency', 20)->default('daily');
+                $table->integer('retention_days')->default(30);
+                $table->boolean('encrypt_backups')->default(false);
+                $table->boolean('local_backup_enabled')->default(true);
+                $table->boolean('cloud_backup_enabled')->default(true);
+                $table->integer('backup_hour')->default(2);
+                $table->timestamps();
             });
         }
 
@@ -2495,7 +2517,7 @@ return new class extends Migration
         Schema::create('label_print_history', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('store_id');
-            $table->uuid('template_id');
+            $table->uuid('template_id')->nullable();
             $table->uuid('printed_by')->nullable();
             $table->integer('product_count')->default(0);
             $table->integer('total_labels')->default(0);
@@ -2726,7 +2748,11 @@ return new class extends Migration
             $table->string('gift_card_code', 50)->nullable();
             $table->string('coupon_code', 50)->nullable();
             $table->integer('loyalty_points_used')->default(0);
+            $table->string('status', 20)->default('completed');
+            $table->string('nearpay_transaction_id', 100)->nullable();
+            $table->integer('sync_version')->default(1);
             $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
         });
 
         // ─── Payment: cash_sessions ───────────────────────────
@@ -2769,6 +2795,8 @@ return new class extends Migration
             $table->text('receipt_image_url')->nullable();
             $table->uuid('recorded_by');
             $table->date('expense_date')->nullable();
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
         });
 
         // ─── Payment: gift_cards ──────────────────────────────
@@ -3081,6 +3109,33 @@ return new class extends Migration
             $table->unique(['store_id', 'date']);
         });
 
+        Schema::create('scheduled_reports', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->string('report_type', 60);
+            $table->string('name', 255);
+            $table->string('frequency', 20);
+            $table->json('filters')->nullable();
+            $table->json('recipients');
+            $table->string('format', 10)->default('pdf');
+            $table->boolean('is_active')->default(true);
+            $table->timestamp('next_run_at')->nullable();
+            $table->timestamp('last_run_at')->nullable();
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
+        });
+
+        Schema::create('report_exports', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id')->nullable();
+            $table->uuid('store_id')->nullable();
+            $table->uuid('user_id')->nullable();
+            $table->string('report_type', 60);
+            $table->string('format', 10)->default('pdf');
+            $table->timestamp('created_at')->nullable();
+            $table->timestamp('updated_at')->nullable();
+        });
+
         // ─── Notifications ──────────────────────────────────
         if (!Schema::hasTable('notifications')) {
             Schema::create('notifications', function (Blueprint $table) {
@@ -3260,6 +3315,7 @@ return new class extends Migration
                 $table->timestamp('ended_at')->nullable();
                 $table->string('end_reason', 50)->nullable();
                 $table->json('metadata')->nullable();
+                $table->timestamps();
             });
         }
 

@@ -8,6 +8,7 @@ use App\Domain\ProviderSubscription\Jobs\GenerateRenewalInvoicesJob;
 use App\Domain\ProviderSubscription\Jobs\RenewPaidSubscriptionsJob;
 use App\Domain\ProviderSubscription\Jobs\ResetSoftPosCountersJob;
 use App\Domain\ProviderSubscription\Jobs\RetryFailedPaymentsJob;
+use App\Domain\Report\Jobs\ProcessScheduledReportsJob;
 use App\Domain\Report\Jobs\RefreshDailySummariesJob;
 use App\Domain\ThawaniIntegration\Jobs\ProcessThawaniSyncQueue;
 use App\Domain\WameedAI\Jobs\CalculateEfficiencyScoreJob;
@@ -69,6 +70,12 @@ Schedule::command('platform:aggregate-daily-stats')
 // Refresh store-level daily & product sales summaries (daily at 2 AM)
 Schedule::job(new RefreshDailySummariesJob)
     ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Process due scheduled reports (every hour)
+Schedule::job(new ProcessScheduledReportsJob)
+    ->hourly()
     ->withoutOverlapping()
     ->onOneServer();
 

@@ -55,11 +55,10 @@ class ProcessScheduledNotificationsJob implements ShouldQueue
         if ($schedule->recipient_user_id) {
             $this->createNotification($schedule, $schedule->recipient_user_id);
         } elseif ($schedule->store_id) {
-            // Get all users for this store
-            $userIds = \DB::table('store_staff')
-                ->where('store_id', $schedule->store_id)
+            // Get all active users for this store
+            $userIds = \App\Domain\Auth\Models\User::where('store_id', $schedule->store_id)
                 ->where('is_active', true)
-                ->pluck('user_id')
+                ->pluck('id')
                 ->toArray();
 
             foreach ($userIds as $userId) {

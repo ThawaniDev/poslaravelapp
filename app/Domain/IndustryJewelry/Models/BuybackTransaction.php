@@ -2,8 +2,11 @@
 
 namespace App\Domain\IndustryJewelry\Models;
 
+use App\Domain\Core\Models\Store;
+use App\Domain\Customer\Models\Customer;
 use App\Domain\IndustryJewelry\Enums\BuybackPaymentMethod;
 use App\Domain\IndustryJewelry\Enums\MetalType;
+use App\Domain\StaffManagement\Models\StaffUser;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

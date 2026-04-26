@@ -62,4 +62,13 @@ class PharmacyController extends BaseApiController
         $schedule = $this->service->updateDrugSchedule($id, $request->validated());
         return $this->success(new DrugScheduleResource($schedule), __('industry.drug_schedule_updated'));
     }
+
+    public function expiryAlerts(Request $request): JsonResponse
+    {
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $days = (int) $request->query('days', 90);
+        $days = max(1, min($days, 365));
+        $alerts = $this->service->getExpiryAlerts($storeId, $days);
+        return $this->success(['data' => $alerts, 'days' => $days], __('industry.expiry_alerts_retrieved'));
+    }
 }

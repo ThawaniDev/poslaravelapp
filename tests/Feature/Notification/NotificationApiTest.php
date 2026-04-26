@@ -699,18 +699,28 @@ class NotificationApiTest extends TestCase
 
     public function test_user_notification_stats(): void
     {
-        $this->createNotification(['is_read' => false]);
-        $this->createNotification(['is_read' => false]);
-        $this->createNotification(['is_read' => true]);
+        $this->createNotification(['is_read' => false, 'category' => 'order',    'channel' => 'in_app']);
+        $this->createNotification(['is_read' => false, 'category' => 'inventory', 'channel' => 'in_app']);
+        $this->createNotification(['is_read' => true,  'category' => 'order',    'channel' => 'push']);
 
         $response = $this->withToken($this->token)
             ->getJson('/api/v2/notifications/stats');
 
         $response->assertOk();
         $data = $response->json('data');
+
         $this->assertEquals(3, $data['total']);
         $this->assertEquals(2, $data['unread']);
         $this->assertEquals(1, $data['read']);
+        $this->assertArrayHasKey('delivery_rate', $data);
+        $this->assertArrayHasKey('by_channel', $data);
+        $this->assertArrayHasKey('by_category', $data);
+        $this->assertEquals(2, $data['by_channel']['in_app']);
+        $this->assertEquals(1, $data['by_channel']['push']);
+        $this->assertEquals(2, $data['by_category']['order']);
+        $this->assertEquals(1, $data['by_category']['inventory']);
+        // delivery_rate = read/total * 100 = 1/3 * 100 ≈ 33.3
+        $this->assertEquals(round(1 / 3 * 100, 1), $data['delivery_rate']);
     }
 
     // ─── Priority Filter ─────────────────────────────────

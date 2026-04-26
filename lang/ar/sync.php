@@ -10,4 +10,12 @@ return [
     'conflicts_retrieved' => 'تم استرجاع التعارضات بنجاح',
     'heartbeat_ok' => 'نبض القلب يعمل',
     'terminal_required' => 'معرف الجهاز مطلوب',
+    'logs_retrieved' => 'تم استرجاع سجلات المزامنة بنجاح',
+    'batch_too_large' => 'الدُفعة كبيرة جداً — الحد الأقصى :max سجل لكل دفعة',
+    'checksum_mismatch' => 'فشل التحقق من بصمة الحمولة — تم اكتشاف تلف في البيانات',
+    'record_applied' => 'تم تطبيق السجل بنجاح',
+    'conflict_auto_resolved' => 'تم حل التعارض تلقائياً',
+    'no_changes' => 'لا توجد تغييرات للمزامنة',
+    'sync_paused' => 'المزامنة متوقفة مؤقتاً',
+    'invalid_table' => 'الجدول :table غير قابل للمزامنة',
 ];

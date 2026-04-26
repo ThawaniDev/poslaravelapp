@@ -553,6 +553,49 @@ class SyncService
     }
 
     /**
+     * Paginated sync log history for a store.
+     */
+    public function listLogs(string $storeId, array $filters = []): array
+    {
+        $query = SyncLog::where('store_id', $storeId);
+
+        if (!empty($filters['direction'])) {
+            $query->where('direction', $filters['direction']);
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['terminal_id'])) {
+            $query->where('terminal_id', $filters['terminal_id']);
+        }
+
+        $perPage = min((int) ($filters['per_page'] ?? 25), 100);
+        $paginated = $query->orderByDesc('started_at')->paginate($perPage);
+
+        return [
+            'logs' => $paginated->map(fn ($log) => [
+                'id' => $log->id,
+                'terminal_id' => $log->terminal_id,
+                'direction' => $log->direction->value,
+                'records_count' => $log->records_count,
+                'duration_ms' => $log->duration_ms,
+                'status' => $log->status->value,
+                'error_message' => $log->error_message,
+                'started_at' => $log->started_at?->toIso8601String(),
+                'completed_at' => $log->completed_at?->toIso8601String(),
+            ])->toArray(),
+            'pagination' => [
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'per_page' => $paginated->perPage(),
+                'total' => $paginated->total(),
+            ],
+        ];
+    }
+
+    /**
      * Apply a conflict resolution by updating the record with chosen data.
      */
     private function applyConflictResolution(SyncConflict $conflict, array $resolvedData): void

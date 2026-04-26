@@ -4,6 +4,8 @@ namespace App\Domain\IndustryPharmacy\Services;
 
 use App\Domain\IndustryPharmacy\Models\Prescription;
 use App\Domain\IndustryPharmacy\Models\DrugSchedule;
+use App\Domain\Catalog\Models\Product;
+use Illuminate\Support\Facades\DB;
 
 class PharmacyService
 {
@@ -54,5 +56,36 @@ class PharmacyService
         $schedule = DrugSchedule::findOrFail($id);
         $schedule->update($data);
         return $schedule->fresh();
+    }
+
+    /**
+     * Returns products expiring within $days days for the given store.
+     * Joins inventory_items (or products table expiry_date if available).
+     */
+    public function getExpiryAlerts(string $storeId, int $days = 90): array
+    {
+        $cutoff = now()->addDays($days)->toDateString();
+
+        // Query products with expiry_date set, scoped to store via inventory
+        $results = DB::table('products as p')
+            ->join('inventory_items as ii', 'ii.product_id', '=', 'p.id')
+            ->where('ii.store_id', $storeId)
+            ->whereNotNull('p.expiry_date')
+            ->whereDate('p.expiry_date', '<=', $cutoff)
+            ->select(
+                'p.id',
+                'p.name',
+                'p.sku',
+                'p.expiry_date',
+                DB::raw('SUM(ii.quantity) as total_quantity'),
+                DB::raw("CASE WHEN p.expiry_date <= CURRENT_DATE THEN 'expired'
+                              WHEN p.expiry_date <= (CURRENT_DATE + INTERVAL '30 days') THEN 'critical'
+                              ELSE 'warning' END as severity")
+            )
+            ->groupBy('p.id', 'p.name', 'p.sku', 'p.expiry_date')
+            ->orderBy('p.expiry_date')
+            ->get();
+
+        return $results->toArray();
     }
 }

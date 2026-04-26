@@ -5,6 +5,7 @@ namespace App\Domain\Security\Services;
 use App\Domain\Auth\Models\User;
 use App\Domain\Security\Models\PinOverride;
 use App\Domain\StaffManagement\Models\Permission;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 
 class PinOverrideService
@@ -39,6 +40,15 @@ class PinOverrideService
         string $permissionCode,
         array $context = [],
     ): PinOverride {
+        // Check for lockout before verifying PIN to prevent timing attacks
+        $lockoutKey = $this->lockoutCacheKey($storeId, $requestingUser->id);
+        if (Cache::has($lockoutKey)) {
+            $remaining = (int) Cache::get($lockoutKey . ':remaining', self::LOCKOUT_MINUTES);
+            throw new \InvalidArgumentException(
+                "PIN override locked out. Try again in {$remaining} minutes."
+            );
+        }
+
         // Verify the permission actually requires PIN
         $permission = Permission::where('name', $permissionCode)->first();
         if (!$permission || !$permission->requires_pin) {
@@ -46,11 +56,16 @@ class PinOverrideService
         }
 
         // Find authorized users for this store who have this permission and have a PIN set
-        $authorizingUser = $this->findAuthorizingUser($storeId, $authorizingPin, $permissionCode);
+        $authorizingUser = $this->findAuthorizingUser($storeId, $authorizingPin, $permissionCode, $requestingUser->id);
 
         if (!$authorizingUser) {
+            // Track failed attempt
+            $this->recordFailedAttempt($lockoutKey);
             throw new \InvalidArgumentException('Invalid PIN or no authorized user found.');
         }
+
+        // Successful — clear failed attempt counter
+        $this->clearFailedAttempts($lockoutKey);
 
         // Record the override
         return PinOverride::create([
@@ -88,13 +103,19 @@ class PinOverrideService
 
     /**
      * Find a user in the store whose PIN matches and who has the required permission.
+     * A user cannot authorize their own restricted action (PIN override segregation).
      */
-    private function findAuthorizingUser(string $storeId, string $pin, string $permissionCode): ?User
-    {
-        // Get all users in this store who have a PIN set
+    private function findAuthorizingUser(
+        string $storeId,
+        string $pin,
+        string $permissionCode,
+        string $requestingUserId,
+    ): ?User {
+        // Get all users in this store who have a PIN set (excluding the requesting user)
         $users = User::where('store_id', $storeId)
             ->whereNotNull('pin_hash')
             ->where('is_active', true)
+            ->where('id', '!=', $requestingUserId)   // cannot authorize own action
             ->get();
 
         foreach ($users as $user) {
@@ -122,5 +143,42 @@ class PinOverrideService
             ->where('roles.store_id', $storeId)
             ->where('permissions.name', $permissionCode)
             ->exists();
+    }
+
+    /**
+     * Cache key for failed PIN attempts lockout.
+     */
+    private function lockoutCacheKey(string $storeId, string $userId): string
+    {
+        return "pin_override_lockout:{$storeId}:{$userId}";
+    }
+
+    /**
+     * Record a failed PIN override attempt; lock out after MAX_ATTEMPTS.
+     */
+    private function recordFailedAttempt(string $lockoutKey): void
+    {
+        $attemptsKey = $lockoutKey . ':attempts';
+        $attempts = (int) Cache::get($attemptsKey, 0) + 1;
+
+        if ($attempts >= self::MAX_ATTEMPTS) {
+            // Set lockout marker
+            Cache::put($lockoutKey, true, now()->addMinutes(self::LOCKOUT_MINUTES));
+            Cache::put($lockoutKey . ':remaining', self::LOCKOUT_MINUTES, now()->addMinutes(self::LOCKOUT_MINUTES));
+            Cache::forget($attemptsKey);
+        } else {
+            // Store attempt count (expires in lockout window)
+            Cache::put($attemptsKey, $attempts, now()->addMinutes(self::LOCKOUT_MINUTES));
+        }
+    }
+
+    /**
+     * Clear failed attempt counter on successful PIN verification.
+     */
+    private function clearFailedAttempts(string $lockoutKey): void
+    {
+        Cache::forget($lockoutKey . ':attempts');
+        Cache::forget($lockoutKey);
+        Cache::forget($lockoutKey . ':remaining');
     }
 }

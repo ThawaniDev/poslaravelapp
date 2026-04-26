@@ -10,11 +10,15 @@ use Illuminate\Support\Str;
 
 class GiftCardService
 {
-    public function list(string $organizationId, int $perPage = 20): LengthAwarePaginator
+    public function list(string $organizationId, int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
-        return GiftCard::where('organization_id', $organizationId)
-            ->orderByDesc('expires_at')
-            ->paginate($perPage);
+        $query = GiftCard::where('organization_id', $organizationId);
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query->orderByDesc('created_at')->paginate($perPage);
     }
 
     public function find(string $organizationId, string $id): GiftCard
@@ -97,6 +101,20 @@ class GiftCardService
     public function deactivate(string $organizationId, string $id): GiftCard
     {
         $card = GiftCard::where('organization_id', $organizationId)->findOrFail($id);
+        $card->update(['status' => GiftCardStatus::Deactivated]);
+        return $card->fresh();
+    }
+
+    public function deactivateByCode(string $code, string $organizationId): GiftCard
+    {
+        $card = GiftCard::where('code', $code)
+            ->where('organization_id', $organizationId)
+            ->firstOrFail();
+
+        if ($card->status === GiftCardStatus::Redeemed) {
+            throw new \RuntimeException('Cannot deactivate a fully redeemed gift card.');
+        }
+
         $card->update(['status' => GiftCardStatus::Deactivated]);
         return $card->fresh();
     }

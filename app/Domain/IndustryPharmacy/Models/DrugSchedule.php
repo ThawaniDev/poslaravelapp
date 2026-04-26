@@ -2,6 +2,7 @@
 
 namespace App\Domain\IndustryPharmacy\Models;
 
+use App\Domain\Catalog\Models\Product;
 use App\Domain\IndustryPharmacy\Enums\DrugScheduleType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

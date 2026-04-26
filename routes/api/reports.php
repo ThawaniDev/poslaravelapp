@@ -36,11 +36,13 @@ Route::prefix('reports')->middleware(['auth:sanctum', 'plan.feature:reports_basi
     Route::get('inventory/turnover', [ReportController::class, 'inventoryTurnover'])->middleware('permission:reports.inventory');
     Route::get('inventory/shrinkage', [ReportController::class, 'inventoryShrinkage'])->middleware('permission:reports.inventory');
     Route::get('inventory/low-stock', [ReportController::class, 'inventoryLowStock'])->middleware('permission:reports.inventory');
+    Route::get('inventory/expiry', [ReportController::class, 'inventoryExpiry'])->middleware('permission:reports.inventory');
 
     // Financial (requires advanced reports feature)
     Route::get('financial/daily-pl', [ReportController::class, 'financialDailyPL'])->middleware(['permission:reports.view_financial', 'plan.feature:reports_advanced']);
     Route::get('financial/expenses', [ReportController::class, 'financialExpenses'])->middleware('permission:reports.view_financial');
     Route::get('financial/cash-variance', [ReportController::class, 'financialCashVariance'])->middleware('permission:reports.view_financial');
+    Route::get('financial/delivery-commission', [ReportController::class, 'financialDeliveryCommission'])->middleware('permission:reports.view_financial');
 
     // Customers
     Route::get('customers/top', [ReportController::class, 'topCustomers'])->middleware('permission:reports.customers');

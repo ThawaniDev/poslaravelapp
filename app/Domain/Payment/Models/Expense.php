@@ -16,7 +16,7 @@ class Expense extends Model
     protected $table = 'expenses';
     public $incrementing = false;
     protected $keyType = 'string';
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected $fillable = [
         'store_id',

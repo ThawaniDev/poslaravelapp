@@ -101,4 +101,33 @@ class ElectronicsService
     {
         return TradeInRecord::create(array_merge($data, ['store_id' => $storeId]));
     }
+
+    /**
+     * Luhn algorithm check for IMEI validation.
+     */
+    public function validateImeiLuhn(string $imei): bool
+    {
+        if (!ctype_digit($imei) || strlen($imei) !== 15) {
+            return false;
+        }
+
+        $sum = 0;
+        for ($i = 0; $i < 15; $i++) {
+            $digit = (int) $imei[$i];
+            if ($i % 2 === 1) {
+                $digit *= 2;
+                if ($digit > 9) {
+                    $digit -= 9;
+                }
+            }
+            $sum += $digit;
+        }
+
+        return $sum % 10 === 0;
+    }
+
+    public function imeiExists(string $imei): bool
+    {
+        return DeviceImeiRecord::where('imei', $imei)->exists();
+    }
 }

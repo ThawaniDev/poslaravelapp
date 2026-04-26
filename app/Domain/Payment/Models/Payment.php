@@ -32,6 +32,9 @@ class Payment extends Model
         'gift_card_code',
         'coupon_code',
         'loyalty_points_used',
+        'status',
+        'nearpay_transaction_id',
+        'sync_version',
         'created_at',
     ];
 
@@ -42,6 +45,7 @@ class Payment extends Model
         'change_given' => 'decimal:2',
         'tip_amount' => 'decimal:2',
         'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function transaction(): BelongsTo

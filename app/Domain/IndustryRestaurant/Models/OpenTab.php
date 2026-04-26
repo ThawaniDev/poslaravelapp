@@ -2,7 +2,8 @@
 
 namespace App\Domain\IndustryRestaurant\Models;
 
-use App\Domain\Payment\Enums\CashSessionStatus;
+use App\Domain\Core\Models\Store;
+use App\Domain\Order\Models\Order;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,7 +28,6 @@ class OpenTab extends Model
     ];
 
     protected $casts = [
-        'status' => CashSessionStatus::class,
         'opened_at' => 'datetime',
         'closed_at' => 'datetime',
     ];

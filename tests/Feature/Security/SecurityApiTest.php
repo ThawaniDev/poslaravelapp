@@ -44,9 +44,12 @@ class SecurityApiTest extends TestCase
                 $t->boolean('require_pin_override_discount')->default(false);
                 $t->decimal('discount_override_threshold', 5, 2)->default(20.00);
                 $t->boolean('biometric_enabled')->default(false);
+                $t->integer('pin_expiry_days')->default(0);
+                $t->boolean('require_unique_pins')->default(false);
                 $t->integer('max_devices')->default(10);
                 $t->integer('audit_retention_days')->default(90);
-                $t->boolean('force_logout_on_role_change')->default(false);
+                $t->boolean('force_logout_on_role_change')->default(true);
+                $t->integer('password_expiry_days')->default(0);
                 $t->boolean('require_strong_password')->default(false);
                 $t->boolean('ip_restriction_enabled')->default(false);
                 $t->json('allowed_ip_ranges')->nullable();

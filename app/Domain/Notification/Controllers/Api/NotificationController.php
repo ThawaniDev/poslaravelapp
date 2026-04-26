@@ -30,7 +30,7 @@ class NotificationController extends BaseApiController
             $request->validated(),
         );
 
-        return $this->success($notifications);
+        return $this->success(NotificationResource::collection($notifications));
     }
 
     /**
@@ -260,10 +260,17 @@ class NotificationController extends BaseApiController
             return $this->error(__('notifications.store_required'), 422);
         }
 
+        $data = $request->only(['is_enabled', 'sound_file', 'volume', 'repeat_count', 'repeat_interval_seconds']);
+
+        // Convert volume from percentage (0–100) to decimal (0.00–1.00) for DB storage
+        if (isset($data['volume'])) {
+            $data['volume'] = round($data['volume'] / 100.0, 2);
+        }
+
         $config = $this->notificationService->updateSoundConfig(
             $storeId,
             $eventKey,
-            $request->only(['is_enabled', 'sound_file', 'volume', 'repeat_count', 'repeat_interval_seconds']),
+            $data,
         );
 
         return $this->success($config, __('notifications.sound_config_updated'));

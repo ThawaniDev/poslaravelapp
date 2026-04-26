@@ -2,7 +2,9 @@
 
 namespace App\Domain\IndustryBakery\Models;
 
+use App\Domain\Core\Models\Store;
 use App\Domain\IndustryBakery\Enums\ProductionScheduleStatus;
+use App\Domain\IndustryBakery\Models\BakeryRecipe;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

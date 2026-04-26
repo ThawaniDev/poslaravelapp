@@ -22,7 +22,7 @@ class JewelryProductDetailResource extends JsonResource
             'stone_count'          => $this->stone_count,
             'certificate_number'   => $this->certificate_number,
             'certificate_url'      => $this->certificate_url,
-            'created_at'           => $this->created_at,
+            'created_at'           => $this->created_at?->toIso8601String(),
         ];
     }
 }

@@ -12,6 +12,8 @@ Route::prefix('labels')->middleware(['auth:sanctum', 'plan.feature:barcode_label
     Route::get('/templates/{template}', [LabelController::class, 'show'])->middleware('permission:labels.view');
     Route::put('/templates/{template}', [LabelController::class, 'update'])->middleware('permission:labels.manage');
     Route::delete('/templates/{template}', [LabelController::class, 'destroy'])->middleware('permission:labels.manage');
+    Route::post('/templates/{template}/duplicate', [LabelController::class, 'duplicate'])->middleware('permission:labels.manage');
+    Route::post('/templates/{template}/set-default', [LabelController::class, 'setDefault'])->middleware('permission:labels.manage');
 
     // Print history
     Route::get('/print-history', [LabelController::class, 'printHistory'])->middleware('permission:labels.view');

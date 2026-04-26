@@ -20,7 +20,7 @@ class NotificationService
      * List notifications for a user, newest first.
      * Filterable by category, read status, priority, and date range.
      */
-    public function list(string $userId, array $filters = []): array
+    public function list(string $userId, array $filters = []): \Illuminate\Database\Eloquent\Collection
     {
         $query = NotificationCustom::forUser($userId)
             ->active()
@@ -44,7 +44,7 @@ class NotificationService
 
         $limit = min((int) ($filters['limit'] ?? 50), 200);
 
-        return $query->limit($limit)->get()->toArray();
+        return $query->limit($limit)->get();
     }
 
     // ─── Create ──────────────────────────────────────────
@@ -431,17 +431,29 @@ class NotificationService
     {
         $total = NotificationCustom::forUser($userId)->count();
         $unread = NotificationCustom::forUser($userId)->unread()->count();
+
         $byCategory = NotificationCustom::forUser($userId)
             ->selectRaw('category, count(*) as count')
             ->groupBy('category')
             ->pluck('count', 'category')
             ->toArray();
 
+        $byChannel = NotificationCustom::forUser($userId)
+            ->selectRaw('channel, count(*) as count')
+            ->groupBy('channel')
+            ->pluck('count', 'channel')
+            ->toArray();
+
+        $readCount = $total - $unread;
+        $deliveryRate = $total > 0 ? round(($readCount / $total) * 100, 1) : 0;
+
         return [
-            'total' => $total,
-            'unread' => $unread,
-            'read' => $total - $unread,
-            'by_category' => $byCategory,
+            'total'         => $total,
+            'unread'        => $unread,
+            'read'          => $readCount,
+            'delivery_rate' => $deliveryRate,
+            'by_category'   => $byCategory,
+            'by_channel'    => $byChannel,
         ];
     }
 }

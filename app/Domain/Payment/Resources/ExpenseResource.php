@@ -19,6 +19,8 @@ class ExpenseResource extends JsonResource
             'receipt_image_url' => $this->receipt_image_url,
             'recorded_by'       => $this->recorded_by,
             'expense_date'      => $this->expense_date?->toDateString(),
+            'created_at'        => $this->created_at?->toIso8601String(),
+            'updated_at'        => $this->updated_at?->toIso8601String(),
         ];
     }
 }

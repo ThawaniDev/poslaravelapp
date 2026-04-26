@@ -12,6 +12,8 @@ use App\Domain\PosTerminal\Models\PosSession;
 use App\Domain\PosTerminal\Models\Transaction;
 use App\Domain\Payment\Enums\CashSessionStatus;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Tests\TestCase;
 
 class PaymentApiTest extends TestCase
@@ -649,5 +651,405 @@ class PaymentApiTest extends TestCase
             'discount_amount' => 0,
             'total_amount' => 50.00,
         ]);
+    }
+
+    private function createPayment(float $amount = 50.00, string $method = 'cash'): \App\Domain\Payment\Models\Payment
+    {
+        $transaction = $this->createTransaction();
+        return \App\Domain\Payment\Models\Payment::create([
+            'transaction_id' => $transaction->id,
+            'method' => $method,
+            'amount' => $amount,
+            'status' => 'completed',
+        ]);
+    }
+
+    private function createOpenCashSession(string $terminal = 'TERM-001'): CashSession
+    {
+        return CashSession::create([
+            'store_id' => $this->store->id,
+            'terminal_id' => $terminal,
+            'opened_by' => $this->user->id,
+            'opening_float' => 200,
+            'expected_cash' => 200,
+            'status' => CashSessionStatus::Open,
+            'opened_at' => now(),
+        ]);
+    }
+
+    private function seedRefund(string $paymentId, float $amount = 25.00): void
+    {
+        DB::table('refunds')->insert([
+            'id' => Str::uuid()->toString(),
+            'return_id' => Str::uuid()->toString(),
+            'payment_id' => $paymentId,
+            'method' => 'cash',
+            'amount' => $amount,
+            'status' => 'completed',
+            'processed_by' => $this->user->id,
+            'created_at' => now(),
+        ]);
+    }
+
+    // ─── Refunds ─────────────────────────────────────────────
+
+    public function test_can_list_all_refunds(): void
+    {
+        $payment = $this->createPayment();
+        $this->seedRefund($payment->id);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/payments/refunds');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $this->assertNotEmpty($response->json('data.data'));
+    }
+
+    public function test_can_list_refunds_for_specific_payment(): void
+    {
+        $payment = $this->createPayment();
+        $this->seedRefund($payment->id);
+
+        $response = $this->withToken($this->token)->getJson("/api/v2/payments/{$payment->id}/refunds");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $this->assertNotEmpty($response->json('data'));
+    }
+
+    public function test_list_payment_refunds_returns_404_for_missing_payment(): void
+    {
+        $response = $this->withToken($this->token)->getJson('/api/v2/payments/non-existent-id/refunds');
+
+        $response->assertStatus(404);
+        $response->assertJsonPath('success', false);
+    }
+
+    public function test_can_create_refund_for_payment(): void
+    {
+        $payment = $this->createPayment(100.00);
+
+        $response = $this->withToken($this->token)->postJson("/api/v2/payments/{$payment->id}/refund", [
+            'amount' => 50.00,
+            'method' => 'cash',
+            'reason' => 'Customer return',
+        ]);
+
+        $response->assertStatus(201);
+        $response->assertJsonPath('success', true);
+        $this->assertDatabaseHas('refunds', [
+            'payment_id' => $payment->id,
+            'amount' => 50.00,
+        ]);
+    }
+
+    public function test_cannot_refund_more_than_payment_amount(): void
+    {
+        $payment = $this->createPayment(50.00);
+
+        $response = $this->withToken($this->token)->postJson("/api/v2/payments/{$payment->id}/refund", [
+            'amount' => 100.00,
+            'method' => 'cash',
+            'reason' => 'Customer return',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('success', false);
+    }
+
+    public function test_create_refund_returns_404_for_missing_payment(): void
+    {
+        $response = $this->withToken($this->token)->postJson('/api/v2/payments/non-existent-id/refund', [
+            'amount' => 25.00,
+            'method' => 'cash',
+            'reason' => 'Return',
+        ]);
+
+        $response->assertStatus(404);
+    }
+
+    public function test_can_filter_refunds_by_date_range(): void
+    {
+        $payment = $this->createPayment();
+        $this->seedRefund($payment->id);
+
+        $response = $this->withToken($this->token)->getJson(
+            '/api/v2/payments/refunds?start_date=' . now()->toDateString() . '&end_date=' . now()->toDateString()
+        );
+
+        $response->assertStatus(200);
+        $this->assertNotEmpty($response->json('data.data'));
+    }
+
+    // ─── Expenses (update / delete / filter) ─────────────────
+
+    public function test_can_update_expense(): void
+    {
+        $session = $this->createOpenCashSession();
+        $expense = \App\Domain\Payment\Models\Expense::create([
+            'store_id' => $this->store->id,
+            'cash_session_id' => $session->id,
+            'amount' => 30.00,
+            'category' => 'supplies',
+            'description' => 'Original',
+            'recorded_by' => $this->user->id,
+            'expense_date' => today(),
+        ]);
+
+        $response = $this->withToken($this->token)->putJson("/api/v2/expenses/{$expense->id}", [
+            'amount' => 45.00,
+            'category' => 'supplies',
+            'description' => 'Updated description',
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $this->assertDatabaseHas('expenses', [
+            'id' => $expense->id,
+            'amount' => 45.00,
+            'description' => 'Updated description',
+        ]);
+    }
+
+    public function test_update_expense_returns_404_for_missing_expense(): void
+    {
+        $response = $this->withToken($this->token)->putJson('/api/v2/expenses/non-existent-id', [
+            'amount' => 20.00,
+            'category' => 'supplies',
+        ]);
+
+        $response->assertStatus(404);
+        $response->assertJsonPath('success', false);
+    }
+
+    public function test_can_delete_expense(): void
+    {
+        $session = $this->createOpenCashSession();
+        $expense = \App\Domain\Payment\Models\Expense::create([
+            'store_id' => $this->store->id,
+            'cash_session_id' => $session->id,
+            'amount' => 30.00,
+            'category' => 'supplies',
+            'description' => 'To delete',
+            'recorded_by' => $this->user->id,
+            'expense_date' => today(),
+        ]);
+
+        $response = $this->withToken($this->token)->deleteJson("/api/v2/expenses/{$expense->id}");
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $this->assertDatabaseMissing('expenses', ['id' => $expense->id]);
+    }
+
+    public function test_delete_expense_returns_404_for_missing_expense(): void
+    {
+        $response = $this->withToken($this->token)->deleteJson('/api/v2/expenses/non-existent-id');
+
+        $response->assertStatus(404);
+        $response->assertJsonPath('success', false);
+    }
+
+    public function test_can_filter_expenses_by_date_range(): void
+    {
+        $session = $this->createOpenCashSession();
+        \App\Domain\Payment\Models\Expense::create([
+            'store_id' => $this->store->id,
+            'cash_session_id' => $session->id,
+            'amount' => 40.00,
+            'category' => 'supplies',
+            'recorded_by' => $this->user->id,
+            'expense_date' => today(),
+        ]);
+
+        $response = $this->withToken($this->token)->getJson(
+            '/api/v2/expenses?start_date=' . today()->toDateString() . '&end_date=' . today()->toDateString()
+        );
+
+        $response->assertStatus(200);
+        $this->assertNotEmpty($response->json('data.data'));
+    }
+
+    public function test_can_filter_expenses_by_category(): void
+    {
+        $session = $this->createOpenCashSession();
+        \App\Domain\Payment\Models\Expense::create([
+            'store_id' => $this->store->id,
+            'cash_session_id' => $session->id,
+            'amount' => 60.00,
+            'category' => 'rent',
+            'recorded_by' => $this->user->id,
+            'expense_date' => today(),
+        ]);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/expenses?category=rent');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('data.data.0.category', 'rent');
+    }
+
+    // ─── Gift Cards (list / deactivate) ──────────────────────
+
+    public function test_can_list_gift_cards(): void
+    {
+        GiftCard::create([
+            'organization_id' => $this->org->id,
+            'code' => 'GC-TEST-001',
+            'initial_amount' => 100.00,
+            'balance' => 100.00,
+            'issued_by' => $this->user->id,
+            'issued_at_store' => $this->store->id,
+            'status' => GiftCardStatus::Active,
+        ]);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/gift-cards');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $this->assertNotEmpty($response->json('data.data'));
+    }
+
+    public function test_can_list_gift_cards_filtered_by_status(): void
+    {
+        GiftCard::create([
+            'organization_id' => $this->org->id,
+            'code' => 'GC-ACTIVE-001',
+            'initial_amount' => 100.00,
+            'balance' => 100.00,
+            'issued_by' => $this->user->id,
+            'issued_at_store' => $this->store->id,
+            'status' => GiftCardStatus::Active,
+        ]);
+
+        GiftCard::create([
+            'organization_id' => $this->org->id,
+            'code' => 'GC-EXPIRED-001',
+            'initial_amount' => 100.00,
+            'balance' => 0.00,
+            'issued_by' => $this->user->id,
+            'issued_at_store' => $this->store->id,
+            'status' => GiftCardStatus::Expired,
+        ]);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/gift-cards?status=active');
+
+        $response->assertStatus(200);
+        $items = $response->json('data.data');
+        $this->assertCount(1, $items);
+        $this->assertEquals('GC-ACTIVE-001', $items[0]['code']);
+    }
+
+    public function test_can_deactivate_gift_card(): void
+    {
+        GiftCard::create([
+            'organization_id' => $this->org->id,
+            'code' => 'GC-TO-DEACT',
+            'initial_amount' => 100.00,
+            'balance' => 80.00,
+            'issued_by' => $this->user->id,
+            'issued_at_store' => $this->store->id,
+            'status' => GiftCardStatus::Active,
+        ]);
+
+        $response = $this->withToken($this->token)->putJson('/api/v2/gift-cards/GC-TO-DEACT/deactivate');
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $this->assertDatabaseHas('gift_cards', [
+            'code' => 'GC-TO-DEACT',
+            'status' => 'deactivated',
+        ]);
+    }
+
+    public function test_deactivate_gift_card_returns_404_for_missing_card(): void
+    {
+        $response = $this->withToken($this->token)->putJson('/api/v2/gift-cards/NON-EXISTENT/deactivate');
+
+        $response->assertStatus(404);
+        $response->assertJsonPath('success', false);
+    }
+
+    public function test_cannot_deactivate_redeemed_gift_card(): void
+    {
+        GiftCard::create([
+            'organization_id' => $this->org->id,
+            'code' => 'GC-REDEEMED-CANT-DEACT',
+            'initial_amount' => 100.00,
+            'balance' => 0.00,
+            'issued_by' => $this->user->id,
+            'issued_at_store' => $this->store->id,
+            'status' => GiftCardStatus::Redeemed,
+        ]);
+
+        $response = $this->withToken($this->token)->putJson('/api/v2/gift-cards/GC-REDEEMED-CANT-DEACT/deactivate');
+
+        $response->assertStatus(422);
+        $response->assertJsonPath('success', false);
+    }
+
+    public function test_check_gift_card_balance_returns_404_for_missing_card(): void
+    {
+        $response = $this->withToken($this->token)->getJson('/api/v2/gift-cards/NON-EXISTENT/balance');
+
+        $response->assertStatus(404);
+        $response->assertJsonPath('success', false);
+    }
+
+    // ─── Cash Sessions (edge cases) ──────────────────────────
+
+    public function test_show_cash_session_returns_404_for_missing_session(): void
+    {
+        $response = $this->withToken($this->token)->getJson('/api/v2/cash-sessions/non-existent-id');
+
+        $response->assertStatus(404);
+        $response->assertJsonPath('success', false);
+    }
+
+    // ─── Payments (filter) ────────────────────────────────────
+
+    public function test_can_filter_payments_by_status(): void
+    {
+        $payment = $this->createPayment(75.00);
+        $payment->update(['status' => 'refunded']);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/payments?status=refunded');
+
+        $response->assertStatus(200);
+        $items = $response->json('data.data');
+        $this->assertNotEmpty($items);
+        foreach ($items as $item) {
+            $this->assertEquals('refunded', $item['status']);
+        }
+    }
+
+    public function test_can_filter_payments_by_method(): void
+    {
+        $this->createPayment(100.00, 'card_mada');
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/payments?method=card_mada');
+
+        $response->assertStatus(200);
+        $items = $response->json('data.data');
+        $this->assertNotEmpty($items);
+        $this->assertEquals('card_mada', $items[0]['method']);
+    }
+
+    public function test_can_search_payments_by_transaction_id(): void
+    {
+        $transaction = $this->createTransaction();
+        \App\Domain\Payment\Models\Payment::create([
+            'transaction_id' => $transaction->id,
+            'method' => 'card',
+            'amount' => 50.00,
+            'card_last_four' => '1234',
+            'card_reference' => 'REF-SEARCH-TEST',
+        ]);
+
+        $response = $this->withToken($this->token)->getJson(
+            '/api/v2/payments?search=REF-SEARCH-TEST'
+        );
+
+        $response->assertStatus(200);
+        $this->assertNotEmpty($response->json('data.data'));
     }
 }

@@ -23,8 +23,12 @@ class ReportController extends BaseApiController
     /**
      * Resolve the effective store_id for report queries.
      *
-     * - If user is organization-scoped and branch_id is provided & valid, use it.
-     * - Otherwise, fall back to the authenticated user's store_id.
+     * Uses the base trait's resolved branch first (set by BranchScope middleware
+     * if `branch_id` was passed in the request), then falls back to the
+     * authenticated user's own store_id.
+     *
+     * Additionally validates that the requested branch belongs to the same
+     * organisation as the authenticated user's store.
      */
     protected function resolveStoreId(Request $request): string
     {
@@ -32,9 +36,8 @@ class ReportController extends BaseApiController
         $requestedBranch = $request->input('branch_id');
 
         if ($requestedBranch && $requestedBranch !== $user->store_id) {
-            // Verify user has access to the requested branch via their organization
             $orgId = DB::table('stores')->where('id', $user->store_id)->value('organization_id');
-            $valid = DB::table('stores')
+            $valid = $orgId && DB::table('stores')
                 ->where('id', $requestedBranch)
                 ->where('organization_id', $orgId)
                 ->exists();
@@ -217,6 +220,19 @@ class ReportController extends BaseApiController
         return $this->success($data);
     }
 
+    /**
+     * GET /api/v2/reports/inventory/expiry
+     */
+    public function inventoryExpiry(ReportFilterRequest $request): JsonResponse
+    {
+        $data = $this->reportService->inventoryExpiry(
+            $this->resolveStoreId($request),
+            $request->validated(),
+        );
+
+        return $this->success($data);
+    }
+
     // ─── Financial Reports ───────────────────────────────────
 
     /**
@@ -251,6 +267,19 @@ class ReportController extends BaseApiController
     public function financialCashVariance(ReportFilterRequest $request): JsonResponse
     {
         $data = $this->reportService->financialCashVariance(
+            $this->resolveStoreId($request),
+            $request->validated(),
+        );
+
+        return $this->success($data);
+    }
+
+    /**
+     * GET /api/v2/reports/financial/delivery-commission
+     */
+    public function financialDeliveryCommission(ReportFilterRequest $request): JsonResponse
+    {
+        $data = $this->reportService->financialDeliveryCommission(
             $this->resolveStoreId($request),
             $request->validated(),
         );

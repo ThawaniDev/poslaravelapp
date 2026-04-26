@@ -9,34 +9,43 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | Routes for the Payment feature.
-| Prefix: /api/v2/payments
+| Prefix: /api/v2/
 |
 */
 
 Route::middleware('auth:sanctum')->group(function () {
-    // Payments
+    // ─── Payments ──────────────────────────────────────────────────────────
     Route::get('payments', [PaymentController::class, 'listPayments'])->middleware('permission:payments.process');
     Route::post('payments', [PaymentController::class, 'createPayment'])->middleware('permission:payments.process');
 
-    // Cash Sessions
+    // ─── Payment Refunds ───────────────────────────────────────────────────
+    Route::get('payments/refunds', [PaymentController::class, 'listRefunds'])->middleware('permission:payments.refund');
+    Route::get('payments/{paymentId}/refunds', [PaymentController::class, 'listPaymentRefunds'])->middleware('permission:payments.refund');
+    Route::post('payments/{paymentId}/refund', [PaymentController::class, 'createRefund'])->middleware('permission:payments.refund');
+
+    // ─── Cash Sessions ─────────────────────────────────────────────────────
     Route::get('cash-sessions', [PaymentController::class, 'listCashSessions'])->middleware('permission:cash.view_sessions');
     Route::post('cash-sessions', [PaymentController::class, 'openCashSession'])->middleware('permission:cash.manage');
     Route::get('cash-sessions/{id}', [PaymentController::class, 'showCashSession'])->middleware('permission:cash.view_sessions');
     Route::put('cash-sessions/{id}/close', [PaymentController::class, 'closeCashSession'])->middleware('permission:cash.manage');
 
-    // Cash Events
+    // ─── Cash Events ───────────────────────────────────────────────────────
     Route::post('cash-events', [PaymentController::class, 'createCashEvent'])->middleware('permission:cash.manage');
 
-    // Expenses
+    // ─── Expenses ──────────────────────────────────────────────────────────
     Route::get('expenses', [PaymentController::class, 'listExpenses'])->middleware('permission:finance.expenses');
     Route::post('expenses', [PaymentController::class, 'createExpense'])->middleware('permission:finance.expenses');
+    Route::put('expenses/{id}', [PaymentController::class, 'updateExpense'])->middleware('permission:finance.expenses');
+    Route::delete('expenses/{id}', [PaymentController::class, 'deleteExpense'])->middleware('permission:finance.expenses');
 
-    // Gift Cards
+    // ─── Gift Cards ────────────────────────────────────────────────────────
+    Route::get('gift-cards', [PaymentController::class, 'listGiftCards'])->middleware('permission:finance.gift_cards');
     Route::post('gift-cards', [PaymentController::class, 'issueGiftCard'])->middleware('permission:finance.gift_cards');
     Route::get('gift-cards/{code}/balance', [PaymentController::class, 'checkGiftCardBalance'])->middleware('permission:finance.gift_cards');
     Route::post('gift-cards/{code}/redeem', [PaymentController::class, 'redeemGiftCard'])->middleware('permission:finance.gift_cards');
+    Route::put('gift-cards/{code}/deactivate', [PaymentController::class, 'deactivateGiftCard'])->middleware('permission:finance.gift_cards');
 
-    // Financial Summary
+    // ─── Financial Summary ─────────────────────────────────────────────────
     Route::get('finance/daily-summary', [PaymentController::class, 'dailySummary'])->middleware('permission:cash.view_daily_summary');
     Route::get('finance/reconciliation', [PaymentController::class, 'reconciliation'])->middleware('permission:cash.reconciliation');
 });

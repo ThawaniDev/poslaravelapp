@@ -649,4 +649,133 @@ class ReportExtendedApiTest extends TestCase
 
         $response->assertOk();
     }
+
+    // ─── Inventory Expiry ────────────────────────────────────
+
+    public function test_inventory_expiry_returns_structure(): void
+    {
+        $response = $this->getJson(
+            '/api/v2/reports/inventory/expiry?from=' . now()->subDays(30)->toDateString() . '&to=' . now()->toDateString(),
+            $this->authHeader()
+        );
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'totals' => ['expired_count', 'critical_count', 'warning_count'],
+                    'expired',
+                    'critical',
+                    'warning',
+                ],
+            ]);
+    }
+
+    public function test_inventory_expiry_requires_auth(): void
+    {
+        $this->getJson('/api/v2/reports/inventory/expiry')->assertUnauthorized();
+    }
+
+    // ─── Delivery Commission ─────────────────────────────────
+
+    public function test_financial_delivery_commission_returns_structure(): void
+    {
+        $response = $this->getJson(
+            '/api/v2/reports/financial/delivery-commission?from=' . now()->subDays(30)->toDateString() . '&to=' . now()->toDateString(),
+            $this->authHeader()
+        );
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'totals' => ['total_orders', 'total_gross', 'total_fee', 'total_net'],
+                    'platforms',
+                ],
+            ]);
+    }
+
+    public function test_financial_delivery_commission_requires_auth(): void
+    {
+        $this->getJson('/api/v2/reports/financial/delivery-commission')->assertUnauthorized();
+    }
+
+    // ─── Scheduled Reports ───────────────────────────────────
+
+    public function test_scheduled_reports_list(): void
+    {
+        $response = $this->getJson('/api/v2/reports/schedules', $this->authHeader());
+
+        $response->assertOk()
+            ->assertJsonStructure(['data' => []]);
+    }
+
+    public function test_scheduled_report_create(): void
+    {
+        $response = $this->postJson('/api/v2/reports/schedules', [
+            'name'       => 'Daily Revenue',
+            'report_type' => 'sales_summary',
+            'frequency'  => 'daily',
+            'format'     => 'pdf',
+            'recipients' => ['manager@test.com'],
+        ], $this->authHeader());
+
+        $response->assertCreated()
+            ->assertJsonStructure(['data' => ['id', 'name', 'frequency', 'format', 'is_active']]);
+    }
+
+    public function test_scheduled_report_create_validates_type(): void
+    {
+        $response = $this->postJson('/api/v2/reports/schedules', [
+            'name'       => 'Bad Type',
+            'report_type' => 'invalid_type',
+            'frequency'  => 'daily',
+            'format'     => 'pdf',
+            'recipients' => ['a@b.com'],
+        ], $this->authHeader());
+
+        $response->assertUnprocessable();
+    }
+
+    public function test_scheduled_report_delete(): void
+    {
+        $schedule = \App\Domain\Report\Models\ScheduledReport::create([
+            'store_id'    => $this->store->id,
+            'name'        => 'To Delete',
+            'report_type' => 'sales_summary',
+            'frequency'   => 'weekly',
+            'format'      => 'csv',
+            'recipients'  => ['x@y.com'],
+            'is_active'   => true,
+            'next_run_at' => now()->addDay(),
+        ]);
+
+        $this->deleteJson("/api/v2/reports/schedules/{$schedule->id}", [], $this->authHeader())
+             ->assertNoContent();
+
+        $this->assertDatabaseMissing('scheduled_reports', ['id' => $schedule->id]);
+    }
+
+    // ─── Export ──────────────────────────────────────────────
+
+    public function test_export_report_validates_type(): void
+    {
+        $response = $this->postJson('/api/v2/reports/export', [
+            'report_type' => 'unknown_report',
+            'format'      => 'pdf',
+        ], $this->authHeader());
+
+        $response->assertUnprocessable();
+    }
+
+    public function test_export_sales_summary_pdf(): void
+    {
+        $response = $this->postJson('/api/v2/reports/export', [
+            'report_type' => 'sales_summary',
+            'format'      => 'pdf',
+            'from'        => now()->subDays(7)->toDateString(),
+            'to'          => now()->toDateString(),
+        ], $this->authHeader());
+
+        $response->assertOk()
+            ->assertJsonStructure(['data' => ['url']]);
+    }
 }

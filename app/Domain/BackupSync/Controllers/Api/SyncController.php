@@ -4,6 +4,7 @@ namespace App\Domain\BackupSync\Controllers\Api;
 
 use App\Domain\BackupSync\Requests\ConflictFilterRequest;
 use App\Domain\BackupSync\Requests\ResolveConflictRequest;
+use App\Domain\BackupSync\Requests\SyncLogFilterRequest;
 use App\Domain\BackupSync\Requests\SyncPullRequest;
 use App\Domain\BackupSync\Requests\SyncPushRequest;
 use App\Domain\BackupSync\Services\SyncService;
@@ -76,7 +77,10 @@ class SyncController extends BaseApiController
     public function resolveConflict(ResolveConflictRequest $request, string $conflictId): JsonResponse
     {
         $storeId = auth()->user()->store_id;
-        $conflict = $this->syncService->resolveConflict($storeId, $conflictId, $request->validated());
+        $conflict = $this->syncService->resolveConflict($storeId, $conflictId, array_merge(
+            $request->validated(),
+            ['resolved_by' => auth()->id()]
+        ));
 
         if (!$conflict) {
             return $this->notFound(__('sync.conflict_not_found'));
@@ -105,5 +109,18 @@ class SyncController extends BaseApiController
         $result = $this->syncService->heartbeat($storeId, $request->all());
 
         return $this->success($result, __('sync.heartbeat_ok'));
+    }
+
+    /**
+     * Paginated sync log history for the store.
+     */
+    public function logs(Request $request): JsonResponse
+    {
+        $storeId = auth()->user()->store_id;
+        $result = $this->syncService->listLogs($storeId, $request->only([
+            'direction', 'status', 'terminal_id', 'per_page', 'page',
+        ]));
+
+        return $this->success($result, __('sync.logs_retrieved'));
     }
 }

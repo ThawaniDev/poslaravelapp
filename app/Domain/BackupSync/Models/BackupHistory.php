@@ -33,13 +33,18 @@ class BackupHistory extends Model
         'is_encrypted',
         'status',
         'error_message',
+        'created_at',
     ];
 
     protected $casts = [
-        'backup_type' => BackupType::class,
-        'status' => BackupHistoryStatus::class,
-        'is_verified' => 'boolean',
-        'is_encrypted' => 'boolean',
+        'backup_type'      => BackupType::class,
+        'status'           => BackupHistoryStatus::class,
+        'is_verified'      => 'boolean',
+        'is_encrypted'     => 'boolean',
+        'file_size_bytes'  => 'integer',
+        'db_version'       => 'integer',
+        'records_count'    => 'integer',
+        'created_at'       => 'datetime',
     ];
 
     public function store(): BelongsTo

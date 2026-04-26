@@ -28,7 +28,28 @@ class PaymentService
             $query->where('payments.transaction_id', $filters['transaction_id']);
         }
 
-        return $query->orderByDesc('payments.id')->paginate($perPage);
+        if (!empty($filters['status'])) {
+            $query->where('payments.status', $filters['status']);
+        }
+
+        if (!empty($filters['start_date'])) {
+            $query->whereDate('payments.created_at', '>=', $filters['start_date']);
+        }
+
+        if (!empty($filters['end_date'])) {
+            $query->whereDate('payments.created_at', '<=', $filters['end_date']);
+        }
+
+        if (!empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('payments.card_last_four', 'like', "%{$filters['search']}%")
+                  ->orWhere('payments.card_reference', 'like', "%{$filters['search']}%")
+                  ->orWhere('payments.gift_card_code', 'like', "%{$filters['search']}%")
+                  ->orWhere('payments.nearpay_transaction_id', 'like', "%{$filters['search']}%");
+            });
+        }
+
+        return $query->orderByDesc('payments.created_at')->paginate($perPage);
     }
 
     public function find(string $paymentId): Payment

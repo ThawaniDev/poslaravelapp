@@ -14,10 +14,13 @@ class UpdateBackupScheduleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'auto_backup_enabled' => ['required', 'boolean'],
-            'frequency' => ['required', 'string', 'in:hourly,daily,weekly'],
-            'retention_days' => ['required', 'integer', 'min:1', 'max:365'],
-            'encrypt_backups' => ['required', 'boolean'],
+            'auto_backup_enabled'  => ['required', 'boolean'],
+            'frequency'            => ['required', 'string', 'in:hourly,daily,weekly'],
+            'retention_days'       => ['required', 'integer', 'min:1', 'max:365'],
+            'encrypt_backups'      => ['required', 'boolean'],
+            'local_backup_enabled' => ['nullable', 'boolean'],
+            'cloud_backup_enabled' => ['nullable', 'boolean'],
+            'backup_hour'          => ['nullable', 'integer', 'min:0', 'max:23'],
         ];
     }
 }

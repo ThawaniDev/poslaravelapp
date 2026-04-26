@@ -114,10 +114,50 @@ class CashSessionService
         ]);
     }
 
-    public function listExpenses(string|array $storeId, int $perPage = 20): LengthAwarePaginator
+    public function listExpenses(string|array $storeId, array $filters = [], int $perPage = 20): LengthAwarePaginator
     {
-        return $this->scopeByStore(Expense::query(), $storeId)
-            ->orderByDesc('expense_date')
-            ->paginate($perPage);
+        $query = $this->scopeByStore(Expense::query(), $storeId)
+            ->orderByDesc('expense_date');
+
+        if (!empty($filters['start_date'])) {
+            $query->whereDate('expense_date', '>=', $filters['start_date']);
+        }
+        if (!empty($filters['end_date'])) {
+            $query->whereDate('expense_date', '<=', $filters['end_date']);
+        }
+        if (!empty($filters['category'])) {
+            $query->where('category', $filters['category']);
+        }
+
+        return $query->paginate($perPage);
+    }
+
+    public function findExpense(string $storeId, string $expenseId): Expense
+    {
+        return Expense::where('store_id', $storeId)->findOrFail($expenseId);
+    }
+
+    public function updateExpense(Expense $expense, array $data): Expense
+    {
+        $expense->update(array_filter([
+            'amount'            => $data['amount'] ?? $expense->amount,
+            'category'          => $data['category'] ?? $expense->category,
+            'description'       => array_key_exists('description', $data) ? $data['description'] : $expense->description,
+            'receipt_image_url' => array_key_exists('receipt_image_url', $data) ? $data['receipt_image_url'] : $expense->receipt_image_url,
+            'expense_date'      => $data['expense_date'] ?? $expense->expense_date,
+        ], fn ($v) => $v !== null || array_key_exists('description', $data) || array_key_exists('receipt_image_url', $data)));
+
+        // Use fill + save to avoid the array_filter issues with nullable fields
+        $expense->fill(array_intersect_key($data, array_flip([
+            'amount', 'category', 'description', 'receipt_image_url', 'expense_date',
+        ])));
+        $expense->save();
+
+        return $expense->fresh();
+    }
+
+    public function deleteExpense(Expense $expense): void
+    {
+        $expense->delete();
     }
 }

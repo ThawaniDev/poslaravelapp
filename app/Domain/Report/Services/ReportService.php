@@ -19,7 +19,8 @@ class ReportService
             || ! empty($filters['payment_method'])
             || ! empty($filters['min_amount'])
             || ! empty($filters['max_amount'])
-            || ! empty($filters['order_status']);
+            || ! empty($filters['order_status'])
+            || ! empty($filters['order_source']);
 
         if ($hasAdvancedFilters) {
             return $this->salesSummaryFromOrders($storeId, $filters);
@@ -91,6 +92,9 @@ class ReportService
         }
         if (! empty($filters['order_status'])) {
             $query->where('status', $filters['order_status']);
+        }
+        if (! empty($filters['order_source'])) {
+            $query->where('source', $filters['order_source']);
         }
         if (! empty($filters['min_amount'])) {
             $query->where('total', '>=', $filters['min_amount']);
@@ -387,7 +391,7 @@ class ReportService
         };
         $sortDir = ($filters['sort_dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
 
-        return $query->select([
+        $rows = $query->select([
             'staff_users.id as staff_id',
             DB::raw("(staff_users.first_name || ' ' || staff_users.last_name) as staff_name"),
             DB::raw('COUNT(orders.id) as total_orders'),
@@ -397,14 +401,34 @@ class ReportService
         ])
             ->groupBy('staff_users.id', 'staff_users.first_name', 'staff_users.last_name')
             ->orderBy($sortBy, $sortDir)
-            ->get()
-            ->map(fn ($r) => [
+            ->get();
+
+        // Fetch hours worked per staff member from attendance_records
+        $staffIds = $rows->pluck('staff_id')->toArray();
+        $hoursQuery = DB::table('attendance_records')
+            ->whereIn('staff_user_id', $staffIds)
+            ->where('store_id', $storeId)
+            ->whereNotNull('clock_out_at');
+        if (! empty($filters['date_from'])) {
+            $hoursQuery->whereDate('clock_in_at', '>=', $filters['date_from']);
+        }
+        if (! empty($filters['date_to'])) {
+            $hoursQuery->whereDate('clock_in_at', '<=', $filters['date_to']);
+        }
+        $hoursMap = $hoursQuery
+            ->select('staff_user_id', DB::raw('SUM(TIMESTAMPDIFF(SECOND, clock_in_at, clock_out_at)) as total_seconds'))
+            ->groupBy('staff_user_id')
+            ->pluck('total_seconds', 'staff_user_id')
+            ->toArray();
+
+        return $rows->map(fn ($r) => [
                 'staff_id' => $r->staff_id,
                 'staff_name' => $r->staff_name,
                 'total_orders' => (int) $r->total_orders,
                 'total_revenue' => (float) $r->total_revenue,
                 'avg_order_value' => (float) $r->avg_order_value,
                 'total_discounts_given' => (float) $r->total_discounts_given,
+                'hours_worked' => round((float) ($hoursMap[$r->staff_id] ?? 0) / 3600, 1),
             ])->toArray();
     }
 
@@ -840,6 +864,75 @@ class ReportService
             ])->toArray();
     }
 
+    // ─── Inventory: Expiry ───────────────────────────────────
+
+    /**
+     * Returns products nearing or past their expiry date within the date range.
+     */
+    public function inventoryExpiry(string $storeId, array $filters): array
+    {
+        $dateFrom = $filters['date_from'] ?? now()->toDateString();
+        $dateTo   = $filters['date_to']   ?? now()->addDays(90)->toDateString();
+
+        $items = DB::table('stock_levels as sl')
+            ->join('products as p', 'p.id', '=', 'sl.product_id')
+            ->select([
+                'p.id as product_id',
+                'p.name as product_name',
+                'p.sku',
+                'sl.batch_number',
+                'sl.expiry_date',
+                'sl.quantity',
+                DB::raw("(sl.expiry_date::date - CURRENT_DATE) AS days_until_expiry"),
+            ])
+            ->where('sl.store_id', $storeId)
+            ->whereNotNull('sl.expiry_date')
+            ->whereBetween('sl.expiry_date', [$dateFrom, $dateTo])
+            ->where('sl.quantity', '>', 0)
+            ->orderBy('sl.expiry_date')
+            ->get();
+
+        $expired  = $items->filter(fn ($r) => $r->days_until_expiry < 0);
+        $critical = $items->filter(fn ($r) => $r->days_until_expiry >= 0 && $r->days_until_expiry <= 7);
+        $warning  = $items->filter(fn ($r) => $r->days_until_expiry > 7);
+
+        return [
+            'totals' => [
+                'expired_count'  => $expired->count(),
+                'critical_count' => $critical->count(),
+                'warning_count'  => $warning->count(),
+                'total_items'    => $items->count(),
+            ],
+            'expired'  => $expired->values()->map(fn ($r) => [
+                'product_id'          => $r->product_id,
+                'product_name'        => $r->product_name,
+                'sku'                 => $r->sku,
+                'batch_number'        => $r->batch_number,
+                'expiry_date'         => $r->expiry_date,
+                'days_until_expiry'   => (int) $r->days_until_expiry,
+                'quantity'            => (float) $r->quantity,
+            ])->toArray(),
+            'critical' => $critical->values()->map(fn ($r) => [
+                'product_id'          => $r->product_id,
+                'product_name'        => $r->product_name,
+                'sku'                 => $r->sku,
+                'batch_number'        => $r->batch_number,
+                'expiry_date'         => $r->expiry_date,
+                'days_until_expiry'   => (int) $r->days_until_expiry,
+                'quantity'            => (float) $r->quantity,
+            ])->toArray(),
+            'warning'  => $warning->values()->map(fn ($r) => [
+                'product_id'          => $r->product_id,
+                'product_name'        => $r->product_name,
+                'sku'                 => $r->sku,
+                'batch_number'        => $r->batch_number,
+                'expiry_date'         => $r->expiry_date,
+                'days_until_expiry'   => (int) $r->days_until_expiry,
+                'quantity'            => (float) $r->quantity,
+            ])->toArray(),
+        ];
+    }
+
     // ─── Financial: Daily P&L ────────────────────────────────
 
     public function financialDailyPL(string $storeId, array $filters): array
@@ -1005,6 +1098,55 @@ class ReportService
         ];
     }
 
+    // ─── Financial: Delivery Commission ─────────────────────
+
+    /**
+     * Reconciles delivery platform orders: compares gross sales collected
+     * through each delivery platform against the commission fees charged,
+     * returning the net settlement amount per platform.
+     */
+    public function financialDeliveryCommission(string $storeId, array $filters): array
+    {
+        [$dateFrom, $dateTo] = $this->resolveDateRange($filters);
+
+        $rows = DB::table('orders as o')
+            ->leftJoin('external_orders as eo', 'eo.order_id', '=', 'o.id')
+            ->select([
+                DB::raw("COALESCE(eo.platform, 'direct') AS platform"),
+                DB::raw('COUNT(o.id) AS order_count'),
+                DB::raw('SUM(o.total_amount) AS gross_sales'),
+                DB::raw('SUM(COALESCE(eo.commission_amount, 0)) AS total_commission'),
+                DB::raw('SUM(o.total_amount - COALESCE(eo.commission_amount, 0)) AS net_settlement'),
+            ])
+            ->where('o.store_id', $storeId)
+            ->whereIn('o.status', ['completed', 'delivered'])
+            ->whereBetween(DB::raw('o.created_at::date'), [$dateFrom, $dateTo])
+            ->groupBy(DB::raw("COALESCE(eo.platform, 'direct')"))
+            ->orderByDesc('gross_sales')
+            ->get();
+
+        $totals = [
+            'total_orders'     => $rows->sum('order_count'),
+            'total_gross'      => round($rows->sum('gross_sales'), 2),
+            'total_commission' => round($rows->sum('total_commission'), 2),
+            'total_net'        => round($rows->sum('net_settlement'), 2),
+        ];
+
+        return [
+            'totals'    => $totals,
+            'platforms' => $rows->map(fn ($r) => [
+                'platform'         => $r->platform,
+                'order_count'      => (int)  $r->order_count,
+                'gross_sales'      => round((float) $r->gross_sales, 2),
+                'total_commission' => round((float) $r->total_commission, 2),
+                'net_settlement'   => round((float) $r->net_settlement, 2),
+                'commission_rate'  => $r->gross_sales > 0
+                    ? round(($r->total_commission / $r->gross_sales) * 100, 1)
+                    : 0,
+            ])->toArray(),
+        ];
+    }
+
     // ─── Customer: Top Customers ─────────────────────────────
 
     public function topCustomers(string $storeId, array $filters): array
@@ -1083,6 +1225,14 @@ class ReportService
             ->where('organization_id', $orgId)
             ->sum('loyalty_points');
 
+        $loyaltyRedeemed = DB::table('orders')
+            ->join('stores', 'orders.store_id', '=', 'stores.id')
+            ->where('stores.organization_id', $orgId)
+            ->whereNotIn('orders.status', ['cancelled', 'voided'])
+            ->sum('orders.loyalty_points_used');
+
+        $returningCustomers = max(0, $activeCustomers30d - $newCustomers30d);
+
         return [
             'total_customers' => $totalCustomers,
             'repeat_customers' => $repeatCustomers,
@@ -1090,10 +1240,12 @@ class ReportService
                 ? round($repeatCustomers / $totalCustomers * 100, 2)
                 : 0,
             'new_customers_30d' => $newCustomers30d,
+            'returning_customers_30d' => $returningCustomers,
             'active_customers_30d' => $activeCustomers30d,
             'avg_visit_count' => round((float) ($avgVisitCount ?? 0), 2),
             'avg_spend' => round((float) ($avgSpend ?? 0), 2),
             'total_loyalty_points' => (int) $loyaltyIssued,
+            'loyalty_points_redeemed' => (int) $loyaltyRedeemed,
         ];
     }
 
@@ -1235,8 +1387,10 @@ class ReportService
             'product_margin' => $this->productMargin($storeId, $filters),
             'inventory_valuation' => $this->inventoryValuation($storeId),
             'inventory_low_stock' => $this->inventoryLowStock($storeId),
+            'inventory_expiry' => $this->inventoryExpiry($storeId, $filters),
             'financial_pl' => $this->financialDailyPL($storeId, $filters),
             'financial_expenses' => $this->financialExpenses($storeId, $filters),
+            'financial_delivery_commission' => $this->financialDeliveryCommission($storeId, $filters),
             'top_customers' => $this->topCustomers($storeId, $filters),
             default => throw new \InvalidArgumentException("Unknown report type: {$reportType}"),
         };

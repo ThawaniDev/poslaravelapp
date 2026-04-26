@@ -2,7 +2,10 @@
 
 namespace App\Domain\IndustryFlorist\Models;
 
+use App\Domain\Core\Models\Store;
+use App\Domain\Customer\Models\Customer;
 use App\Domain\IndustryFlorist\Enums\FlowerSubscriptionFrequency;
+use App\Domain\IndustryFlorist\Models\FlowerArrangement;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

@@ -94,4 +94,22 @@ class ElectronicsController extends BaseApiController
         $tradeIn = $this->service->createTradeIn($storeId, $request->validated());
         return $this->created(new TradeInRecordResource($tradeIn), __('industry.trade_in_created'));
     }
+
+    public function validateImei(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'imei' => 'required|string|digits:15',
+        ]);
+
+        $imei = $validated['imei'];
+        $isValid = $this->service->validateImeiLuhn($imei);
+
+        $exists = $this->service->imeiExists($imei);
+
+        return $this->success([
+            'imei'       => $imei,
+            'valid'      => $isValid,
+            'exists'     => $exists,
+        ], __('industry.imei_validated'));
+    }
 }

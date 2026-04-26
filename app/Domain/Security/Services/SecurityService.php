@@ -108,6 +108,51 @@ class SecurityService
         ];
     }
 
+    /**
+     * Export audit logs to CSV content for a store.
+     */
+    public function exportAuditLogs(
+        string $storeId,
+        ?string $action = null,
+        ?string $severity = null,
+        ?string $since = null,
+        int $limit = 5000,
+    ): string {
+        $query = SecurityAuditLog::where('store_id', $storeId);
+
+        if ($action) {
+            $query->where('action', $action);
+        }
+        if ($severity) {
+            $query->where('severity', $severity);
+        }
+        if ($since) {
+            $query->where('created_at', '>=', $since);
+        }
+
+        $logs = $query->orderByDesc('created_at')->limit(min($limit, 5000))->get();
+
+        $lines = [];
+        $lines[] = implode(',', ['timestamp', 'user_id', 'user_type', 'action', 'resource_type', 'resource_id', 'severity', 'ip_address', 'details']);
+
+        foreach ($logs as $log) {
+            $details = is_array($log->details) ? json_encode($log->details) : ($log->details ?? '');
+            $lines[] = implode(',', [
+                '"' . ($log->created_at?->toIso8601String() ?? '') . '"',
+                '"' . ($log->user_id ?? '') . '"',
+                '"' . ($log->user_type?->value ?? $log->user_type ?? '') . '"',
+                '"' . ($log->action?->value ?? $log->action ?? '') . '"',
+                '"' . ($log->resource_type ?? '') . '"',
+                '"' . ($log->resource_id ?? '') . '"',
+                '"' . ($log->severity?->value ?? $log->severity ?? '') . '"',
+                '"' . ($log->ip_address ?? '') . '"',
+                '"' . str_replace('"', '""', $details) . '"',
+            ]);
+        }
+
+        return implode("\n", $lines);
+    }
+
     // ─── Device Registration ────────────────────────────────────
 
     /**

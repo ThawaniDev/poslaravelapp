@@ -2,8 +2,11 @@
 
 namespace App\Domain\IndustryElectronics\Models;
 
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Core\Models\Store;
 use App\Domain\Customer\Enums\ConditionGrade;
 use App\Domain\IndustryElectronics\Enums\DeviceImeiStatus;
+use App\Domain\Order\Models\Order;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

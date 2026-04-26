@@ -2,6 +2,7 @@
 
 namespace App\Domain\IndustryJewelry\Models;
 
+use App\Domain\Catalog\Models\Product;
 use App\Domain\IndustryJewelry\Enums\MakingChargesType;
 use App\Domain\IndustryJewelry\Enums\MetalType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;

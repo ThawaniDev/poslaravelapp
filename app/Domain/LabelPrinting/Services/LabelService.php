@@ -176,9 +176,18 @@ class LabelService
         }
     }
 
-    public function find(string $templateId): LabelTemplate
+    public function find(string $templateId, ?string $orgId = null): LabelTemplate
     {
-        return LabelTemplate::findOrFail($templateId);
+        $query = LabelTemplate::query();
+        if ($orgId !== null) {
+            $query->where('organization_id', $orgId);
+        }
+        return $query->findOrFail($templateId);
+    }
+
+    public function findForOrg(string $templateId, string $orgId): LabelTemplate
+    {
+        return LabelTemplate::where('organization_id', $orgId)->findOrFail($templateId);
     }
 
     public function create(array $data, User $actor): LabelTemplate
@@ -225,6 +234,33 @@ class LabelService
             throw new \RuntimeException('System presets cannot be deleted.');
         }
         $template->delete();
+    }
+
+    public function duplicate(LabelTemplate $source, User $actor): LabelTemplate
+    {
+        return LabelTemplate::create([
+            'organization_id' => $actor->organization_id,
+            'name'            => $source->name . ' (Copy)',
+            'label_width_mm'  => $source->label_width_mm,
+            'label_height_mm' => $source->label_height_mm,
+            'layout_json'     => $source->layout_json,
+            'is_preset'       => false,
+            'is_default'      => false,
+            'created_by'      => $actor->id,
+            'sync_version'    => 1,
+        ]);
+    }
+
+    public function setDefault(LabelTemplate $template, string $orgId): LabelTemplate
+    {
+        // Clear current default
+        LabelTemplate::where('organization_id', $orgId)
+            ->where('is_default', true)
+            ->where('id', '!=', $template->id)
+            ->update(['is_default' => false]);
+
+        $template->update(['is_default' => true]);
+        return $template->fresh();
     }
 
     public function recordPrintHistory(array $data): LabelPrintHistory

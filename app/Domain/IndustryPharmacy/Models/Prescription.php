@@ -2,6 +2,8 @@
 
 namespace App\Domain\IndustryPharmacy\Models;
 
+use App\Domain\Core\Models\Store;
+use App\Domain\Order\Models\Order;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

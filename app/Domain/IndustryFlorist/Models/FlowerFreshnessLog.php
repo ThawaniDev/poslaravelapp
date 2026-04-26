@@ -2,6 +2,8 @@
 
 namespace App\Domain\IndustryFlorist\Models;
 
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Core\Models\Store;
 use App\Domain\IndustryFlorist\Enums\FlowerFreshnessStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
