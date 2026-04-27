@@ -18,6 +18,13 @@ class StockBatchResource extends JsonResource
             'expiry_date' => $this->expiry_date,
             'quantity' => (float) $this->quantity,
             'unit_cost' => (float) $this->unit_cost,
+            'created_at' => $this->created_at?->toIso8601String(),
+
+            'product' => $this->whenLoaded('product', fn () => [
+                'id' => $this->product->id,
+                'name' => $this->product->name,
+                'sku' => $this->product->sku,
+            ]),
         ];
     }
 }

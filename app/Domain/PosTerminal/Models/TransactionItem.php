@@ -2,6 +2,7 @@
 
 namespace App\Domain\PosTerminal\Models;
 
+use App\Domain\Catalog\Models\Product;
 use App\Domain\Promotion\Enums\DiscountType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

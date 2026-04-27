@@ -2100,6 +2100,7 @@ return new class extends Migration
             $table->decimal('average_cost', 12, 2)->default(0);
             $table->integer('sync_version')->default(1);
             $table->unique(['store_id', 'product_id']);
+            $table->timestamps();
         });
 
         // ─── Inventory: stock_movements ──────────────────────
@@ -2224,6 +2225,7 @@ return new class extends Migration
             $table->decimal('quantity', 12, 2)->default(0);
             $table->decimal('unit_cost', 12, 2)->default(0);
             $table->uuid('goods_receipt_id')->nullable();
+            $table->timestamps();
         });
 
         // ─── Inventory: recipes ──────────────────────────────

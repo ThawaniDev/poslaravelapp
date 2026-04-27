@@ -8,6 +8,7 @@ use App\Domain\Catalog\Models\Supplier;
 use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
 use App\Domain\Inventory\Enums\SupplierReturnStatus;
+use App\Domain\Inventory\Models\StockLevel;
 use App\Domain\Inventory\Models\SupplierReturn;
 use App\Domain\Inventory\Models\SupplierReturnItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -274,6 +275,14 @@ class SupplierReturnApiTest extends TestCase
 
     public function test_full_workflow_draft_submit_approve_complete(): void
     {
+        // Seed sufficient stock so complete() can deduct it
+        StockLevel::create([
+            'store_id' => $this->store->id,
+            'product_id' => $this->product->id,
+            'quantity' => 50.00,
+            'reserved_quantity' => 0.00,
+        ]);
+
         // Create draft
         $createResponse = $this->withToken($this->token)
             ->postJson('/api/v2/inventory/supplier-returns', [
@@ -424,6 +433,14 @@ class SupplierReturnApiTest extends TestCase
 
     public function test_cannot_cancel_completed(): void
     {
+        // Seed stock so complete() can deduct it
+        StockLevel::create([
+            'store_id' => $this->store->id,
+            'product_id' => $this->product->id,
+            'quantity' => 50.00,
+            'reserved_quantity' => 0.00,
+        ]);
+
         $createResponse = $this->withToken($this->token)
             ->postJson('/api/v2/inventory/supplier-returns', [
                 'store_id' => $this->store->id,

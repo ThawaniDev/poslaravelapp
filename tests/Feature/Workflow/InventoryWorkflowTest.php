@@ -363,10 +363,11 @@ class InventoryWorkflowTest extends WorkflowTestCase
 
         $response->assertOk();
 
-        // Source deducted
+        // Approve reserves source stock (quantity unchanged, reserved_quantity increases)
         $srcStock = StockLevel::where('store_id', $this->mainStore->id)
             ->where('product_id', $this->product1->id)->first();
-        $this->assertEquals(90, $srcStock->quantity); // 100 - 10
+        $this->assertEquals(100, $srcStock->quantity); // unchanged until receive
+        $this->assertEquals(10, $srcStock->reserved_quantity); // reserved
 
         $transfer->refresh();
         $this->assertEquals('in_transit', $transfer->status->value ?? $transfer->status);

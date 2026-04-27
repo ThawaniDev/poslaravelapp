@@ -149,4 +149,15 @@ return [
     'sub_status_reported' => 'مُبلَّغة',
     'sub_status_rejected' => 'مرفوضة',
     'sub_status_warning' => 'تحذير',
+
+    // الفاتورة التجريبية
+    'send_test_invoice' => 'إرسال فاتورة تجريبية',
+    'test_invoice_description' => 'إرسال فاتورة مبسّطة تجريبية إلى زاتكا للتحقق من الاتصال وصلاحية الشهادة. يتم حفظ الفاتورة برقم يبدأ بـ TEST-.',
+    'test_invoice_store_help' => 'يجب أن يكون المتجر مسجلاً لدى زاتكا ولديه شهادة سارية.',
+    'test_invoice_notice' => 'سيتم إنشاء سجل في zatca_invoices برقم يبدأ بـ TEST-. لا يتم إنشاء أي طلب أو دفعة.',
+    'submit_test_invoice' => 'إرسال إلى زاتكا',
+    'test_invoice_accepted' => 'تمت الموافقة على الفاتورة التجريبية من زاتكا',
+    'test_invoice_rejected' => 'تم رفض الفاتورة التجريبية من زاتكا',
+    'test_invoice_failed' => 'فشل إرسال الفاتورة التجريبية',
+    'test_invoice_badge' => 'تجريبي',
 ];

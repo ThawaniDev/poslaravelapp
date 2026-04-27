@@ -874,23 +874,29 @@ class ReportService
         $dateFrom = $filters['date_from'] ?? now()->toDateString();
         $dateTo   = $filters['date_to']   ?? now()->addDays(90)->toDateString();
 
-        $items = DB::table('stock_levels as sl')
-            ->join('products as p', 'p.id', '=', 'sl.product_id')
+        $items = DB::table('stock_batches as sb')
+            ->join('products as p', 'p.id', '=', 'sb.product_id')
             ->select([
                 'p.id as product_id',
                 'p.name as product_name',
                 'p.sku',
-                'sl.batch_number',
-                'sl.expiry_date',
-                'sl.quantity',
-                DB::raw("(sl.expiry_date::date - CURRENT_DATE) AS days_until_expiry"),
+                'sb.batch_number',
+                'sb.expiry_date',
+                'sb.quantity',
             ])
-            ->where('sl.store_id', $storeId)
-            ->whereNotNull('sl.expiry_date')
-            ->whereBetween('sl.expiry_date', [$dateFrom, $dateTo])
-            ->where('sl.quantity', '>', 0)
-            ->orderBy('sl.expiry_date')
-            ->get();
+            ->where('sb.store_id', $storeId)
+            ->whereNotNull('sb.expiry_date')
+            ->whereBetween('sb.expiry_date', [$dateFrom, $dateTo])
+            ->where('sb.quantity', '>', 0)
+            ->orderBy('sb.expiry_date')
+            ->get()
+            ->map(function ($r) {
+                $r->days_until_expiry = (int) now()->startOfDay()->diffInDays(
+                    \Carbon\Carbon::parse($r->expiry_date)->startOfDay(),
+                    false
+                );
+                return $r;
+            });
 
         $expired  = $items->filter(fn ($r) => $r->days_until_expiry < 0);
         $critical = $items->filter(fn ($r) => $r->days_until_expiry >= 0 && $r->days_until_expiry <= 7);

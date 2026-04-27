@@ -22,6 +22,7 @@ class StockLevelResource extends JsonResource
             'sync_version' => $this->sync_version,
 
             'product' => new ProductResource($this->whenLoaded('product')),
+            'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }
 }

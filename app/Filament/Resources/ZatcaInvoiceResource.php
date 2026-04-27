@@ -84,6 +84,11 @@ class ZatcaInvoiceResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('store.name')->label(__('zatca.store'))->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('invoice_number')->label(__('zatca.invoice_number'))->searchable()->copyable(),
+                Tables\Columns\BadgeColumn::make('is_test_badge')
+                    ->label('')
+                    ->getStateUsing(fn (ZatcaInvoice $record) => str_starts_with($record->invoice_number, 'TEST-') ? __('zatca.test_invoice_badge') : null)
+                    ->color('warning')
+                    ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('invoice_type')->label(__('zatca.invoice_type'))->badge()->toggleable(),
                 Tables\Columns\TextColumn::make('icv')->label('ICV')->numeric()->sortable()->toggleable(),
                 Tables\Columns\TextColumn::make('total_amount')->label(__('zatca.total_amount'))->numeric(2)->sortable(),

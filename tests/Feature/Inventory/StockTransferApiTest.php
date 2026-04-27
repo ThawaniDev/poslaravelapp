@@ -169,11 +169,14 @@ class StockTransferApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.status', 'in_transit');
 
-        // Source stock should be reduced: 100 - 30 = 70
+        // Approve reserves source stock: quantity stays 100, reserved_quantity = 30
+        // Available (quantity - reserved) = 70
         $level = StockLevel::where('store_id', $this->storeA->id)
             ->where('product_id', $this->product->id)
             ->first();
-        $this->assertEquals(70.00, (float) $level->quantity);
+        $this->assertEquals(100.00, (float) $level->quantity);
+        $this->assertEquals(30.00, (float) $level->reserved_quantity);
+        $this->assertEquals(70.00, (float) $level->quantity - (float) $level->reserved_quantity);
     }
 
     public function test_cannot_approve_non_pending_transfer(): void

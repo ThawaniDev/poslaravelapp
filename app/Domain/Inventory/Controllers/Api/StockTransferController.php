@@ -86,7 +86,9 @@ class StockTransferController extends BaseApiController
         try {
             $transfer = $this->stockTransferService->receive(
                 $stockTransfer,
-            $request->user()->organization_id,
+                $request->user()->organization_id,
+                $request->user()->id,
+                $request->input('items', []),
             );
 
             return $this->success(new StockTransferResource($transfer), 'Transfer received.');

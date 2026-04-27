@@ -198,8 +198,8 @@ class StockTransferService
             $transfer = StockTransfer::where('organization_id', $organizationId)
                 ->with('stockTransferItems')->lockForUpdate()->findOrFail($id);
 
-            if (!in_array($transfer->status, [StockTransferStatus::Pending, StockTransferStatus::InTransit], true)) {
-                throw new \RuntimeException('Only pending or in-transit transfers can be cancelled.');
+            if ($transfer->status !== StockTransferStatus::Pending) {
+                throw new \RuntimeException('Only pending transfers can be cancelled.');
             }
 
             if ($transfer->status === StockTransferStatus::InTransit) {

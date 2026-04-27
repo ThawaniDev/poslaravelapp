@@ -149,4 +149,15 @@ return [
     'sub_status_reported' => 'Reported',
     'sub_status_rejected' => 'Rejected',
     'sub_status_warning' => 'Warning',
+
+    // Test invoice
+    'send_test_invoice' => 'Send Test Invoice',
+    'test_invoice_description' => 'Submit a synthetic simplified invoice to ZATCA to verify connectivity and certificate validity. The invoice is recorded with a TEST- prefix so it can be identified.',
+    'test_invoice_store_help' => 'The store must already be enrolled and have a valid certificate.',
+    'test_invoice_notice' => 'A real record will be created in zatca_invoices with invoice number starting with TEST-. No order or payment is created.',
+    'submit_test_invoice' => 'Submit to ZATCA',
+    'test_invoice_accepted' => 'Test invoice ACCEPTED by ZATCA',
+    'test_invoice_rejected' => 'Test invoice REJECTED by ZATCA',
+    'test_invoice_failed' => 'Test invoice submission failed',
+    'test_invoice_badge' => 'Test',
 ];
