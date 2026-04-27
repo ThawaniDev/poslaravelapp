@@ -20,6 +20,7 @@
         "paytabscom/laravel_paytabs": "^1.10",
         "railsware/mailtrap-php": "^3.11",
         "sentry/sentry-laravel": "^4.0",
+        "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-activitylog": "^4.0",
         "spatie/laravel-backup": "^9.0",
         "spatie/laravel-medialibrary": "^11.0",

@@ -160,4 +160,5 @@ return [
     'test_invoice_rejected' => 'تم رفض الفاتورة التجريبية من زاتكا',
     'test_invoice_failed' => 'فشل إرسال الفاتورة التجريبية',
     'test_invoice_badge' => 'تجريبي',
+    'qr_not_available' => 'بيانات رمز QR غير متوفرة.',
 ];

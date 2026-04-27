@@ -73,8 +73,13 @@ class ZatcaInvoiceResource extends Resource
                     Forms\Components\Textarea::make('invoice_xml')->label('XML')->rows(20)->disabled()->columnSpanFull(),
                     Forms\Components\Textarea::make('invoice_hash')->label(__('zatca.invoice_hash'))->rows(2)->disabled(),
                     Forms\Components\Textarea::make('previous_invoice_hash')->label(__('zatca.previous_hash'))->rows(2)->disabled(),
-                    Forms\Components\Textarea::make('qr_code_data')->label(__('zatca.qr_code'))->rows(3)->disabled()->columnSpanFull(),
                 ]),
+
+            Forms\Components\Section::make(__('zatca.qr_code'))
+                ->schema([
+                    Forms\Components\View::make('filament.components.zatca-qr-code'),
+                ])
+                ->columnSpanFull(),
         ]);
     }
 
