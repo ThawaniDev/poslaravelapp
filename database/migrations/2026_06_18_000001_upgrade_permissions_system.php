@@ -254,6 +254,9 @@ return new class extends Migration
                 ['name' => 'thawani.menu',             'display_name' => 'Manage Thawani Menu',          'display_name_ar' => 'إدارة قائمة ثواني',            'requires_pin' => false, 'description' => 'Manage Thawani online menu',              'description_ar' => 'إدارة قائمة ثواني عبر الإنترنت'],
                 ['name' => 'thawani.view_dashboard',   'display_name' => 'View Thawani Dashboard',       'display_name_ar' => 'عرض لوحة ثواني',              'requires_pin' => false, 'description' => 'View Thawani integration dashboard',      'description_ar' => 'عرض لوحة تكامل ثواني'],
                 ['name' => 'thawani.manage_config',    'display_name' => 'Manage Thawani Config',        'display_name_ar' => 'إدارة إعدادات ثواني',          'requires_pin' => false, 'description' => 'Configure Thawani integration',           'description_ar' => 'إعداد تكامل ثواني'],
+                ['name' => 'thawani.manage_sync',      'display_name' => 'Manage Thawani Sync',          'display_name_ar' => 'إدارة مزامنة ثواني',           'requires_pin' => false, 'description' => 'Push/pull products and categories to Thawani', 'description_ar' => 'رفع/سحب المنتجات والفئات إلى ثواني'],
+                ['name' => 'thawani.view_sync_logs',   'display_name' => 'View Thawani Sync Logs',       'display_name_ar' => 'عرض سجلات مزامنة ثواني',      'requires_pin' => false, 'description' => 'View Thawani sync logs',                  'description_ar' => 'عرض سجلات مزامنة ثواني'],
+                ['name' => 'thawani.manage_orders',    'display_name' => 'Manage Thawani Orders',        'display_name_ar' => 'إدارة طلبات ثواني',            'requires_pin' => false, 'description' => 'Accept, reject and update Thawani orders', 'description_ar' => 'قبول ورفض وتحديث طلبات ثواني'],
             ],
 
             // ─── Delivery ────────────────────────────────────────────

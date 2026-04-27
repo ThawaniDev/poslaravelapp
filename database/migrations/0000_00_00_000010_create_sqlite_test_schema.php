@@ -1210,6 +1210,11 @@ return new class extends Migration
             $table->timestamp('current_period_start')->nullable();
             $table->timestamp('current_period_end')->nullable();
             $table->timestamp('cancelled_at')->nullable();
+            $table->boolean('is_softpos_free')->default(false);
+            $table->integer('softpos_transaction_count')->default(0);
+            $table->timestamp('softpos_count_reset_at')->nullable();
+            $table->decimal('original_amount', 10, 2)->nullable();
+            $table->string('discount_reason')->nullable();
             $table->timestamps();
         });
 
@@ -1299,6 +1304,7 @@ return new class extends Migration
             $table->uuid('store_id');
             $table->uuid('plan_add_on_id');
             $table->timestamp('activated_at')->nullable();
+            $table->timestamp('deactivated_at')->nullable();
             $table->boolean('is_active')->default(true);
         });
 

@@ -13,6 +13,8 @@ use App\Domain\StaffManagement\Models\CommissionRule;
 use App\Domain\StaffManagement\Models\CommissionEarning;
 use App\Domain\StaffManagement\Models\StaffActivityLog;
 use App\Domain\StaffManagement\Models\StaffBranchAssignment;
+use App\Domain\StaffManagement\Models\StaffDocument;
+use App\Domain\StaffManagement\Models\TrainingSession;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -666,5 +668,100 @@ class StaffService
         $staff->update(['user_id' => null]);
 
         return $staff->refresh();
+    }
+
+    // ─── Staff Documents ─────────────────────────────────────
+
+    /**
+     * List all documents for a staff member.
+     */
+    public function listDocuments(string $staffUserId): \Illuminate\Database\Eloquent\Collection
+    {
+        return StaffDocument::where('staff_user_id', $staffUserId)
+            ->orderByDesc('uploaded_at')
+            ->get();
+    }
+
+    /**
+     * Add a document to a staff member.
+     */
+    public function addDocument(StaffUser $staff, array $data): StaffDocument
+    {
+        return StaffDocument::create([
+            'staff_user_id' => $staff->id,
+            'document_type' => $data['document_type'],
+            'file_url'      => $data['file_url'],
+            'expiry_date'   => $data['expiry_date'] ?? null,
+            'uploaded_at'   => now(),
+        ]);
+    }
+
+    /**
+     * Delete a staff document.
+     */
+    public function deleteDocument(StaffUser $staff, string $documentId): void
+    {
+        $doc = StaffDocument::where('id', $documentId)
+            ->where('staff_user_id', $staff->id)
+            ->firstOrFail();
+
+        $doc->delete();
+    }
+
+    // ─── Training Sessions ───────────────────────────────────
+
+    /**
+     * List training sessions for a staff member.
+     */
+    public function listTrainingSessions(string $staffUserId, int $perPage = 20): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        return TrainingSession::where('staff_user_id', $staffUserId)
+            ->with('staffUser')
+            ->orderByDesc('started_at')
+            ->paginate($perPage);
+    }
+
+    /**
+     * Start a training session for a staff member.
+     */
+    public function startTrainingSession(StaffUser $staff, array $data = []): TrainingSession
+    {
+        // End any existing active training sessions first
+        TrainingSession::where('staff_user_id', $staff->id)
+            ->whereNull('ended_at')
+            ->update(['ended_at' => now()]);
+
+        return TrainingSession::create([
+            'staff_user_id'     => $staff->id,
+            'store_id'          => $staff->store_id,
+            'started_at'        => now(),
+            'notes'             => $data['notes'] ?? null,
+        ]);
+    }
+
+    /**
+     * End a training session.
+     */
+    public function endTrainingSession(TrainingSession $session, array $data = []): TrainingSession
+    {
+        if ($session->ended_at !== null) {
+            throw new \InvalidArgumentException('This training session has already ended.');
+        }
+
+        $session->update([
+            'ended_at'           => now(),
+            'transactions_count' => $data['transactions_count'] ?? $session->transactions_count,
+            'notes'              => $data['notes'] ?? $session->notes,
+        ]);
+
+        return $session->refresh();
+    }
+
+    /**
+     * Delete a training session.
+     */
+    public function deleteTrainingSession(TrainingSession $session): void
+    {
+        $session->delete();
     }
 }

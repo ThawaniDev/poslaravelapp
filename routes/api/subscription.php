@@ -58,6 +58,7 @@ Route::prefix('subscription')->group(function () {
 
         // Add-ons for current store
         Route::get('store-add-ons', [SubscriptionController::class, 'storeAddOns'])->middleware('permission:subscription.view');
+        Route::post('store-add-ons/{addOnId}/activate', [SubscriptionController::class, 'activateAddOn'])->middleware('permission:subscription.manage');
         Route::delete('store-add-ons/{addOnId}', [SubscriptionController::class, 'removeAddOn'])->middleware('permission:subscription.manage');
 
         // Admin-only plan management

@@ -28,11 +28,16 @@ class ThawaniOrderMapping extends Model
         'customer_name',
         'customer_phone',
         'delivery_address',
+        'order_items',
+        'delivery_fee',
+        'notes',
+        'scheduled_at',
         'order_total',
         'commission_amount',
         'rejection_reason',
         'accepted_at',
         'prepared_at',
+        'rejected_at',
         'completed_at',
     ];
 
@@ -41,9 +46,13 @@ class ThawaniOrderMapping extends Model
         'delivery_type' => ThawaniDeliveryType::class,
         'order_total' => 'decimal:2',
         'commission_amount' => 'decimal:2',
+        'delivery_fee' => 'decimal:2',
+        'order_items' => 'array',
         'accepted_at' => 'datetime',
         'prepared_at' => 'datetime',
+        'rejected_at' => 'datetime',
         'completed_at' => 'datetime',
+        'scheduled_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

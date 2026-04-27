@@ -15,6 +15,30 @@ class OwnerDashboardController extends BaseApiController
     ) {}
 
     /**
+     * GET /api/v2/owner-dashboard/summary
+     *
+     * Single aggregated response used by the provider app on dashboard load.
+     * Replaces 10 individual API calls with one round-trip.
+     */
+    public function summary(DashboardFilterRequest $request): JsonResponse
+    {
+        $user  = $request->user();
+        $store = $user->store;
+
+        if (! $store?->organization_id) {
+            return $this->error(__('owner_dashboard.no_organization'), 400);
+        }
+
+        $data = $this->dashboardService->summary(
+            $this->resolvedStoreIds($request),
+            $store->organization_id,
+            $request->validated(),
+        );
+
+        return $this->success($data, __('owner_dashboard.summary_retrieved'));
+    }
+
+    /**
      * GET /api/v2/owner-dashboard/stats
      */
     public function stats(Request $request): JsonResponse

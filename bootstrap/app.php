@@ -39,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'api/v2/website/*',
             'payment/result',
+            'api/v2/webhook/thawani/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

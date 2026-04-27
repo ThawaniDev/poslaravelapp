@@ -3,13 +3,17 @@
 return [
     // API responses
     'configs_retrieved' => 'تم استرجاع إعدادات التوصيل.',
+    'config_retrieved' => 'تم استرجاع إعدادات التوصيل.',
     'config_saved' => 'تم حفظ إعدادات التوصيل.',
+    'config_deleted' => 'تم حذف إعدادات التوصيل.',
     'config_not_found' => 'الإعدادات غير موجودة.',
     'config_toggled' => 'تم تبديل الإعدادات.',
     'orders_retrieved' => 'تم استرجاع طلبات التوصيل.',
     'order_retrieved' => 'تم استرجاع تفاصيل الطلب.',
     'order_not_found' => 'الطلب غير موجود.',
     'sync_logs_retrieved' => 'تم استرجاع سجلات المزامنة.',
+    'webhook_logs_retrieved' => 'تم استرجاع سجلات الويب هوك.',
+    'status_push_logs_retrieved' => 'تم استرجاع سجلات إرسال الحالة.',
     'stats_retrieved' => 'تم استرجاع إحصائيات التوصيل.',
     'connection_success' => 'تم اختبار الاتصال بنجاح.',
     'connection_failed' => 'فشل اختبار الاتصال.',
@@ -123,4 +127,15 @@ return [
     'awaiting_acceptance' => 'في انتظار القبول',
     'today_revenue' => 'إيرادات اليوم',
     'delivered_orders_revenue' => 'من الطلبات المسلمة',
+
+    // Config fields
+    'auto_accept_timeout_seconds' => 'مدة الرفض التلقائي (ثانية)',
+    'auto_accept_timeout_desc' => 'عدد الثواني قبل الرفض التلقائي للطلب غير المقبول (60–1800).',
+    'operating_hours_json' => 'ساعات العمل',
+    'operating_hours_desc' => 'الجدول الأسبوعي الذي تتم مزامنته مع منصة التوصيل.',
+    'rejection_reason' => 'سبب الرفض',
+    'webhook_url' => 'رابط Webhook',
+    'webhook_url_desc' => 'الرابط الذي تستخدمه منصة التوصيل لإرسال أحداث الطلبات.',
+    'keep_current_key' => 'اتركه فارغاً للإبقاء على المفتاح الحالي',
+    'webhook_secret_hint' => 'اتركه فارغاً للإبقاء على الكود السري الحالي',
 ];

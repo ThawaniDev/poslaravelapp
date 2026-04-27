@@ -8,6 +8,7 @@ use App\Domain\StaffManagement\Requests\UpdateRoleRequest;
 use App\Domain\StaffManagement\Resources\RoleResource;
 use App\Domain\StaffManagement\Services\RoleService;
 use App\Domain\Auth\Models\User;
+use App\Domain\Security\Models\RoleAuditLog;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\Request;
 
@@ -164,5 +165,56 @@ class RoleController extends BaseApiController
                 ->value('id');
         }
         return null;
+    }
+
+    /**
+     * GET /api/v2/staff/roles/audit-log
+     *
+     * Return a paginated list of role-permission audit events for the current store.
+     */
+    public function auditLog(Request $request)
+    {
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+
+        $query = RoleAuditLog::with(['user:id,name,email', 'role:id,name,display_name'])
+            ->where('store_id', $storeId)
+            ->orderByDesc('created_at');
+
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+
+        if ($request->filled('role_id')) {
+            $query->where('role_id', $request->role_id);
+        }
+
+        if ($request->filled('action')) {
+            $query->where('action', $request->action);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $perPage = $request->integer('per_page', 25);
+        $logs = $query->paginate($perPage);
+
+        $items = $logs->map(fn ($log) => [
+            'id'          => $log->id,
+            'action'      => $log->action?->value ?? $log->action,
+            'role_id'     => $log->role_id,
+            'role_name'   => $log->role?->display_name ?? $log->role?->name,
+            'user_id'     => $log->user_id,
+            'user_name'   => $log->user?->name,
+            'user_email'  => $log->user?->email,
+            'details'     => $log->details,
+            'created_at'  => $log->created_at,
+        ]);
+
+        return $this->successPaginated($items, $logs);
     }
 }

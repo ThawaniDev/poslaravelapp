@@ -73,6 +73,17 @@ class PromotionAdvancedApiTest extends TestCase
         ]);
     }
 
+    private function makePromotion(array $overrides = []): Promotion
+    {
+        return Promotion::create(array_merge([
+            'organization_id' => $this->org->id,
+            'name' => 'Test Promo',
+            'type' => 'percentage',
+            'discount_value' => 10,
+            'is_active' => true,
+        ], $overrides));
+    }
+
     // ─── Duplicate ──────────────────────────────────────────
 
     public function test_can_duplicate_promotion(): void
@@ -504,5 +515,61 @@ class PromotionAdvancedApiTest extends TestCase
         $this->withToken($this->token)
             ->postJson('/api/v2/promotions/evaluate', [])
             ->assertStatus(422);
+    }
+
+    // ─── Usage Log Tests ──────────────────────────────────────────────────────────
+
+    public function test_usage_log_returns_empty_for_new_promotion(): void
+    {
+        $promo = $this->makePromotion(['type' => 'percentage', 'discount_value' => 10]);
+
+        $this->withToken($this->token)
+            ->getJson("/api/v2/promotions/{$promo->id}/usage-log")
+            ->assertOk()
+            ->assertJsonPath('data.total', 0)
+            ->assertJsonPath('data.data', []);
+    }
+
+    public function test_usage_log_requires_analytics_permission(): void
+    {
+        $promo = $this->makePromotion(['type' => 'percentage', 'discount_value' => 10]);
+
+        // A user without any permissions (no token) should be unauthorized
+        $this->getJson("/api/v2/promotions/{$promo->id}/usage-log")
+            ->assertUnauthorized();
+    }
+
+    public function test_analytics_includes_daily_usage(): void
+    {
+        $promo = $this->makePromotion([
+            'type' => 'percentage',
+            'discount_value' => 10,
+        ]);
+
+        $this->withToken($this->token)
+            ->getJson("/api/v2/promotions/{$promo->id}/analytics")
+            ->assertOk()
+            ->assertJsonPath('data.promotion_id', $promo->id)
+            ->assertJsonStructure(['data' => ['daily_usage', 'coupon_uses', 'auto_uses']]);
+    }
+
+    public function test_analytics_daily_usage_is_array(): void
+    {
+        $promo = $this->makePromotion(['type' => 'percentage', 'discount_value' => 10]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/promotions/{$promo->id}/analytics")
+            ->assertOk();
+
+        $this->assertIsArray($response->json('data.daily_usage'));
+    }
+
+    public function test_usage_log_rejects_nonexistent_promotion(): void
+    {
+        $nonExistentId = (string) \Illuminate\Support\Str::uuid();
+
+        $this->withToken($this->token)
+            ->getJson("/api/v2/promotions/{$nonExistentId}/usage-log")
+            ->assertNotFound();
     }
 }

@@ -22,6 +22,9 @@ class ThawaniStoreConfig extends Model
         'api_key',
         'api_secret',
         'is_connected',
+        'is_store_open',
+        'store_closed_reason',
+        'order_acceptance_timeout_minutes',
         'auto_sync_products',
         'auto_sync_inventory',
         'auto_accept_orders',
@@ -33,10 +36,12 @@ class ThawaniStoreConfig extends Model
     protected $casts = [
         'operating_hours_json' => 'array',
         'is_connected' => 'boolean',
+        'is_store_open' => 'boolean',
         'auto_sync_products' => 'boolean',
         'auto_sync_inventory' => 'boolean',
         'auto_accept_orders' => 'boolean',
         'commission_rate' => 'decimal:2',
+        'order_acceptance_timeout_minutes' => 'integer',
         'connected_at' => 'datetime',
     ];
 

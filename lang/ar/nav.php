@@ -19,6 +19,7 @@ return [
     'group_website'               => 'الموقع الإلكتروني',
     'group_subscription_billing'  => 'الاشتراكات والفوترة',
     'group_ai'                    => 'وميض الذكاء الاصطناعي',
+    'group_thawani'               => 'سوق ثواني',
 
     // عناوين عناصر التنقل
     'active_sessions'             => 'الجلسات النشطة',

@@ -275,6 +275,77 @@ class DeliveryApiTest extends TestCase
         $this->assertNotNull($fresh->accepted_at);
     }
 
+    public function test_can_reject_order_with_rejection_reason(): void
+    {
+        $this->makeConfig();
+        $order = $this->makeOrder(['delivery_status' => 'pending']);
+
+        $r = $this->withToken($this->token)->putJson("/api/v2/delivery/orders/{$order->id}/status", [
+            'status' => 'rejected',
+            'rejection_reason' => 'Out of stock',
+        ]);
+        $r->assertOk();
+
+        $fresh = $order->fresh();
+        $this->assertEquals('rejected', $fresh->delivery_status->value);
+        $this->assertEquals('Out of stock', $fresh->rejection_reason);
+    }
+
+    public function test_old_reason_key_is_ignored_on_rejection(): void
+    {
+        $this->makeConfig();
+        $order = $this->makeOrder(['delivery_status' => 'pending']);
+
+        // 'reason' is not the correct key — should be 'rejection_reason'
+        // The endpoint should still succeed (reason is just ignored) but rejection_reason stays null
+        $r = $this->withToken($this->token)->putJson("/api/v2/delivery/orders/{$order->id}/status", [
+            'status' => 'rejected',
+            'reason' => 'This key should be ignored',
+        ]);
+        $r->assertOk();
+        $fresh = $order->fresh();
+        $this->assertEquals('rejected', $fresh->delivery_status->value);
+        $this->assertNull($fresh->rejection_reason);
+    }
+
+    public function test_save_config_accepts_new_timeout_and_operating_hours_fields(): void
+    {
+        $hours = [
+            ['day_of_week' => 1, 'open_time' => '08:00', 'close_time' => '22:00', 'is_closed' => false],
+            ['day_of_week' => 5, 'open_time' => '12:00', 'close_time' => '23:00', 'is_closed' => false],
+        ];
+
+        $r = $this->withToken($this->token)->postJson('/api/v2/delivery/configs', [
+            'platform' => 'jahez',
+            'api_key' => 'KEY-TIMEOUT-TEST',
+            'is_enabled' => true,
+            'auto_accept' => true,
+            'auto_accept_timeout_seconds' => 600,
+            'operating_hours_json' => $hours,
+        ]);
+
+        $r->assertOk()->assertJsonPath('success', true);
+        $this->assertDatabaseHas('delivery_platform_configs', [
+            'store_id' => $this->store->id,
+            'platform' => 'jahez',
+            'auto_accept_timeout_seconds' => 600,
+        ]);
+
+        // Verify operating_hours_json is stored and returned
+        $this->assertEquals(600, $r->json('data.auto_accept_timeout_seconds'));
+        $this->assertIsArray($r->json('data.operating_hours_json'));
+    }
+
+    public function test_save_config_rejects_invalid_timeout_value(): void
+    {
+        $r = $this->withToken($this->token)->postJson('/api/v2/delivery/configs', [
+            'platform' => 'jahez',
+            'api_key' => 'KEY-BAD-TIMEOUT',
+            'auto_accept_timeout_seconds' => 30, // below minimum of 60
+        ]);
+        $r->assertStatus(422);
+    }
+
     public function test_active_orders_excludes_terminal_states(): void
     {
         $this->makeOrder(['delivery_status' => 'pending']);

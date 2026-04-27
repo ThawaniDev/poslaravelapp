@@ -385,6 +385,27 @@ class OwnerDashboardService
             ])->toArray();
     }
 
+    // ─── Aggregated Summary (single-request dashboard load) ──
+
+    public function summary(string|array $storeId, string $organizationId, array $filters): array
+    {
+        $days    = isset($filters['days']) ? (int) $filters['days'] : null;
+        $derived = $days !== null ? ['days' => $days] : [];
+
+        return [
+            'stats'              => $this->stats($storeId),
+            'sales_trend'        => $this->salesTrend($storeId, array_merge(['days' => $days ?? 7], $derived)),
+            'top_products'       => $this->topProducts($storeId, array_merge(['limit' => 5, 'days' => $days ?? 30], $derived)),
+            'low_stock'          => $this->lowStockAlerts($storeId, 10),
+            'active_cashiers'    => $this->activeCashiers($storeId),
+            'recent_orders'      => $this->recentOrders($storeId, 10),
+            'financial_summary'  => $this->financialSummary($storeId, $derived),
+            'hourly_sales'       => $this->hourlySales($storeId),
+            'branches'           => $this->branchOverview($organizationId),
+            'staff_performance'  => $this->staffPerformance($storeId, $derived),
+        ];
+    }
+
     // ─── Private Helpers ─────────────────────────────────────
 
     private function percentChange(float $current, float $previous): float

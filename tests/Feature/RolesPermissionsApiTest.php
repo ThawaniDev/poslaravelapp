@@ -445,4 +445,123 @@ class RolesPermissionsApiTest extends TestCase
             ->where('name', 'cashier')
             ->count());
     }
+
+    public function test_role_audit_log_returns_paginated_entries(): void
+    {
+        $createResponse = $this->withToken($this->token)
+            ->postJson('/api/v2/staff/roles', [
+                'name'         => 'auditable_role',
+                'display_name' => 'Auditable Role',
+                'store_id'     => $this->store->id,
+            ]);
+
+        $roleId = $createResponse->json('data.id');
+
+        $this->withToken($this->token)
+            ->putJson("/api/v2/staff/roles/{$roleId}", [
+                'display_name' => 'Auditable Role Updated',
+                'store_id'     => $this->store->id,
+            ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/staff/roles/audit-log');
+
+        $response->assertOk()
+            ->assertJsonPath('data.total', fn($val) => $val >= 2)
+            ->assertJsonStructure([
+                'data' => [
+                    'data'         => [['id', 'action', 'role_id', 'user_id', 'user_name', 'created_at']],
+                    'total', 'per_page', 'current_page',
+                ],
+            ]);
+
+        $this->assertGreaterThanOrEqual(2, $response->json('data.total'));
+    }
+
+    public function test_role_audit_log_filter_by_action(): void
+    {
+        $this->withToken($this->token)
+            ->postJson('/api/v2/staff/roles', [
+                'name'         => 'filter_role',
+                'display_name' => 'Filter Role',
+                'store_id'     => $this->store->id,
+            ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/staff/roles/audit-log?action=role_created');
+
+        $response->assertOk();
+
+        foreach ($response->json('data.data') as $entry) {
+            $this->assertEquals('role_created', $entry['action']);
+        }
+    }
+
+    public function test_role_audit_log_filter_by_date_range(): void
+    {
+        $this->withToken($this->token)
+            ->postJson('/api/v2/staff/roles', [
+                'name'         => 'date_role',
+                'display_name' => 'Date Role',
+                'store_id'     => $this->store->id,
+            ]);
+
+        $today = now()->toDateString();
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/roles/audit-log?date_from={$today}&date_to={$today}");
+
+        $response->assertOk();
+        $this->assertGreaterThanOrEqual(1, $response->json('data.total'));
+    }
+
+    public function test_role_audit_log_cross_store_isolation(): void
+    {
+        // Create separate org/store/user
+        $otherOrg = \App\Domain\Core\Models\Organization::create([
+            'name'          => 'Other Org',
+            'business_type' => 'grocery',
+            'country'       => 'OM',
+        ]);
+        $otherStore = \App\Domain\Core\Models\Store::create([
+            'organization_id' => $otherOrg->id,
+            'name'            => 'Other Store',
+            'business_type'   => 'grocery',
+            'currency'        => 'SAR',
+        ]);
+        $otherUser = User::create([
+            'name'            => 'Other User',
+            'email'           => 'other@isolation.com',
+            'password_hash'   => bcrypt('password'),
+            'store_id'        => $otherStore->id,
+            'organization_id' => $otherOrg->id,
+            'role'            => 'owner',
+            'is_active'       => true,
+        ]);
+
+        // Create audit log entry for other store
+        $otherRole = \App\Domain\StaffManagement\Models\Role::create([
+            'store_id'     => $otherStore->id,
+            'name'         => 'other_role',
+            'display_name' => 'Other Role',
+            'guard_name'   => 'web',
+        ]);
+
+        \App\Domain\Security\Models\RoleAuditLog::create([
+            'store_id' => $otherStore->id,
+            'user_id'  => $otherUser->id,
+            'action'   => \App\Domain\Security\Enums\RoleAuditAction::RoleCreated,
+            'role_id'  => $otherRole->id,
+            'details'  => [],
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/staff/roles/audit-log');
+
+        $response->assertOk();
+
+        // None of the returned entries should belong to the other store
+        foreach ($response->json('data') as $entry) {
+            $this->assertNotEquals($otherRole->id, $entry['role_id'] ?? null);
+        }
+    }
 }

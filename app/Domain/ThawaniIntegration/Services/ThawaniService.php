@@ -926,7 +926,7 @@ class ThawaniService
         ];
     }
 
-    // ==================== Sync Queue Stats ====================
+    // ==================== Queue Stats ====================
 
     public function getQueueStats(string $storeId): array
     {
@@ -936,5 +936,389 @@ class ThawaniService
             'completed' => ThawaniSyncQueue::where('store_id', $storeId)->where('status', 'completed')->count(),
             'failed' => ThawaniSyncQueue::where('store_id', $storeId)->where('status', 'failed')->count(),
         ];
+    }
+
+    // ==================== Order Management ====================
+
+    public function getOrderDetail(string $storeId, string $orderId): ?ThawaniOrderMapping
+    {
+        return ThawaniOrderMapping::where('store_id', $storeId)
+            ->where('id', $orderId)
+            ->first();
+    }
+
+    public function acceptOrder(string $storeId, string $orderId): array
+    {
+        $order = ThawaniOrderMapping::where('store_id', $storeId)
+            ->where('id', $orderId)
+            ->first();
+
+        if (!$order) {
+            return ['success' => false, 'message' => 'Order not found'];
+        }
+
+        if ($order->status->value !== 'new') {
+            return ['success' => false, 'message' => 'Order is not in new status'];
+        }
+
+        $order->update([
+            'status' => 'accepted',
+            'accepted_at' => now(),
+        ]);
+
+        // Notify Thawani about status change
+        $client = new ThawaniApiClient($storeId);
+        if ($client->isConfigured()) {
+            $client->put("orders/{$order->thawani_order_id}/status", [
+                'status' => 'accepted',
+            ]);
+        }
+
+        $this->logSync(
+            $storeId, 'order', $orderId, 'accept', 'outgoing', 'success',
+            ['order_id' => $orderId],
+            ['status' => 'accepted'],
+        );
+
+        return ['success' => true, 'order' => $order->fresh()];
+    }
+
+    public function rejectOrder(string $storeId, string $orderId, string $reason): array
+    {
+        $order = ThawaniOrderMapping::where('store_id', $storeId)
+            ->where('id', $orderId)
+            ->first();
+
+        if (!$order) {
+            return ['success' => false, 'message' => 'Order not found'];
+        }
+
+        if (!in_array($order->status->value, ['new', 'accepted'])) {
+            return ['success' => false, 'message' => 'Order cannot be rejected in current status'];
+        }
+
+        $order->update([
+            'status' => 'rejected',
+            'rejection_reason' => $reason,
+            'rejected_at' => now(),
+        ]);
+
+        // Notify Thawani about status change
+        $client = new ThawaniApiClient($storeId);
+        if ($client->isConfigured()) {
+            $client->put("orders/{$order->thawani_order_id}/status", [
+                'status' => 'rejected',
+                'rejection_reason' => $reason,
+            ]);
+        }
+
+        $this->logSync(
+            $storeId, 'order', $orderId, 'reject', 'outgoing', 'success',
+            ['order_id' => $orderId, 'reason' => $reason],
+        );
+
+        return ['success' => true, 'order' => $order->fresh()];
+    }
+
+    public function updateOrderStatus(string $storeId, string $orderId, string $status): array
+    {
+        $allowedTransitions = [
+            'accepted' => ['preparing'],
+            'preparing' => ['ready'],
+            'ready' => ['dispatched', 'completed'],
+            'dispatched' => ['completed'],
+        ];
+
+        $order = ThawaniOrderMapping::where('store_id', $storeId)
+            ->where('id', $orderId)
+            ->first();
+
+        if (!$order) {
+            return ['success' => false, 'message' => 'Order not found'];
+        }
+
+        $currentStatus = $order->status->value;
+        $allowed = $allowedTransitions[$currentStatus] ?? [];
+
+        if (!in_array($status, $allowed)) {
+            return ['success' => false, 'message' => "Cannot transition from {$currentStatus} to {$status}"];
+        }
+
+        $updates = ['status' => $status];
+        if ($status === 'preparing') $updates['prepared_at'] = now();
+        if ($status === 'completed') $updates['completed_at'] = now();
+
+        $order->update($updates);
+
+        // Notify Thawani about status change
+        $client = new ThawaniApiClient($storeId);
+        if ($client->isConfigured()) {
+            $client->put("orders/{$order->thawani_order_id}/status", [
+                'status' => $status,
+            ]);
+        }
+
+        $this->logSync(
+            $storeId, 'order', $orderId, 'status_update', 'outgoing', 'success',
+            ['order_id' => $orderId, 'status' => $status],
+        );
+
+        return ['success' => true, 'order' => $order->fresh()];
+    }
+
+    // ==================== Product Management (Online Menu) ====================
+
+    public function getProductsWithMappings(string $storeId, array $filters = []): array
+    {
+        $config = ThawaniStoreConfig::where('store_id', $storeId)->first();
+        if (!$config) {
+            return ['data' => [], 'total' => 0];
+        }
+
+        $query = Product::where('organization_id', $config->store?->organization_id)
+            ->where('is_active', true)
+            ->with(['thawaniProductMappings' => function ($q) use ($storeId) {
+                $q->where('store_id', $storeId);
+            }]);
+
+        if (!empty($filters['search'])) {
+            $query->where(function ($q) use ($filters) {
+                $q->where('name', 'ilike', "%{$filters['search']}%")
+                    ->orWhere('name_ar', 'ilike', "%{$filters['search']}%");
+            });
+        }
+
+        if (isset($filters['is_published'])) {
+            $publishedProductIds = ThawaniProductMapping::where('store_id', $storeId)
+                ->where('is_published', (bool) $filters['is_published'])
+                ->pluck('product_id');
+            $query->whereIn('id', $publishedProductIds);
+        }
+
+        $perPage = $filters['per_page'] ?? 20;
+        $paginated = $query->paginate($perPage);
+
+        $items = collect($paginated->items())->map(function ($product) use ($storeId) {
+            $mapping = $product->thawaniProductMappings->first();
+            return [
+                'id' => $product->id,
+                'name' => $product->name,
+                'name_ar' => $product->name_ar,
+                'price' => (float) ($product->sell_price ?? 0),
+                'image_url' => $product->image_url,
+                'category_id' => $product->category_id,
+                'is_published' => $mapping ? (bool) $mapping->is_published : false,
+                'online_price' => $mapping ? $mapping->online_price : null,
+                'display_order' => $mapping ? ($mapping->display_order ?? 0) : 0,
+                'thawani_product_id' => $mapping?->thawani_product_id,
+                'last_synced_at' => $mapping?->last_synced_at?->toISOString(),
+                'mapping_id' => $mapping?->id,
+            ];
+        });
+
+        return [
+            'data' => $items->values()->toArray(),
+            'total' => $paginated->total(),
+            'per_page' => $paginated->perPage(),
+            'current_page' => $paginated->currentPage(),
+            'last_page' => $paginated->lastPage(),
+        ];
+    }
+
+    public function publishProduct(string $storeId, string $productId, bool $isPublished, ?float $onlinePrice = null, ?int $displayOrder = null): array
+    {
+        $config = ThawaniStoreConfig::where('store_id', $storeId)->first();
+
+        if (!$config?->is_connected) {
+            return ['success' => false, 'message' => 'Not connected to Thawani'];
+        }
+
+        $product = Product::find($productId);
+        if (!$product) {
+            return ['success' => false, 'message' => 'Product not found'];
+        }
+
+        $mapping = ThawaniProductMapping::updateOrCreate(
+            ['store_id' => $storeId, 'product_id' => $productId],
+            array_filter([
+                'is_published' => $isPublished,
+                'online_price' => $onlinePrice,
+                'display_order' => $displayOrder,
+                'thawani_product_id' => ThawaniProductMapping::where('store_id', $storeId)
+                    ->where('product_id', $productId)
+                    ->value('thawani_product_id'),
+            ], fn($v) => $v !== null)
+        );
+
+        // Notify Thawani about publish status change
+        if ($mapping->thawani_product_id) {
+            $client = new ThawaniApiClient($storeId);
+            if ($client->isConfigured()) {
+                $price = $onlinePrice ?? (float) ($product->sell_price ?? 0);
+                $client->put("products/{$mapping->thawani_product_id}/publish", [
+                    'is_published' => $isPublished,
+                    'online_price' => $price,
+                ]);
+            }
+        }
+
+        $this->logSync(
+            $storeId, 'product', $productId, $isPublished ? 'publish' : 'unpublish', 'outgoing', 'success',
+            ['product_id' => $productId, 'is_published' => $isPublished, 'online_price' => $onlinePrice],
+        );
+
+        return ['success' => true, 'mapping' => $mapping];
+    }
+
+    public function bulkPublishProducts(string $storeId, array $productIds, bool $isPublished): array
+    {
+        $config = ThawaniStoreConfig::where('store_id', $storeId)->first();
+        if (!$config?->is_connected) {
+            return ['success' => false, 'message' => 'Not connected to Thawani'];
+        }
+
+        $updated = 0;
+        foreach ($productIds as $productId) {
+            ThawaniProductMapping::updateOrCreate(
+                ['store_id' => $storeId, 'product_id' => $productId],
+                ['is_published' => $isPublished]
+            );
+            $updated++;
+        }
+
+        $this->logSync(
+            $storeId, 'product', null, $isPublished ? 'bulk_publish' : 'bulk_unpublish', 'outgoing', 'success',
+            ['count' => $updated],
+        );
+
+        return ['success' => true, 'updated' => $updated];
+    }
+
+    // ==================== Store Availability ====================
+
+    public function updateStoreAvailability(string $storeId, bool $isOpen, ?string $closedReason = null): array
+    {
+        $config = ThawaniStoreConfig::where('store_id', $storeId)->first();
+        if (!$config) {
+            return ['success' => false, 'message' => 'Store not configured'];
+        }
+
+        $config->update([
+            'is_store_open' => $isOpen,
+            'store_closed_reason' => $isOpen ? null : $closedReason,
+        ]);
+
+        // Notify Thawani
+        $client = new ThawaniApiClient($storeId);
+        if ($client->isConfigured() && $config->is_connected) {
+            $client->put('store/availability', [
+                'is_open' => $isOpen,
+                'closed_reason' => $closedReason,
+            ]);
+        }
+
+        $this->logSync(
+            $storeId, 'store', $storeId, 'availability_update', 'outgoing', 'success',
+            ['is_open' => $isOpen, 'reason' => $closedReason],
+        );
+
+        return ['success' => true, 'is_store_open' => $isOpen];
+    }
+
+    // ==================== Inventory Sync ====================
+
+    public function syncInventory(string $storeId): array
+    {
+        $client = new ThawaniApiClient($storeId);
+        $config = $this->getConfig($storeId);
+
+        if (!$config?->is_connected) {
+            return ['success' => false, 'message' => 'Not connected to Thawani'];
+        }
+
+        // Get all published products with their stock levels
+        $mappings = ThawaniProductMapping::where('store_id', $storeId)
+            ->where('is_published', true)
+            ->whereNotNull('thawani_product_id')
+            ->with(['product.stockLevels' => function ($q) use ($storeId) {
+                $q->where('store_id', $storeId);
+            }])
+            ->get();
+
+        $inventoryUpdates = [];
+        foreach ($mappings as $mapping) {
+            $stockLevel = $mapping->product?->stockLevels->first();
+            $available = $stockLevel ? max(0, (float)$stockLevel->quantity - (float)$stockLevel->reserved_quantity) : 0;
+            $inventoryUpdates[] = [
+                'thawani_product_id' => $mapping->thawani_product_id,
+                'quantity' => $available,
+                'is_available' => $available > 0,
+            ];
+        }
+
+        if (empty($inventoryUpdates)) {
+            return ['success' => true, 'updated' => 0, 'message' => 'No published products to sync'];
+        }
+
+        $result = $client->post('inventory/sync', ['inventory' => $inventoryUpdates]);
+
+        $this->logSync(
+            $storeId, 'inventory', null, 'sync', 'outgoing',
+            $result['success'] ? 'success' : 'failed',
+            ['count' => count($inventoryUpdates)],
+            $result['data'] ?? null,
+            $result['success'] ? null : ($result['message'] ?? 'Inventory sync failed'),
+            $result['http_status'] ?? null,
+        );
+
+        return array_merge($result, ['updated' => count($inventoryUpdates)]);
+    }
+
+    // ==================== Webhook Order Ingestion ====================
+
+    public function ingestOrderFromWebhook(string $storeId, array $orderData): array
+    {
+        $thawaniOrderId = $orderData['thawani_order_id'] ?? $orderData['id'] ?? null;
+
+        if (!$thawaniOrderId) {
+            return ['success' => false, 'message' => 'Missing order ID in webhook data'];
+        }
+
+        // Prevent duplicate ingestion
+        $existing = ThawaniOrderMapping::where('thawani_order_id', $thawaniOrderId)->first();
+        if ($existing) {
+            return ['success' => true, 'message' => 'Order already exists', 'order' => $existing];
+        }
+
+        $config = ThawaniStoreConfig::where('store_id', $storeId)->first();
+
+        $order = ThawaniOrderMapping::create([
+            'store_id' => $storeId,
+            'thawani_order_id' => $thawaniOrderId,
+            'thawani_order_number' => $orderData['order_number'] ?? $thawaniOrderId,
+            'status' => 'new',
+            'delivery_type' => $orderData['delivery_type'] ?? 'delivery',
+            'customer_name' => $orderData['customer_name'] ?? null,
+            'customer_phone' => $orderData['customer_phone'] ?? null,
+            'delivery_address' => $orderData['delivery_address'] ?? null,
+            'order_items' => $orderData['items'] ?? $orderData['order_items'] ?? [],
+            'delivery_fee' => $orderData['delivery_fee'] ?? null,
+            'notes' => $orderData['notes'] ?? null,
+            'order_total' => $orderData['order_total'] ?? $orderData['total'] ?? 0,
+            'commission_amount' => $orderData['commission_amount'] ?? null,
+        ]);
+
+        // Auto-accept if configured
+        if ($config?->auto_accept_orders) {
+            $this->acceptOrder($storeId, $order->id);
+        }
+
+        $this->logSync(
+            $storeId, 'order', $order->id, 'webhook_ingestion', 'incoming', 'success',
+            $orderData,
+            ['order_mapping_id' => $order->id],
+        );
+
+        return ['success' => true, 'order' => $order];
     }
 }

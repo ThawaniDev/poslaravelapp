@@ -35,7 +35,16 @@ Route::prefix('staff')->middleware('auth:sanctum')->group(function () {
     Route::get('members/{id}/branch-assignments', [StaffUserController::class, 'branchAssignments'])->middleware('permission:staff.view');
     Route::post('members/{id}/branch-assignments', [StaffUserController::class, 'assignBranch'])->middleware('permission:staff.manage');
     Route::delete('members/{id}/branch-assignments', [StaffUserController::class, 'unassignBranch'])->middleware('permission:staff.manage');
+    // ─── Staff Documents ─────────────────────────────────────
+    Route::get('members/{id}/documents',               [StaffUserController::class, 'documents'])             ->middleware('permission:staff.view');
+    Route::post('members/{id}/documents',              [StaffUserController::class, 'addDocument'])           ->middleware('permission:staff.edit');
+    Route::delete('members/{id}/documents/{docId}',    [StaffUserController::class, 'deleteDocument'])        ->middleware('permission:staff.edit');
 
+    // ─── Training Sessions ───────────────────────────────────
+    Route::get('members/{id}/training-sessions',                     [StaffUserController::class, 'trainingSessions'])     ->middleware('permission:staff.view');
+    Route::post('members/{id}/training-sessions',                    [StaffUserController::class, 'startTrainingSession']) ->middleware('permission:staff.manage');
+    Route::put('members/{id}/training-sessions/{sessionId}/end',     [StaffUserController::class, 'endTrainingSession'])   ->middleware('permission:staff.manage');
+    Route::delete('members/{id}/training-sessions/{sessionId}',      [StaffUserController::class, 'deleteTrainingSession'])->middleware('permission:staff.manage');
     // ─── Attendance ─────────────────────────────────────────
     Route::get('attendance', [StaffUserController::class, 'attendance'])->middleware('permission:reports.attendance');
     Route::get('attendance/summary', [StaffUserController::class, 'attendanceSummary'])->middleware('permission:reports.attendance');
@@ -57,6 +66,7 @@ Route::prefix('staff')->middleware('auth:sanctum')->group(function () {
 
     // ─── Roles ───────────────────────────────────────────────
     Route::get('roles/user-permissions', [RoleController::class, 'userPermissions']);
+    Route::get('roles/audit-log',        [RoleController::class, 'auditLog'])->middleware('permission:roles.audit');
     Route::get('roles', [RoleController::class, 'index'])->middleware('permission:roles.view');
     Route::post('roles', [RoleController::class, 'store'])->middleware('permission:roles.create');
     Route::get('roles/{role}', [RoleController::class, 'show'])->middleware('permission:roles.view');

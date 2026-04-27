@@ -285,18 +285,58 @@ class PromotionService
             ->count();
         $totalCoupons = CouponCode::where('promotion_id', $promotion->id)->count();
 
+        // Daily usage — last 30 days
+        $dailyUsage = PromotionUsageLog::where('promotion_id', $promotion->id)
+            ->where('created_at', '>=', now()->subDays(30)->startOfDay())
+            ->selectRaw("DATE(created_at) as date, COUNT(*) as uses, SUM(discount_amount) as discount_amount")
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($r) => [
+                'date'            => $r->date,
+                'uses'            => (int) $r->uses,
+                'discount_amount' => round((float) $r->discount_amount, 2),
+            ])
+            ->values()
+            ->all();
+
+        // Coupon vs auto split
+        $couponUses = PromotionUsageLog::where('promotion_id', $promotion->id)
+            ->whereNotNull('coupon_code_id')
+            ->count();
+
         return [
-            'promotion_id' => $promotion->id,
-            'usage_count' => $usageCount,
+            'promotion_id'         => $promotion->id,
+            'usage_count'          => $usageCount,
             'total_discount_given' => round((float) $totalDiscount, 2),
-            'unique_customers' => $uniqueCustomers,
-            'active_coupons' => $activeCoupons,
-            'total_coupons' => $totalCoupons,
-            'max_uses' => $promotion->max_uses,
-            'is_active' => $promotion->is_active,
-            'valid_from' => $promotion->valid_from?->toIso8601String(),
-            'valid_to' => $promotion->valid_to?->toIso8601String(),
+            'unique_customers'     => $uniqueCustomers,
+            'active_coupons'       => $activeCoupons,
+            'total_coupons'        => $totalCoupons,
+            'coupon_uses'          => $couponUses,
+            'auto_uses'            => max(0, $usageCount - $couponUses),
+            'max_uses'             => $promotion->max_uses,
+            'is_active'            => $promotion->is_active,
+            'valid_from'           => $promotion->valid_from?->toIso8601String(),
+            'valid_to'             => $promotion->valid_to?->toIso8601String(),
+            'daily_usage'          => $dailyUsage,
         ];
+    }
+
+    // ─── Usage Log ──────────────────────────────────────────
+
+    public function listUsageLog(Promotion $promotion, array $filters = [], int $perPage = 20): LengthAwarePaginator
+    {
+        $query = PromotionUsageLog::where('promotion_id', $promotion->id)
+            ->orderByDesc('created_at');
+
+        if (!empty($filters['date_from'])) {
+            $query->where('created_at', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->where('created_at', '<=', $filters['date_to'] . ' 23:59:59');
+        }
+
+        return $query->paginate($perPage);
     }
 
     // ─── Duplicate ──────────────────────────────────────────

@@ -395,6 +395,70 @@ class SubscriptionController extends BaseApiController
     }
 
     /**
+     * POST /subscription/store-add-ons/{addOnId}/activate — Activate an add-on for the current store.
+     */
+    public function activateAddOn(Request $request, string $addOnId): JsonResponse
+    {
+        $user = $request->user();
+        $storeId = $user->store_id;
+
+        if (! $storeId) {
+            return $this->error(__('subscription.no_store'), 404);
+        }
+
+        // Verify the add-on exists and is active
+        $planAddOn = \App\Domain\Subscription\Models\PlanAddOn::where('id', $addOnId)
+            ->where('is_active', true)
+            ->first();
+
+        if (! $planAddOn) {
+            return $this->error(__('subscription.addon_not_found'), 404);
+        }
+
+        // Check if already active
+        $existing = \App\Domain\ProviderSubscription\Models\StoreAddOn::where('store_id', $storeId)
+            ->where('plan_add_on_id', $addOnId)
+            ->first();
+
+        if ($existing && $existing->is_active) {
+            return $this->error(__('subscription.addon_already_active'), 422);
+        }
+
+        if ($existing) {
+            // Reactivate
+            $existing->update([
+                'is_active' => true,
+                'activated_at' => now(),
+                'deactivated_at' => null,
+            ]);
+            $storeAddOn = $existing;
+        } else {
+            $storeAddOn = \App\Domain\ProviderSubscription\Models\StoreAddOn::create([
+                'store_id' => $storeId,
+                'plan_add_on_id' => $addOnId,
+                'is_active' => true,
+                'activated_at' => now(),
+            ]);
+        }
+
+        return $this->created([
+            'store_id' => $storeAddOn->store_id,
+            'plan_add_on_id' => $storeAddOn->plan_add_on_id,
+            'is_active' => $storeAddOn->is_active,
+            'activated_at' => $storeAddOn->activated_at,
+            'add_on' => [
+                'id' => $planAddOn->id,
+                'name' => $planAddOn->name,
+                'name_ar' => $planAddOn->name_ar,
+                'slug' => $planAddOn->slug,
+                'monthly_price' => $planAddOn->monthly_price,
+                'description' => $planAddOn->description,
+                'is_active' => $planAddOn->is_active,
+            ],
+        ], __('subscription.addon_activated'));
+    }
+
+    /**
      * DELETE /subscription/store-add-ons/{addOnId} — Deactivate (remove) an add-on from the current store.
      */
     public function removeAddOn(Request $request, string $addOnId): JsonResponse

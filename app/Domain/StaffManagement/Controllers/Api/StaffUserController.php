@@ -11,7 +11,9 @@ use App\Domain\StaffManagement\Resources\ShiftScheduleResource;
 use App\Domain\StaffManagement\Resources\ShiftTemplateResource;
 use App\Domain\StaffManagement\Resources\StaffActivityLogResource;
 use App\Domain\StaffManagement\Resources\StaffBranchAssignmentResource;
+use App\Domain\StaffManagement\Resources\StaffDocumentResource;
 use App\Domain\StaffManagement\Resources\StaffUserResource;
+use App\Domain\StaffManagement\Resources\TrainingSessionResource;
 use App\Domain\StaffManagement\Services\StaffService;
 use App\Domain\Subscription\Traits\TracksSubscriptionUsage;
 use App\Http\Controllers\Api\BaseApiController;
@@ -503,5 +505,126 @@ class StaffUserController extends BaseApiController
         $users = $query->get();
 
         return $this->success($users);
+    }
+
+    // ─── Staff Documents ─────────────────────────────────────
+
+    public function documents(string $id, Request $request)
+    {
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
+
+        if (!$this->canAccessStore($request, $staff->store_id)) {
+            return $this->notFound('Staff not found');
+        }
+
+        $docs = $this->staffService->listDocuments($id);
+
+        return $this->success(StaffDocumentResource::collection($docs));
+    }
+
+    public function addDocument(string $id, Request $request)
+    {
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
+
+        if (!$this->canAccessStore($request, $staff->store_id)) {
+            return $this->notFound('Staff not found');
+        }
+
+        $data = $request->validate([
+            'document_type' => 'required|string|in:national_id,contract,certificate,visa,other',
+            'file_url'      => 'required|string|max:500',
+            'expiry_date'   => 'nullable|date|after:today',
+        ]);
+
+        $doc = $this->staffService->addDocument($staff, $data);
+
+        return $this->created(new StaffDocumentResource($doc));
+    }
+
+    public function deleteDocument(string $id, string $docId, Request $request)
+    {
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
+
+        if (!$this->canAccessStore($request, $staff->store_id)) {
+            return $this->notFound('Staff not found');
+        }
+
+        $this->staffService->deleteDocument($staff, $docId);
+
+        return $this->success(null, 'Document deleted');
+    }
+
+    // ─── Training Sessions ───────────────────────────────────
+
+    public function trainingSessions(string $id, Request $request)
+    {
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
+
+        if (!$this->canAccessStore($request, $staff->store_id)) {
+            return $this->notFound('Staff not found');
+        }
+
+        $sessions = $this->staffService->listTrainingSessions($id, $request->integer('per_page', 20));
+
+        return $this->successPaginated(TrainingSessionResource::collection($sessions), $sessions);
+    }
+
+    public function startTrainingSession(string $id, Request $request)
+    {
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
+
+        if (!$this->canAccessStore($request, $staff->store_id)) {
+            return $this->notFound('Staff not found');
+        }
+
+        $data = $request->validate([
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $session = $this->staffService->startTrainingSession($staff, $data);
+
+        return $this->created(new TrainingSessionResource($session));
+    }
+
+    public function endTrainingSession(string $id, string $sessionId, Request $request)
+    {
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
+
+        if (!$this->canAccessStore($request, $staff->store_id)) {
+            return $this->notFound('Staff not found');
+        }
+
+        $session = \App\Domain\StaffManagement\Models\TrainingSession::where('id', $sessionId)
+            ->where('staff_user_id', $id)
+            ->firstOrFail();
+
+        $data = $request->validate([
+            'transactions_count' => 'nullable|integer|min:0',
+            'notes'              => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $ended = $this->staffService->endTrainingSession($session, $data);
+            return $this->success(new TrainingSessionResource($ended), 'Training session ended');
+        } catch (\InvalidArgumentException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    public function deleteTrainingSession(string $id, string $sessionId, Request $request)
+    {
+        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
+
+        if (!$this->canAccessStore($request, $staff->store_id)) {
+            return $this->notFound('Staff not found');
+        }
+
+        $session = \App\Domain\StaffManagement\Models\TrainingSession::where('id', $sessionId)
+            ->where('staff_user_id', $id)
+            ->firstOrFail();
+
+        $this->staffService->deleteTrainingSession($session);
+
+        return $this->success(null, 'Training session deleted');
     }
 }

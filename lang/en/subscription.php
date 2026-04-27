@@ -28,6 +28,8 @@ return [
 
     // ── Add-ons ───────────────────────────────────────────────────────────────
     'addon_not_found'                     => 'Add-on not found for this store.',
+    'addon_already_active'                => 'This add-on is already active for your store.',
+    'addon_activated'                     => 'Add-on activated successfully.',
     'addon_already_deactivated'           => 'Add-on is already deactivated.',
     'addon_removed'                       => 'Add-on removed successfully. It will not appear on your next invoice.',
 

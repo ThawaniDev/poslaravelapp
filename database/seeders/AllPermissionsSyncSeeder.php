@@ -66,6 +66,10 @@ class AllPermissionsSyncSeeder extends Seeder
         // ── Thawani admin pages ─────────────────────────────────
         ['name' => 'thawani.manage_config',     'group' => 'integrations', 'description' => 'Manage Thawani product/column mappings and store connection'],
         ['name' => 'thawani.view_sync_logs',    'group' => 'integrations', 'description' => 'View Thawani sync logs'],
+        ['name' => 'thawani.view_dashboard',    'group' => 'integrations', 'description' => 'View Thawani integration dashboard'],
+        ['name' => 'thawani.manage_sync',       'group' => 'integrations', 'description' => 'Push/pull products and categories to/from Thawani'],
+        ['name' => 'thawani.menu',              'group' => 'integrations', 'description' => 'Manage Thawani online menu and product publishing'],
+        ['name' => 'thawani.manage_orders',     'group' => 'integrations', 'description' => 'Accept, reject, and update Thawani order statuses'],
 
         // ── Installments admin ──────────────────────────────────
         ['name' => 'installments.configure',    'group' => 'integrations', 'description' => 'Configure installment provider credentials'],

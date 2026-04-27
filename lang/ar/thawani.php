@@ -182,4 +182,24 @@ return [
     'connection_success' => 'تم الاتصال بثواني بنجاح!',
     'select_store_prompt' => 'اختر متجراً للإعداد',
     'select_store_prompt_description' => 'اختر متجراً من القائمة أعلاه لإعداد أو إدارة اتصاله بسوق ثواني.',
+
+    // Order Management
+    'order_retrieved' => 'تم جلب الطلب.',
+    'order_not_found' => 'الطلب غير موجود.',
+    'order_accepted' => 'تم قبول الطلب بنجاح.',
+    'order_rejected' => 'تم رفض الطلب.',
+    'order_status_updated' => 'تم تحديث حالة الطلب.',
+    'order_action_failed' => 'فشلت عملية الطلب.',
+
+    // Online Menu Management
+    'products_retrieved' => 'تم جلب المنتجات.',
+    'product_updated' => 'تم تحديث المنتج.',
+    'products_bulk_updated' => 'تم تحديث المنتجات بشكل مجمّع.',
+
+    // Store Availability
+    'store_availability_updated' => 'تم تحديث حالة المتجر.',
+    'update_failed' => 'فشل التحديث.',
+
+    // Inventory
+    'inventory_synced' => 'تمت مزامنة المخزون مع ثواني.',
 ];

@@ -19,6 +19,7 @@ return [
     'group_website'               => 'Website',
     'group_subscription_billing'  => 'Subscription & Billing',
     'group_ai'                    => 'Wameed AI',
+    'group_thawani'               => 'Thawani Marketplace',
 
     // Navigation Labels
     'active_sessions'             => 'Active Sessions',

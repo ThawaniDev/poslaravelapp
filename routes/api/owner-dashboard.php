@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('owner-dashboard')->middleware(['auth:sanctum', 'permission:dashboard.view'])->group(function () {
+    // Aggregated single-request endpoint (used by provider app on dashboard load)
+    Route::get('summary', [OwnerDashboardController::class, 'summary']);
+
     Route::get('stats', [OwnerDashboardController::class, 'stats']);
     Route::get('sales-trend', [OwnerDashboardController::class, 'salesTrend']);
     Route::get('top-products', [OwnerDashboardController::class, 'topProducts']);

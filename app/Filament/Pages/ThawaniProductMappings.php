@@ -18,7 +18,7 @@ class ThawaniProductMappings extends Page
 
     public static function getNavigationGroup(): ?string
     {
-        return __('nav.group_integrations');
+        return __('nav.group_thawani');
     }
 
     public static function getNavigationLabel(): string

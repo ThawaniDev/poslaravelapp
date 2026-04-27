@@ -29,6 +29,7 @@ Route::prefix('promotions')
         Route::post('/{promotion}/generate-coupons', [PromotionController::class, 'generateCoupons'])->middleware('permission:promotions.manage');
         Route::get('/{promotion}/coupons', [PromotionController::class, 'listCoupons'])->middleware('permission:promotions.manage');
         Route::get('/{promotion}/analytics', [PromotionController::class, 'analytics'])->middleware('permission:promotions.view_analytics');
+        Route::get('/{promotion}/usage-log', [PromotionController::class, 'usageLog'])->middleware('permission:promotions.view_analytics');
     });
 
 Route::prefix('coupons')

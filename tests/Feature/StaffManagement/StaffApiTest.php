@@ -1601,4 +1601,291 @@ class StaffApiTest extends TestCase
 
         $response->assertNotFound();
     }
+
+    // ─── Staff Documents Tests ────────────────────────────────────────────────
+
+    private function createStaff(array $overrides = []): StaffUser
+    {
+        return StaffUser::create(array_merge([
+            'store_id'        => $this->store->id,
+            'first_name'      => 'Doc',
+            'last_name'       => 'Test',
+            'employment_type' => 'full_time',
+            'status'          => 'active',
+        ], $overrides));
+    }
+
+    public function test_list_staff_documents_empty(): void
+    {
+        $staff = $this->createStaff();
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/members/{$staff->id}/documents");
+
+        $response->assertOk()
+            ->assertJsonPath('data', []);
+    }
+
+    public function test_add_staff_document(): void
+    {
+        $staff = $this->createStaff();
+
+        $response = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/documents", [
+                'document_type' => 'national_id',
+                'file_url'      => 'https://storage.example.com/docs/id.pdf',
+                'expiry_date'   => now()->addYear()->toDateString(),
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.document_type', 'national_id')
+            ->assertJsonPath('data.file_url', 'https://storage.example.com/docs/id.pdf')
+            ->assertJsonStructure(['data' => [
+                'id', 'document_type', 'file_url', 'expiry_date',
+                'days_until_expiry', 'is_expired', 'expiring_soon',
+            ]]);
+    }
+
+    public function test_add_document_validates_type(): void
+    {
+        $staff = $this->createStaff();
+
+        $response = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/documents", [
+                'document_type' => 'invalid_type',
+                'file_url'      => 'https://storage.example.com/docs/id.pdf',
+            ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['document_type']);
+    }
+
+    public function test_add_document_requires_file_url(): void
+    {
+        $staff = $this->createStaff();
+
+        $response = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/documents", [
+                'document_type' => 'national_id',
+            ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['file_url']);
+    }
+
+    public function test_delete_staff_document(): void
+    {
+        $staff = $this->createStaff();
+
+        $createResponse = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/documents", [
+                'document_type' => 'contract',
+                'file_url'      => 'https://storage.example.com/docs/contract.pdf',
+            ]);
+        $docId = $createResponse->json('data.id');
+
+        $deleteResponse = $this->withToken($this->token)
+            ->deleteJson("/api/v2/staff/members/{$staff->id}/documents/{$docId}");
+
+        $deleteResponse->assertOk();
+
+        $listResponse = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/members/{$staff->id}/documents");
+
+        $listResponse->assertOk()
+            ->assertJsonPath('data', []);
+    }
+
+    public function test_documents_cross_store_isolation(): void
+    {
+        $otherStaff = StaffUser::create([
+            'store_id'        => $this->otherStore->id,
+            'first_name'      => 'Other',
+            'last_name'       => 'Staff',
+            'employment_type' => 'full_time',
+            'status'          => 'active',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/members/{$otherStaff->id}/documents");
+
+        $response->assertNotFound();
+    }
+
+    public function test_document_expiry_flags(): void
+    {
+        $staff = $this->createStaff();
+
+        // Expired document
+        $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/documents", [
+                'document_type' => 'visa',
+                'file_url'      => 'https://storage.example.com/docs/visa.pdf',
+                'expiry_date'   => now()->subDay()->toDateString(),
+            ]);
+
+        // Workaround: validate flag via raw query since backend validates expiry_date is after today
+        $this->assertDatabaseCount('staff_documents', 1);
+        $doc = \App\Domain\StaffManagement\Models\StaffDocument::first();
+        $doc->update(['expiry_date' => now()->subDay()->toDateString()]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/members/{$staff->id}/documents");
+
+        $response->assertOk();
+        $data = $response->json('data.0');
+        $this->assertTrue($data['is_expired']);
+        $this->assertFalse($data['expiring_soon']);
+    }
+
+    // ─── Training Sessions Tests ───────────────────────────────────────────────
+
+    public function test_list_training_sessions_empty(): void
+    {
+        $staff = $this->createStaff();
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/members/{$staff->id}/training-sessions");
+
+        $response->assertOk()
+            ->assertJsonPath('data.total', 0)
+            ->assertJsonPath('data.data', []);
+    }
+
+    public function test_start_training_session(): void
+    {
+        $staff = $this->createStaff();
+
+        $response = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/training-sessions", [
+                'notes' => 'First training session',
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.notes', 'First training session')
+            ->assertJsonPath('data.is_active', true)
+            ->assertJsonStructure(['data' => [
+                'id', 'staff_user_id', 'started_at', 'ended_at',
+                'transactions_count', 'notes', 'is_active', 'duration_minutes',
+            ]]);
+    }
+
+    public function test_starting_new_session_ends_open_one(): void
+    {
+        $staff = $this->createStaff();
+
+        $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/training-sessions", [
+                'notes' => 'Session 1',
+            ]);
+
+        $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/training-sessions", [
+                'notes' => 'Session 2',
+            ]);
+
+        $listResponse = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/members/{$staff->id}/training-sessions");
+
+        $sessions = $listResponse->json('data.data');
+        $this->assertCount(2, $sessions);
+
+        // The first session should now be ended (is_active = false)
+        $activeCount = collect($sessions)->where('is_active', true)->count();
+        $this->assertEquals(1, $activeCount);
+    }
+
+    public function test_end_training_session(): void
+    {
+        $staff = $this->createStaff();
+
+        $startResponse = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/training-sessions");
+
+        $sessionId = $startResponse->json('data.id');
+
+        $endResponse = $this->withToken($this->token)
+            ->putJson("/api/v2/staff/members/{$staff->id}/training-sessions/{$sessionId}/end", [
+                'transactions_count' => 15,
+                'notes'              => 'Completed well',
+            ]);
+
+        $endResponse->assertOk()
+            ->assertJsonPath('data.is_active', false)
+            ->assertJsonPath('data.transactions_count', 15);
+
+        $this->assertNotNull($endResponse->json('data.ended_at'));
+    }
+
+    public function test_end_already_ended_session_fails(): void
+    {
+        $staff = $this->createStaff();
+
+        $startResponse = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/training-sessions");
+
+        $sessionId = $startResponse->json('data.id');
+
+        $this->withToken($this->token)
+            ->putJson("/api/v2/staff/members/{$staff->id}/training-sessions/{$sessionId}/end");
+
+        $secondEnd = $this->withToken($this->token)
+            ->putJson("/api/v2/staff/members/{$staff->id}/training-sessions/{$sessionId}/end");
+
+        $secondEnd->assertUnprocessable();
+    }
+
+    public function test_delete_training_session(): void
+    {
+        $staff = $this->createStaff();
+
+        $startResponse = $this->withToken($this->token)
+            ->postJson("/api/v2/staff/members/{$staff->id}/training-sessions");
+
+        $sessionId = $startResponse->json('data.id');
+
+        $deleteResponse = $this->withToken($this->token)
+            ->deleteJson("/api/v2/staff/members/{$staff->id}/training-sessions/{$sessionId}");
+
+        $deleteResponse->assertOk();
+        $this->assertDatabaseMissing('training_sessions', ['id' => $sessionId]);
+    }
+
+    public function test_training_sessions_cross_store_isolation(): void
+    {
+        $otherStaff = StaffUser::create([
+            'store_id'        => $this->otherStore->id,
+            'first_name'      => 'Other',
+            'last_name'       => 'Staff',
+            'employment_type' => 'full_time',
+            'status'          => 'active',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/members/{$otherStaff->id}/training-sessions");
+
+        $response->assertNotFound();
+    }
+
+    public function test_training_session_pagination(): void
+    {
+        $staff = $this->createStaff();
+
+        // Create 5 sessions
+        for ($i = 0; $i < 5; $i++) {
+            $session = \App\Domain\StaffManagement\Models\TrainingSession::create([
+                'staff_user_id' => $staff->id,
+                'store_id'      => $this->store->id,
+                'started_at'    => now()->subHours($i + 1),
+                'ended_at'      => now()->subHours($i),
+            ]);
+        }
+
+        $response = $this->withToken($this->token)
+            ->getJson("/api/v2/staff/members/{$staff->id}/training-sessions?per_page=3");
+
+        $response->assertOk()
+            ->assertJsonPath('data.per_page', 3)
+            ->assertJsonCount(3, 'data.data');
+    }
 }

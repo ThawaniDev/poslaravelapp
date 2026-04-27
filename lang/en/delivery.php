@@ -129,4 +129,15 @@ return [
     'status_push_logs_retrieved' => 'Status push logs retrieved.',
     'config_retrieved' => 'Delivery config retrieved.',
     'config_deleted' => 'Delivery config deleted.',
+
+    // Config fields
+    'auto_accept_timeout_seconds' => 'Auto-Reject Timeout (seconds)',
+    'auto_accept_timeout_desc' => 'Seconds before an unaccepted order is auto-rejected (60–1800).',
+    'operating_hours_json' => 'Operating Hours',
+    'operating_hours_desc' => 'Weekly schedule synced to the delivery platform.',
+    'rejection_reason' => 'Rejection Reason',
+    'webhook_url' => 'Webhook URL',
+    'webhook_url_desc' => 'Endpoint your delivery platform should call for real-time order events.',
+    'keep_current_key' => 'Leave blank to keep current key',
+    'webhook_secret_hint' => 'Leave blank to keep current secret',
 ];

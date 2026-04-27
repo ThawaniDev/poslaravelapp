@@ -5,6 +5,11 @@ namespace App\Domain\DeliveryIntegration\Controllers\Api;
 use App\Domain\DeliveryIntegration\Enums\DeliveryConfigPlatform;
 use App\Domain\DeliveryIntegration\Enums\DeliveryOrderStatus;
 use App\Domain\DeliveryIntegration\Jobs\MenuSyncJob;
+use App\Domain\DeliveryIntegration\Resources\DeliveryMenuSyncLogResource;
+use App\Domain\DeliveryIntegration\Resources\DeliveryOrderMappingResource;
+use App\Domain\DeliveryIntegration\Resources\DeliveryPlatformConfigResource;
+use App\Domain\DeliveryIntegration\Resources\DeliveryStatusPushLogResource;
+use App\Domain\DeliveryIntegration\Resources\DeliveryWebhookLogResource;
 use App\Domain\DeliveryIntegration\Services\DeliveryService;
 use App\Domain\DeliveryIntegration\Services\MenuSyncService;
 use App\Domain\DeliveryPlatformRegistry\Models\DeliveryPlatform;
@@ -35,9 +40,12 @@ class DeliveryController extends BaseApiController
      */
     public function configs(Request $request): JsonResponse
     {
-        $configs = $this->deliveryService->getConfigs($this->resolvedStoreId($request) ?? $request->user()->store_id);
+        $configs = $this->deliveryService->getConfigsCollection($this->resolvedStoreId($request) ?? $request->user()->store_id);
 
-        return $this->success($configs, __('delivery.configs_retrieved'));
+        return $this->success(
+            DeliveryPlatformConfigResource::collection($configs)->resolve(),
+            __('delivery.configs_retrieved'),
+        );
     }
 
     /**
@@ -47,21 +55,30 @@ class DeliveryController extends BaseApiController
     {
         $validated = $request->validate([
             'platform' => ['required', 'string', Rule::exists('delivery_platforms', 'slug')->where('is_active', true)],
-            'api_key' => 'nullable|string|max:255',
+            'api_key' => 'nullable|string|max:500',
             'merchant_id' => 'nullable|string|max:255',
-            'webhook_secret' => 'nullable|string|max:255',
+            'webhook_secret' => 'nullable|string|max:500',
             'branch_id_on_platform' => 'nullable|string|max:255',
             'is_enabled' => 'nullable|boolean',
             'auto_accept' => 'nullable|boolean',
-            'throttle_limit' => 'nullable|integer|min:1|max:100',
+            'auto_accept_timeout_seconds' => 'nullable|integer|min:60|max:1800',
+            'throttle_limit' => 'nullable|integer|min:1|max:1000',
             'max_daily_orders' => 'nullable|integer|min:1|max:10000',
             'sync_menu_on_product_change' => 'nullable|boolean',
             'menu_sync_interval_hours' => 'nullable|integer|min:1|max:168',
+            'operating_hours_json' => 'nullable|array',
+            'operating_hours_json.*.day_of_week' => 'required_with:operating_hours_json|integer|between:0,6',
+            'operating_hours_json.*.open_time' => 'nullable|string|max:5',
+            'operating_hours_json.*.close_time' => 'nullable|string|max:5',
+            'operating_hours_json.*.is_closed' => 'nullable|boolean',
         ]);
 
         $config = $this->deliveryService->saveConfig($this->resolvedStoreId($request) ?? $request->user()->store_id, $validated);
 
-        return $this->success($config, __('delivery.config_saved'));
+        return $this->success(
+            (new DeliveryPlatformConfigResource($config))->resolve(),
+            __('delivery.config_saved'),
+        );
     }
 
     /**
@@ -75,7 +92,10 @@ class DeliveryController extends BaseApiController
             return $this->notFound(__('delivery.config_not_found'));
         }
 
-        return $this->success($config, __('delivery.config_toggled'));
+        return $this->success(
+            (new DeliveryPlatformConfigResource($config))->resolve(),
+            __('delivery.config_toggled'),
+        );
     }
 
     /**
@@ -105,12 +125,16 @@ class DeliveryController extends BaseApiController
             'per_page' => 'nullable|integer|min:1|max:50',
         ]);
 
-        $orders = $this->deliveryService->getOrders(
+        $paginator = $this->deliveryService->getOrders(
             $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['platform', 'status', 'date_from', 'date_to', 'per_page']),
         );
 
-        return $this->success($orders, __('delivery.orders_retrieved'));
+        return $this->successPaginated(
+            DeliveryOrderMappingResource::collection($paginator)->resolve(),
+            $paginator,
+            __('delivery.orders_retrieved'),
+        );
     }
 
     /**
@@ -118,9 +142,12 @@ class DeliveryController extends BaseApiController
      */
     public function activeOrders(Request $request): JsonResponse
     {
-        $orders = $this->deliveryService->getActiveOrders($this->resolvedStoreId($request) ?? $request->user()->store_id);
+        $orders = $this->deliveryService->getActiveOrdersCollection($this->resolvedStoreId($request) ?? $request->user()->store_id);
 
-        return $this->success($orders, __('delivery.orders_retrieved'));
+        return $this->success(
+            DeliveryOrderMappingResource::collection($orders)->resolve(),
+            __('delivery.orders_retrieved'),
+        );
     }
 
     /**
@@ -134,7 +161,10 @@ class DeliveryController extends BaseApiController
             return $this->notFound(__('delivery.order_not_found'));
         }
 
-        return $this->success($order, __('delivery.order_retrieved'));
+        return $this->success(
+            (new DeliveryOrderMappingResource($order))->resolve(),
+            __('delivery.order_retrieved'),
+        );
     }
 
     /**
@@ -144,21 +174,24 @@ class DeliveryController extends BaseApiController
     {
         $validated = $request->validate([
             'status' => ['required', 'string', Rule::in(array_column(DeliveryOrderStatus::cases(), 'value'))],
-            'reason' => 'nullable|string|max:500',
+            'rejection_reason' => 'nullable|string|max:500',
         ]);
 
         $order = $this->deliveryService->updateOrderStatus(
             $id,
             $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $validated['status'],
-            $validated['reason'] ?? null,
+            $validated['rejection_reason'] ?? null,
         );
 
         if (! $order) {
             return $this->error(__('delivery.status_update_failed'), 422);
         }
 
-        return $this->success($order, __('delivery.status_updated'));
+        return $this->success(
+            (new DeliveryOrderMappingResource($order))->resolve(),
+            __('delivery.status_updated'),
+        );
     }
 
     /**
@@ -168,14 +201,15 @@ class DeliveryController extends BaseApiController
     {
         $validated = $request->validate([
             'platform' => 'nullable|string',
-            'products' => 'required|array|min:1',
-            'products.*.id' => 'required',
-            'products.*.name' => 'required|string',
-            'products.*.price' => 'required|numeric|min:0',
+            // products is optional — if omitted the MenuSyncJob loads the store catalog at dispatch time
+            'products' => 'nullable|array',
+            'products.*.id' => 'nullable',
+            'products.*.name' => 'required_with:products|string',
+            'products.*.price' => 'required_with:products|numeric|min:0',
         ]);
 
         $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
-        $products = $validated['products'];
+        $products = $validated['products'] ?? [];
 
         if (! empty($validated['platform'])) {
             $config = $this->deliveryService->getConfigByPlatform($storeId, $validated['platform']);
@@ -184,10 +218,10 @@ class DeliveryController extends BaseApiController
             }
             MenuSyncJob::dispatch($config->id, $products);
         } else {
-            $configs = $this->deliveryService->getConfigs($storeId);
+            $configs = $this->deliveryService->getConfigsCollection($storeId);
             foreach ($configs as $config) {
-                if ($config['is_enabled'] ?? false) {
-                    MenuSyncJob::dispatch($config['id'], $products);
+                if ($config->is_enabled) {
+                    MenuSyncJob::dispatch($config->id, $products);
                 }
             }
         }
@@ -205,12 +239,16 @@ class DeliveryController extends BaseApiController
             'per_page' => 'nullable|integer|min:1|max:50',
         ]);
 
-        $logs = $this->deliveryService->getSyncLogs(
+        $paginator = $this->deliveryService->getSyncLogs(
             $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['platform', 'per_page']),
         );
 
-        return $this->success($logs, __('delivery.sync_logs_retrieved'));
+        return $this->successPaginated(
+            DeliveryMenuSyncLogResource::collection($paginator)->resolve(),
+            $paginator,
+            __('delivery.sync_logs_retrieved'),
+        );
     }
 
     /**
@@ -228,6 +266,10 @@ class DeliveryController extends BaseApiController
                 'logo_url' => $p->logo_url,
                 'description' => $p->description,
                 'description_ar' => $p->description_ar,
+                'api_type' => $p->api_type ?? 'rest',
+                'base_url' => $p->base_url,
+                'default_commission_percent' => $p->default_commission_percent ? (float) $p->default_commission_percent : null,
+                'supported_countries' => $p->supported_countries ?? ['SA'],
                 'color' => DeliveryConfigPlatform::tryFrom($p->slug)?->color() ?? '#666666',
             ])
             ->values();
@@ -245,12 +287,16 @@ class DeliveryController extends BaseApiController
             'per_page' => 'nullable|integer|min:1|max:50',
         ]);
 
-        $logs = $this->deliveryService->getWebhookLogs(
+        $paginator = $this->deliveryService->getWebhookLogs(
             $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['platform', 'per_page']),
         );
 
-        return $this->success($logs, __('delivery.webhook_logs_retrieved'));
+        return $this->successPaginated(
+            DeliveryWebhookLogResource::collection($paginator)->resolve(),
+            $paginator,
+            __('delivery.webhook_logs_retrieved'),
+        );
     }
 
     /**
@@ -264,12 +310,16 @@ class DeliveryController extends BaseApiController
             'per_page' => 'nullable|integer|min:1|max:50',
         ]);
 
-        $logs = $this->deliveryService->getStatusPushLogs(
+        $paginator = $this->deliveryService->getStatusPushLogs(
             $this->resolvedStoreId($request) ?? $request->user()->store_id,
             $request->only(['platform', 'order_id', 'per_page']),
         );
 
-        return $this->success($logs, __('delivery.status_push_logs_retrieved'));
+        return $this->successPaginated(
+            DeliveryStatusPushLogResource::collection($paginator)->resolve(),
+            $paginator,
+            __('delivery.status_push_logs_retrieved'),
+        );
     }
 
     /**
@@ -283,7 +333,10 @@ class DeliveryController extends BaseApiController
             return $this->notFound(__('delivery.config_not_found'));
         }
 
-        return $this->success($config, __('delivery.config_retrieved'));
+        return $this->success(
+            (new DeliveryPlatformConfigResource($config))->resolve(),
+            __('delivery.config_retrieved'),
+        );
     }
 
     /**

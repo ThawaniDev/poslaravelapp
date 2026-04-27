@@ -7,6 +7,7 @@ use App\Domain\Promotion\Requests\CreatePromotionRequest;
 use App\Domain\Promotion\Requests\UpdatePromotionRequest;
 use App\Domain\Promotion\Resources\CouponCodeResource;
 use App\Domain\Promotion\Resources\PromotionResource;
+use App\Domain\Promotion\Resources\PromotionUsageLogResource;
 use App\Domain\Promotion\Services\PromotionService;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
@@ -168,6 +169,24 @@ class PromotionController extends BaseApiController
 
         $stats = $this->promotionService->analytics($found);
         return $this->success($stats);
+    }
+
+    // ─── Usage Log ──────────────────────────────────────────
+
+    public function usageLog(Request $request, string $promotion): JsonResponse
+    {
+        $found = $this->promotionService->find($promotion);
+        if ($found->organization_id !== $request->user()->organization_id) {
+            return $this->notFound('Promotion not found.');
+        }
+        $paginator = $this->promotionService->listUsageLog(
+            $found,
+            $request->only(['date_from', 'date_to']),
+            (int) $request->get('per_page', 20),
+        );
+        $result = $paginator->toArray();
+        $result['data'] = PromotionUsageLogResource::collection($paginator->items())->resolve();
+        return $this->success($result);
     }
 
     // ─── Duplicate ──────────────────────────────────────────

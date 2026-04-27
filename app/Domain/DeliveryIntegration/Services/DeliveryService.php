@@ -18,10 +18,14 @@ class DeliveryService
 {
     public function getConfigs(string $storeId): array
     {
+        return $this->getConfigsCollection($storeId)->toArray();
+    }
+
+    public function getConfigsCollection(string $storeId): \Illuminate\Database\Eloquent\Collection
+    {
         return DeliveryPlatformConfig::forStore($storeId)
             ->orderBy('platform')
-            ->get()
-            ->toArray();
+            ->get();
     }
 
     public function getConfig(string $configId, string $storeId): ?DeliveryPlatformConfig
@@ -51,10 +55,12 @@ class DeliveryService
                 'branch_id_on_platform' => $attributes['branch_id_on_platform'] ?? null,
                 'is_enabled' => $attributes['is_enabled'] ?? false,
                 'auto_accept' => $attributes['auto_accept'] ?? false,
+                'auto_accept_timeout_seconds' => $attributes['auto_accept_timeout_seconds'] ?? null,
                 'throttle_limit' => $attributes['throttle_limit'] ?? null,
                 'max_daily_orders' => $attributes['max_daily_orders'] ?? null,
                 'sync_menu_on_product_change' => $attributes['sync_menu_on_product_change'] ?? false,
                 'menu_sync_interval_hours' => $attributes['menu_sync_interval_hours'] ?? null,
+                'operating_hours_json' => isset($attributes['operating_hours_json']) ? json_encode($attributes['operating_hours_json']) : null,
                 'status' => $attributes['status'] ?? 'pending',
             ], fn ($v) => $v !== null),
         );
@@ -123,11 +129,15 @@ class DeliveryService
 
     public function getActiveOrders(string $storeId): array
     {
+        return $this->getActiveOrdersCollection($storeId)->toArray();
+    }
+
+    public function getActiveOrdersCollection(string $storeId): \Illuminate\Database\Eloquent\Collection
+    {
         return DeliveryOrderMapping::forStore($storeId)
             ->active()
             ->orderByDesc('created_at')
-            ->get()
-            ->toArray();
+            ->get();
     }
 
     public function updateOrderStatus(string $orderId, string $storeId, string $newStatus, ?string $reason = null): ?DeliveryOrderMapping

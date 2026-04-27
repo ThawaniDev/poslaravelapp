@@ -27,7 +27,9 @@ class ThawaniSettlement extends Model
         'reconciled',
         'reconciled_at',
         'reconciled_by',
+        'notes',
     ];
+    const UPDATED_AT = null;
 
     protected $casts = [
         'gross_amount' => 'decimal:2',

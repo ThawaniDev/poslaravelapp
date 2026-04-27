@@ -23,17 +23,32 @@ Route::prefix('thawani')->middleware('auth:sanctum')->group(function () {
 
     // Orders & Settlements
     Route::get('orders', [ThawaniController::class, 'orders'])->middleware('permission:thawani.view_dashboard');
+    Route::get('orders/{id}', [ThawaniController::class, 'orderDetail'])->middleware('permission:thawani.view_dashboard');
+    Route::post('orders/{id}/accept', [ThawaniController::class, 'acceptOrder'])->middleware('permission:thawani.manage_orders');
+    Route::post('orders/{id}/reject', [ThawaniController::class, 'rejectOrder'])->middleware('permission:thawani.manage_orders');
+    Route::put('orders/{id}/status', [ThawaniController::class, 'updateOrderStatus'])->middleware('permission:thawani.manage_orders');
     Route::get('settlements', [ThawaniController::class, 'settlements'])->middleware('permission:thawani.view_dashboard');
 
-    // Product Sync
+    // Online Menu / Product Management
+    Route::get('products', [ThawaniController::class, 'products'])->middleware('permission:thawani.menu');
+    Route::put('products/{id}/publish', [ThawaniController::class, 'publishProduct'])->middleware('permission:thawani.menu');
+    Route::post('products/bulk-publish', [ThawaniController::class, 'bulkPublishProducts'])->middleware('permission:thawani.menu');
     Route::get('product-mappings', [ThawaniController::class, 'productMappings'])->middleware('permission:thawani.menu');
-    Route::post('push-products', [ThawaniController::class, 'pushProducts'])->middleware('permission:thawani.manage_sync');
-    Route::post('pull-products', [ThawaniController::class, 'pullProducts'])->middleware('permission:thawani.manage_sync');
 
     // Category Sync
     Route::get('category-mappings', [ThawaniController::class, 'categoryMappings'])->middleware('permission:thawani.menu');
     Route::post('push-categories', [ThawaniController::class, 'pushCategories'])->middleware('permission:thawani.manage_sync');
     Route::post('pull-categories', [ThawaniController::class, 'pullCategories'])->middleware('permission:thawani.manage_sync');
+
+    // Product Sync
+    Route::post('push-products', [ThawaniController::class, 'pushProducts'])->middleware('permission:thawani.manage_sync');
+    Route::post('pull-products', [ThawaniController::class, 'pullProducts'])->middleware('permission:thawani.manage_sync');
+
+    // Store Availability
+    Route::put('store/availability', [ThawaniController::class, 'updateStoreAvailability'])->middleware('permission:thawani.manage_config');
+
+    // Inventory Sync
+    Route::post('inventory/sync', [ThawaniController::class, 'syncInventory'])->middleware('permission:thawani.manage_sync');
 
     // Column Mappings
     Route::get('column-mappings', [ThawaniController::class, 'columnMappings'])->middleware('permission:thawani.menu');
@@ -44,3 +59,8 @@ Route::prefix('thawani')->middleware('auth:sanctum')->group(function () {
     Route::get('queue-stats', [ThawaniController::class, 'queueStats'])->middleware('permission:thawani.view_dashboard');
     Route::post('process-queue', [ThawaniController::class, 'processQueue'])->middleware('permission:thawani.manage_sync');
 });
+
+// Webhook — public, verified via HMAC signature in controller
+Route::post('/webhook/thawani/orders', [ThawaniController::class, 'webhook']);
+
+

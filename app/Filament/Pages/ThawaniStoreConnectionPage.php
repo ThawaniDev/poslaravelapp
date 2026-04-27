@@ -22,7 +22,7 @@ class ThawaniStoreConnectionPage extends Page implements HasForms
 
     public static function getNavigationGroup(): ?string
     {
-        return __('nav.group_integrations');
+        return __('nav.group_thawani');
     }
 
     public static function getNavigationLabel(): string

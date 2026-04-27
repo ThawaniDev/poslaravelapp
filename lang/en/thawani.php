@@ -182,4 +182,24 @@ return [
     'connection_success' => 'Connected to Thawani successfully!',
     'select_store_prompt' => 'Select a store to configure',
     'select_store_prompt_description' => 'Choose a store from the dropdown above to set up or manage its Thawani marketplace connection.',
+
+    // Order Management
+    'order_retrieved' => 'Order retrieved.',
+    'order_not_found' => 'Order not found.',
+    'order_accepted' => 'Order accepted successfully.',
+    'order_rejected' => 'Order rejected.',
+    'order_status_updated' => 'Order status updated.',
+    'order_action_failed' => 'Order action failed.',
+
+    // Online Menu Management
+    'products_retrieved' => 'Products retrieved.',
+    'product_updated' => 'Product updated.',
+    'products_bulk_updated' => 'Products updated in bulk.',
+
+    // Store Availability
+    'store_availability_updated' => 'Store availability updated.',
+    'update_failed' => 'Update failed.',
+
+    // Inventory
+    'inventory_synced' => 'Inventory synced to Thawani.',
 ];
