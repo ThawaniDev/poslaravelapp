@@ -38,9 +38,13 @@ return new class extends Migration
         }
 
         // ─── expenses ────────────────────────────────────────────
-        if (!Schema::hasColumn('expenses', 'updated_at')) {
+        if (!Schema::hasColumn('expenses', 'created_at')) {
             Schema::table('expenses', function (Blueprint $table) {
                 $table->timestamp('created_at')->nullable()->after('expense_date');
+            });
+        }
+        if (!Schema::hasColumn('expenses', 'updated_at')) {
+            Schema::table('expenses', function (Blueprint $table) {
                 $table->timestamp('updated_at')->nullable()->after('created_at');
             });
         }
