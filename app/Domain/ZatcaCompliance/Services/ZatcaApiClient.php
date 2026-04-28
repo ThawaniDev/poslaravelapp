@@ -64,7 +64,19 @@ class ZatcaApiClient
                     'csr' => base64_encode($csrPem),
                 ]);
             if (! $resp->successful()) {
-                Log::warning('ZATCA compliance API rejected CSR', ['status' => $resp->status(), 'body' => $resp->body()]);
+                // Dump the full CSR (PEM + decoded subject/SAN) so we can
+                // diagnose ZATCA's opaque "Invalid CSR" 400s.
+                $decoded = '';
+                $tmp = tempnam(sys_get_temp_dir(), 'zatca_csr_dump_');
+                file_put_contents($tmp, $csrPem);
+                $decoded = (string) shell_exec('openssl req -in ' . escapeshellarg($tmp) . ' -noout -text 2>&1');
+                @unlink($tmp);
+                Log::warning('ZATCA compliance API rejected CSR', [
+                    'status' => $resp->status(),
+                    'body' => $resp->body(),
+                    'csr_pem' => $csrPem,
+                    'csr_decoded' => $decoded,
+                ]);
                 return ['error' => 'ZATCA ' . $resp->status() . ': ' . $resp->body()];
             }
             $body = $resp->json();

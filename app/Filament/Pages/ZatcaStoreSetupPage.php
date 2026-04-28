@@ -145,23 +145,35 @@ class ZatcaStoreSetupPage extends Page implements HasForms
         $settings = StoreSettings::firstOrNew(['store_id' => $storeId]);
         $extra = $settings->extra ?? [];
         $zatca = $extra['zatca'] ?? [];
+        $store = Store::find($storeId);
         $this->data = array_merge([
             'store_id' => $storeId,
-            'vat_number' => $zatca['vat_number'] ?? null,
-            'cr_number' => $zatca['cr_number'] ?? null,
-            'business_name_ar' => $zatca['business_name_ar'] ?? null,
-            'business_name_en' => $zatca['business_name_en'] ?? null,
-            'city' => $zatca['city'] ?? null,
+            'vat_number' => $zatca['vat_number'] ?? $store?->vat_number,
+            'cr_number' => $zatca['cr_number'] ?? $store?->cr_number,
+            'business_name_ar' => $zatca['business_name_ar'] ?? $store?->name_ar,
+            'business_name_en' => $zatca['business_name_en'] ?? $store?->name,
+            'city' => $zatca['city'] ?? $store?->city,
             'district' => $zatca['district'] ?? null,
             'street' => $zatca['street'] ?? null,
             'building_number' => $zatca['building_number'] ?? null,
-            'postal_code' => $zatca['postal_code'] ?? null,
+            'postal_code' => $zatca['postal_code'] ?? $store?->postal_code,
             'environment' => $zatca['environment'] ?? 'sandbox',
             'otp' => null,
             'auto_submit' => $zatca['auto_submit'] ?? true,
             'b2b_required' => $zatca['b2b_required'] ?? false,
             'notes' => $zatca['notes'] ?? null,
         ], $this->data['store_id'] === $storeId ? [] : []);
+    }
+
+    private function composeAddress(array $state): string
+    {
+        return trim(implode(', ', array_filter([
+            $state['building_number'] ?? null,
+            $state['street'] ?? null,
+            $state['district'] ?? null,
+            $state['city'] ?? null,
+            $state['postal_code'] ?? null,
+        ])));
     }
 
     public function save(): void
@@ -206,6 +218,20 @@ class ZatcaStoreSetupPage extends Page implements HasForms
         $settings->store_id = $storeId;
         $settings->extra = $extra;
         $settings->save();
+
+        // Also mirror the tax-identity fields onto the Store row itself,
+        // because CertificateService builds the ZATCA CSR from those
+        // canonical columns (Store.vat_number / Store.cr_number / etc.).
+        $store = Store::find($storeId);
+        if ($store) {
+            $store->fill(array_filter([
+                'vat_number' => $state['vat_number'] ?? null,
+                'cr_number' => $state['cr_number'] ?? null,
+                'address' => $this->composeAddress($state) ?: null,
+                'city' => $state['city'] ?? null,
+                'postal_code' => $state['postal_code'] ?? null,
+            ], fn ($v) => $v !== null && $v !== ''))->save();
+        }
 
         AdminActivityLog::record(
             adminUserId: auth('admin')->id(),
