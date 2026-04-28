@@ -144,46 +144,47 @@ class CertificateService
      */
     private function generateKeypairAndCsr(Store $store): array
     {
-        $keyConfig = [
+        // ZATCA requires secp256k1 on a SHA-256 EC key. prime256v1 is
+        // NOT accepted by the real Fatoora API.
+        $key = openssl_pkey_new([
             'private_key_type' => OPENSSL_KEYTYPE_EC,
             'curve_name' => 'secp256k1',
             'digest_alg' => 'sha256',
-        ];
-        $key = openssl_pkey_new($keyConfig);
+        ]);
         if ($key === false) {
-            // Fall back to prime256v1 if secp256k1 is unsupported on this
-            // OpenSSL build (cryptographically equivalent for our needs).
-            $key = openssl_pkey_new([
-                'private_key_type' => OPENSSL_KEYTYPE_EC,
-                'curve_name' => 'prime256v1',
-                'digest_alg' => 'sha256',
-            ]);
-        }
-        if ($key === false) {
-            throw new \RuntimeException('CertificateService: cannot generate EC keypair');
+            throw new \RuntimeException('CertificateService: cannot generate secp256k1 keypair (required by ZATCA)');
         }
 
         openssl_pkey_export($key, $privatePem);
         $details = openssl_pkey_get_details($key);
         $publicPem = $details['key'];
 
+        // ZATCA mandates these subject fields. CN+O are the legal name,
+        // OU is the CR (commercial registration) number, C must be SA.
+        $legalName = trim((string) ($store->name ?: 'Wameed POS Store'));
+        $crNumber = trim((string) ($store->cr_number ?: '0000000000'));
+        $vatNumber = trim((string) ($store->vat_number ?: '300000000000003'));
+        $branchCode = trim((string) ($store->branch_code ?: $store->id));
+        $industry = $this->businessCategoryFor($store);
+        $address = trim((string) ($store->address ?: ($store->city ?: 'Riyadh')));
+
         $dn = [
-            'CN' => substr($store->name, 0, 50),
-            'O' => substr($store->name, 0, 50),
-            'OU' => 'POS',
-            'C' => 'SA',
-            'ST' => $store->city ?? 'Riyadh',
-            'L' => $store->city ?? 'Riyadh',
+            'CN' => mb_substr($legalName, 0, 64),
+            'O'  => mb_substr($legalName, 0, 64),
+            'OU' => mb_substr($crNumber, 0, 64),
+            'C'  => 'SA',
         ];
 
-        // ZATCA requires the CSR to carry a certificateTemplateName
-        // extension (1.3.6.1.4.1.311.20.2). The exact value differs
-        // per environment per the Fatoora Portal User Manual v3:
-        //   production  -> ZATCA-Code-Signing
-        //   simulation  -> PREZATCA-Code-Signing
-        //   sandbox     -> PREZATCA-Code-Signing (also accepted by stub)
         $template = (string) config('zatca.csr_template', 'PREZATCA-Code-Signing');
-        $opensslCnf = $this->buildOpensslCnf($template);
+        $opensslCnf = $this->buildOpensslCnf(
+            template: $template,
+            serialNumber: '1-Wameed|2-POS|3-' . $branchCode,
+            vatNumber: $vatNumber,
+            invoiceTypes: '1100', // standard + simplified
+            registeredAddress: mb_substr($address, 0, 128),
+            businessCategory: mb_substr($industry, 0, 64),
+        );
+
         $csrConfig = [
             'digest_alg' => 'sha256',
             'config' => $opensslCnf,
@@ -191,28 +192,57 @@ class CertificateService
         ];
         $csrResource = openssl_csr_new($dn, $key, $csrConfig);
         if ($csrResource === false) {
-            // Fallback if the platform openssl build cannot load our cnf
-            // (the resulting CSR will lack the template extension and
-            // will be rejected by real ZATCA, but is fine for stub mode).
-            $csrResource = openssl_csr_new($dn, $key, ['digest_alg' => 'sha256']);
+            @unlink($opensslCnf);
+            $err = '';
+            while (($e = openssl_error_string()) !== false) {
+                $err .= $e . ' | ';
+            }
+            throw new \RuntimeException('CertificateService: openssl_csr_new failed: ' . $err);
         }
         $csrPem = '';
-        if ($csrResource !== false) {
-            openssl_csr_export($csrResource, $csrPem);
-        }
+        openssl_csr_export($csrResource, $csrPem);
         @unlink($opensslCnf);
 
         return [$privatePem, $publicPem, $csrPem];
     }
 
     /**
-     * Write a temporary openssl.cnf that adds the ZATCA
-     * `certificateTemplateName` extension to the v3_req section. Returns
-     * the absolute path to the temp file (caller must unlink).
+     * Map our internal BusinessType enum to a free-form ZATCA
+     * `businessCategory` string. ZATCA does not enforce a vocabulary
+     * here so a sensible English label is sufficient.
      */
-    private function buildOpensslCnf(string $template): string
+    private function businessCategoryFor(Store $store): string
     {
+        $type = $store->business_type;
+        if ($type === null) {
+            return 'Retail';
+        }
+        return match (true) {
+            method_exists($type, 'value') => ucfirst(str_replace('_', ' ', (string) $type->value)),
+            default => 'Retail',
+        };
+    }
+
+    /**
+     * Write a temporary openssl.cnf containing the full ZATCA-required
+     * extensions (template name, EKU=clientAuth, and the SAN dirName
+     * carrying SN/UID/title/registeredAddress/businessCategory).
+     * Returns absolute path; caller must unlink.
+     */
+    private function buildOpensslCnf(
+        string $template,
+        string $serialNumber,
+        string $vatNumber,
+        string $invoiceTypes,
+        string $registeredAddress,
+        string $businessCategory,
+    ): string {
         $cnf = <<<CNF
+oid_section = zatca_oids
+
+[ zatca_oids ]
+certificateTemplateName = 1.3.6.1.4.1.311.20.2
+
 [ req ]
 default_bits = 2048
 distinguished_name = req_distinguished_name
@@ -224,7 +254,16 @@ prompt = no
 [ v3_req ]
 basicConstraints = CA:FALSE
 keyUsage = digitalSignature, nonRepudiation, keyEncipherment
-1.3.6.1.4.1.311.20.2 = ASN1:PRINTABLESTRING:{$template}
+extendedKeyUsage = clientAuth
+certificateTemplateName = ASN1:PRINTABLESTRING:{$template}
+subjectAltName = dirName:zatca_san
+
+[ zatca_san ]
+SN = {$serialNumber}
+UID = {$vatNumber}
+title = {$invoiceTypes}
+registeredAddress = {$registeredAddress}
+businessCategory = {$businessCategory}
 CNF;
         $path = tempnam(sys_get_temp_dir(), 'zatca_csr_');
         file_put_contents($path, $cnf);
