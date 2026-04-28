@@ -34,9 +34,23 @@ class CertificateService
 
         $resp = $this->api->requestComplianceCertificate($csrPem, $otp);
 
+        // In real (non-sandbox) environments we MUST get a certificate
+        // back from ZATCA. Silently self-signing here would burn the OTP
+        // and leave the tenant with a useless cert that ZATCA rejects on
+        // every invoice submission.
+        $isStubMode = config('zatca.environment') === 'sandbox'
+            || ! config('zatca.api_url')
+            || str_contains((string) config('zatca.api_url'), 'developer-portal');
+
+        if (! $isStubMode && empty($resp['certificate_pem'])) {
+            $msg = $resp['error'] ?? 'ZATCA returned an empty response';
+            throw new \RuntimeException('ZATCA enrollment failed: ' . $msg);
+        }
+
         $certificatePem = $resp['certificate_pem']
             ?? $this->selfSignFromCsr($csrPem, $privatePem, $store, days: 365);
         $ccsid = $resp['request_id'] ?? ('CCSID-' . strtoupper(Str::random(16)));
+        $secret = $resp['secret'] ?? null;
 
         return ZatcaCertificate::create([
             'store_id' => $store->id,
@@ -49,6 +63,7 @@ class CertificateService
             'csr_pem' => $csrPem,
             'compliance_request_id' => $ccsid,
             'ccsid' => $ccsid,
+            'secret' => $secret ? Crypt::encryptString($secret) : null,
             'status' => ZatcaCertificateStatus::Active,
             'issued_at' => now(),
             'expires_at' => now()->addYear(),
