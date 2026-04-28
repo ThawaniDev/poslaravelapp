@@ -75,6 +75,8 @@ class MarketplaceController extends BaseApiController
     {
         $validated = $request->validate([
             'auto_renew' => ['sometimes', 'boolean'],
+            'payment_reference' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'payment_gateway' => ['sometimes', 'nullable', 'string', 'max:100'],
         ]);
 
         $user = $request->user();
@@ -91,9 +93,12 @@ class MarketplaceController extends BaseApiController
 
         $isPaid = $listing->pricing_type !== MarketplacePricingType::Free && (float) $listing->price_amount > 0;
 
-        // ── Free listing: instant purchase ──
-        if (! $isPaid) {
-            $purchase = $this->service->purchaseTemplate($storeId, $listingId, $validated);
+        // ── Free listing or pre-paid (payment_reference provided): instant purchase ──
+        if (! $isPaid || ! empty($validated['payment_reference'])) {
+            $purchase = $this->service->purchaseTemplate($storeId, $listingId, array_merge($validated, [
+                'payment_reference' => $validated['payment_reference'] ?? null,
+                'payment_gateway' => $validated['payment_gateway'] ?? null,
+            ]));
 
             if (! $purchase) {
                 return $this->error(__('ui.purchase_failed'), 422);

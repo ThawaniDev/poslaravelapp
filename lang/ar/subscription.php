@@ -33,6 +33,12 @@ return [
     'addon_already_deactivated'           => 'الإضافة معطلة بالفعل.',
     'addon_removed'                       => 'تمت إزالة الإضافة بنجاح. لن تظهر في فاتورتك القادمة.',
 
+    // ── Discount Codes ────────────────────────────────────────────────────────
+    'discount_valid'                      => 'تم تطبيق كود الخصم بنجاح.',
+    'discount_invalid'                    => 'كود الخصم غير صالح أو منتهي الصلاحية.',
+    'discount_expired'                    => 'وصل كود الخصم إلى الحد الأقصى من الاستخدامات.',
+    'discount_not_applicable'             => 'كود الخصم غير قابل للتطبيق على الخطة المحددة.',
+
     // ── Limit Key Labels (for user-facing messages) ──────────────────────────
     'limit_key_products'                  => 'المنتجات',
     'limit_key_staff_members'             => 'أعضاء الفريق',

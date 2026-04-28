@@ -12,21 +12,22 @@ class PlatformPlanStat extends Model
 
     protected $table = 'platform_plan_stats';
     public $timestamps = false;
+    protected $dateFormat = 'Y-m-d';
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
         'subscription_plan_id',
         'date',
-        'active_stores',
-        'trial_stores',
-        'churned_stores',
-        'revenue',
+        'active_count',
+        'trial_count',
+        'churned_count',
+        'mrr',
     ];
 
     protected $casts = [
         'date' => 'date',
-        'revenue' => 'decimal:2',
+        'mrr' => 'decimal:2',
     ];
 
     public function setDateAttribute($value): void

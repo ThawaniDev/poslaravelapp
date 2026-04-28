@@ -208,6 +208,16 @@ class ReportService
         };
     }
 
+    /**
+     * Resolve a [dateFrom, dateTo] pair from filters, defaulting to the last 30 days.
+     */
+    private function resolveDateRange(array $filters): array
+    {
+        $dateFrom = $filters['date_from'] ?? now()->subDays(30)->toDateString();
+        $dateTo   = $filters['date_to']   ?? now()->toDateString();
+        return [$dateFrom, $dateTo];
+    }
+
     private function previousPeriodSummary(string $storeId, string $dateFrom, string $dateTo): array
     {
         $from = \Carbon\Carbon::parse($dateFrom);
@@ -415,8 +425,13 @@ class ReportService
         if (! empty($filters['date_to'])) {
             $hoursQuery->whereDate('clock_in_at', '<=', $filters['date_to']);
         }
+        $driver = DB::getDriverName();
+        $timeDiffExpr = $driver === 'sqlite'
+            ? DB::raw("SUM(CAST((STRFTIME('%s', clock_out_at) - STRFTIME('%s', clock_in_at)) AS INTEGER)) as total_seconds")
+            : DB::raw('SUM(TIMESTAMPDIFF(SECOND, clock_in_at, clock_out_at)) as total_seconds');
+
         $hoursMap = $hoursQuery
-            ->select('staff_user_id', DB::raw('SUM(TIMESTAMPDIFF(SECOND, clock_in_at, clock_out_at)) as total_seconds'))
+            ->select('staff_user_id', $timeDiffExpr)
             ->groupBy('staff_user_id')
             ->pluck('total_seconds', 'staff_user_id')
             ->toArray();
@@ -1120,13 +1135,13 @@ class ReportService
             ->select([
                 DB::raw("COALESCE(eo.platform, 'direct') AS platform"),
                 DB::raw('COUNT(o.id) AS order_count'),
-                DB::raw('SUM(o.total_amount) AS gross_sales'),
+                DB::raw('SUM(o.total) AS gross_sales'),
                 DB::raw('SUM(COALESCE(eo.commission_amount, 0)) AS total_commission'),
-                DB::raw('SUM(o.total_amount - COALESCE(eo.commission_amount, 0)) AS net_settlement'),
+                DB::raw('SUM(o.total - COALESCE(eo.commission_amount, 0)) AS net_settlement'),
             ])
             ->where('o.store_id', $storeId)
             ->whereIn('o.status', ['completed', 'delivered'])
-            ->whereBetween(DB::raw('o.created_at::date'), [$dateFrom, $dateTo])
+            ->whereRaw('DATE(o.created_at) BETWEEN ? AND ?', [$dateFrom, $dateTo])
             ->groupBy(DB::raw("COALESCE(eo.platform, 'direct')"))
             ->orderByDesc('gross_sales')
             ->get();
@@ -1407,6 +1422,7 @@ class ReportService
             'generated_at' => now()->toIso8601String(),
             'filters' => $filters,
             'data' => $data,
+            'url' => null,
         ];
     }
 }

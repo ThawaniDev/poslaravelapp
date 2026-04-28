@@ -66,6 +66,19 @@ class ZatcaInvoiceResource extends Resource
                 Forms\Components\TextInput::make('buyer_tax_number')->label(__('zatca.buyer_tax_number'))->disabled(),
             ])->columns(2),
 
+            Forms\Components\Section::make(__('zatca.rejection_errors'))
+                ->collapsible()
+                ->collapsed(fn ($record) => empty($record?->rejection_errors))
+                ->visible(fn ($record) => ! empty($record?->rejection_errors))
+                ->schema([
+                    Forms\Components\Placeholder::make('rejection_errors_display')
+                        ->label('')
+                        ->content(fn ($record) => collect($record?->rejection_errors ?? [])
+                            ->map(fn ($e) => '[' . ($e['code'] ?? '?') . '] ' . ($e['message'] ?? json_encode($e)))
+                            ->join("\n"))
+                        ->columnSpanFull(),
+                ]),
+
             Forms\Components\Section::make(__('zatca.invoice_xml'))
                 ->collapsible()
                 ->collapsed()

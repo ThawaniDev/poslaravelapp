@@ -186,6 +186,7 @@ class AIUsageTrackingServiceTest extends TestCase
             'latency_ms' => 800,
             'status' => 'success',
             'response_cached' => false,
+            'created_at' => now(),
         ], $overrides));
     }
 
@@ -312,7 +313,7 @@ class AIUsageTrackingServiceTest extends TestCase
             'slug' => 'test_cast',
             'name' => 'Test',
             'name_ar' => 'اختبار',
-            'category' => 'test',
+            'category' => 'inventory',
             'is_enabled' => true,
             'is_premium' => false,
             'daily_limit' => 50,

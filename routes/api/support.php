@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('support')->middleware('auth:sanctum')->group(function () {
+Route::prefix('support')->middleware(['auth:sanctum', 'plan.active'])->group(function () {
     Route::get('stats', [SupportController::class, 'stats'])->middleware('permission:support.view');
     Route::get('tickets', [SupportController::class, 'index'])->middleware('permission:support.view');
     Route::post('tickets', [SupportController::class, 'store'])->middleware('permission:support.create_ticket');

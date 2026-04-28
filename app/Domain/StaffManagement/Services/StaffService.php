@@ -268,11 +268,11 @@ class StaffService
         }
 
         if (!empty($filters['date_from'])) {
-            $query->where('end_date', '>=', $filters['date_from']);
+            $query->whereDate('end_date', '>=', $filters['date_from']);
         }
 
         if (!empty($filters['date_to'])) {
-            $query->where('start_date', '<=', $filters['date_to']);
+            $query->whereDate('start_date', '<=', $filters['date_to']);
         }
 
         if (isset($filters['status'])) {
@@ -294,8 +294,8 @@ class StaffService
         // Check for overlapping periods (same staff + same template + overlapping dates)
         $query = ShiftSchedule::where('store_id', $data['store_id'])
             ->where('staff_user_id', $data['staff_user_id'])
-            ->where('start_date', '<=', $data['end_date'])
-            ->where('end_date', '>=', $data['start_date']);
+            ->whereDate('start_date', '<=', $data['end_date'])
+            ->whereDate('end_date', '>=', $data['start_date']);
 
         if (!empty($data['shift_template_id'])) {
             $query->where('shift_template_id', $data['shift_template_id']);
@@ -319,8 +319,8 @@ class StaffService
             $conflict = ShiftSchedule::where('store_id', $data['store_id'])
                 ->where('staff_user_id', $staffUserId)
                 ->where('shift_template_id', $data['shift_template_id'])
-                ->where('start_date', '<=', $endDate)
-                ->where('end_date', '>=', $startDate)
+                ->whereDate('start_date', '<=', $endDate)
+                ->whereDate('end_date', '>=', $startDate)
                 ->exists();
 
             if (!$conflict) {

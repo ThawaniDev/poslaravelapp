@@ -33,6 +33,12 @@ return [
     'addon_already_deactivated'           => 'Add-on is already deactivated.',
     'addon_removed'                       => 'Add-on removed successfully. It will not appear on your next invoice.',
 
+    // ── Discount Codes ────────────────────────────────────────────────────────
+    'discount_valid'                      => 'Discount code applied successfully.',
+    'discount_invalid'                    => 'Invalid or expired discount code.',
+    'discount_expired'                    => 'This discount code has reached its maximum usage limit.',
+    'discount_not_applicable'             => 'This discount code is not applicable to the selected plan.',
+
     // ── Limit Key Labels (for user-facing messages) ──────────────────────────
     'limit_key_products'                  => 'products',
     'limit_key_staff_members'             => 'staff members',

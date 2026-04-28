@@ -61,6 +61,7 @@ class SubscriptionController extends BaseApiController
                 planId: $request->input('plan_id'),
                 billingCycle: $billingCycle,
                 paymentMethod: $request->input('payment_method'),
+                discountCode: $request->input('discount_code'),
             );
 
             return $this->created(new StoreSubscriptionResource($subscription), __('subscription.subscribed_successfully'));
@@ -488,5 +489,78 @@ class SubscriptionController extends BaseApiController
         ]);
 
         return $this->success(null, __('subscription.addon_removed'));
+    }
+
+    /**
+     * POST /subscription/validate-discount — Validate a discount code and return discounted price.
+     */
+    public function validateDiscount(Request $request): JsonResponse
+    {
+        $request->validate([
+            'code'     => ['required', 'string', 'max:100'],
+            'plan_id'  => ['required', 'uuid'],
+            'billing_cycle' => ['sometimes', 'in:monthly,yearly'],
+        ]);
+
+        $code     = strtoupper(trim($request->input('code')));
+        $planId   = $request->input('plan_id');
+        $cycle    = $request->input('billing_cycle', 'monthly');
+
+        $plan = \App\Domain\Subscription\Models\SubscriptionPlan::find($planId);
+
+        if (! $plan || ! $plan->is_active) {
+            return $this->notFound(__('subscription.plan_not_found'));
+        }
+
+        $discount = \App\Domain\Subscription\Models\SubscriptionDiscount::where('code', $code)
+            ->where(function ($q) {
+                $q->whereNull('valid_from')->orWhere('valid_from', '<=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('valid_to')->orWhere('valid_to', '>=', now());
+            })
+            ->first();
+
+        if (! $discount) {
+            return $this->error(__('subscription.discount_invalid'), 422);
+        }
+
+        // Check max uses
+        if ($discount->max_uses !== null && $discount->times_used >= $discount->max_uses) {
+            return $this->error(__('subscription.discount_expired'), 422);
+        }
+
+        // Check plan applicability
+        if (! empty($discount->applicable_plan_ids) && ! in_array($planId, $discount->applicable_plan_ids)) {
+            return $this->error(__('subscription.discount_not_applicable'), 422);
+        }
+
+        $originalPrice = $cycle === 'yearly'
+            ? (float) ($plan->yearly_price ?? ($plan->monthly_price * 12 * 0.8))
+            : (float) $plan->monthly_price;
+
+        /** @var \App\Domain\Promotion\Enums\DiscountType $type */
+        $discountType  = $discount->type;
+        $discountValue = (float) $discount->value;
+
+        $discountAmount = match ($discountType?->value ?? $discountType) {
+            'percentage' => round($originalPrice * $discountValue / 100, 2),
+            'fixed'      => min($discountValue, $originalPrice),
+            default      => 0,
+        };
+
+        $finalPrice = max(0, round($originalPrice - $discountAmount, 2));
+
+        return $this->success([
+            'code'             => $discount->code,
+            'type'             => $discountType?->value ?? $discountType,
+            'value'            => $discountValue,
+            'original_price'   => $originalPrice,
+            'discount_amount'  => $discountAmount,
+            'final_price'      => $finalPrice,
+            'currency'         => 'SAR',
+            'billing_cycle'    => $cycle,
+            'valid_to'         => $discount->valid_to?->toIso8601String(),
+        ], __('subscription.discount_valid'));
     }
 }

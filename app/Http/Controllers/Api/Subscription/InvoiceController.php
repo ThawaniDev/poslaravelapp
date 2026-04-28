@@ -50,7 +50,10 @@ class InvoiceController extends BaseApiController
 
             // Verify the invoice belongs to this organization
             $subscription = $invoice->storeSubscription;
-            if (! $subscription || $subscription->organization_id !== $organizationId) {
+            if (! $subscription) {
+                return $this->notFound('Invoice not found.');
+            }
+            if ($subscription->organization_id !== $organizationId) {
                 return $this->error('You do not have access to this invoice.', 403);
             }
 

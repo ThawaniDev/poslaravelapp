@@ -212,6 +212,17 @@ class SubscriptionPlanResource extends Resource
                                                 'dedicated_manager'     => __('subscription_plans.feature_dedicated_manager'),
                                                 'custom_integrations'   => __('subscription_plans.feature_custom_integrations'),
                                                 'sla_guarantee'         => __('subscription_plans.feature_sla_guarantee'),
+                                                // Catalog & Products
+                                                'customer_management'   => __('subscription_plans.feature_customer_management'),
+                                                'product_modifiers'     => __('subscription_plans.feature_product_modifiers'),
+                                                'supplier_management'   => __('subscription_plans.feature_supplier_management'),
+                                                'product_variants'      => __('subscription_plans.feature_product_variants'),
+                                                'combo_products'        => __('subscription_plans.feature_combo_products'),
+                                                'bulk_import'           => __('subscription_plans.feature_bulk_import'),
+                                                'barcode_label_printing' => __('subscription_plans.feature_barcode_label_printing'),
+                                                // Promotions & Marketing
+                                                'promotions_coupons'    => __('subscription_plans.feature_promotions_coupons'),
+                                                'promotions_advanced'   => __('subscription_plans.feature_promotions_advanced'),
                                                 // AI & Tools
                                                 'wameed_ai'             => __('subscription_plans.feature_wameed_ai'),
                                                 'cashier_gamification'  => __('subscription_plans.feature_cashier_gamification'),

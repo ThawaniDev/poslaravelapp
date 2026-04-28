@@ -3,7 +3,7 @@
 use App\Domain\Security\Controllers\Api\SecurityController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:sanctum')->prefix('security')->group(function () {
+Route::middleware(['auth:sanctum', 'plan.active'])->prefix('security')->group(function () {
     // Overview
     Route::get('overview', [SecurityController::class, 'overview'])->middleware('permission:security.view_dashboard');
 

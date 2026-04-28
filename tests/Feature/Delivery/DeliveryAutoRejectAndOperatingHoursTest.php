@@ -135,7 +135,7 @@ class DeliveryAutoRejectAndOperatingHoursTest extends TestCase
         // and the local rejection still applies.
         $config->delete();
 
-        (new AutoRejectStaleOrderJob($order->id))->handle(app(\App\Domain\DeliveryIntegration\Services\StatusPushService::class));
+        (new AutoRejectStaleOrderJob($order->id, 0))->handle(app(\App\Domain\DeliveryIntegration\Services\StatusPushService::class));
 
         $reloaded = $order->fresh();
         $this->assertSame(DeliveryOrderStatus::Rejected->value, $reloaded->delivery_status->value);
@@ -154,7 +154,7 @@ class DeliveryAutoRejectAndOperatingHoursTest extends TestCase
             'accepted_at' => now(),
         ]);
 
-        (new AutoRejectStaleOrderJob($order->id))->handle(app(\App\Domain\DeliveryIntegration\Services\StatusPushService::class));
+        (new AutoRejectStaleOrderJob($order->id, 0))->handle(app(\App\Domain\DeliveryIntegration\Services\StatusPushService::class));
 
         $this->assertSame(DeliveryOrderStatus::Accepted->value, $order->fresh()->delivery_status->value);
     }

@@ -85,6 +85,19 @@ return [
     'feature_installments'              => 'الدفع بالتقسيط',
     'feature_accounting'                => 'المحاسبة',
 
+    // Catalog & product features
+    'feature_customer_management'       => 'إدارة العملاء',
+    'feature_product_modifiers'         => 'إضافات المنتج',
+    'feature_supplier_management'       => 'إدارة الموردين',
+    'feature_product_variants'          => 'متغيرات المنتج',
+    'feature_combo_products'            => 'منتجات الكومبو',
+    'feature_bulk_import'               => 'استيراد CSV الجماعي',
+    'feature_barcode_label_printing'    => 'طباعة ملصقات الباركود',
+
+    // Promotions & marketing features
+    'feature_promotions_coupons'        => 'العروض والكوبونات',
+    'feature_promotions_advanced'       => 'عروض متقدمة (اشتر واحداً واحصل على الآخر، الحزم، الساعة السعيدة)',
+
     // Industry vertical features
     'feature_industry_restaurant'       => 'ميزات المطاعم',
     'feature_industry_bakery'           => 'ميزات المخابز',

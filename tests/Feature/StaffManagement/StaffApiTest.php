@@ -476,7 +476,7 @@ class StaffApiTest extends TestCase
                 'store_id' => $this->store->id,
                 'staff_user_id' => $staff->id,
                 'shift_template_id' => $template->id,
-                'date' => '2025-03-01',
+                'start_date' => '2025-03-01',
             ]);
 
         $response->assertCreated()
@@ -503,7 +503,8 @@ class StaffApiTest extends TestCase
             'store_id' => $this->store->id,
             'staff_user_id' => $staff->id,
             'shift_template_id' => $template->id,
-            'date' => '2025-03-01',
+            'start_date' => '2025-03-01',
+            'end_date' => '2025-03-01',
         ]);
 
         $response = $this->withToken($this->token)
@@ -511,7 +512,7 @@ class StaffApiTest extends TestCase
                 'store_id' => $this->store->id,
                 'staff_user_id' => $staff->id,
                 'shift_template_id' => $template->id,
-                'date' => '2025-03-01',
+                'start_date' => '2025-03-01',
             ]);
 
         $response->assertStatus(422);
@@ -536,7 +537,8 @@ class StaffApiTest extends TestCase
             'store_id' => $this->store->id,
             'staff_user_id' => $staff->id,
             'shift_template_id' => $template->id,
-            'date' => '2025-03-01',
+            'start_date' => '2025-03-01',
+            'end_date' => '2025-03-01',
         ]);
 
         $response = $this->withToken($this->token)
@@ -565,7 +567,8 @@ class StaffApiTest extends TestCase
             'store_id' => $this->store->id,
             'staff_user_id' => $staff->id,
             'shift_template_id' => $template->id,
-            'date' => '2025-03-01',
+            'start_date' => '2025-03-01',
+            'end_date' => '2025-03-01',
         ]);
 
         $response = $this->withToken($this->token)
@@ -595,7 +598,8 @@ class StaffApiTest extends TestCase
             'store_id' => $this->store->id,
             'staff_user_id' => $staff->id,
             'shift_template_id' => $template->id,
-            'date' => '2025-03-01',
+            'start_date' => '2025-03-01',
+            'end_date' => '2025-03-01',
         ]);
 
         $response = $this->withToken($this->token)
@@ -1280,14 +1284,16 @@ class StaffApiTest extends TestCase
             'store_id' => $this->store->id,
             'staff_user_id' => $staff->id,
             'shift_template_id' => $template->id,
-            'date' => '2025-01-15',
+            'start_date' => '2025-01-15',
+            'end_date' => '2025-01-15',
         ]);
 
         ShiftSchedule::create([
             'store_id' => $this->store->id,
             'staff_user_id' => $staff->id,
             'shift_template_id' => $template->id,
-            'date' => '2025-03-15',
+            'start_date' => '2025-03-15',
+            'end_date' => '2025-03-15',
         ]);
 
         $response = $this->withToken($this->token)
@@ -1313,14 +1319,16 @@ class StaffApiTest extends TestCase
             'store_id' => $this->store->id,
             'staff_user_id' => $staff1->id,
             'shift_template_id' => $template->id,
-            'date' => '2025-03-01',
+            'start_date' => '2025-03-01',
+            'end_date' => '2025-03-01',
         ]);
 
         ShiftSchedule::create([
             'store_id' => $this->store->id,
             'staff_user_id' => $staff2->id,
             'shift_template_id' => $template->id,
-            'date' => '2025-03-02',
+            'start_date' => '2025-03-02',
+            'end_date' => '2025-03-02',
         ]);
 
         $response = $this->withToken($this->token)
@@ -1716,15 +1724,14 @@ class StaffApiTest extends TestCase
     {
         $staff = $this->createStaff();
 
-        // Expired document
-        $this->withToken($this->token)
-            ->postJson("/api/v2/staff/members/{$staff->id}/documents", [
-                'document_type' => 'visa',
-                'file_url'      => 'https://storage.example.com/docs/visa.pdf',
-                'expiry_date'   => now()->subDay()->toDateString(),
-            ]);
+        // Create expired document directly (API rejects past expiry dates)
+        \App\Domain\StaffManagement\Models\StaffDocument::create([
+            'staff_user_id' => $staff->id,
+            'document_type' => 'visa',
+            'file_url'      => 'https://storage.example.com/docs/visa.pdf',
+            'expiry_date'   => now()->subDay()->toDateString(),
+        ]);
 
-        // Workaround: validate flag via raw query since backend validates expiry_date is after today
         $this->assertDatabaseCount('staff_documents', 1);
         $doc = \App\Domain\StaffManagement\Models\StaffDocument::first();
         $doc->update(['expiry_date' => now()->subDay()->toDateString()]);

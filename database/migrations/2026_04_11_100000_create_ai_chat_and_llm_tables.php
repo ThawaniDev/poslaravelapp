@@ -52,6 +52,8 @@ return new class extends Migration
         Schema::create('ai_chat_messages', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('chat_id')->index();
+            $table->uuid('organization_id')->nullable()->index();
+            $table->uuid('store_id')->nullable()->index();
             $table->string('role', 20);                      // user | assistant | system
             $table->text('content');                          // message text
             $table->string('feature_slug', 80)->nullable();  // which AI feature was invoked

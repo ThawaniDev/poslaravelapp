@@ -11,6 +11,7 @@ class PlatformDailyStat extends Model
 
     protected $table = 'platform_daily_stats';
     public $timestamps = false;
+    protected $dateFormat = 'Y-m-d';
     public $incrementing = false;
     protected $keyType = 'string';
 

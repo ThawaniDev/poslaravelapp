@@ -47,7 +47,7 @@ class PredefinedCategoryApiTest extends TestCase
             'password_hash' => bcrypt('password'),
             'store_id' => $this->store->id,
             'organization_id' => $this->org->id,
-            'role' => 'owner',
+            'role' => 'cashier',
             'is_active' => true,
         ]);
 

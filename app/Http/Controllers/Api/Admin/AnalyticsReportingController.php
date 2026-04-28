@@ -19,6 +19,7 @@ use App\Domain\Support\Models\SupportTicket;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class AnalyticsReportingController extends BaseApiController
 {
@@ -184,10 +185,17 @@ class AnalyticsReportingController extends BaseApiController
             ->values()
             ->toArray();
 
-        // Average subscription age (days)
-        $avgAge = StoreSubscription::where('status', 'active')
-            ->selectRaw('AVG(EXTRACT(EPOCH FROM (CURRENT_DATE - created_at::date)) / 86400) as avg_days')
-            ->value('avg_days');
+        // Average subscription age (days) — cross-database compatible
+        $driver = DB::getDriverName();
+        if ($driver === 'sqlite') {
+            $avgAge = StoreSubscription::where('status', 'active')
+                ->selectRaw("AVG(CAST(julianday('now') - julianday(date(created_at)) AS REAL)) as avg_days")
+                ->value('avg_days');
+        } else {
+            $avgAge = StoreSubscription::where('status', 'active')
+                ->selectRaw('AVG(EXTRACT(EPOCH FROM (CURRENT_DATE - created_at::date)) / 86400) as avg_days')
+                ->value('avg_days');
+        }
 
         // Total churn in period
         $totalChurn = PlatformPlanStat::whereBetween('date', [$dateFrom, $dateTo])

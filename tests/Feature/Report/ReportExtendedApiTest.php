@@ -687,7 +687,7 @@ class ReportExtendedApiTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    'totals' => ['total_orders', 'total_gross', 'total_fee', 'total_net'],
+                    'totals' => ['total_orders', 'total_gross', 'total_commission', 'total_net'],
                     'platforms',
                 ],
             ]);
@@ -749,7 +749,7 @@ class ReportExtendedApiTest extends TestCase
         ]);
 
         $this->deleteJson("/api/v2/reports/schedules/{$schedule->id}", [], $this->authHeader())
-             ->assertNoContent();
+             ->assertOk();
 
         $this->assertDatabaseMissing('scheduled_reports', ['id' => $schedule->id]);
     }

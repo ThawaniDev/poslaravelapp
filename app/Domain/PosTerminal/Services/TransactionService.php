@@ -613,6 +613,9 @@ class TransactionService
         $isReturn = $transaction->type === TransactionType::Return
             || $transaction->type === TransactionType::Return->value;
 
+        // SQLite uses max(a,b) as scalar; PostgreSQL/MySQL use GREATEST(a,b).
+        $gr = DB::connection()->getDriverName() === 'sqlite' ? 'max' : 'GREATEST';
+
         // Determine payment breakdown
         $cashRevenue = 0;
         $cardRevenue = 0;
@@ -643,23 +646,23 @@ class TransactionService
 
             if ($isReturn) {
                 DB::update(
-                    'UPDATE daily_sales_summary SET total_refunds = GREATEST(0, total_refunds - ?), net_revenue = net_revenue + ? WHERE id = ?',
+                    "UPDATE daily_sales_summary SET total_refunds = {$gr}(0, total_refunds - ?), net_revenue = net_revenue + ? WHERE id = ?",
                     [$totalAmount, $totalAmount, $existing->id]
                 );
             } else {
                 DB::update(
-                    'UPDATE daily_sales_summary SET '
-                    . 'total_transactions = GREATEST(0, total_transactions - 1), '
-                    . 'total_revenue = GREATEST(0, total_revenue - ?), '
-                    . 'total_cost = GREATEST(0, total_cost - ?), '
-                    . 'total_discount = GREATEST(0, total_discount - ?), '
-                    . 'total_tax = GREATEST(0, total_tax - ?), '
+                    "UPDATE daily_sales_summary SET "
+                    . "total_transactions = {$gr}(0, total_transactions - 1), "
+                    . "total_revenue = {$gr}(0, total_revenue - ?), "
+                    . "total_cost = {$gr}(0, total_cost - ?), "
+                    . "total_discount = {$gr}(0, total_discount - ?), "
+                    . "total_tax = {$gr}(0, total_tax - ?), "
                     . 'net_revenue = net_revenue - ?, '
-                    . 'cash_revenue = GREATEST(0, cash_revenue - ?), '
-                    . 'card_revenue = GREATEST(0, card_revenue - ?), '
-                    . 'other_revenue = GREATEST(0, other_revenue - ?), '
-                    . 'unique_customers = GREATEST(0, unique_customers - ?), '
-                    . 'avg_basket_size = CASE WHEN GREATEST(0, total_transactions - 1) > 0 THEN ROUND(GREATEST(0, total_revenue - ?) / GREATEST(1, total_transactions - 1), 2) ELSE 0 END '
+                    . "cash_revenue = {$gr}(0, cash_revenue - ?), "
+                    . "card_revenue = {$gr}(0, card_revenue - ?), "
+                    . "other_revenue = {$gr}(0, other_revenue - ?), "
+                    . "unique_customers = {$gr}(0, unique_customers - ?), "
+                    . "avg_basket_size = CASE WHEN {$gr}(0, total_transactions - 1) > 0 THEN ROUND({$gr}(0, total_revenue - ?) / {$gr}(1, total_transactions - 1), 2) ELSE 0 END "
                     . 'WHERE id = ?',
                     [$totalAmount, $totalCost, $discountAmount, $taxAmount, $totalAmount, $cashRevenue, $cardRevenue, $otherRevenue, $customerDecrement, $totalAmount, $existing->id]
                 );
@@ -689,12 +692,12 @@ class TransactionService
 
             if ($isReturn || $item->is_return_item) {
                 DB::update(
-                    'UPDATE product_sales_summary SET return_quantity = GREATEST(0, return_quantity - ?), return_amount = GREATEST(0, return_amount - ?) WHERE id = ?',
+                    "UPDATE product_sales_summary SET return_quantity = {$gr}(0, return_quantity - ?), return_amount = {$gr}(0, return_amount - ?) WHERE id = ?",
                     [$qty, $revenue, $existingProduct->id]
                 );
             } else {
                 DB::update(
-                    'UPDATE product_sales_summary SET quantity_sold = GREATEST(0, quantity_sold - ?), revenue = GREATEST(0, revenue - ?), cost = GREATEST(0, cost - ?), discount_amount = GREATEST(0, discount_amount - ?), tax_amount = GREATEST(0, tax_amount - ?) WHERE id = ?',
+                    "UPDATE product_sales_summary SET quantity_sold = {$gr}(0, quantity_sold - ?), revenue = {$gr}(0, revenue - ?), cost = {$gr}(0, cost - ?), discount_amount = {$gr}(0, discount_amount - ?), tax_amount = {$gr}(0, tax_amount - ?) WHERE id = ?",
                     [$qty, $revenue, $cost, $discount, $tax, $existingProduct->id]
                 );
             }

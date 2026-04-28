@@ -110,7 +110,7 @@ class PlanEnforcementService
         $subscription = $this->getActiveSubscription($organizationId);
 
         if (! $subscription) {
-            return 0; // No subscription = no quota
+            return null; // No subscription = unlimited (plan enforcement is handled at feature-access level)
         }
 
         $planLimit = PlanLimit::where('subscription_plan_id', $subscription->subscription_plan_id)

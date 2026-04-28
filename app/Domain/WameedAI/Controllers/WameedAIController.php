@@ -315,7 +315,8 @@ class WameedAIController extends BaseApiController
     public function billingInvoiceDetail(Request $request, string $invoiceId): JsonResponse
     {
         $orgId = $this->resolveOrganizationId($request);
-        $detail = $this->billingService->getInvoiceDetail($invoiceId, $orgId);
+        $storeId = $this->resolveStoreId($request);
+        $detail = $this->billingService->getInvoiceDetail($invoiceId, $orgId, $storeId);
 
         if (!$detail) {
             return $this->notFound('Invoice not found');

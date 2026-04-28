@@ -105,7 +105,7 @@ class ReportApiTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.totals.total_transactions', 0)
-            ->assertJsonPath('data.daily', []);
+            ->assertJsonPath('data.series', []);
     }
 
     public function test_sales_summary_returns_aggregated_data(): void
@@ -153,7 +153,7 @@ class ReportApiTest extends TestCase
         $this->assertEquals(2500.0, $data['totals']['total_revenue']);
         $this->assertEquals(2070.0, $data['totals']['net_revenue']);
         $this->assertEquals(20, $data['totals']['unique_customers']);
-        $this->assertCount(2, $data['daily']);
+        $this->assertCount(2, $data['series']);
     }
 
     public function test_sales_summary_date_filter(): void
@@ -181,7 +181,7 @@ class ReportApiTest extends TestCase
         );
         $response->assertOk();
         $data = $response->json('data');
-        $this->assertCount(1, $data['daily']);
+        $this->assertCount(1, $data['series']);
         $this->assertEquals(20, $data['totals']['total_transactions']);
     }
 

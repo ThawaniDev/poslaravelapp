@@ -3,7 +3,7 @@
 use App\Domain\BackupSync\Controllers\Api\BackupController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:sanctum')->prefix('backup')->group(function () {
+Route::middleware(['auth:sanctum', 'plan.active'])->prefix('backup')->group(function () {
     Route::post('/create', [BackupController::class, 'create'])->middleware('permission:backup.manage');
     Route::get('/list', [BackupController::class, 'index'])->middleware('permission:backup.view');
     Route::get('/schedule', [BackupController::class, 'schedule'])->middleware('permission:backup.view');

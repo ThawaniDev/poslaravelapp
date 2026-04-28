@@ -85,6 +85,19 @@ return [
     'feature_installments'              => 'Installment Payments',
     'feature_accounting'                => 'Accounting',
 
+    // Catalog & product features
+    'feature_customer_management'       => 'Customer Management',
+    'feature_product_modifiers'         => 'Product Modifiers',
+    'feature_supplier_management'       => 'Supplier Management',
+    'feature_product_variants'          => 'Product Variants',
+    'feature_combo_products'            => 'Combo Products',
+    'feature_bulk_import'               => 'Bulk CSV Import',
+    'feature_barcode_label_printing'    => 'Barcode Label Printing',
+
+    // Promotions & marketing features
+    'feature_promotions_coupons'        => 'Promotions & Coupons',
+    'feature_promotions_advanced'       => 'Advanced Promotions (BOGO, Bundles, Happy Hour)',
+
     // Industry vertical features
     'feature_industry_restaurant'       => 'Restaurant Features',
     'feature_industry_bakery'           => 'Bakery Features',

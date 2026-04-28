@@ -550,7 +550,7 @@ return new class extends Migration
                 $table->string('device_type', 50);
                 $table->string('brand');
                 $table->string('model');
-                $table->string('driver_protocol', 50);
+                $table->string('driver_protocol', 50)->nullable();
                 $table->json('connection_types')->nullable();
                 $table->string('firmware_version_min')->nullable();
                 $table->json('paper_widths')->nullable();
@@ -1089,10 +1089,10 @@ return new class extends Migration
                 $table->uuid('id')->primary();
                 $table->date('date');
                 $table->uuid('subscription_plan_id');
-                $table->integer('active_stores')->default(0);
-                $table->integer('trial_stores')->default(0);
-                $table->integer('churned_stores')->default(0);
-                $table->decimal('revenue', 12, 2)->default(0);
+                $table->integer('active_count')->default(0);
+                $table->integer('trial_count')->default(0);
+                $table->integer('churned_count')->default(0);
+                $table->decimal('mrr', 12, 2)->default(0);
             });
         }
 
@@ -1102,8 +1102,8 @@ return new class extends Migration
                 $table->uuid('id')->primary();
                 $table->date('date');
                 $table->string('feature_key', 50);
-                $table->integer('stores_using')->default(0);
-                $table->integer('total_eligible')->default(0);
+                $table->integer('stores_using_count')->default(0);
+                $table->integer('total_events')->default(0);
             });
         }
 
@@ -1232,6 +1232,12 @@ return new class extends Migration
             $table->timestamp('due_date')->nullable();
             $table->timestamp('paid_at')->nullable();
             $table->text('pdf_url')->nullable();
+            $table->uuid('provider_payment_id')->nullable();
+            $table->string('payment_gateway', 30)->nullable();
+            $table->string('gateway_tran_ref', 100)->nullable();
+            $table->boolean('email_sent')->default(false);
+            $table->timestamp('email_sent_at')->nullable();
+            $table->string('email_error', 500)->nullable();
             $table->timestamps();
         });
 
@@ -2662,11 +2668,21 @@ return new class extends Migration
             $table->decimal('tax_amount', 12, 2)->default(0);
             $table->decimal('discount_amount', 12, 2)->default(0);
             $table->decimal('total', 12, 2)->default(0);
+            $table->integer('loyalty_points_used')->default(0);
             $table->text('notes')->nullable();
             $table->text('customer_notes')->nullable();
             $table->string('external_order_id', 100)->nullable();
             $table->text('delivery_address')->nullable();
             $table->uuid('created_by')->nullable();
+            $table->timestamps();
+        });
+
+        // ─── Order: external_orders ───────────────────────────
+        Schema::create('external_orders', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('order_id');
+            $table->string('platform', 50)->nullable();
+            $table->decimal('commission_amount', 12, 2)->default(0);
             $table->timestamps();
         });
 
@@ -2983,7 +2999,7 @@ return new class extends Migration
             $table->uuid('shift_template_id');
             $table->foreign('shift_template_id')->references('id')->on('shift_templates');
             $table->date('start_date');
-            $table->date('end_date');
+            $table->date('end_date')->nullable();
             $table->timestamp('actual_start')->nullable();
             $table->timestamp('actual_end')->nullable();
             $table->string('status', 20)->default('scheduled');
@@ -4133,6 +4149,380 @@ return new class extends Migration
             $table->timestamp('sent_at')->nullable();
             $table->timestamps();
         });
+
+        // ══════════════════════════════════════════════════════
+        // WAMEED AI — Core tables
+        // ══════════════════════════════════════════════════════
+
+        Schema::create('ai_provider_configs', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('provider', 50)->default('openai');
+            $table->text('api_key_encrypted');
+            $table->string('default_model', 100)->default('gpt-4o-mini');
+            $table->integer('max_tokens_per_request')->default(4096);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+        });
+
+        Schema::create('ai_feature_definitions', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('slug', 100)->unique();
+            $table->string('name');
+            $table->string('name_ar');
+            $table->text('description')->nullable();
+            $table->text('description_ar')->nullable();
+            $table->string('category', 50);
+            $table->string('icon', 100)->nullable();
+            $table->boolean('is_enabled')->default(true);
+            $table->boolean('is_premium')->default(false);
+            $table->string('default_model', 100)->default('gpt-4o-mini');
+            $table->integer('default_max_tokens')->default(2048);
+            $table->decimal('cost_per_request_estimate', 10, 6)->default(0.001);
+            $table->integer('daily_limit')->default(50);
+            $table->integer('monthly_limit')->default(500);
+            $table->text('requires_subscription_plan')->nullable();
+            $table->integer('sort_order')->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('ai_store_feature_configs', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id')->nullable();
+            $table->uuid('organization_id')->nullable();
+            $table->uuid('ai_feature_definition_id');
+            $table->foreign('ai_feature_definition_id')->references('id')->on('ai_feature_definitions')->cascadeOnDelete();
+            $table->boolean('is_enabled')->default(true);
+            $table->integer('daily_limit')->default(100);
+            $table->integer('monthly_limit')->default(3000);
+            $table->text('custom_prompt_override')->nullable();
+            $table->text('settings_json')->nullable();
+            $table->timestamps();
+            $table->unique(['store_id', 'ai_feature_definition_id'], 'ai_sfc_store_feature_unique');
+        });
+
+        Schema::create('ai_usage_logs', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('store_id')->nullable();
+            $table->uuid('user_id')->nullable();
+            $table->uuid('ai_feature_definition_id');
+            $table->foreign('ai_feature_definition_id')->references('id')->on('ai_feature_definitions')->cascadeOnDelete();
+            $table->string('feature_slug', 100);
+            $table->string('model_used', 100);
+            $table->integer('input_tokens')->default(0);
+            $table->integer('output_tokens')->default(0);
+            $table->integer('total_tokens')->default(0);
+            $table->decimal('estimated_cost_usd', 10, 6)->default(0);
+            $table->decimal('billed_cost_usd', 10, 6)->default(0);
+            $table->decimal('margin_percentage_applied', 5, 3)->nullable();
+            $table->string('request_payload_hash', 255)->nullable();
+            $table->boolean('response_cached')->default(false);
+            $table->integer('latency_ms')->default(0);
+            $table->string('status', 20)->default('success');
+            $table->text('error_message')->nullable();
+            $table->text('metadata_json')->nullable();
+            $table->text('request_messages')->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('ai_daily_usage_summaries', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('store_id')->nullable();
+            $table->date('date');
+            $table->integer('total_requests')->default(0);
+            $table->integer('cached_requests')->default(0);
+            $table->integer('failed_requests')->default(0);
+            $table->bigInteger('total_input_tokens')->default(0);
+            $table->bigInteger('total_output_tokens')->default(0);
+            $table->decimal('total_estimated_cost_usd', 12, 6)->default(0);
+            $table->text('feature_breakdown_json')->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('ai_monthly_usage_summaries', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('store_id')->nullable();
+            $table->date('month');
+            $table->integer('total_requests')->default(0);
+            $table->integer('cached_requests')->default(0);
+            $table->integer('failed_requests')->default(0);
+            $table->bigInteger('total_input_tokens')->default(0);
+            $table->bigInteger('total_output_tokens')->default(0);
+            $table->decimal('total_estimated_cost_usd', 12, 6)->default(0);
+            $table->text('feature_breakdown_json')->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('ai_platform_daily_summaries', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->date('date')->unique();
+            $table->integer('total_stores_active')->default(0);
+            $table->integer('total_requests')->default(0);
+            $table->bigInteger('total_tokens')->default(0);
+            $table->decimal('total_estimated_cost_usd', 12, 6)->default(0);
+            $table->text('feature_breakdown_json')->nullable();
+            $table->text('top_stores_json')->nullable();
+            $table->decimal('error_rate', 5, 2)->default(0);
+            $table->integer('avg_latency_ms')->default(0);
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('ai_prompts', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('feature_slug', 100);
+            $table->integer('version')->default(1);
+            $table->text('system_prompt');
+            $table->text('user_prompt_template');
+            $table->string('model', 100)->default('gpt-4o-mini');
+            $table->integer('max_tokens')->default(2048);
+            $table->decimal('temperature', 3, 2)->default(0.7);
+            $table->string('response_format', 20)->default('json_object');
+            $table->boolean('is_active')->default(true);
+            $table->uuid('created_by')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('ai_suggestions', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id')->nullable();
+            $table->uuid('organization_id')->nullable();
+            $table->string('feature_slug', 100);
+            $table->string('suggestion_type', 100);
+            $table->string('title', 500);
+            $table->string('title_ar', 500)->nullable();
+            $table->text('content_json');
+            $table->string('priority', 20)->default('medium');
+            $table->string('status', 20)->default('pending');
+            $table->timestamp('accepted_at')->nullable();
+            $table->timestamp('dismissed_at')->nullable();
+            $table->timestamp('expires_at')->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('ai_feedback', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('ai_usage_log_id');
+            $table->foreign('ai_usage_log_id')->references('id')->on('ai_usage_logs')->cascadeOnDelete();
+            $table->uuid('store_id')->nullable();
+            $table->uuid('organization_id')->nullable();
+            $table->uuid('user_id')->nullable();
+            $table->smallInteger('rating');
+            $table->text('feedback_text')->nullable();
+            $table->boolean('is_helpful')->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('ai_cache', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('cache_key', 255)->unique();
+            $table->string('feature_slug', 100);
+            $table->uuid('store_id')->nullable();
+            $table->uuid('organization_id')->nullable();
+            $table->text('response_text');
+            $table->integer('tokens_used')->default(0);
+            $table->timestamp('expires_at');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // ══════════════════════════════════════════════════════
+        // WAMEED AI — Billing tables
+        // ══════════════════════════════════════════════════════
+
+        Schema::create('ai_billing_settings', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('key', 100)->unique();
+            $table->text('value');
+            $table->text('description')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('ai_store_billing_configs', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id')->nullable();
+            $table->uuid('organization_id');
+            $table->boolean('is_ai_enabled')->default(true);
+            $table->decimal('monthly_limit_usd', 12, 3)->default(0);
+            $table->decimal('custom_margin_percentage', 5, 3)->nullable();
+            $table->string('disabled_reason', 100)->nullable();
+            $table->timestamp('disabled_at')->nullable();
+            $table->timestamp('enabled_at')->nullable();
+            $table->text('notes')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('ai_billing_invoices', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id')->nullable();
+            $table->uuid('organization_id');
+            $table->string('invoice_number', 50)->unique();
+            $table->integer('year');
+            $table->integer('month');
+            $table->date('period_start');
+            $table->date('period_end');
+            $table->integer('total_requests')->default(0);
+            $table->bigInteger('total_tokens')->default(0);
+            $table->decimal('raw_cost_usd', 12, 5)->default(0);
+            $table->decimal('margin_percentage', 5, 3)->default(20.000);
+            $table->decimal('margin_amount_usd', 12, 5)->default(0);
+            $table->decimal('billed_amount_usd', 12, 5)->default(0);
+            $table->string('status', 20)->default('pending');
+            $table->date('due_date');
+            $table->timestamp('paid_at')->nullable();
+            $table->string('payment_reference', 255)->nullable();
+            $table->text('payment_notes')->nullable();
+            $table->timestamp('generated_at')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('ai_billing_invoice_items', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('ai_billing_invoice_id');
+            $table->foreign('ai_billing_invoice_id')->references('id')->on('ai_billing_invoices')->cascadeOnDelete();
+            $table->string('feature_slug', 100);
+            $table->string('feature_name', 255)->nullable();
+            $table->string('feature_name_ar', 255)->nullable();
+            $table->integer('request_count')->default(0);
+            $table->bigInteger('total_tokens')->default(0);
+            $table->decimal('raw_cost_usd', 12, 5)->default(0);
+            $table->decimal('billed_cost_usd', 12, 5)->default(0);
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('ai_billing_payments', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('ai_billing_invoice_id');
+            $table->foreign('ai_billing_invoice_id')->references('id')->on('ai_billing_invoices')->cascadeOnDelete();
+            $table->decimal('amount_usd', 12, 5);
+            $table->string('payment_method', 50)->default('manual');
+            $table->string('reference', 255)->nullable();
+            $table->text('notes')->nullable();
+            $table->uuid('recorded_by')->nullable();
+            $table->timestamp('created_at')->nullable();
+        });
+
+        // ══════════════════════════════════════════════════════
+        // Provider Payments
+        // ══════════════════════════════════════════════════════
+
+        Schema::create('provider_payments', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->foreign('organization_id')->references('id')->on('organizations')->cascadeOnDelete();
+            $table->uuid('invoice_id')->nullable();
+            $table->foreign('invoice_id')->references('id')->on('invoices')->nullOnDelete();
+            $table->string('purpose', 30);
+            $table->string('purpose_label', 200)->nullable();
+            $table->uuid('purpose_reference_id')->nullable();
+            $table->decimal('amount', 12, 2);
+            $table->decimal('tax_amount', 12, 2)->default(0);
+            $table->decimal('total_amount', 12, 2);
+            $table->string('currency', 3)->default('SAR');
+            $table->string('gateway', 30)->default('paytabs');
+            $table->string('tran_ref', 100)->nullable();
+            $table->string('tran_type', 20)->nullable();
+            $table->string('cart_id', 100)->nullable();
+            $table->string('status', 20)->default('pending');
+            $table->string('response_status', 5)->nullable();
+            $table->string('response_code', 20)->nullable();
+            $table->string('response_message', 255)->nullable();
+            $table->string('card_type', 20)->nullable();
+            $table->string('card_scheme', 20)->nullable();
+            $table->string('payment_description', 50)->nullable();
+            $table->string('payment_method', 30)->nullable();
+            $table->string('token', 255)->nullable();
+            $table->string('previous_tran_ref', 100)->nullable();
+            $table->boolean('confirmation_email_sent')->default(false);
+            $table->timestamp('confirmation_email_sent_at')->nullable();
+            $table->string('confirmation_email_error', 500)->nullable();
+            $table->boolean('invoice_generated')->default(false);
+            $table->timestamp('invoice_generated_at')->nullable();
+            $table->boolean('ipn_received')->default(false);
+            $table->timestamp('ipn_received_at')->nullable();
+            $table->text('ipn_payload')->nullable();
+            $table->decimal('refund_amount', 12, 2)->nullable();
+            $table->string('refund_tran_ref', 100)->nullable();
+            $table->timestamp('refunded_at')->nullable();
+            $table->string('refund_reason', 500)->nullable();
+            $table->text('gateway_response')->nullable();
+            $table->text('customer_details')->nullable();
+            $table->text('notes')->nullable();
+            $table->uuid('initiated_by')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('payment_email_logs', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('provider_payment_id')->nullable();
+            $table->uuid('invoice_id')->nullable();
+            $table->string('email_type', 50);
+            $table->string('recipient_email', 200);
+            $table->string('subject', 300);
+            $table->string('status', 20)->default('pending');
+            $table->string('error_message', 500)->nullable();
+            $table->string('mailtrap_message_id', 200)->nullable();
+            $table->timestamps();
+        });
+
+        // ══════════════════════════════════════════════════════
+        // Thawani Sync tables
+        // ══════════════════════════════════════════════════════
+
+        Schema::create('thawani_category_mappings', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->uuid('category_id');
+            $table->bigInteger('thawani_category_id');
+            $table->string('sync_status', 20)->default('pending');
+            $table->string('sync_direction', 20)->default('outgoing');
+            $table->text('sync_error')->nullable();
+            $table->timestamp('last_synced_at')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('thawani_sync_queue', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->string('entity_type', 50);
+            $table->uuid('entity_id');
+            $table->string('action', 30);
+            $table->text('payload')->nullable();
+            $table->string('status', 20)->default('pending');
+            $table->integer('attempts')->default(0);
+            $table->integer('max_attempts')->default(5);
+            $table->text('error_message')->nullable();
+            $table->timestamp('scheduled_at')->nullable();
+            $table->timestamp('processed_at')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('thawani_sync_logs', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('store_id');
+            $table->string('entity_type', 50);
+            $table->string('entity_id', 255)->nullable();
+            $table->string('action', 50);
+            $table->string('direction', 20)->default('outgoing');
+            $table->string('status', 20)->default('pending');
+            $table->text('request_data')->nullable();
+            $table->text('response_data')->nullable();
+            $table->text('error_message')->nullable();
+            $table->integer('http_status_code')->nullable();
+            $table->integer('retry_count')->default(0);
+            $table->timestamp('completed_at')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('thawani_column_mappings', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('entity_type', 50);
+            $table->string('thawani_field', 100);
+            $table->string('wameed_field', 100);
+            $table->string('transform_type', 30)->default('direct');
+            $table->text('transform_config')->nullable();
+            $table->timestamps();
+        });
     }
 
     public function down(): void
@@ -4160,6 +4550,7 @@ return new class extends Migration
             // Industry: Pharmacy
             'drug_schedules', 'prescriptions',
             // Thawani integration
+            'thawani_column_mappings', 'thawani_sync_logs', 'thawani_sync_queue', 'thawani_category_mappings',
             'thawani_settlements', 'thawani_order_mappings', 'thawani_product_mappings', 'thawani_store_config',
             // Delivery integrations
             'delivery_menu_sync_logs', 'delivery_order_mappings', 'delivery_platform_configs',
@@ -4249,6 +4640,14 @@ return new class extends Migration
             'invoice_line_items', 'invoices', 'store_subscriptions',
             'plan_limits', 'plan_feature_toggles', 'subscription_plans',
             'onboarding_progress', 'business_type_templates',
+            // WameedAI tables
+            'ai_billing_payments', 'ai_billing_invoice_items', 'ai_billing_invoices',
+            'ai_store_billing_configs', 'ai_billing_settings',
+            'ai_cache', 'ai_feedback', 'ai_suggestions', 'ai_prompts',
+            'ai_platform_daily_summaries', 'ai_monthly_usage_summaries', 'ai_daily_usage_summaries',
+            'ai_usage_logs', 'ai_store_feature_configs', 'ai_feature_definitions', 'ai_provider_configs',
+            // Provider Payments
+            'payment_email_logs', 'provider_payments',
             'admin_users',
             'registers', 'stores', 'organizations',
         ];

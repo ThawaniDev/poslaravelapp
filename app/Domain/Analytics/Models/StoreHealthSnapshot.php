@@ -12,6 +12,7 @@ class StoreHealthSnapshot extends Model
 
     protected $table = 'store_health_snapshots';
     public $timestamps = false;
+    protected $dateFormat = 'Y-m-d';
     public $incrementing = false;
     protected $keyType = 'string';
 

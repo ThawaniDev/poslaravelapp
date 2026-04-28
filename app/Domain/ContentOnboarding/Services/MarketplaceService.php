@@ -198,9 +198,9 @@ class MarketplaceService
             return null;
         }
 
-        // For paid listings without a provider_payment_id, don't activate yet
+        // For paid listings without any payment proof, don't activate yet
         $isPaid = $listing->pricing_type !== MarketplacePricingType::Free && (float) $listing->price_amount > 0;
-        $hasPayment = ! empty($paymentData['provider_payment_id']);
+        $hasPayment = ! empty($paymentData['provider_payment_id']) || ! empty($paymentData['payment_reference']);
 
         // If paid listing and no payment provided, create inactive purchase (pending payment)
         $shouldActivate = ! $isPaid || $hasPayment;

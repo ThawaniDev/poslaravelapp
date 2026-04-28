@@ -161,4 +161,5 @@ return [
     'test_invoice_failed' => 'Test invoice submission failed',
     'test_invoice_badge' => 'Test',
     'qr_not_available' => 'QR code data not available.',
+    'rejection_errors' => 'ZATCA Rejection Errors',
 ];

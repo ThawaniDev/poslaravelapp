@@ -36,11 +36,13 @@ class OrderService
         return $query->orderByDesc('created_at')->paginate($perPage);
     }
 
-    public function find(string $storeId, string $orderId): Order
+    public function find(string $orderId, ?string $storeId = null): Order
     {
-        return Order::with(['orderItems', 'orderStatusHistory', 'returns'])
-            ->where('store_id', $storeId)
-            ->findOrFail($orderId);
+        $query = Order::with(['orderItems', 'orderStatusHistory', 'returns']);
+        if ($storeId) {
+            $query->where('store_id', $storeId);
+        }
+        return $query->findOrFail($orderId);
     }
 
     public function create(array $data, User $actor): Order

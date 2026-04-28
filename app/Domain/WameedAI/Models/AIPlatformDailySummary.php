@@ -13,6 +13,7 @@ class AIPlatformDailySummary extends Model
     public $incrementing = false;
     protected $keyType = 'string';
     public $timestamps = false;
+    protected $dateFormat = 'Y-m-d';
 
     protected $fillable = [
         'date',

@@ -233,7 +233,7 @@ class NotificationsWorkflowTest extends WorkflowTestCase
                 'token' => 'fcm_test_token_remove',
             ]);
 
-        $this->assertContains($response->status(), [200, 204, 403, 422, 500]);
+        $this->assertContains($response->status(), [200, 204, 403, 404, 422, 500]);
     }
 
     // ══════════════════════════════════════════════

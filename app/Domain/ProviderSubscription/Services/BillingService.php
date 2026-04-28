@@ -68,8 +68,9 @@ class BillingService
         string $planId,
         BillingCycle $billingCycle = BillingCycle::Monthly,
         ?string $paymentMethod = null,
+        ?string $discountCode = null,
     ): StoreSubscription {
-        return DB::transaction(function () use ($organizationId, $planId, $billingCycle, $paymentMethod) {
+        return DB::transaction(function () use ($organizationId, $planId, $billingCycle, $paymentMethod, $discountCode) {
             // Check for existing active subscription
             $existing = StoreSubscription::where('organization_id', $organizationId)
                 ->whereIn('status', [
@@ -91,6 +92,27 @@ class BillingService
                 throw new \RuntimeException("Plan '{$plan->name}' is not currently available.");
             }
 
+            // Validate discount code if provided
+            $discount = null;
+            if ($discountCode) {
+                $discount = SubscriptionDiscount::where('code', strtoupper(trim($discountCode)))
+                    ->where(function ($q) { $q->whereNull('valid_from')->orWhere('valid_from', '<=', now()); })
+                    ->where(function ($q) { $q->whereNull('valid_to')->orWhere('valid_to', '>=', now()); })
+                    ->first();
+
+                if (! $discount) {
+                    throw new \RuntimeException(__('subscription.discount_invalid'));
+                }
+
+                if ($discount->max_uses !== null && $discount->times_used >= $discount->max_uses) {
+                    throw new \RuntimeException(__('subscription.discount_expired'));
+                }
+
+                if (! empty($discount->applicable_plan_ids) && ! in_array($planId, $discount->applicable_plan_ids)) {
+                    throw new \RuntimeException(__('subscription.discount_not_applicable'));
+                }
+            }
+
             $now = now();
             $hasTrial = $plan->trial_days && $plan->trial_days > 0;
 
@@ -109,7 +131,11 @@ class BillingService
 
             // Generate first invoice (skip for trial)
             if (! $hasTrial) {
-                $this->generateInvoice($subscription);
+                $this->generateInvoice($subscription, null, $discount);
+                // Increment discount usage counter
+                if ($discount) {
+                    $discount->increment('times_used');
+                }
             }
 
             return $subscription->load(['subscriptionPlan.planFeatureToggles', 'subscriptionPlan.planLimits']);
@@ -245,7 +271,7 @@ class BillingService
     /**
      * Generate a full subscription invoice (plan + active add-ons + credits applied).
      */
-    public function generateInvoice(StoreSubscription $subscription, ?string $description = null): Invoice
+    public function generateInvoice(StoreSubscription $subscription, ?string $description = null, ?SubscriptionDiscount $discount = null): Invoice
     {
         $plan = $subscription->subscriptionPlan;
         $billingCycle = $subscription->billing_cycle ?? BillingCycle::Monthly;
@@ -313,6 +339,26 @@ class BillingService
 
         // ── 3. Calculate totals ───────────────────────────────────
         $subtotal = collect($lineItems)->sum('total');
+
+        // ── 3a. Apply discount code ────────────────────────────────
+        if ($discount) {
+            $discountValue = (float) $discount->value;
+            $discountAmount = match ($discount->type?->value ?? $discount->type) {
+                'percentage' => round($subtotal * $discountValue / 100, 2),
+                'fixed'      => min($discountValue, $subtotal),
+                default      => 0,
+            };
+
+            if ($discountAmount > 0) {
+                $lineItems[] = [
+                    'description' => "Discount code: {$discount->code} ({$discountValue}" . (($discount->type?->value ?? $discount->type) === 'percentage' ? '%' : ' SAR') . ' off)',
+                    'quantity' => 1,
+                    'unit_price' => -$discountAmount,
+                    'total' => -$discountAmount,
+                ];
+                $subtotal -= $discountAmount;
+            }
+        }
 
         // ── 4. Apply unused credits ───────────────────────────────
         $availableCredits = $this->getAvailableCredits($subscription->id);

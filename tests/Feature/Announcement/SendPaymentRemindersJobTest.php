@@ -66,7 +66,7 @@ class SendPaymentRemindersJobTest extends TestCase
             'current_period_end' => now()->addDays(3)->startOfDay(),
         ]);
 
-        (new SendPaymentReminders)->handle();
+        (new SendPaymentReminders)->handle(app(\App\Domain\Notification\Services\NotificationDispatcher::class));
 
         // Should create reminders for all channels
         $reminders = PaymentReminder::where('store_subscription_id', $sub->id)
@@ -93,7 +93,7 @@ class SendPaymentRemindersJobTest extends TestCase
             'current_period_end' => now()->subDay()->startOfDay(),
         ]);
 
-        (new SendPaymentReminders)->handle();
+        (new SendPaymentReminders)->handle(app(\App\Domain\Notification\Services\NotificationDispatcher::class));
 
         $this->assertEquals(0, PaymentReminder::where('reminder_type', ReminderType::Upcoming->value)->count());
     }
@@ -112,7 +112,7 @@ class SendPaymentRemindersJobTest extends TestCase
             'sent_at' => now()->subDays(5),
         ]);
 
-        (new SendPaymentReminders)->handle();
+        (new SendPaymentReminders)->handle(app(\App\Domain\Notification\Services\NotificationDispatcher::class));
 
         // Should NOT create more upcoming reminders because one exists within window
         $count = PaymentReminder::where('store_subscription_id', $sub->id)
@@ -135,7 +135,7 @@ class SendPaymentRemindersJobTest extends TestCase
             'sent_at' => now()->subDays(10),
         ]);
 
-        (new SendPaymentReminders)->handle();
+        (new SendPaymentReminders)->handle(app(\App\Domain\Notification\Services\NotificationDispatcher::class));
 
         // Should create new reminders for all channels
         $newReminders = PaymentReminder::where('store_subscription_id', $sub->id)
@@ -152,7 +152,7 @@ class SendPaymentRemindersJobTest extends TestCase
             'current_period_end' => now()->addDays(3)->startOfDay(),
         ]);
 
-        (new SendPaymentReminders)->handle();
+        (new SendPaymentReminders)->handle(app(\App\Domain\Notification\Services\NotificationDispatcher::class));
 
         $this->assertEquals(0, PaymentReminder::count());
     }
@@ -167,7 +167,7 @@ class SendPaymentRemindersJobTest extends TestCase
             'current_period_end' => now()->subDay()->startOfDay(),
         ]);
 
-        (new SendPaymentReminders)->handle();
+        (new SendPaymentReminders)->handle(app(\App\Domain\Notification\Services\NotificationDispatcher::class));
 
         $reminders = PaymentReminder::where('store_subscription_id', $sub->id)
             ->where('reminder_type', ReminderType::Overdue->value)
@@ -194,7 +194,7 @@ class SendPaymentRemindersJobTest extends TestCase
             'sent_at' => now()->subHours(6),
         ]);
 
-        (new SendPaymentReminders)->handle();
+        (new SendPaymentReminders)->handle(app(\App\Domain\Notification\Services\NotificationDispatcher::class));
 
         $count = PaymentReminder::where('store_subscription_id', $sub->id)
             ->where('reminder_type', ReminderType::Overdue->value)
@@ -209,7 +209,7 @@ class SendPaymentRemindersJobTest extends TestCase
             'current_period_end' => now()->addDays(5)->startOfDay(),
         ]);
 
-        (new SendPaymentReminders)->handle();
+        (new SendPaymentReminders)->handle(app(\App\Domain\Notification\Services\NotificationDispatcher::class));
 
         $this->assertEquals(0, PaymentReminder::where('reminder_type', ReminderType::Overdue->value)->count());
     }
@@ -240,7 +240,7 @@ class SendPaymentRemindersJobTest extends TestCase
             'current_period_end' => now()->subDay()->startOfDay(),
         ]);
 
-        (new SendPaymentReminders)->handle();
+        (new SendPaymentReminders)->handle(app(\App\Domain\Notification\Services\NotificationDispatcher::class));
 
         // Upcoming: all channels for expiring subscription
         $upcomingCount = PaymentReminder::where('store_subscription_id', $expiring->id)
@@ -258,7 +258,7 @@ class SendPaymentRemindersJobTest extends TestCase
     public function test_handles_no_matching_subscriptions_gracefully(): void
     {
         // No subscriptions at all
-        (new SendPaymentReminders)->handle();
+        (new SendPaymentReminders)->handle(app(\App\Domain\Notification\Services\NotificationDispatcher::class));
 
         $this->assertEquals(0, PaymentReminder::count());
     }
@@ -283,7 +283,7 @@ class SendPaymentRemindersJobTest extends TestCase
             'current_period_end' => now()->addDays(3)->startOfDay(),
         ]);
 
-        (new SendPaymentReminders)->handle();
+        (new SendPaymentReminders)->handle(app(\App\Domain\Notification\Services\NotificationDispatcher::class));
 
         $sub1Count = PaymentReminder::where('store_subscription_id', $sub1->id)->count();
         $sub2Count = PaymentReminder::where('store_subscription_id', $sub2->id)->count();

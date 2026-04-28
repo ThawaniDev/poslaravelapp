@@ -123,6 +123,9 @@ class ZatcaApiClient
                 ->withHeaders([
                     'Accept-Version' => 'V2',
                     'Clearance-Status' => '1',
+                    'Authorization' => 'Basic ' . base64_encode(
+                        base64_encode($this->derFromPem($certificatePem)) . ':' . ''
+                    ),
                 ])
                 ->post($this->baseUrl() . '/invoices/clearance/single', [
                     'invoiceHash' => $invoiceHash,
@@ -130,17 +133,28 @@ class ZatcaApiClient
                     'invoice' => base64_encode($signedXml),
                 ]);
             $body = $resp->json() ?? [];
+            if (! $resp->successful()) {
+                Log::warning('ZATCA clearance rejected', [
+                    'status' => $resp->status(),
+                    'body'   => $resp->body(),
+                ]);
+            }
             $cleared = $resp->successful() && (($body['clearanceStatus'] ?? '') === 'CLEARED');
+            $errorMessages = $body['validationResults']['errorMessages'] ?? [];
+            $firstError = ! empty($errorMessages)
+                ? ($errorMessages[0]['message'] ?? null)
+                : null;
             return [
                 'cleared' => $cleared,
                 'status_code' => $resp->status(),
                 'response_code' => $body['clearanceStatus'] ?? (string) $resp->status(),
-                'message' => $body['validationResults']['infoMessages'][0]['message'] ?? null,
+                'message' => $body['validationResults']['infoMessages'][0]['message'] ?? $firstError,
                 'cleared_xml' => isset($body['clearedInvoice'])
                     ? base64_decode($body['clearedInvoice']) : $signedXml,
-                'errors' => $body['validationResults']['errorMessages'] ?? [],
+                'errors' => $errorMessages,
             ];
         } catch (\Throwable $e) {
+            Log::warning('ZATCA clearance call failed', ['err' => $e->getMessage()]);
             return ['cleared' => false, 'status_code' => 0, 'message' => $e->getMessage()];
         }
     }
@@ -165,6 +179,9 @@ class ZatcaApiClient
                 ->withHeaders([
                     'Accept-Version' => 'V2',
                     'Clearance-Status' => '0',
+                    'Authorization' => 'Basic ' . base64_encode(
+                        base64_encode($this->derFromPem($certificatePem)) . ':' . ''
+                    ),
                 ])
                 ->post($this->baseUrl() . '/invoices/reporting/single', [
                     'invoiceHash' => $invoiceHash,
@@ -172,15 +189,26 @@ class ZatcaApiClient
                     'invoice' => base64_encode($signedXml),
                 ]);
             $body = $resp->json() ?? [];
+            if (! $resp->successful()) {
+                Log::warning('ZATCA reporting rejected', [
+                    'status' => $resp->status(),
+                    'body'   => $resp->body(),
+                ]);
+            }
             $reported = $resp->successful() && (($body['reportingStatus'] ?? '') === 'REPORTED');
+            $errorMessages = $body['validationResults']['errorMessages'] ?? [];
+            $firstError = ! empty($errorMessages)
+                ? ($errorMessages[0]['message'] ?? null)
+                : null;
             return [
                 'reported' => $reported,
                 'status_code' => $resp->status(),
                 'response_code' => $body['reportingStatus'] ?? (string) $resp->status(),
-                'message' => $body['validationResults']['infoMessages'][0]['message'] ?? null,
-                'errors' => $body['validationResults']['errorMessages'] ?? [],
+                'message' => $body['validationResults']['infoMessages'][0]['message'] ?? $firstError,
+                'errors' => $errorMessages,
             ];
         } catch (\Throwable $e) {
+            Log::warning('ZATCA reporting call failed', ['err' => $e->getMessage()]);
             return ['reported' => false, 'status_code' => 0, 'message' => $e->getMessage()];
         }
     }
@@ -189,5 +217,13 @@ class ZatcaApiClient
     {
         $b64 = chunk_split(base64_encode($der), 64, "\n");
         return "-----BEGIN CERTIFICATE-----\n" . $b64 . "-----END CERTIFICATE-----\n";
+    }
+
+    /** Strip PEM headers and decode to DER bytes. */
+    private function derFromPem(string $pem): string
+    {
+        $pem = preg_replace('/-----BEGIN [^-]+-----/', '', $pem);
+        $pem = preg_replace('/-----END [^-]+-----/', '', $pem);
+        return base64_decode(preg_replace('/\s+/', '', $pem) ?? '');
     }
 }

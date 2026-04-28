@@ -19,6 +19,7 @@ class SubscribeRequest extends FormRequest
             'plan_id' => ['required', 'uuid', 'exists:subscription_plans,id'],
             'billing_cycle' => ['sometimes', Rule::enum(BillingCycle::class)],
             'payment_method' => ['nullable', 'string', 'max:100'],
+            'discount_code' => ['nullable', 'string', 'max:100'],
         ];
     }
 

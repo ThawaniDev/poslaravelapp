@@ -13,7 +13,8 @@ use App\Domain\ThawaniIntegration\Models\ThawaniSyncLog;
 use App\Domain\ThawaniIntegration\Models\ThawaniSyncQueue;
 use App\Domain\ThawaniIntegration\Services\ThawaniApiClient;
 use App\Domain\ThawaniIntegration\Services\ThawaniService;
-use App\Models\User;
+use App\Domain\Auth\Models\User;
+use App\Domain\Core\Models\Organization;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
@@ -31,9 +32,29 @@ class ThawaniIntegrationApiTest extends TestCase
     {
         parent::setUp();
 
-        $this->store = Store::factory()->create();
-        $this->user = User::factory()->create([
+        $org = Organization::create([
+            'name' => 'Thawani Test Org',
+            'business_type' => 'grocery',
+            'country' => 'OM',
+        ]);
+
+        $this->store = Store::create([
+            'organization_id' => $org->id,
+            'name' => 'Thawani Test Store',
+            'business_type' => 'grocery',
+            'currency' => 'OMR',
+            'is_active' => true,
+            'is_main_branch' => true,
+        ]);
+
+        $this->user = User::create([
+            'name' => 'Thawani Test User',
+            'email' => 'thawani@test.com',
+            'password_hash' => bcrypt('password'),
             'store_id' => $this->store->id,
+            'organization_id' => $org->id,
+            'role' => 'owner',
+            'is_active' => true,
         ]);
 
         Sanctum::actingAs($this->user, ['*']);
@@ -111,7 +132,7 @@ class ThawaniIntegrationApiTest extends TestCase
         ]);
 
         $r->assertOk();
-        $this->assertDatabaseHas('thawani_store_configs', [
+        $this->assertDatabaseHas('thawani_store_config', [
             'store_id' => $this->store->id,
             'auto_sync_products' => true,
         ]);
@@ -138,7 +159,7 @@ class ThawaniIntegrationApiTest extends TestCase
         $r = $this->putJson("{$this->base}/disconnect");
         $r->assertOk();
 
-        $this->assertDatabaseHas('thawani_store_configs', [
+        $this->assertDatabaseHas('thawani_store_config', [
             'store_id' => $this->store->id,
             'is_connected' => false,
         ]);
@@ -162,8 +183,11 @@ class ThawaniIntegrationApiTest extends TestCase
     // ── Product Mappings ────────────────────────────────────
     public function test_get_product_mappings(): void
     {
-        $product = Product::factory()->create([
+        $product = Product::create([
             'organization_id' => $this->store->organization_id ?? $this->store->id,
+            'name' => 'Test Product',
+            'name_ar' => 'منتج اختبار',
+            'sell_price' => 10.00,
         ]);
 
         ThawaniProductMapping::create([
@@ -180,8 +204,11 @@ class ThawaniIntegrationApiTest extends TestCase
     // ── Category Mappings ───────────────────────────────────
     public function test_get_category_mappings(): void
     {
-        $category = Category::factory()->create([
+        $category = Category::create([
             'organization_id' => $this->store->organization_id ?? $this->store->id,
+            'name' => 'Test Category',
+            'name_ar' => 'فئة اختبار',
+            'is_active' => true,
         ]);
 
         ThawaniCategoryMapping::create([

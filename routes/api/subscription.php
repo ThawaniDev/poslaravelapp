@@ -26,6 +26,9 @@ Route::prefix('subscription')->group(function () {
 
     // ─── Authenticated: Subscription management ─────────────────
     Route::middleware('auth:sanctum')->group(function () {
+        // Discount code validation (public — available without active subscription)
+        Route::post('validate-discount', [SubscriptionController::class, 'validateDiscount']);
+
         // Current subscription & lifecycle
         Route::get('current', [SubscriptionController::class, 'current'])->middleware('permission:subscription.view');
         Route::post('subscribe', [SubscriptionController::class, 'subscribe'])->middleware('permission:subscription.manage');

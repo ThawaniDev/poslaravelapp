@@ -354,7 +354,7 @@ class RolesPermissionsApiTest extends TestCase
 
         $permissions = $response->json('data.permissions');
         $this->assertContains('pos.sell', $permissions);
-        $this->assertContains('pos.open_session', $permissions);
+        $this->assertContains('pos.shift_open', $permissions);
     }
 
     // ─── PIN Override ────────────────────────────────────────────

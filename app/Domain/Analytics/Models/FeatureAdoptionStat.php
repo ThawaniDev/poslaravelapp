@@ -11,14 +11,15 @@ class FeatureAdoptionStat extends Model
 
     protected $table = 'feature_adoption_stats';
     public $timestamps = false;
+    protected $dateFormat = 'Y-m-d';
     public $incrementing = false;
     protected $keyType = 'string';
 
     protected $fillable = [
         'feature_key',
         'date',
-        'stores_using',
-        'total_eligible',
+        'stores_using_count',
+        'total_events',
     ];
 
     protected $casts = [

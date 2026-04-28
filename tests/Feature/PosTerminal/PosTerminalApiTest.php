@@ -154,7 +154,7 @@ class PosTerminalApiTest extends TestCase
             'cashier_id' => $this->user->id,
             'status' => CashSessionStatus::Open,
             'opening_cash' => 100,
-            'total_cash_sales' => 500,
+            'total_cash_sales' => 450,
             'total_card_sales' => 0,
             'total_other_sales' => 0,
             'total_refunds' => 50,

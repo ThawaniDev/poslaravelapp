@@ -62,9 +62,17 @@ class AIBillingService
             $q->where('organization_id', $organizationId);
         }
 
-        $billedCost = (float) $q->sum(DB::raw('CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd END'));
+        // Get already-billed cost and raw cost separately
+        $billedCostUsd = (float) $q->clone()->where('billed_cost_usd', '>', 0)->sum('billed_cost_usd');
+        $rawCostNoMargin = (float) $q->clone()->where('billed_cost_usd', '<=', 0)->sum('estimated_cost_usd');
 
-        return round($billedCost, 5);
+        // Apply margin to the raw cost portion
+        if ($rawCostNoMargin > 0) {
+            $marginRate = $storeId ? $this->getEffectiveMarginForStore($storeId) : AIBillingSetting::getFloat('margin_percentage', 20.0);
+            $rawCostNoMargin = $rawCostNoMargin * (1 + $marginRate / 100);
+        }
+
+        return round($billedCostUsd + $rawCostNoMargin, 5);
     }
 
     /**
@@ -184,13 +192,17 @@ class AIBillingService
         $totalRequests = $featureBreakdown->sum('request_count');
         $totalTokens = $featureBreakdown->sum('total_tokens');
         $totalRawCost = (float) $featureBreakdown->sum('raw_cost');
-        $totalBilledCost = (float) $featureBreakdown->sum('billed_cost');
+        $preMarginBilledCost = (float) $featureBreakdown->sum('billed_cost');
 
         if ($totalRawCost <= 0) {
             return null;
         }
 
         $marginPercentage = $this->getEffectiveMarginForStore($storeId);
+        // If billed_cost_usd was not pre-calculated, apply margin to raw cost
+        $totalBilledCost = $preMarginBilledCost > 0
+            ? $preMarginBilledCost
+            : round($totalRawCost * (1 + $marginPercentage / 100), 5);
         $marginAmount = round($totalBilledCost - $totalRawCost, 5);
         $billedAmount = round($totalBilledCost, 5);
 
@@ -231,7 +243,9 @@ class AIBillingService
 
             foreach ($featureBreakdown as $row) {
                 $featureRawCost = (float) $row->raw_cost;
-                $featureBilledCost = (float) $row->billed_cost;
+                $featureBilledCost = (float) $row->billed_cost > 0
+                    ? (float) $row->billed_cost
+                    : round($featureRawCost * (1 + $marginPercentage / 100), 5);
 
                 AIBillingInvoiceItem::create([
                     'ai_billing_invoice_id' => $invoice->id,
@@ -428,6 +442,7 @@ class AIBillingService
 
         // Current month usage
         $monthStart = now()->startOfMonth();
+        $marginMultiplier = 1 + $marginPercentage / 100;
         $currentUsage = AIUsageLog::where('store_id', $storeId)
             ->where('created_at', '>=', $monthStart)
             ->where('status', 'success')
@@ -435,8 +450,8 @@ class AIBillingService
                 COUNT(*) as total_requests,
                 SUM(total_tokens) as total_tokens,
                 SUM(estimated_cost_usd) as raw_cost,
-                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * (1 + ? / 100) END) as billed_cost
-            ", [$marginPercentage])
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * ? END) as billed_cost
+            ", [$marginMultiplier])
             ->first();
 
         $rawCost = round((float) ($currentUsage->raw_cost ?? 0), 5);
@@ -452,8 +467,8 @@ class AIBillingService
                 feature_slug,
                 COUNT(*) as request_count,
                 SUM(total_tokens) as total_tokens,
-                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * (1 + ? / 100) END) as billed_cost
-            ", [$marginPercentage])
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * ? END) as billed_cost
+            ", [$marginMultiplier])
             ->orderByDesc('billed_cost')
             ->get()
             ->map(fn ($row) => [
@@ -481,6 +496,7 @@ class AIBillingService
                 'is_ai_enabled' => $config->is_ai_enabled,
                 'monthly_limit_usd' => (float) $config->monthly_limit_usd,
                 'effective_limit_usd' => $effectiveLimit,
+                'margin_percentage' => $marginPercentage,
                 'disabled_reason' => $config->disabled_reason,
                 'disabled_at' => $config->disabled_at?->toIso8601String(),
             ],
@@ -489,6 +505,9 @@ class AIBillingService
                 'month' => now()->month,
                 'total_requests' => (int) ($currentUsage->total_requests ?? 0),
                 'total_tokens' => (int) ($currentUsage->total_tokens ?? 0),
+                'raw_cost_usd' => $rawCost,
+                'margin_percentage' => $marginPercentage,
+                'margin_amount_usd' => $marginAmount,
                 'billed_cost_usd' => $billedCost,
                 'limit_usd' => $effectiveLimit,
                 'limit_percentage' => $limitPercentage,
@@ -510,13 +529,19 @@ class AIBillingService
     /**
      * Get detailed invoice for store view.
      * Scoped by organization (org users see any invoice in their org).
+     * If $storeId is provided, additionally scopes to that specific store.
      */
-    public function getInvoiceDetail(string $invoiceId, string $organizationId): ?array
+    public function getInvoiceDetail(string $invoiceId, string $organizationId, ?string $storeId = null): ?array
     {
-        $invoice = AIBillingInvoice::with(['items', 'payments', 'store:id,name'])
+        $query = AIBillingInvoice::with(['items', 'payments', 'store:id,name'])
             ->where('id', $invoiceId)
-            ->where('organization_id', $organizationId)
-            ->first();
+            ->where('organization_id', $organizationId);
+
+        if ($storeId) {
+            $query->where('store_id', $storeId);
+        }
+
+        $invoice = $query->first();
 
         if (!$invoice) return null;
 
@@ -526,12 +551,15 @@ class AIBillingService
             'store_id' => $invoice->store_id,
             'store_name' => $invoice->store?->name,
             'scope' => $invoice->store_id ? 'store' : 'organization',
-            'year' => $invoice->year,
-            'month' => $invoice->month,
+            'year' => (int) $invoice->year,
+            'month' => (int) $invoice->month,
             'period_start' => $invoice->period_start->toDateString(),
             'period_end' => $invoice->period_end->toDateString(),
-            'total_requests' => $invoice->total_requests,
-            'total_tokens' => $invoice->total_tokens,
+            'total_requests' => (int) $invoice->total_requests,
+            'total_tokens' => (int) ($invoice->total_tokens ?? 0),
+            'raw_cost_usd' => (float) $invoice->raw_cost_usd,
+            'margin_percentage' => (float) $invoice->margin_percentage,
+            'margin_amount_usd' => (float) $invoice->margin_amount_usd,
             'billed_amount_usd' => (float) $invoice->billed_amount_usd,
             'status' => $invoice->status,
             'due_date' => $invoice->due_date->toDateString(),
@@ -541,8 +569,9 @@ class AIBillingService
                 'feature_slug' => $item->feature_slug,
                 'feature_name' => $item->feature_name,
                 'feature_name_ar' => $item->feature_name_ar,
-                'request_count' => $item->request_count,
-                'total_tokens' => $item->total_tokens,
+                'request_count' => (int) $item->request_count,
+                'total_tokens' => (int) $item->total_tokens,
+                'raw_cost_usd' => (float) $item->raw_cost_usd,
                 'billed_cost_usd' => (float) $item->billed_cost_usd,
             ]),
             'payments' => $invoice->payments->map(fn ($p) => [
@@ -570,6 +599,7 @@ class AIBillingService
 
         $monthStart = now()->startOfMonth();
         $marginPercentage = AIBillingSetting::getFloat('margin_percentage', 20.0);
+        $marginMultiplier = 1 + $marginPercentage / 100;
 
         $current = AIUsageLog::where('organization_id', $organizationId)
             ->where('created_at', '>=', $monthStart)
@@ -578,8 +608,8 @@ class AIBillingService
                 COUNT(*) as total_requests,
                 SUM(total_tokens) as total_tokens,
                 SUM(estimated_cost_usd) as raw_cost,
-                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * (1 + ? / 100) END) as billed_cost
-            ", [$marginPercentage])
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * ? END) as billed_cost
+            ", [$marginMultiplier])
             ->first();
 
         $byFeature = AIUsageLog::where('organization_id', $organizationId)
@@ -590,8 +620,8 @@ class AIBillingService
                 feature_slug,
                 COUNT(*) as request_count,
                 SUM(total_tokens) as total_tokens,
-                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * (1 + ? / 100) END) as billed_cost
-            ", [$marginPercentage])
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * ? END) as billed_cost
+            ", [$marginMultiplier])
             ->orderByDesc('billed_cost')
             ->get()
             ->map(fn ($row) => [
@@ -608,8 +638,8 @@ class AIBillingService
             ->selectRaw("
                 store_id,
                 COUNT(*) as request_count,
-                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * (1 + ? / 100) END) as billed_cost
-            ", [$marginPercentage])
+                SUM(CASE WHEN billed_cost_usd > 0 THEN billed_cost_usd ELSE estimated_cost_usd * ? END) as billed_cost
+            ", [$marginMultiplier])
             ->orderByDesc('billed_cost')
             ->get()
             ->map(function ($row) {

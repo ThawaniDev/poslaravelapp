@@ -304,10 +304,10 @@ class AnalyticsReportingApiTest extends TestCase
         PlatformPlanStat::forceCreate([
             'date' => $today,
             'subscription_plan_id' => $this->plan->id,
-            'active_stores' => 50,
-            'trial_stores' => 10,
-            'churned_stores' => 2,
-            'revenue' => 1500.00,
+            'active_count' => 50,
+            'trial_count' => 10,
+            'churned_count' => 2,
+            'mrr' => 1500.00,
         ]);
 
         $response = $this->getJson("/api/v2/admin/analytics/revenue?date_to={$today}");
@@ -419,10 +419,10 @@ class AnalyticsReportingApiTest extends TestCase
         PlatformPlanStat::forceCreate([
             'date' => $yesterday,
             'subscription_plan_id' => $this->plan->id,
-            'active_stores' => 50,
-            'trial_stores' => 10,
-            'churned_stores' => 2,
-            'revenue' => 1500.00,
+            'active_count' => 50,
+            'trial_count' => 10,
+            'churned_count' => 2,
+            'mrr' => 1500.00,
         ]);
 
         $response = $this->getJson('/api/v2/admin/analytics/subscriptions');
@@ -442,10 +442,10 @@ class AnalyticsReportingApiTest extends TestCase
         PlatformPlanStat::forceCreate([
             'date' => $yesterday,
             'subscription_plan_id' => $this->plan->id,
-            'active_stores' => 50,
-            'trial_stores' => 10,
-            'churned_stores' => 5,
-            'revenue' => 1500.00,
+            'active_count' => 50,
+            'trial_count' => 10,
+            'churned_count' => 5,
+            'mrr' => 1500.00,
         ]);
 
         $response = $this->getJson('/api/v2/admin/analytics/subscriptions');
@@ -586,15 +586,15 @@ class AnalyticsReportingApiTest extends TestCase
         FeatureAdoptionStat::forceCreate([
             'date' => $today,
             'feature_key' => 'zatca_invoicing',
-            'stores_using' => 80,
-            'total_eligible' => 100,
+            'stores_using_count' => 80,
+            'total_events' => 100,
         ]);
 
         FeatureAdoptionStat::forceCreate([
             'date' => $today,
             'feature_key' => 'inventory_management',
-            'stores_using' => 60,
-            'total_eligible' => 100,
+            'stores_using_count' => 60,
+            'total_events' => 100,
         ]);
 
         $response = $this->getJson('/api/v2/admin/analytics/features');
@@ -615,8 +615,8 @@ class AnalyticsReportingApiTest extends TestCase
         FeatureAdoptionStat::forceCreate([
             'date' => $today,
             'feature_key' => 'pos_orders',
-            'stores_using' => 1,
-            'total_eligible' => 1,
+            'stores_using_count' => 1,
+            'total_events' => 1,
         ]);
 
         $response = $this->getJson('/api/v2/admin/analytics/features');
@@ -634,15 +634,15 @@ class AnalyticsReportingApiTest extends TestCase
         FeatureAdoptionStat::forceCreate([
             'date' => $date1,
             'feature_key' => 'pos',
-            'stores_using' => 10,
-            'total_eligible' => 20,
+            'stores_using_count' => 10,
+            'total_events' => 20,
         ]);
 
         FeatureAdoptionStat::forceCreate([
             'date' => $date2,
             'feature_key' => 'pos',
-            'stores_using' => 15,
-            'total_eligible' => 20,
+            'stores_using_count' => 15,
+            'total_events' => 20,
         ]);
 
         $response = $this->getJson('/api/v2/admin/analytics/features');
@@ -896,10 +896,10 @@ class AnalyticsReportingApiTest extends TestCase
         PlatformPlanStat::forceCreate([
             'date' => now()->subDays(1)->toDateString(),
             'subscription_plan_id' => $this->plan->id,
-            'active_stores' => 50,
-            'trial_stores' => 10,
-            'churned_stores' => 2,
-            'revenue' => 1500.00,
+            'active_count' => 50,
+            'trial_count' => 10,
+            'churned_count' => 2,
+            'mrr' => 1500.00,
         ]);
 
         $response = $this->getJson('/api/v2/admin/analytics/plan-stats');
@@ -922,15 +922,15 @@ class AnalyticsReportingApiTest extends TestCase
         FeatureAdoptionStat::forceCreate([
             'date' => now()->subDays(1)->toDateString(),
             'feature_key' => 'zatca',
-            'stores_using' => 80,
-            'total_eligible' => 100,
+            'stores_using_count' => 80,
+            'total_events' => 100,
         ]);
 
         FeatureAdoptionStat::forceCreate([
             'date' => now()->subDays(1)->toDateString(),
             'feature_key' => 'inventory',
-            'stores_using' => 40,
-            'total_eligible' => 100,
+            'stores_using_count' => 40,
+            'total_events' => 100,
         ]);
 
         $response = $this->getJson('/api/v2/admin/analytics/feature-stats');
@@ -1202,8 +1202,8 @@ class AnalyticsReportingApiTest extends TestCase
         FeatureAdoptionStat::forceCreate([
             'date' => now()->subDays(60)->toDateString(),
             'feature_key' => 'old_feature',
-            'stores_using' => 10,
-            'total_eligible' => 50,
+            'stores_using_count' => 10,
+            'total_events' => 50,
         ]);
 
         $response = $this->getJson('/api/v2/admin/analytics/features');
@@ -1262,19 +1262,19 @@ class AnalyticsReportingApiTest extends TestCase
         PlatformPlanStat::forceCreate([
             'date' => $today,
             'subscription_plan_id' => $this->plan->id,
-            'active_stores' => 50,
-            'trial_stores' => 10,
-            'churned_stores' => 2,
-            'revenue' => 1500.00,
+            'active_count' => 50,
+            'trial_count' => 10,
+            'churned_count' => 2,
+            'mrr' => 1500.00,
         ]);
 
         PlatformPlanStat::forceCreate([
             'date' => $today,
             'subscription_plan_id' => $plan2->id,
-            'active_stores' => 30,
-            'trial_stores' => 5,
-            'churned_stores' => 1,
-            'revenue' => 3000.00,
+            'active_count' => 30,
+            'trial_count' => 5,
+            'churned_count' => 1,
+            'mrr' => 3000.00,
         ]);
 
         // Filter by basic plan only

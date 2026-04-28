@@ -82,12 +82,21 @@ class ListZatcaInvoices extends ListRecords
                         $status = $result['submission_status'];
                         $accepted = in_array($status, ['accepted', 'reported'], true);
 
+                        // Load full record to get rejection_errors
+                        $invoice = \App\Domain\ZatcaCompliance\Models\ZatcaInvoice::find($result['invoice_id']);
+                        $errorLines = collect($invoice?->rejection_errors ?? [])
+                            ->map(fn ($e) => '[' . ($e['code'] ?? '?') . '] ' . ($e['message'] ?? json_encode($e)))
+                            ->join("\n");
+
+                        $body = __('zatca.invoice_number') . ': ' . $invoiceNumber . "\n"
+                            . __('zatca.submission_status') . ': ' . strtoupper($status);
+                        if (! $accepted && $errorLines) {
+                            $body .= "\n\n" . $errorLines;
+                        }
+
                         Notification::make()
                             ->title($accepted ? __('zatca.test_invoice_accepted') : __('zatca.test_invoice_rejected'))
-                            ->body(
-                                __('zatca.invoice_number') . ': ' . $invoiceNumber . "\n" .
-                                __('zatca.submission_status') . ': ' . strtoupper($status)
-                            )
+                            ->body($body)
                             ->{$accepted ? 'success' : 'danger'}()
                             ->persistent()
                             ->send();

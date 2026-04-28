@@ -27,7 +27,7 @@ class AutoRejectStaleOrderJob implements ShouldQueue
 
     public int $tries = 1;
 
-    public function __construct(public string $orderMappingId)
+    public function __construct(public string $orderMappingId, public int $timeoutSeconds = 300)
     {
         $this->onQueue('delivery');
     }
@@ -46,6 +46,11 @@ class AutoRejectStaleOrderJob implements ShouldQueue
 
         // Already actioned (accepted, preparing, ready, …) — nothing to do.
         if ($currentStatus !== DeliveryOrderStatus::Pending->value) {
+            return;
+        }
+
+        // Guard: only reject if the timeout period has actually elapsed.
+        if ($order->created_at->diffInSeconds(now()) < $this->timeoutSeconds) {
             return;
         }
 

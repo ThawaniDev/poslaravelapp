@@ -374,7 +374,11 @@ class AIGatewayServiceTest extends TestCase
         $method = new \ReflectionMethod(AIGatewayService::class, 'estimateCost');
         $method->setAccessible(true);
 
-        $cost = $method->invoke($this->gateway, 'gpt-4o-mini', 1000, 2000);
+        $model = new \App\Domain\WameedAI\Models\AILlmModel();
+        $model->input_price_per_1m = 0.15;
+        $model->output_price_per_1m = 0.60;
+
+        $cost = $method->invoke($this->gateway, $model, 1000, 2000);
 
         $this->assertGreaterThan(0, $cost);
         $this->assertLessThan(0.01, $cost);
@@ -386,8 +390,16 @@ class AIGatewayServiceTest extends TestCase
         $method = new \ReflectionMethod(AIGatewayService::class, 'estimateCost');
         $method->setAccessible(true);
 
-        $costMini = $method->invoke($this->gateway, 'gpt-4o-mini', 1000, 1000);
-        $costFull = $method->invoke($this->gateway, 'gpt-4o', 1000, 1000);
+        $miniModel = new \App\Domain\WameedAI\Models\AILlmModel();
+        $miniModel->input_price_per_1m = 0.15;
+        $miniModel->output_price_per_1m = 0.60;
+
+        $fullModel = new \App\Domain\WameedAI\Models\AILlmModel();
+        $fullModel->input_price_per_1m = 2.50;
+        $fullModel->output_price_per_1m = 10.00;
+
+        $costMini = $method->invoke($this->gateway, $miniModel, 1000, 1000);
+        $costFull = $method->invoke($this->gateway, $fullModel, 1000, 1000);
 
         // GPT-4o should be significantly more expensive than mini
         $this->assertGreaterThan($costMini, $costFull);
