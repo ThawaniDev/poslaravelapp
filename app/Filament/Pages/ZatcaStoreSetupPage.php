@@ -288,7 +288,12 @@ class ZatcaStoreSetupPage extends Page implements HasForms
                         );
                         Notification::make()->title(__('zatca.enrolled'))->success()->send();
                     } catch (\Throwable $e) {
-                        Notification::make()->title(__('zatca.enroll_failed'))->body($e->getMessage())->danger()->send();
+                        Notification::make()
+                            ->title(__('zatca.enroll_failed'))
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->persistent()
+                            ->send();
                     }
                 }),
 

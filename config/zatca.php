@@ -26,17 +26,18 @@ $urls = [
 ];
 
 // Per the Fatoora User Manual the CSR must carry a specific
-// certificateTemplateName extension or ZATCA will reject the CSID request.
-$csrTemplates = [
-    'sandbox'    => 'PREZATCA-Code-Signing',
-    'simulation' => 'PREZATCA-Code-Signing',
-    'production' => 'ZATCA-Code-Signing',
-];
+// certificateTemplateName extension; it is derived below from
+// ZATCA_ENVIRONMENT (production -> ZATCA-Code-Signing, otherwise
+// PREZATCA-Code-Signing).
 
 return [
     'environment' => $environment,
     'api_url' => env('ZATCA_API_URL', $urls[$environment] ?? $urls['sandbox']),
-    'csr_template' => env('ZATCA_CSR_TEMPLATE', $csrTemplates[$environment] ?? $csrTemplates['sandbox']),
+    // Strictly derived from ZATCA_ENVIRONMENT — production gets
+    // ZATCA-Code-Signing, sandbox/simulation get PREZATCA-Code-Signing.
+    'csr_template' => $environment === 'production'
+        ? 'ZATCA-Code-Signing'
+        : 'PREZATCA-Code-Signing',
 
     // Optional fallback material for legacy / single-tenant installs;
     // multi-tenant uses zatca_certificates per-store and ignores these.

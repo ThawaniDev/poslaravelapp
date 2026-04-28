@@ -44,7 +44,7 @@ class ZatcaApiClient
     }
 
     /**
-     * @return array{certificate_pem?:string, request_id?:string}
+     * @return array{certificate_pem?:string, request_id?:string, secret?:string, error?:string}
      */
     public function requestComplianceCertificate(string $csrPem, string $otp): array
     {
@@ -54,28 +54,34 @@ class ZatcaApiClient
 
         try {
             $resp = Http::timeout(15)
-                ->withHeaders(['OTP' => $otp, 'Accept-Version' => 'V2'])
+                ->withHeaders([
+                    'OTP' => $otp,
+                    'Accept-Version' => 'V2',
+                    'Accept-Language' => 'en',
+                    'Accept' => 'application/json',
+                ])
                 ->post($this->baseUrl() . '/compliance', [
                     'csr' => base64_encode($csrPem),
                 ]);
             if (! $resp->successful()) {
                 Log::warning('ZATCA compliance API rejected CSR', ['status' => $resp->status(), 'body' => $resp->body()]);
-                return [];
+                return ['error' => 'ZATCA ' . $resp->status() . ': ' . $resp->body()];
             }
             $body = $resp->json();
             return [
                 'certificate_pem' => isset($body['binarySecurityToken'])
                     ? $this->wrapPem(base64_decode($body['binarySecurityToken'])) : null,
                 'request_id' => $body['requestID'] ?? null,
+                'secret'     => $body['secret'] ?? null,
             ];
         } catch (\Throwable $e) {
             Log::warning('ZATCA compliance API call failed', ['err' => $e->getMessage()]);
-            return [];
+            return ['error' => 'Network: ' . $e->getMessage()];
         }
     }
 
     /**
-     * @return array{certificate_pem?:string, request_id?:string}
+     * @return array{certificate_pem?:string, request_id?:string, secret?:string, error?:string}
      */
     public function requestProductionCertificate(string $csrPem, string $complianceRequestId): array
     {
@@ -84,21 +90,27 @@ class ZatcaApiClient
         }
         try {
             $resp = Http::timeout(15)
-                ->withHeaders(['Accept-Version' => 'V2'])
+                ->withHeaders([
+                    'Accept-Version' => 'V2',
+                    'Accept-Language' => 'en',
+                    'Accept' => 'application/json',
+                ])
                 ->post($this->baseUrl() . '/production/csids', [
                     'compliance_request_id' => $complianceRequestId,
                 ]);
             if (! $resp->successful()) {
-                return [];
+                Log::warning('ZATCA production CSID rejected', ['status' => $resp->status(), 'body' => $resp->body()]);
+                return ['error' => 'ZATCA ' . $resp->status() . ': ' . $resp->body()];
             }
             $body = $resp->json();
             return [
                 'certificate_pem' => isset($body['binarySecurityToken'])
                     ? $this->wrapPem(base64_decode($body['binarySecurityToken'])) : null,
                 'request_id' => $body['requestID'] ?? null,
+                'secret'     => $body['secret'] ?? null,
             ];
         } catch (\Throwable $e) {
-            return [];
+            return ['error' => 'Network: ' . $e->getMessage()];
         }
     }
 
@@ -107,7 +119,7 @@ class ZatcaApiClient
      *
      * @return array{cleared:bool, status_code:int, response_code?:string, message?:string, cleared_xml?:string, errors?:array}
      */
-    public function clearInvoice(string $signedXml, string $invoiceHash, string $uuid, string $certificatePem): array
+    public function clearInvoice(string $signedXml, string $invoiceHash, string $uuid, string $certificatePem, ?string $secret = null): array
     {
         if ($this->isSandbox()) {
             return [
@@ -122,9 +134,11 @@ class ZatcaApiClient
             $resp = Http::timeout(15)
                 ->withHeaders([
                     'Accept-Version' => 'V2',
+                    'Accept-Language' => 'en',
+                    'Accept' => 'application/json',
                     'Clearance-Status' => '1',
                     'Authorization' => 'Basic ' . base64_encode(
-                        base64_encode($this->derFromPem($certificatePem)) . ':' . ''
+                        base64_encode($this->derFromPem($certificatePem)) . ':' . ($secret ?? '')
                     ),
                 ])
                 ->post($this->baseUrl() . '/invoices/clearance/single', [
@@ -164,7 +178,7 @@ class ZatcaApiClient
      *
      * @return array{reported:bool, status_code:int, response_code?:string, message?:string, errors?:array}
      */
-    public function reportInvoice(string $signedXml, string $invoiceHash, string $uuid, string $certificatePem): array
+    public function reportInvoice(string $signedXml, string $invoiceHash, string $uuid, string $certificatePem, ?string $secret = null): array
     {
         if ($this->isSandbox()) {
             return [
@@ -178,9 +192,11 @@ class ZatcaApiClient
             $resp = Http::timeout(15)
                 ->withHeaders([
                     'Accept-Version' => 'V2',
+                    'Accept-Language' => 'en',
+                    'Accept' => 'application/json',
                     'Clearance-Status' => '0',
                     'Authorization' => 'Basic ' . base64_encode(
-                        base64_encode($this->derFromPem($certificatePem)) . ':' . ''
+                        base64_encode($this->derFromPem($certificatePem)) . ':' . ($secret ?? '')
                     ),
                 ])
                 ->post($this->baseUrl() . '/invoices/reporting/single', [

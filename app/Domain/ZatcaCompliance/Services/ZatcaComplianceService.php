@@ -159,9 +159,13 @@ class ZatcaComplianceService
 
         $this->chain->commit($device, $icv, $signed['hash']);
 
+        $secret = $material['certificate']->secret
+            ? \Illuminate\Support\Facades\Crypt::decryptString($material['certificate']->secret)
+            : null;
+
         $resp = $flow === ZatcaInvoiceFlow::Clearance
-            ? $this->api->clearInvoice($signed['xml'], $signed['hash'], $uuid, $material['certificate']->certificate_pem)
-            : $this->api->reportInvoice($signed['xml'], $signed['hash'], $uuid, $material['certificate']->certificate_pem);
+            ? $this->api->clearInvoice($signed['xml'], $signed['hash'], $uuid, $material['certificate']->certificate_pem, $secret)
+            : $this->api->reportInvoice($signed['xml'], $signed['hash'], $uuid, $material['certificate']->certificate_pem, $secret);
 
         $accepted = $flow === ZatcaInvoiceFlow::Clearance ? ! empty($resp['cleared']) : ! empty($resp['reported']);
         $invoice->update([
@@ -386,9 +390,13 @@ class ZatcaComplianceService
             ? ZatcaInvoiceFlow::Clearance
             : ZatcaInvoiceFlow::Reporting;
 
+        $secret = $material['certificate']->secret
+            ? \Illuminate\Support\Facades\Crypt::decryptString($material['certificate']->secret)
+            : null;
+
         $resp = $flow === ZatcaInvoiceFlow::Clearance
-            ? $this->api->clearInvoice($invoice->invoice_xml, $invoice->invoice_hash, $invoice->uuid, $material['certificate']->certificate_pem)
-            : $this->api->reportInvoice($invoice->invoice_xml, $invoice->invoice_hash, $invoice->uuid, $material['certificate']->certificate_pem);
+            ? $this->api->clearInvoice($invoice->invoice_xml, $invoice->invoice_hash, $invoice->uuid, $material['certificate']->certificate_pem, $secret)
+            : $this->api->reportInvoice($invoice->invoice_xml, $invoice->invoice_hash, $invoice->uuid, $material['certificate']->certificate_pem, $secret);
 
         $accepted = $flow === ZatcaInvoiceFlow::Clearance ? ! empty($resp['cleared']) : ! empty($resp['reported']);
         $attempts = (int) ($invoice->submission_attempts ?? 0) + 1;
