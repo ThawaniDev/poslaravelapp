@@ -185,9 +185,21 @@ class CertificateService
         if (! $cert) {
             throw new \RuntimeException('No active ZATCA certificate for store ' . $storeId);
         }
-        $privateKeyPem = $cert->private_key_pem
-            ? Crypt::decryptString($cert->private_key_pem)
-            : '';
+        try {
+            $privateKeyPem = $cert->private_key_pem
+                ? Crypt::decryptString($cert->private_key_pem)
+                : '';
+        } catch (\Throwable $e) {
+            // Distinct error so callers (and the operator) don't see a
+            // misleading "no active certificate" when the cert exists but
+            // was encrypted with a different APP_KEY (typical when a DB
+            // is shared across environments with mismatched keys).
+            throw new \RuntimeException(
+                'Cannot decrypt ZATCA certificate private key for store ' . $storeId
+                . ' (cert id ' . $cert->id . '). Likely cause: APP_KEY mismatch.',
+                previous: $e,
+            );
+        }
         return ['certificate' => $cert, 'private_key_pem' => $privateKeyPem];
     }
 
