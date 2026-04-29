@@ -120,11 +120,21 @@ class ZatcaComplianceService
             'timestamp' => now()->toIso8601String(),
             'total' => number_format((float) $data['total_amount'], 2, '.', ''),
             'vat' => number_format((float) $data['vat_amount'], 2, '.', ''),
+            // ZATCA Phase-2 QR spec:
+            //   tag 6 (invoice hash) — base64 string of SHA-256
+            //   tag 7 (signature)    — base64 string of ECDSA signature
+            //   tag 8 (public key)   — raw DER bytes of EC public key
+            //   tag 9 (cert stamp)   — raw DER bytes of cert signature
             'invoice_hash' => $signed['hash'],
             'signature' => $signed['signature'],
-            'public_key' => $signed['public_key'],
-            'certificate_signature' => $signed['certificate_b64'],
+            'public_key' => base64_decode($signed['public_key']),
+            'certificate_signature' => $signed['certificate_signature'],
         ]);
+
+        // Replace the QR placeholder embedded by UblInvoiceBuilder with the
+        // real TLV-encoded QR base64. Doing it post-signing keeps the QR
+        // out of the hashed/signed canonical form (per ZATCA spec).
+        $signed['xml'] = str_replace('__QR_CODE_PLACEHOLDER__', $tlvB64, $signed['xml']);
 
         $flow = $isB2b && $type === ZatcaInvoiceType::Standard
             ? ZatcaInvoiceFlow::Clearance
@@ -163,9 +173,20 @@ class ZatcaComplianceService
             ? \Illuminate\Support\Facades\Crypt::decryptString($material['certificate']->secret)
             : null;
 
-        $resp = $flow === ZatcaInvoiceFlow::Clearance
-            ? $this->api->clearInvoice($signed['xml'], $signed['hash'], $uuid, $material['certificate']->certificate_pem, $secret)
-            : $this->api->reportInvoice($signed['xml'], $signed['hash'], $uuid, $material['certificate']->certificate_pem, $secret);
+        $isComplianceCert = ($material['certificate']->certificate_type?->value
+            ?? $material['certificate']->certificate_type) === 'compliance';
+
+        // Use the cert's stored API URL so the correct environment is always
+        // targeted, regardless of the current global .env setting.
+        $certApi = $this->api->forCertificate($material['certificate']);
+
+        if ($isComplianceCert) {
+            $resp = $certApi->submitComplianceInvoice($signed['xml'], $signed['hash'], $uuid, $material['certificate']->certificate_pem, $secret, $flow === ZatcaInvoiceFlow::Clearance ? 1 : 0);
+        } else {
+            $resp = $flow === ZatcaInvoiceFlow::Clearance
+                ? $certApi->clearInvoice($signed['xml'], $signed['hash'], $uuid, $material['certificate']->certificate_pem, $secret)
+                : $certApi->reportInvoice($signed['xml'], $signed['hash'], $uuid, $material['certificate']->certificate_pem, $secret);
+        }
 
         $accepted = $flow === ZatcaInvoiceFlow::Clearance ? ! empty($resp['cleared']) : ! empty($resp['reported']);
         $invoice->update([
@@ -394,9 +415,18 @@ class ZatcaComplianceService
             ? \Illuminate\Support\Facades\Crypt::decryptString($material['certificate']->secret)
             : null;
 
-        $resp = $flow === ZatcaInvoiceFlow::Clearance
-            ? $this->api->clearInvoice($invoice->invoice_xml, $invoice->invoice_hash, $invoice->uuid, $material['certificate']->certificate_pem, $secret)
-            : $this->api->reportInvoice($invoice->invoice_xml, $invoice->invoice_hash, $invoice->uuid, $material['certificate']->certificate_pem, $secret);
+        $isComplianceCert = ($material['certificate']->certificate_type?->value
+            ?? $material['certificate']->certificate_type) === 'compliance';
+
+        $certApi = $this->api->forCertificate($material['certificate']);
+
+        if ($isComplianceCert) {
+            $resp = $certApi->submitComplianceInvoice($invoice->invoice_xml, $invoice->invoice_hash, $invoice->uuid, $material['certificate']->certificate_pem, $secret, $flow === ZatcaInvoiceFlow::Clearance ? 1 : 0);
+        } else {
+            $resp = $flow === ZatcaInvoiceFlow::Clearance
+                ? $certApi->clearInvoice($invoice->invoice_xml, $invoice->invoice_hash, $invoice->uuid, $material['certificate']->certificate_pem, $secret)
+                : $certApi->reportInvoice($invoice->invoice_xml, $invoice->invoice_hash, $invoice->uuid, $material['certificate']->certificate_pem, $secret);
+        }
 
         $accepted = $flow === ZatcaInvoiceFlow::Clearance ? ! empty($resp['cleared']) : ! empty($resp['reported']);
         $attempts = (int) ($invoice->submission_attempts ?? 0) + 1;

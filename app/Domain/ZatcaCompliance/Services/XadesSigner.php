@@ -21,15 +21,31 @@ use DOMDocument;
 class XadesSigner
 {
     /**
-     * @return array{xml:string, hash:string, signature:string, public_key:string, certificate_b64:string}
+     * @return array{xml:string, hash:string, signature:string, public_key:string, certificate_b64:string, certificate_signature:string}
      */
     public function sign(string $unsignedXml, string $privateKeyPem, string $certificatePem): array
     {
+        // Per ZATCA Phase-2 spec the invoice hash is computed over the
+        // canonicalized invoice with three elements removed:
+        //   - ext:UBLExtensions (signature container)
+        //   - cac:Signature (signature reference)
+        //   - cac:AdditionalDocumentReference whose cbc:ID = "QR"
+        // and using inclusive C14N (C14N 1.1, exclusive=false, withComments=false).
         $dom = new DOMDocument('1.0', 'UTF-8');
         $dom->preserveWhiteSpace = false;
         $dom->loadXML($unsignedXml);
 
-        $canonical = $dom->C14N(true, false);
+        $stripDom = new DOMDocument('1.0', 'UTF-8');
+        $stripDom->preserveWhiteSpace = false;
+        $stripDom->loadXML($unsignedXml);
+        $xp = new \DOMXPath($stripDom);
+        $xp->registerNamespace('ext', 'urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2');
+        $xp->registerNamespace('cac', 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2');
+        $xp->registerNamespace('cbc', 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2');
+        foreach ($xp->query('//ext:UBLExtensions') as $n) { $n->parentNode->removeChild($n); }
+        foreach ($xp->query('//cac:Signature') as $n) { $n->parentNode->removeChild($n); }
+        foreach ($xp->query('//cac:AdditionalDocumentReference[cbc:ID="QR"]') as $n) { $n->parentNode->removeChild($n); }
+        $canonical = $stripDom->documentElement->C14N(false, false);
         $hashRaw = hash('sha256', $canonical, true);
         $hashB64 = base64_encode($hashRaw);
 
@@ -38,7 +54,10 @@ class XadesSigner
         if ($key === false) {
             throw new \RuntimeException('XAdES signer: invalid private key PEM');
         }
-        $ok = openssl_sign($hashRaw, $signatureRaw, $key, OPENSSL_ALGO_SHA256);
+        // openssl_sign with OPENSSL_ALGO_SHA256 hashes the data internally.
+        // We sign the canonical XML directly so the signature is over
+        // SHA-256(canonical) — exactly what ZATCA's verifier expects.
+        $ok = openssl_sign($canonical, $signatureRaw, $key, OPENSSL_ALGO_SHA256);
         if (! $ok) {
             throw new \RuntimeException('XAdES signer: openssl_sign failed');
         }
@@ -48,7 +67,10 @@ class XadesSigner
         $publicKeyDer = $this->pemToDer($details['key'] ?? '');
         $publicKeyB64 = base64_encode($publicKeyDer);
 
-        $certB64 = base64_encode($this->pemToDer($certificatePem));
+        $certDer = $this->pemToDer($certificatePem);
+        $certB64 = base64_encode($certDer);
+        // Extract just the X.509 signature value (~70 bytes) for QR tag 9.
+        $certSignatureRaw = $this->extractCertificateSignature($certDer);
 
         $signedXml = $this->embedSignature($unsignedXml, $hashB64, $signatureB64, $certB64);
 
@@ -58,6 +80,7 @@ class XadesSigner
             'signature' => $signatureB64,
             'public_key' => $publicKeyB64,
             'certificate_b64' => $certB64,
+            'certificate_signature' => $certSignatureRaw,
         ];
     }
 
@@ -67,14 +90,20 @@ class XadesSigner
     public function verify(string $signedXml, string $publicKeyPem): bool
     {
         $sig = $this->extractSignatureValue($signedXml);
-        $hashB64 = $this->extractInvoiceHash($signedXml);
-        if ($sig === null || $hashB64 === null) {
+        if ($sig === null) {
             return false;
         }
-        $hashRaw = base64_decode($hashB64, true);
-        if ($hashRaw === false) {
-            return false;
-        }
+        $stripDom = new DOMDocument('1.0', 'UTF-8');
+        $stripDom->preserveWhiteSpace = false;
+        $stripDom->loadXML($signedXml);
+        $xp = new \DOMXPath($stripDom);
+        $xp->registerNamespace('ext', 'urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2');
+        $xp->registerNamespace('cac', 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2');
+        $xp->registerNamespace('cbc', 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2');
+        foreach ($xp->query('//ext:UBLExtensions') as $n) { $n->parentNode->removeChild($n); }
+        foreach ($xp->query('//cac:Signature') as $n) { $n->parentNode->removeChild($n); }
+        foreach ($xp->query('//cac:AdditionalDocumentReference[cbc:ID="QR"]') as $n) { $n->parentNode->removeChild($n); }
+        $canonical = $stripDom->documentElement->C14N(false, false);
         $key = openssl_pkey_get_public($publicKeyPem);
         if ($key === false) {
             return false;
@@ -83,7 +112,7 @@ class XadesSigner
         if ($sigRaw === false) {
             return false;
         }
-        return openssl_verify($hashRaw, $sigRaw, $key, OPENSSL_ALGO_SHA256) === 1;
+        return openssl_verify($canonical, $sigRaw, $key, OPENSSL_ALGO_SHA256) === 1;
     }
 
     private function embedSignature(string $unsignedXml, string $hashB64, string $signatureB64, string $certB64): string
@@ -159,5 +188,46 @@ XML;
         $clean = preg_replace('/\s+/', '', (string) $clean);
         $der = base64_decode((string) $clean, true);
         return $der === false ? '' : $der;
+    }
+
+    /**
+     * Extract the raw X.509 signatureValue (a BIT STRING) from a DER-encoded
+     * certificate. An X.509 cert has the structure:
+     *   SEQUENCE { tbsCertificate, signatureAlgorithm, signatureValue }
+     * The signatureValue is the trailing BIT STRING. For ZATCA QR tag 9 we
+     * return the raw bit-string contents (with the leading "unused bits"
+     * byte stripped — yielding the bare ECDSA DER signature, ~70 bytes).
+     */
+    private function extractCertificateSignature(string $der): string
+    {
+        if ($der === '' || ord($der[0]) !== 0x30) {
+            return '';
+        }
+        // Skip outer SEQUENCE header (tag + length).
+        $i = 1;
+        $len = ord($der[$i++]);
+        if ($len & 0x80) {
+            $i += $len & 0x7F;
+        }
+        $end = strlen($der);
+        $lastBitString = '';
+        while ($i < $end) {
+            $tag = ord($der[$i++]);
+            $l = ord($der[$i++]);
+            if ($l & 0x80) {
+                $n = $l & 0x7F;
+                $l = 0;
+                for ($k = 0; $k < $n; $k++) {
+                    $l = ($l << 8) | ord($der[$i++]);
+                }
+            }
+            $value = substr($der, $i, $l);
+            $i += $l;
+            if ($tag === 0x03) { // BIT STRING
+                $lastBitString = $value;
+            }
+        }
+        // BIT STRING value starts with one byte indicating "unused bits".
+        return $lastBitString === '' ? '' : substr($lastBitString, 1);
     }
 }

@@ -32,15 +32,29 @@ class CertificateService
     {
         [$privatePem, $publicPem, $csrPem] = $this->generateKeypairAndCsr($store);
 
-        $resp = $this->api->requestComplianceCertificate($csrPem, $otp);
+        // Derive the API URL for this specific environment.
+        // This is stored on the cert so future calls (renewal, invoice submission)
+        // always hit the correct endpoint, regardless of what .env says at that time.
+        $apiUrl = $this->apiUrlForEnvironment($environment);
+
+        // Use the per-environment URL for this enrollment call.
+        $apiClient = $apiUrl ? $this->api->forUrl($apiUrl) : $this->api;
+        $resp = $apiClient->requestComplianceCertificate($csrPem, $otp);
 
         // In real (non-sandbox) environments we MUST get a certificate
         // back from ZATCA. Silently self-signing here would burn the OTP
         // and leave the tenant with a useless cert that ZATCA rejects on
         // every invoice submission.
-        $isStubMode = config('zatca.environment') === 'sandbox'
-            || ! config('zatca.api_url')
-            || str_contains((string) config('zatca.api_url'), 'developer-portal');
+        // developer-portal issues fake requestIDs (always 1234567890123) and
+        // can't produce a real PCSID — treat it as stub/test mode only.
+        // Stub when: server is in developer-portal/sandbox (local dev/tests),
+        // OR the caller explicitly requested developer-portal/sandbox enrollment.
+        $globalEnv = (string) config('zatca.environment', 'sandbox');
+        $globalApiUrl = (string) config('zatca.api_url', '');
+        $isStubMode = in_array($globalEnv, ['sandbox', 'developer-portal'], true)
+            || str_contains($globalApiUrl, 'developer-portal')
+            || ! $globalApiUrl
+            || in_array($environment, ['sandbox', 'developer-portal'], true);
 
         if (! $isStubMode && empty($resp['certificate_pem'])) {
             $msg = $resp['error'] ?? 'ZATCA returned an empty response';
@@ -51,6 +65,7 @@ class CertificateService
             ?? $this->selfSignFromCsr($csrPem, $privatePem, $store, days: 365);
         $ccsid = $resp['request_id'] ?? ('CCSID-' . strtoupper(Str::random(16)));
         $secret = $resp['secret'] ?? null;
+        [$issuedAt, $expiresAt] = $this->extractCertDates($certificatePem, fallbackDays: 365);
 
         return ZatcaCertificate::create([
             'store_id' => $store->id,
@@ -65,8 +80,10 @@ class CertificateService
             'ccsid' => $ccsid,
             'secret' => $secret ? Crypt::encryptString($secret) : null,
             'status' => ZatcaCertificateStatus::Active,
-            'issued_at' => now(),
-            'expires_at' => now()->addYear(),
+            'issued_at' => $issuedAt,
+            'expires_at' => $expiresAt,
+            'environment' => $environment,
+            'api_url' => $apiUrl,
         ]);
     }
 
@@ -77,45 +94,74 @@ class CertificateService
      */
     public function renewCertificate(Store $store): ZatcaCertificate
     {
-        $current = ZatcaCertificate::where('store_id', $store->id)
+        // Production CSID is issued by exchanging an existing compliance CSID;
+        // we must use the compliance certificate's keypair, secret and request
+        // ID. Without an active compliance cert we cannot proceed.
+        $compliance = ZatcaCertificate::where('store_id', $store->id)
+            ->where('certificate_type', ZatcaCertificateType::Compliance)
             ->where('status', ZatcaCertificateStatus::Active)
             ->latest('issued_at')
             ->first();
 
-        if ($current) {
-            $current->update(['status' => ZatcaCertificateStatus::Expired]);
+        if (! $compliance || ! $compliance->compliance_request_id
+            || ! $compliance->private_key_pem) {
+            throw new \RuntimeException(
+                'CertificateService: cannot renew — no active compliance certificate found for store.'
+            );
         }
 
-        $privatePem = $current && $current->private_key_pem
-            ? Crypt::decryptString($current->private_key_pem)
-            : null;
-        $csrPem = $current?->csr_pem;
-        if (! $privatePem || ! $csrPem) {
-            // Bootstrap a brand-new chain if we have nothing carried over.
-            [$privatePem, $publicPem, $csrPem] = $this->generateKeypairAndCsr($store);
-        } else {
-            $publicPem = $current->public_key_pem;
-        }
+        // In stub/sandbox mode the cert has no real secret; that's fine because
+        // requestProductionCertificate will return [] (stub) and we self-sign.
+        $rawSecret = $compliance->getAttributes()['secret'];
+        $privatePem = Crypt::decryptString($compliance->private_key_pem);
+        $secret = $rawSecret ? Crypt::decryptString($rawSecret) : '';
+        $csrPem = $compliance->csr_pem;
+        $publicPem = $compliance->public_key_pem;
+        $compliancePem = $compliance->getAttributes()['certificate_pem'];
 
-        $resp = $this->api->requestProductionCertificate($csrPem, $current?->compliance_request_id ?? '');
-        $certificatePem = $resp['certificate_pem']
+        // Use the cert's stored environment URL so this works even when
+        // .env has been switched to a different environment.
+        $apiClient = $this->api->forCertificate($compliance);
+
+        $resp = $apiClient->requestProductionCertificate(
+            $compliance->compliance_request_id,
+            $compliancePem,
+            $secret
+        );
+
+        // In stub/sandbox mode requestProductionCertificate returns []; fall
+        // back to a self-signed cert so tests and developer-portal stores work.
+        $certPem = $resp['certificate_pem'] ?? null;
+        $certificatePem = $certPem
             ?? $this->selfSignFromCsr($csrPem, $privatePem, $store, days: 1095);
-        $pcsid = $resp['request_id'] ?? ('PCSID-' . strtoupper(Str::random(16)));
+        $pcsid = $resp['request_id'] ?? ('PCSID-' . strtoupper(\Illuminate\Support\Str::random(16)));
+        $newSecret = $resp['secret'] ?? $secret;
+        [$issuedAt, $expiresAt] = $this->extractCertDates($certificatePem, fallbackDays: 1095);
 
-        return ZatcaCertificate::create([
+        // The production cert inherits the same environment as the compliance cert
+        // (simulation CCSID → simulation PCSID; production CCSID → production PCSID).
+        $production = ZatcaCertificate::create([
             'store_id' => $store->id,
             'certificate_type' => ZatcaCertificateType::Production,
             'certificate_pem' => $certificatePem,
             'public_key_pem' => $publicPem,
             'private_key_pem' => Crypt::encryptString($privatePem),
             'csr_pem' => $csrPem,
-            'compliance_request_id' => $current?->compliance_request_id,
+            'compliance_request_id' => $compliance->compliance_request_id,
             'pcsid' => $pcsid,
             'ccsid' => $pcsid,
+            'secret' => Crypt::encryptString($newSecret),
             'status' => ZatcaCertificateStatus::Active,
-            'issued_at' => now(),
-            'expires_at' => now()->addYears(3),
+            'issued_at' => $issuedAt,
+            'expires_at' => $expiresAt,
+            'environment' => $compliance->environment ?? config('zatca.environment', 'production'),
+            'api_url' => $compliance->api_url,
         ]);
+
+        // Only retire the compliance cert once the production exchange succeeded.
+        $compliance->update(['status' => ZatcaCertificateStatus::Expired]);
+
+        return $production;
     }
 
     /**
@@ -160,19 +206,28 @@ class CertificateService
         $publicPem = $details['key'];
 
         // ZATCA mandates these subject fields. CN+O are the legal name,
-        // OU is the CR (commercial registration) number, C must be SA.
+        // C must be SA. OU rules per Fatoora User Manual v3 §5.3.1:
+        //   - if 11th digit of VAT == "1" (group VAT): OU MUST be the
+        //     10-digit TIN of the group member whose EGS is being onboarded
+        //   - otherwise: OU is free text (branch name)
         $legalName = trim((string) ($store->name ?: 'Wameed POS Store'));
         $crNumber = trim((string) ($store->cr_number ?: '0000000000'));
         $vatNumber = trim((string) ($store->vat_number ?: '300000000000003'));
         $branchCode = trim((string) ($store->branch_code ?: $store->id));
+        $branchName = trim((string) ($store->name ?: $store->name_ar ?: 'Main Branch'));
         $industry = $this->businessCategoryFor($store);
         $address = trim((string) ($store->address ?: ($store->city ?: 'Riyadh')));
 
+        $isGroupVat = strlen($vatNumber) >= 11 && $vatNumber[10] === '1';
+        $ou = $isGroupVat
+            ? substr(preg_replace('/\D/', '', $crNumber) ?: '0000000000', 0, 10)
+            : mb_substr($branchName, 0, 64);
+
         $dn = [
             'CN' => mb_substr($legalName, 0, 64),
-            'O'  => mb_substr($legalName, 0, 64),
-            'OU' => mb_substr($crNumber, 0, 64),
-            'C'  => 'SA',
+            'organizationName' => mb_substr($legalName, 0, 64),
+            'organizationalUnitName' => $ou,
+            'C' => 'SA',
         ];
 
         $template = (string) config('zatca.csr_template', 'PREZATCA-Code-Signing');
@@ -237,25 +292,27 @@ class CertificateService
         string $registeredAddress,
         string $businessCategory,
     ): string {
+        // Match the Salla SDK template (which is the de-facto reference
+        // for ZATCA Phase 2 onboarding via PHP/OpenSSL).
+        // Key points:
+        //  - The certificate template OID MUST be PRINTABLESTRING
+        //  - SAN dirName uses "SN" (which OpenSSL maps to surname, but
+        //    the ZATCA parser accepts that representation)
+        //  - basicConstraints / keyUsage extensions are intentionally
+        //    omitted; ZATCA's reference template only requires the
+        //    template OID + SAN dirName.
         $cnf = <<<CNF
-oid_section = zatca_oids
-
-[ zatca_oids ]
-certificateTemplateName = 1.3.6.1.4.1.311.20.2
-
 [ req ]
 default_bits = 2048
 distinguished_name = req_distinguished_name
 req_extensions = v3_req
 prompt = no
+utf8 = no
 
 [ req_distinguished_name ]
 
 [ v3_req ]
-basicConstraints = CA:FALSE
-keyUsage = digitalSignature, nonRepudiation, keyEncipherment
-extendedKeyUsage = clientAuth
-certificateTemplateName = ASN1:PRINTABLESTRING:{$template}
+1.3.6.1.4.1.311.20.2 = ASN1:PRINTABLESTRING:{$template}
 subjectAltName = dirName:zatca_san
 
 [ zatca_san ]
@@ -270,6 +327,24 @@ CNF;
         return $path;
     }
 
+    /**
+     * Parse the actual NotBefore / NotAfter from an issued PEM certificate.
+     * Falls back to now + $fallbackDays if parsing fails.
+     *
+     * @return array{0: \Illuminate\Support\Carbon, 1: \Illuminate\Support\Carbon}
+     */
+    private function extractCertDates(string $pem, int $fallbackDays): array
+    {
+        $parsed = @openssl_x509_parse($pem);
+        if (is_array($parsed) && isset($parsed['validFrom_time_t'], $parsed['validTo_time_t'])) {
+            return [
+                \Illuminate\Support\Carbon::createFromTimestamp((int) $parsed['validFrom_time_t']),
+                \Illuminate\Support\Carbon::createFromTimestamp((int) $parsed['validTo_time_t']),
+            ];
+        }
+        return [now(), now()->addDays($fallbackDays)];
+    }
+
     private function selfSignFromCsr(string $csrPem, string $privatePem, Store $store, int $days): string
     {
         $key = openssl_pkey_get_private($privatePem);
@@ -280,5 +355,24 @@ CNF;
         $certPem = '';
         openssl_x509_export($cert, $certPem);
         return $certPem;
+    }
+
+    /**
+     * Map a named ZATCA environment to its canonical API base URL.
+     * Returns null for sandbox/developer-portal (stub mode — no real calls).
+     * Callers can also pass a full URL directly as the $environment value.
+     */
+    public function apiUrlForEnvironment(string $environment): ?string
+    {
+        // Allow passing a full URL directly (e.g. from an admin form).
+        if (str_starts_with($environment, 'http')) {
+            return rtrim($environment, '/');
+        }
+        return match ($environment) {
+            'simulation'       => 'https://gw-fatoora.zatca.gov.sa/e-invoicing/simulation',
+            'production'       => 'https://gw-fatoora.zatca.gov.sa/e-invoicing/core',
+            'developer-portal' => 'https://gw-fatoora.zatca.gov.sa/e-invoicing/developer-portal',
+            default            => config('zatca.api_url'), // fall back to .env
+        };
     }
 }

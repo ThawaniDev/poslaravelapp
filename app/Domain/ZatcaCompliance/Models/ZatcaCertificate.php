@@ -32,6 +32,8 @@ class ZatcaCertificate extends Model
         'public_key_pem',
         'compliance_request_id',
         'secret',
+        'environment',
+        'api_url',
     ];
 
     protected $casts = [

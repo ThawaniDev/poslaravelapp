@@ -36,7 +36,11 @@ class ZatcaComplianceController extends BaseApiController
     public function renew(Request $request)
     {
         $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
-        $result = $this->service->renewCertificate($storeId);
+        try {
+            $result = $this->service->renewCertificate($storeId);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
 
         return $this->success($result, __('zatca.renewed'));
     }

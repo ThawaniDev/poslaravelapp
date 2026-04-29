@@ -104,11 +104,11 @@ class ZatcaStoreSetupPage extends Page implements HasForms
                         Select::make('environment')
                             ->label(__('zatca.environment'))
                             ->options([
-                                'sandbox' => __('zatca.env_sandbox'),
-                                'simulation' => __('zatca.env_simulation'),
-                                'production' => __('zatca.env_production'),
+                                'developer-portal' => 'Developer Portal (test only)',
+                                'simulation'       => 'Simulation (pre-production — real CCSID/PCSID)',
+                                'production'       => 'Production (live)',
                             ])
-                            ->default('sandbox')
+                            ->default('simulation')
                             ->required(),
                         TextInput::make('otp')
                             ->label(__('zatca.otp'))
@@ -289,16 +289,18 @@ class ZatcaStoreSetupPage extends Page implements HasForms
                         ->required()
                         ->password()
                         ->revealable()
-                        ->maxLength(255),
+                        ->maxLength(255)
+                        ->helperText('Get OTP from https://fatoora.zatca.gov.sa → EGS Units → Add Device. Use 123321 for developer-portal only.'),
                     Select::make('environment')
                         ->label(__('zatca.environment'))
                         ->options([
-                            'sandbox' => __('zatca.env_sandbox'),
-                            'simulation' => __('zatca.env_simulation'),
-                            'production' => __('zatca.env_production'),
+                            'developer-portal' => 'Developer Portal (test only — fake CCSID, cannot get PCSID)',
+                            'simulation'       => 'Simulation (real CCSID, can get real PCSID — use this for pre-production)',
+                            'production'       => 'Production (live invoices — use after simulation tests pass)',
                         ])
-                        ->default(fn () => $this->data['environment'] ?? 'sandbox')
-                        ->required(),
+                        ->default(fn () => $this->data['environment'] ?? 'simulation')
+                        ->required()
+                        ->helperText('This is stored on the certificate. Each store can be on a different environment independently of the server .env.'),
                 ])
                 ->action(function (array $data) {
                     $sid = $this->data['store_id'] ?? null;

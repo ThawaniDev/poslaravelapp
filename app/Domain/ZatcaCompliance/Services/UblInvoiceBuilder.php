@@ -3,6 +3,7 @@
 namespace App\Domain\ZatcaCompliance\Services;
 
 use App\Domain\Core\Models\Store;
+use App\Domain\Core\Models\StoreSettings;
 use App\Domain\ZatcaCompliance\Enums\ZatcaInvoiceType;
 use DOMDocument;
 use Illuminate\Support\Carbon;
@@ -120,13 +121,32 @@ class UblInvoiceBuilder
         $pihRef->appendChild($attach);
         $root->appendChild($pihRef);
 
+        // QR (placeholder — replaced post-signing with the real TLV-encoded QR)
+        $qrRef = $dom->createElementNS(self::NS_CAC, 'cac:AdditionalDocumentReference');
+        $this->cbc($dom, $qrRef, 'ID', 'QR');
+        $qrAttach = $dom->createElementNS(self::NS_CAC, 'cac:Attachment');
+        $qrEmbedded = $dom->createElementNS(self::NS_CBC, 'cbc:EmbeddedDocumentBinaryObject', '__QR_CODE_PLACEHOLDER__');
+        $qrEmbedded->setAttribute('mimeCode', 'text/plain');
+        $qrAttach->appendChild($qrEmbedded);
+        $qrRef->appendChild($qrAttach);
+        $root->appendChild($qrRef);
+
+        // cac:Signature reference (mandatory for ZATCA Phase 2 invoices)
+        $sigRef = $dom->createElementNS(self::NS_CAC, 'cac:Signature');
+        $this->cbc($dom, $sigRef, 'ID', 'urn:oasis:names:specification:ubl:signature:Invoice');
+        $this->cbc($dom, $sigRef, 'SignatureMethod', 'urn:oasis:names:specification:ubl:dsig:enveloped:xades');
+        $root->appendChild($sigRef);
+
         // Supplier
         $root->appendChild($this->buildParty($dom, 'AccountingSupplierParty', [
             'name' => $store->name,
             'vat' => $store->vat_number ?? $store->tax_number ?? '300000000000003',
-            'street' => $store->address ?? 'N/A',
+            'cr_number' => $store->cr_number ?? '1010101010',
+            'street' => $store->address ?? 'Tahlia Street',
+            'building' => '1100',
+            'district' => $store->region ?? 'Al Sulaimaniyah',
             'city' => $store->city ?? 'Riyadh',
-            'postal' => $store->postal_code ?? '00000',
+            'postal' => $store->postal_code ?? '12345',
             'country' => 'SA',
         ]));
 
@@ -240,17 +260,23 @@ class UblInvoiceBuilder
         $party = $dom->createElementNS(self::NS_CAC, 'cac:' . $localName);
         $partyInner = $dom->createElementNS(self::NS_CAC, 'cac:Party');
 
-        if (! empty($cfg['vat'])) {
+        // BR-KSA-08: seller identification (BT-29) must use one of the
+        // approved scheme IDs (CRN/MOM/MLS/SAG/OTH/700). For VAT we use
+        // a separate cac:PartyTaxScheme below; PartyIdentification carries
+        // the commercial registration (CRN).
+        if (! empty($cfg['cr_number'])) {
             $partyId = $dom->createElementNS(self::NS_CAC, 'cac:PartyIdentification');
-            $idEl = $this->cbc($dom, $partyId, 'ID', $cfg['vat']);
-            $idEl->setAttribute('schemeID', 'VAT');
+            $idEl = $this->cbc($dom, $partyId, 'ID', $cfg['cr_number']);
+            $idEl->setAttribute('schemeID', 'CRN');
             $partyInner->appendChild($partyId);
         }
 
         $address = $dom->createElementNS(self::NS_CAC, 'cac:PostalAddress');
-        if ($cfg['street']) $this->cbc($dom, $address, 'StreetName', $cfg['street']);
-        if ($cfg['city']) $this->cbc($dom, $address, 'CityName', $cfg['city']);
-        if ($cfg['postal']) $this->cbc($dom, $address, 'PostalZone', $cfg['postal']);
+        if (! empty($cfg['street'])) $this->cbc($dom, $address, 'StreetName', $cfg['street']);
+        if (! empty($cfg['building'])) $this->cbc($dom, $address, 'BuildingNumber', $cfg['building']);
+        if (! empty($cfg['district'])) $this->cbc($dom, $address, 'CitySubdivisionName', $cfg['district']);
+        if (! empty($cfg['city'])) $this->cbc($dom, $address, 'CityName', $cfg['city']);
+        if (! empty($cfg['postal'])) $this->cbc($dom, $address, 'PostalZone', $cfg['postal']);
         $country = $dom->createElementNS(self::NS_CAC, 'cac:Country');
         $this->cbc($dom, $country, 'IdentificationCode', $cfg['country']);
         $address->appendChild($country);
