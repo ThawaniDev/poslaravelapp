@@ -31,10 +31,6 @@ class XadesSigner
         //   - cac:Signature (signature reference)
         //   - cac:AdditionalDocumentReference whose cbc:ID = "QR"
         // and using inclusive C14N (C14N 1.1, exclusive=false, withComments=false).
-        $dom = new DOMDocument('1.0', 'UTF-8');
-        $dom->preserveWhiteSpace = false;
-        $dom->loadXML($unsignedXml);
-
         $stripDom = new DOMDocument('1.0', 'UTF-8');
         $stripDom->preserveWhiteSpace = false;
         $stripDom->loadXML($unsignedXml);
@@ -46,18 +42,57 @@ class XadesSigner
         foreach ($xp->query('//cac:Signature') as $n) { $n->parentNode->removeChild($n); }
         foreach ($xp->query('//cac:AdditionalDocumentReference[cbc:ID="QR"]') as $n) { $n->parentNode->removeChild($n); }
         $canonical = $stripDom->documentElement->C14N(false, false);
-        $hashRaw = hash('sha256', $canonical, true);
-        $hashB64 = base64_encode($hashRaw);
+        $invoiceHashRaw = hash('sha256', $canonical, true);
+        $invoiceHashB64 = base64_encode($invoiceHashRaw);
 
-        $signatureRaw = '';
+        // Cert details (issuer/serial/digest) needed for xades:SigningCertificate.
+        $certDer = $this->pemToDer($certificatePem);
+        $certB64 = base64_encode($certDer);
+        // ZATCA's reference SDK hashes the BST (base64 of the cert PEM body),
+        // NOT the raw DER. It also wraps the digest as base64(hex(sha256(...))),
+        // i.e. the SHA-256 result is first hex-encoded, then base64-encoded.
+        // Verified against the official .NET SDK Simplified_Invoice.xml sample.
+        $certDigestB64 = base64_encode(hash('sha256', $certB64, false));
+        [$issuerName, $serialDecimal] = $this->extractIssuerAndSerial($certificatePem);
+
+        // ZATCA's validator hashes the SignedProperties element AS IF the
+        // xades + ds namespace declarations are inlined on it (because the
+        // server canonicalizes from the parent context where they're
+        // declared). But the embedded copy in the final invoice is the
+        // bare element (xmlns inherited from xades:QualifyingProperties /
+        // ds:Signature). So we render two variants here.
+        $signingTime = (new \DateTimeImmutable('now'))->format('Y-m-d\TH:i:s');
+        $signedPropsForHash = $this->renderSignedProperties(
+            signingTime: $signingTime,
+            certDigestB64: $certDigestB64,
+            issuerName: $issuerName,
+            serialDecimal: $serialDecimal,
+            withInlineNamespaces: true,
+        );
+        $signedPropsForEmbed = $this->renderSignedProperties(
+            signingTime: $signingTime,
+            certDigestB64: $certDigestB64,
+            issuerName: $issuerName,
+            serialDecimal: $serialDecimal,
+            withInlineNamespaces: false,
+        );
+        // SignedProperties digest follows the same ZATCA convention as the
+        // certificate digest: base64(hex(sha256(text))).
+        $signedPropsHashB64 = base64_encode(hash('sha256', $signedPropsForHash, false));
+
+        // Build SignedInfo (the bytes that are actually ECDSA-signed).
+        $signedInfoXml = $this->renderSignedInfo(
+            invoiceHashB64: $invoiceHashB64,
+            signedPropsHashB64: $signedPropsHashB64,
+        );
+
         $key = openssl_pkey_get_private($privateKeyPem);
         if ($key === false) {
             throw new \RuntimeException('XAdES signer: invalid private key PEM');
         }
-        // openssl_sign with OPENSSL_ALGO_SHA256 hashes the data internally.
-        // We sign the canonical XML directly so the signature is over
-        // SHA-256(canonical) — exactly what ZATCA's verifier expects.
-        $ok = openssl_sign($canonical, $signatureRaw, $key, OPENSSL_ALGO_SHA256);
+        $signatureRaw = '';
+        // Sign the canonicalized SignedInfo per XML-DSig spec.
+        $ok = openssl_sign($signedInfoXml, $signatureRaw, $key, OPENSSL_ALGO_SHA256);
         if (! $ok) {
             throw new \RuntimeException('XAdES signer: openssl_sign failed');
         }
@@ -67,16 +102,20 @@ class XadesSigner
         $publicKeyDer = $this->pemToDer($details['key'] ?? '');
         $publicKeyB64 = base64_encode($publicKeyDer);
 
-        $certDer = $this->pemToDer($certificatePem);
-        $certB64 = base64_encode($certDer);
         // Extract just the X.509 signature value (~70 bytes) for QR tag 9.
         $certSignatureRaw = $this->extractCertificateSignature($certDer);
 
-        $signedXml = $this->embedSignature($unsignedXml, $hashB64, $signatureB64, $certB64);
+        $signedXml = $this->embedSignature(
+            unsignedXml: $unsignedXml,
+            signedInfoXml: $signedInfoXml,
+            signatureB64: $signatureB64,
+            certB64: $certB64,
+            signedPropsXml: $signedPropsForEmbed,
+        );
 
         return [
             'xml' => $signedXml,
-            'hash' => $hashB64,
+            'hash' => $invoiceHashB64,
             'signature' => $signatureB64,
             'public_key' => $publicKeyB64,
             'certificate_b64' => $certB64,
@@ -86,6 +125,10 @@ class XadesSigner
 
     /**
      * Verify a signed invoice's signature against the provided public key.
+     *
+     * Re-builds the SignedInfo block from the embedded values and checks
+     * the ECDSA-SHA256 signature against it (matching what was actually
+     * signed in sign()).
      */
     public function verify(string $signedXml, string $publicKeyPem): bool
     {
@@ -93,17 +136,10 @@ class XadesSigner
         if ($sig === null) {
             return false;
         }
-        $stripDom = new DOMDocument('1.0', 'UTF-8');
-        $stripDom->preserveWhiteSpace = false;
-        $stripDom->loadXML($signedXml);
-        $xp = new \DOMXPath($stripDom);
-        $xp->registerNamespace('ext', 'urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2');
-        $xp->registerNamespace('cac', 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2');
-        $xp->registerNamespace('cbc', 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2');
-        foreach ($xp->query('//ext:UBLExtensions') as $n) { $n->parentNode->removeChild($n); }
-        foreach ($xp->query('//cac:Signature') as $n) { $n->parentNode->removeChild($n); }
-        foreach ($xp->query('//cac:AdditionalDocumentReference[cbc:ID="QR"]') as $n) { $n->parentNode->removeChild($n); }
-        $canonical = $stripDom->documentElement->C14N(false, false);
+        $signedInfo = $this->extractSignedInfo($signedXml);
+        if ($signedInfo === null) {
+            return false;
+        }
         $key = openssl_pkey_get_public($publicKeyPem);
         if ($key === false) {
             return false;
@@ -112,48 +148,169 @@ class XadesSigner
         if ($sigRaw === false) {
             return false;
         }
-        return openssl_verify($canonical, $sigRaw, $key, OPENSSL_ALGO_SHA256) === 1;
+        return openssl_verify($signedInfo, $sigRaw, $key, OPENSSL_ALGO_SHA256) === 1;
     }
 
-    private function embedSignature(string $unsignedXml, string $hashB64, string $signatureB64, string $certB64): string
+    /**
+     * Render the SignedProperties XML using the exact byte layout that
+     * ZATCA's reference SDK uses. The same string is hashed AND embedded
+     * into the final invoice so verifiers recompute an identical digest.
+     */
+    private function renderSignedProperties(
+        string $signingTime,
+        string $certDigestB64,
+        string $issuerName,
+        string $serialDecimal,
+        bool $withInlineNamespaces,
+    ): string {
+        $xadesAttr = $withInlineNamespaces ? ' xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"' : '';
+        $dsAttr = $withInlineNamespaces ? ' xmlns:ds="http://www.w3.org/2000/09/xmldsig#"' : '';
+        return <<<XML
+<xades:SignedProperties{$xadesAttr} Id="xadesSignedProperties">
+                                    <xades:SignedSignatureProperties>
+                                        <xades:SigningTime>{$signingTime}</xades:SigningTime>
+                                        <xades:SigningCertificate>
+                                            <xades:Cert>
+                                                <xades:CertDigest>
+                                                    <ds:DigestMethod{$dsAttr} Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+                                                    <ds:DigestValue{$dsAttr}>{$certDigestB64}</ds:DigestValue>
+                                                </xades:CertDigest>
+                                                <xades:IssuerSerial>
+                                                    <ds:X509IssuerName{$dsAttr}>{$issuerName}</ds:X509IssuerName>
+                                                    <ds:X509SerialNumber{$dsAttr}>{$serialDecimal}</ds:X509SerialNumber>
+                                                </xades:IssuerSerial>
+                                            </xades:Cert>
+                                        </xades:SigningCertificate>
+                                    </xades:SignedSignatureProperties>
+                                </xades:SignedProperties>
+XML;
+    }
+
+    /**
+     * Render the SignedInfo block. ECDSA-SHA256 signs the canonical bytes
+     * of this exact element; the same bytes are embedded into the final
+     * XML so verifiers can re-canonicalize and verify against SignatureValue.
+     *
+     * Two references are present:
+     *   - The invoice itself (URI=""), with the XPath transform that
+     *     strips ext:UBLExtensions, plus the C14N 1.1 transform.
+     *   - The xades:SignedProperties block (URI="#xadesSignedProperties").
+     */
+    private function renderSignedInfo(string $invoiceHashB64, string $signedPropsHashB64): string
     {
+        return <<<XML
+<ds:SignedInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+                            <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2006/12/xml-c14n11"/>
+                            <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256"/>
+                            <ds:Reference Id="invoiceSignedData" URI="">
+                                <ds:Transforms>
+                                    <ds:Transform Algorithm="http://www.w3.org/TR/1999/REC-xpath-19991116">
+                                        <ds:XPath>not(//ancestor-or-self::ext:UBLExtensions)</ds:XPath>
+                                    </ds:Transform>
+                                    <ds:Transform Algorithm="http://www.w3.org/TR/1999/REC-xpath-19991116">
+                                        <ds:XPath>not(//ancestor-or-self::cac:Signature)</ds:XPath>
+                                    </ds:Transform>
+                                    <ds:Transform Algorithm="http://www.w3.org/TR/1999/REC-xpath-19991116">
+                                        <ds:XPath>not(//ancestor-or-self::cac:AdditionalDocumentReference[cbc:ID='QR'])</ds:XPath>
+                                    </ds:Transform>
+                                    <ds:Transform Algorithm="http://www.w3.org/2006/12/xml-c14n11"/>
+                                </ds:Transforms>
+                                <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+                                <ds:DigestValue>{$invoiceHashB64}</ds:DigestValue>
+                            </ds:Reference>
+                            <ds:Reference Type="http://www.w3.org/2000/09/xmldsig#SignatureProperties" URI="#xadesSignedProperties">
+                                <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+                                <ds:DigestValue>{$signedPropsHashB64}</ds:DigestValue>
+                            </ds:Reference>
+                        </ds:SignedInfo>
+XML;
+    }
+
+    /**
+     * Extract the certificate's issuer DN (in OpenSSL's "/CN=...,O=..."
+     * form) and decimal serial number for embedding in xades:IssuerSerial.
+     *
+     * @return array{0:string, 1:string}
+     */
+    private function extractIssuerAndSerial(string $certificatePem): array
+    {
+        $parsed = openssl_x509_parse($certificatePem);
+        $issuer = '';
+        if (is_array($parsed) && isset($parsed['issuer']) && is_array($parsed['issuer'])) {
+            // Render as "CN=eInvoicing" → "CN=eInvoicing" (single value)
+            // or comma-joined for multi-component issuer DNs.
+            $parts = [];
+            foreach ($parsed['issuer'] as $key => $val) {
+                $parts[] = $key . '=' . (is_array($val) ? implode(',', $val) : $val);
+            }
+            $issuer = implode(', ', $parts);
+        }
+
+        $serial = '';
+        if (is_array($parsed)) {
+            // Newer OpenSSL exposes serialNumberHex; convert to decimal.
+            if (! empty($parsed['serialNumberHex'])) {
+                $serial = $this->hexToDecimal((string) $parsed['serialNumberHex']);
+            } elseif (! empty($parsed['serialNumber'])) {
+                $serial = (string) $parsed['serialNumber'];
+            }
+        }
+
+        return [$issuer, $serial];
+    }
+
+    private function hexToDecimal(string $hex): string
+    {
+        if ($hex === '') {
+            return '';
+        }
+        if (function_exists('gmp_strval')) {
+            return gmp_strval(gmp_init($hex, 16), 10);
+        }
+        // Fallback (no GMP) — manual base-16 → base-10 for arbitrary length.
+        $dec = '0';
+        $len = strlen($hex);
+        for ($i = 0; $i < $len; $i++) {
+            $dec = bcmul($dec, '16');
+            $dec = bcadd($dec, (string) hexdec($hex[$i]));
+        }
+        return $dec;
+    }
+
+    private function embedSignature(
+        string $unsignedXml,
+        string $signedInfoXml,
+        string $signatureB64,
+        string $certB64,
+        string $signedPropsXml,
+    ): string {
         $extension = <<<XML
 <ext:UBLExtensions xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">
-  <ext:UBLExtension>
-    <ext:ExtensionURI>urn:oasis:names:specification:ubl:dsig:enveloped:xades</ext:ExtensionURI>
-    <ext:ExtensionContent>
-      <sig:UBLDocumentSignatures xmlns:sig="urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2"
-                                  xmlns:sac="urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2"
-                                  xmlns:sbc="urn:oasis:names:specification:ubl:schema:xsd:SignatureBasicComponents-2">
-        <sac:SignatureInformation>
-          <cbc:ID xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">urn:oasis:names:specification:ubl:signature:1</cbc:ID>
-          <sbc:ReferencedSignatureID>urn:oasis:names:specification:ubl:signature:Invoice</sbc:ReferencedSignatureID>
-          <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="signature">
-            <ds:SignedInfo>
-              <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2006/12/xml-c14n11"/>
-              <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256"/>
-              <ds:Reference Id="invoiceSignedData" URI="">
-                <ds:Transforms>
-                  <ds:Transform Algorithm="http://www.w3.org/TR/1999/REC-xpath-19991116">
-                    <ds:XPath>not(//ancestor-or-self::ext:UBLExtensions)</ds:XPath>
-                  </ds:Transform>
-                  <ds:Transform Algorithm="http://www.w3.org/2006/12/xml-c14n11"/>
-                </ds:Transforms>
-                <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
-                <ds:DigestValue>{$hashB64}</ds:DigestValue>
-              </ds:Reference>
-            </ds:SignedInfo>
-            <ds:SignatureValue>{$signatureB64}</ds:SignatureValue>
-            <ds:KeyInfo>
-              <ds:X509Data>
-                <ds:X509Certificate>{$certB64}</ds:X509Certificate>
-              </ds:X509Data>
-            </ds:KeyInfo>
-          </ds:Signature>
-        </sac:SignatureInformation>
-      </sig:UBLDocumentSignatures>
-    </ext:ExtensionContent>
-  </ext:UBLExtension>
+    <ext:UBLExtension>
+        <ext:ExtensionURI>urn:oasis:names:specification:ubl:dsig:enveloped:xades</ext:ExtensionURI>
+        <ext:ExtensionContent>
+            <sig:UBLDocumentSignatures xmlns:sig="urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2" xmlns:sac="urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2" xmlns:sbc="urn:oasis:names:specification:ubl:schema:xsd:SignatureBasicComponents-2">
+                <sac:SignatureInformation>
+                    <cbc:ID xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2">urn:oasis:names:specification:ubl:signature:1</cbc:ID>
+                    <sbc:ReferencedSignatureID>urn:oasis:names:specification:ubl:signature:Invoice</sbc:ReferencedSignatureID>
+                    <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="signature">
+                        {$signedInfoXml}
+                        <ds:SignatureValue>{$signatureB64}</ds:SignatureValue>
+                        <ds:KeyInfo>
+                            <ds:X509Data>
+                                <ds:X509Certificate>{$certB64}</ds:X509Certificate>
+                            </ds:X509Data>
+                        </ds:KeyInfo>
+                        <ds:Object>
+                            <xades:QualifyingProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Target="signature">
+                                {$signedPropsXml}
+                            </xades:QualifyingProperties>
+                        </ds:Object>
+                    </ds:Signature>
+                </sac:SignatureInformation>
+            </sig:UBLDocumentSignatures>
+        </ext:ExtensionContent>
+    </ext:UBLExtension>
 </ext:UBLExtensions>
 XML;
 
@@ -178,6 +335,14 @@ XML;
     {
         if (preg_match('#<ds:DigestValue>([A-Za-z0-9+/=\s]+)</ds:DigestValue>#', $xml, $m)) {
             return preg_replace('/\s+/', '', $m[1]);
+        }
+        return null;
+    }
+
+    private function extractSignedInfo(string $xml): ?string
+    {
+        if (preg_match('#<ds:SignedInfo[^>]*>.*?</ds:SignedInfo>#s', $xml, $m)) {
+            return $m[0];
         }
         return null;
     }

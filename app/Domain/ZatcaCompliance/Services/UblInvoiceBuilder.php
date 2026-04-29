@@ -86,6 +86,18 @@ class UblInvoiceBuilder
         $this->cbc($dom, $root, 'IssueTime', $issuedAt->format('H:i:s'));
         $invoiceType = $this->cbc($dom, $root, 'InvoiceTypeCode', (string) $typeCode);
         $invoiceType->setAttribute('name', $typeName);
+
+        // cbc:Note (KSA-10 reason) — for credit/debit notes ZATCA requires
+        // BR-KSA-17. Per UBL schema this MUST appear BEFORE
+        // DocumentCurrencyCode (the Note element comes early in the Invoice
+        // sequence), otherwise XSD validation rejects the document.
+        if (in_array($type, [ZatcaInvoiceType::CreditNote, ZatcaInvoiceType::DebitNote], true)
+            && ! empty($input['adjustment_reason'])
+        ) {
+            $note = $this->cbc($dom, $root, 'Note', $input['adjustment_reason']);
+            $note->setAttribute('languageID', 'en');
+        }
+
         $this->cbc($dom, $root, 'DocumentCurrencyCode', $currency);
         $this->cbc($dom, $root, 'TaxCurrencyCode', $currency);
 
@@ -98,11 +110,6 @@ class UblInvoiceBuilder
             $this->cbc($dom, $invoiceDocRef, 'ID', $input['reference_invoice_uuid']);
             $billingRef->appendChild($invoiceDocRef);
             $root->appendChild($billingRef);
-
-            if (! empty($input['adjustment_reason'])) {
-                $note = $this->cbc($dom, $root, 'Note', $input['adjustment_reason']);
-                $note->setAttribute('languageID', 'en');
-            }
         }
 
         // ICV
@@ -159,6 +166,20 @@ class UblInvoiceBuilder
             'postal' => null,
             'country' => 'SA',
         ]));
+
+        // cac:PaymentMeans — required by ZATCA BR-KSA-17 for credit/debit
+        // notes. KSA-10 reason MUST be carried in cbc:InstructionNote (the
+        // top-level cbc:Note alone is not sufficient for ZATCA validation).
+        if (in_array($type, [ZatcaInvoiceType::CreditNote, ZatcaInvoiceType::DebitNote], true)
+            && ! empty($input['adjustment_reason'])
+        ) {
+            $paymentMeans = $dom->createElementNS(self::NS_CAC, 'cac:PaymentMeans');
+            // 10 = "In cash" (UN/CEFACT 4461). ZATCA accepts any valid code;
+            // value isn't validated semantically for the KSA-10 rule.
+            $this->cbc($dom, $paymentMeans, 'PaymentMeansCode', '10');
+            $this->cbc($dom, $paymentMeans, 'InstructionNote', $input['adjustment_reason']);
+            $root->appendChild($paymentMeans);
+        }
 
         // Compute line + tax totals
         $lineExtension = 0.0;

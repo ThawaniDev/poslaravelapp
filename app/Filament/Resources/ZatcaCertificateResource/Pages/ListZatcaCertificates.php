@@ -49,18 +49,49 @@ class ListZatcaCertificates extends ListRecords
                     $passed  = 0;
                     $results = [];
 
+                    // Reference UUIDs captured from the two base invoices so that
+                    // credit/debit notes can point back at them (ZATCA requires
+                    // BillingReference UUID on every note).
+                    $refSimplifiedUuid = null;
+                    $refStandardUuid   = null;
+
                     foreach (self::COMPLIANCE_MATRIX as $case) {
                         $invoiceNumber = 'CTEST-' . now()->format('YmdHis') . '-' . strtoupper(substr(uniqid(), -4));
+
+                        // Build the per-invoice payload, attaching the reference
+                        // UUID + adjustment reason for note types.
+                        $payload = [
+                            'invoice_number'   => $invoiceNumber,
+                            'invoice_type'     => $case['type'],
+                            'total_amount'     => 115.00,
+                            'vat_amount'       => 15.00,
+                            'is_b2b'           => $case['is_b2b'],
+                            'buyer_name'       => 'Compliance Test Buyer',
+                            'buyer_tax_number' => $case['is_b2b'] ? '300000000000003' : null,
+                        ];
+
+                        if (in_array($case['type'], ['credit_note', 'debit_note'], true)) {
+                            $payload['reference_invoice_uuid'] = $case['is_b2b']
+                                ? $refStandardUuid
+                                : $refSimplifiedUuid;
+                            // ZATCA BR-KSA-17: every credit AND debit note
+                            // must carry a free-text reason (KSA-10).
+                            $payload['adjustment_reason'] = $case['type'] === 'credit_note'
+                                ? 'Compliance test credit note'
+                                : 'Compliance test debit note';
+                        }
+
                         try {
-                            $result = $service->submitInvoice($storeId, [
-                                'invoice_number'   => $invoiceNumber,
-                                'invoice_type'     => $case['type'],
-                                'total_amount'     => 115.00,
-                                'vat_amount'       => 15.00,
-                                'is_b2b'           => $case['is_b2b'],
-                                'buyer_name'       => 'Compliance Test Buyer',
-                                'buyer_tax_number' => $case['is_b2b'] ? '300000000000003' : null,
-                            ]);
+                            if (in_array($case['type'], ['credit_note', 'debit_note'], true)
+                                && empty($payload['reference_invoice_uuid'])
+                            ) {
+                                throw new \RuntimeException(
+                                    'Skipped — base ' . ($case['is_b2b'] ? 'Standard' : 'Simplified')
+                                    . ' invoice was not accepted, so no reference UUID available.'
+                                );
+                            }
+
+                            $result = $service->submitInvoice($storeId, $payload);
 
                             $status   = $result['submission_status'];
                             $ok       = in_array($status, ['accepted', 'reported'], true);
@@ -68,6 +99,23 @@ class ListZatcaCertificates extends ListRecords
                             $errors   = collect($invoice?->rejection_errors ?? [])
                                 ->map(fn ($e) => '[' . ($e['code'] ?? '?') . '] ' . ($e['message'] ?? json_encode($e)))
                                 ->join(' | ');
+
+                            // Capture the UUID of the base invoices so the notes
+                            // produced later in the loop can reference them.
+                            if ($ok && $case['type'] === 'simplified') {
+                                $refSimplifiedUuid = $result['uuid'] ?? $invoice?->uuid;
+                            }
+                            if ($ok && $case['type'] === 'standard') {
+                                $refStandardUuid = $result['uuid'] ?? $invoice?->uuid;
+                            }
+
+                            // Surface ZATCA HTTP status (e.g. 401) when no
+                            // structured errors were returned — otherwise
+                            // we'd just see "REJECTED" with no detail.
+                            if (! $ok && $errors === '' && $invoice) {
+                                $errors = 'HTTP ' . ($invoice->zatca_response_code ?? '?')
+                                    . ($invoice->zatca_response_message ? ': ' . $invoice->zatca_response_message : '');
+                            }
 
                             if ($ok) {
                                 $passed++;

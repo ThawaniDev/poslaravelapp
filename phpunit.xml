@@ -34,5 +34,7 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="ZATCA_ENVIRONMENT" value="sandbox"/>
+        <env name="ZATCA_API_URL" value=""/>
     </php>
 </phpunit>
