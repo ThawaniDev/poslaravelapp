@@ -648,9 +648,32 @@ class ZatcaComplianceService
     {
         try {
             return $this->certificates->activeMaterial($store->id);
-        } catch (\Throwable) {
-            $this->certificates->enroll($store, '000000', 'simulation');
-            return $this->certificates->activeMaterial($store->id);
+        } catch (\Throwable $e) {
+            // Sandbox / developer-portal: it's safe to auto-enroll because
+            // CertificateService self-signs without calling ZATCA — this
+            // keeps tests and local dev frictionless.
+            //
+            // Real environments (simulation / production): refuse. A real
+            // ZATCA enrollment requires a fresh OTP from the Fatoora portal
+            // that only the merchant can produce. Silently calling
+            // /compliance with a stub OTP would return "Invalid-OTP" and
+            // mask the actual cause (no cert exists yet for this store).
+            $globalEnv = (string) config('zatca.environment', 'sandbox');
+            $globalApiUrl = (string) config('zatca.api_url', '');
+            $isStubMode = in_array($globalEnv, ['sandbox', 'developer-portal'], true)
+                || str_contains($globalApiUrl, 'developer-portal')
+                || $globalApiUrl === '';
+
+            if ($isStubMode) {
+                $this->certificates->enroll($store, '000000', 'developer-portal');
+                return $this->certificates->activeMaterial($store->id);
+            }
+
+            throw new \RuntimeException(
+                'No active ZATCA certificate for store ' . $store->id
+                . '. Complete enrollment first via /admin/zatca-store-setup.',
+                previous: $e,
+            );
         }
     }
 }
