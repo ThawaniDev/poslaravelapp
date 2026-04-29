@@ -649,15 +649,29 @@ class ZatcaComplianceService
         try {
             return $this->certificates->activeMaterial($store->id);
         } catch (\Throwable $e) {
-            // Sandbox / developer-portal: it's safe to auto-enroll because
-            // CertificateService self-signs without calling ZATCA — this
-            // keeps tests and local dev frictionless.
+            // Detect "no cert exists" vs every other failure (decrypt, DB,
+            // etc). Only the missing-cert case is a candidate for the
+            // sandbox auto-enroll fallback; everything else must bubble
+            // with its real message so operators see decrypt / APP_KEY
+            // mismatches instead of a misleading "no active certificate".
+            $hasActiveCert = ZatcaCertificate::where('store_id', $store->id)
+                ->where('status', ZatcaCertificateStatus::Active)
+                ->exists();
+
+            if ($hasActiveCert) {
+                // Cert row exists but activeMaterial() failed (decrypt /
+                // APP_KEY mismatch / corrupt PEM). Surface the real cause.
+                throw $e;
+            }
+
+            // Sandbox / developer-portal: safe to auto-enroll because
+            // CertificateService self-signs without calling ZATCA.
             //
             // Real environments (simulation / production): refuse. A real
             // ZATCA enrollment requires a fresh OTP from the Fatoora portal
             // that only the merchant can produce. Silently calling
             // /compliance with a stub OTP would return "Invalid-OTP" and
-            // mask the actual cause (no cert exists yet for this store).
+            // mask the actual cause.
             $globalEnv = (string) config('zatca.environment', 'sandbox');
             $globalApiUrl = (string) config('zatca.api_url', '');
             $isStubMode = in_array($globalEnv, ['sandbox', 'developer-portal'], true)
