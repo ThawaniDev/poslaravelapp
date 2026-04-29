@@ -278,6 +278,134 @@ class ZatcaStoreSetupPage extends Page implements HasForms
                 ->color('gray')
                 ->url(route('admin.documents.zatca-store-setup-guide'), shouldOpenInNewTab: true),
 
+            Action::make('clone_from_store')
+                ->label(__('zatca.clone_from_store'))
+                ->icon('heroicon-o-document-duplicate')
+                ->color('gray')
+                ->visible(fn () => filled($this->data['store_id'] ?? null))
+                ->modalHeading(__('zatca.clone_from_store'))
+                ->modalDescription(__('zatca.clone_from_store_help'))
+                ->form(function () {
+                    $currentId = $this->data['store_id'] ?? null;
+                    $current = $currentId ? Store::find($currentId) : null;
+                    $orgId = $current?->organization_id;
+
+                    // Candidate sources: same organization, configured ZATCA settings,
+                    // excluding the current store. We also include stores that share
+                    // the same VAT number even across orgs as a convenience, because
+                    // some businesses register branches under separate orgs.
+                    $candidates = Store::query()
+                        ->when($orgId, fn ($q) => $q->where(function ($q) use ($orgId, $current) {
+                            $q->where('organization_id', $orgId);
+                            if ($current?->vat_number) {
+                                $q->orWhere('vat_number', $current->vat_number);
+                            }
+                        }))
+                        ->where('id', '!=', $currentId)
+                        ->whereHas('storeSettings', function ($q) {
+                            // Postgres JSONB ?: extra->'zatca' must exist.
+                            $q->whereNotNull('extra');
+                        })
+                        ->orderBy('name')
+                        ->get()
+                        ->filter(function (Store $s) {
+                            $extra = $s->storeSettings?->extra ?? [];
+                            return ! empty($extra['zatca']);
+                        })
+                        ->mapWithKeys(function (Store $s) {
+                            $extra = $s->storeSettings?->extra ?? [];
+                            $zatca = $extra['zatca'] ?? [];
+                            $vat = $zatca['vat_number'] ?? $s->vat_number ?? '—';
+                            return [$s->id => $s->name . ' (VAT: ' . $vat . ')'];
+                        })
+                        ->all();
+
+                    return [
+                        Select::make('source_store_id')
+                            ->label(__('zatca.source_store'))
+                            ->options($candidates)
+                            ->required()
+                            ->searchable()
+                            ->helperText(__('zatca.source_store_help')),
+                    ];
+                })
+                ->action(function (array $data) {
+                    $targetId = $this->data['store_id'] ?? null;
+                    $sourceId = $data['source_store_id'] ?? null;
+                    if (! $targetId || ! $sourceId || $targetId === $sourceId) {
+                        return;
+                    }
+
+                    $sourceSettings = StoreSettings::where('store_id', $sourceId)->first();
+                    $sourceZatca = $sourceSettings?->extra['zatca'] ?? [];
+                    $sourceStore = Store::find($sourceId);
+
+                    if (empty($sourceZatca)) {
+                        Notification::make()
+                            ->title(__('zatca.clone_failed'))
+                            ->body(__('zatca.clone_source_empty'))
+                            ->danger()
+                            ->send();
+                        return;
+                    }
+
+                    // Strip everything that must remain per-EGS:
+                    // OTP (single-use, store-specific), cert/device tracking flags,
+                    // and audit metadata. Tax identity + integration prefs are safe.
+                    $cloneable = collect($sourceZatca)->except([
+                        'otp_encrypted',
+                        'otp_set',
+                        'updated_by',
+                        'updated_at',
+                    ])->all();
+
+                    $targetSettings = StoreSettings::firstOrNew(['store_id' => $targetId]);
+                    $extra = $targetSettings->extra ?? [];
+                    $existingZatca = $extra['zatca'] ?? [];
+                    // Preserve any existing OTP / audit fields on the target.
+                    $extra['zatca'] = array_merge($cloneable, [
+                        'otp_set' => $existingZatca['otp_set'] ?? false,
+                        'otp_encrypted' => $existingZatca['otp_encrypted'] ?? null,
+                        'updated_by' => auth('admin')->id(),
+                        'updated_at' => now()->toIso8601String(),
+                    ]);
+                    $targetSettings->store_id = $targetId;
+                    $targetSettings->extra = $extra;
+                    $targetSettings->save();
+
+                    // Mirror tax identity onto the Store row (same fields the
+                    // Save action mirrors), so CertificateService picks them up
+                    // when building the CSR for this store's own enrollment.
+                    $targetStore = Store::find($targetId);
+                    if ($targetStore && $sourceStore) {
+                        $targetStore->fill(array_filter([
+                            'vat_number' => $sourceStore->vat_number,
+                            'cr_number' => $sourceStore->cr_number,
+                            'address' => $sourceStore->address,
+                            'city' => $sourceStore->city,
+                            'postal_code' => $sourceStore->postal_code,
+                        ], fn ($v) => $v !== null && $v !== ''))->save();
+                    }
+
+                    AdminActivityLog::record(
+                        adminUserId: auth('admin')->id(),
+                        action: 'zatca_clone_settings',
+                        entityType: 'store',
+                        entityId: $targetId,
+                        details: ['source_store_id' => $sourceId],
+                    );
+
+                    // Reload form so user sees the cloned values immediately.
+                    $this->loadStoreConfig($targetId);
+                    $this->form->fill($this->data);
+
+                    Notification::make()
+                        ->title(__('zatca.clone_succeeded'))
+                        ->body(__('zatca.clone_next_step'))
+                        ->success()
+                        ->send();
+                }),
+
             Action::make('enroll')
                 ->label(__('zatca.enroll_now'))
                 ->icon('heroicon-o-bolt')
