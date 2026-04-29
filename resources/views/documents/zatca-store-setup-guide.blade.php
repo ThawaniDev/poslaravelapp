@@ -428,7 +428,7 @@
         <li>Debit note — Standard</li>
     </ul>
     <ol class="steps">
-        <li><p>Open <strong>ZATCA → Invoices</strong> in the admin panel.</p></li>
+        <li><p>Open <strong>ZATCA → Certificates</strong> in the admin panel.</p></li>
         <li><p>Click the orange <strong>“Run All 6 Compliance Tests”</strong> button (rocket icon) in the top-right header.</p></li>
         <li><p>Pick the store you just enrolled and click <strong>Submit</strong>. The system will sequentially submit all 6 invoice types against the compliance endpoint.</p></li>
         <li><p>A summary notification will show ✅ / ❌ per type. <strong>All 6 must be ✅</strong> before the next step.</p></li>
@@ -437,7 +437,7 @@
 
     <h3>Step E — Exchange CCSID for PCSID (Production CSID) <span class="badge badge-req">Required for Simulation/Production</span></h3>
     <ol class="steps">
-        <li><p>Once all 6 compliance tests pass, click the green <strong>“Renew Certificate”</strong> button (shield icon) on the <strong>ZATCA → Invoices</strong> page (or use <strong>ZATCA → Certificates → Renew</strong>).</p></li>
+        <li><p>Once all 6 compliance tests pass, go to <strong>ZATCA → Certificates</strong> and click the green <strong>“Get Production Certificate (PCSID)”</strong> button (shield icon) in the top-right header.</p></li>
         <li><p>Pick the store. The system calls ZATCA's <code>/production/csids</code> endpoint, exchanging the CCSID for a long-lived <strong>PCSID</strong>. The new production certificate inherits the same environment as the compliance cert (simulation CCSID → simulation PCSID; production CCSID → production PCSID).</p></li>
         <li><p>The compliance cert is automatically retired (status: Expired). The new production cert appears in <strong>ZATCA → Certificates</strong> with status <strong>Active</strong>.</p></li>
     </ol>

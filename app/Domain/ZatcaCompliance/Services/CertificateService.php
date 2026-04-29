@@ -158,8 +158,14 @@ class CertificateService
             'api_url' => $compliance->api_url,
         ]);
 
-        // Only retire the compliance cert once the production exchange succeeded.
-        $compliance->update(['status' => ZatcaCertificateStatus::Expired]);
+        // Only retire the compliance cert when ZATCA actually issued a
+        // production cert. In stub mode (developer-portal / no api url) the
+        // PCSID is self-signed and useless — keep the compliance cert active
+        // so the operator can re-attempt the exchange against the real
+        // simulation/production endpoint without losing their CCSID.
+        if ($certPem !== null) {
+            $compliance->update(['status' => ZatcaCertificateStatus::Expired]);
+        }
 
         return $production;
     }

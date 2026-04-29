@@ -245,11 +245,13 @@ class ZatcaComplianceApiTest extends TestCase
                 'certificate_id', 'ccsid', 'issued_at', 'expires_at',
             ]]);
 
-        // Old cert should now be expired
+        // In stub mode the PCSID is self-signed so we deliberately keep the
+        // compliance cert Active (so the operator can re-attempt the exchange
+        // against the real ZATCA endpoint without losing their CCSID).
         $this->assertDatabaseHas('zatca_certificates', [
             'store_id' => $this->store->id,
             'certificate_type' => 'compliance',
-            'status' => 'expired',
+            'status' => 'active',
         ]);
 
         // New cert should be active production
