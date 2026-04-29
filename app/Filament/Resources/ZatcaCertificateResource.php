@@ -65,6 +65,14 @@ class ZatcaCertificateResource extends Resource
                     ->label(__('zatca.certificate_type'))
                     ->options(collect(ZatcaCertificateType::cases())->mapWithKeys(fn ($c) => [$c->value => __('zatca.cert_type_' . $c->value)]))
                     ->required(),
+                Forms\Components\TextInput::make('environment')
+                    ->label('Environment')
+                    ->disabled()
+                    ->helperText('developer-portal = stub QA · simulation = ZATCA simulation server · production = live ZATCA'),
+                Forms\Components\TextInput::make('api_url')
+                    ->label('ZATCA API URL')
+                    ->disabled()
+                    ->columnSpanFull(),
                 Forms\Components\Select::make('status')
                     ->label(__('zatca.status'))
                     ->options(collect(ZatcaCertificateStatus::cases())->mapWithKeys(fn ($c) => [$c->value => __('zatca.cert_status_' . $c->value)]))

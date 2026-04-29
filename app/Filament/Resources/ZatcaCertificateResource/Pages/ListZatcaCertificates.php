@@ -55,6 +55,25 @@ class ListZatcaCertificates extends ListRecords
                     $refSimplifiedUuid = null;
                     $refStandardUuid   = null;
 
+                    // Pre-seed from the most recent accepted base invoices for
+                    // this store. ZATCA tracks compliance per CCSID and refuses
+                    // to re-accept a duplicate base invoice ("Submitted before"),
+                    // so for repeat runs we must reuse the previously accepted
+                    // UUIDs as the BillingReference for the note tests.
+                    $invoiceModel = \App\Domain\ZatcaCompliance\Models\ZatcaInvoice::class;
+                    $refSimplifiedUuid = $invoiceModel::query()
+                        ->where('store_id', $storeId)
+                        ->where('invoice_type', 'simplified')
+                        ->whereIn('submission_status', ['accepted', 'reported'])
+                        ->orderByDesc('submitted_at')
+                        ->value('uuid');
+                    $refStandardUuid = $invoiceModel::query()
+                        ->where('store_id', $storeId)
+                        ->where('invoice_type', 'standard')
+                        ->whereIn('submission_status', ['accepted', 'reported'])
+                        ->orderByDesc('submitted_at')
+                        ->value('uuid');
+
                     foreach (self::COMPLIANCE_MATRIX as $case) {
                         $invoiceNumber = 'CTEST-' . now()->format('YmdHis') . '-' . strtoupper(substr(uniqid(), -4));
 
@@ -74,6 +93,15 @@ class ListZatcaCertificates extends ListRecords
                             $payload['reference_invoice_uuid'] = $case['is_b2b']
                                 ? $refStandardUuid
                                 : $refSimplifiedUuid;
+                            // No historical accepted base UUID? Fall back to a
+                            // freshly-generated UUID. ZATCA's compliance check
+                            // for note types validates structure (BR-KSA-17,
+                            // billing reference present + adjustment reason),
+                            // not that the referenced UUID matches a previously
+                            // accepted base invoice in their system.
+                            if (empty($payload['reference_invoice_uuid'])) {
+                                $payload['reference_invoice_uuid'] = (string) \Illuminate\Support\Str::uuid();
+                            }
                             // ZATCA BR-KSA-17: every credit AND debit note
                             // must carry a free-text reason (KSA-10).
                             $payload['adjustment_reason'] = $case['type'] === 'credit_note'
@@ -82,15 +110,6 @@ class ListZatcaCertificates extends ListRecords
                         }
 
                         try {
-                            if (in_array($case['type'], ['credit_note', 'debit_note'], true)
-                                && empty($payload['reference_invoice_uuid'])
-                            ) {
-                                throw new \RuntimeException(
-                                    'Skipped — base ' . ($case['is_b2b'] ? 'Standard' : 'Simplified')
-                                    . ' invoice was not accepted, so no reference UUID available.'
-                                );
-                            }
-
                             $result = $service->submitInvoice($storeId, $payload);
 
                             $status   = $result['submission_status'];

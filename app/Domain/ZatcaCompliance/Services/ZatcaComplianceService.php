@@ -136,7 +136,11 @@ class ZatcaComplianceService
         // out of the hashed/signed canonical form (per ZATCA spec).
         $signed['xml'] = str_replace('__QR_CODE_PLACEHOLDER__', $tlvB64, $signed['xml']);
 
-        $flow = $isB2b && $type === ZatcaInvoiceType::Standard
+        // ZATCA routes invoices by transaction-type code: B2B ("0100000")
+        // — Standard tax invoices and B2B credit/debit notes — must go
+        // through clearance; B2C (simplified + simplified notes) goes
+        // through reporting.
+        $flow = $isB2b
             ? ZatcaInvoiceFlow::Clearance
             : ZatcaInvoiceFlow::Reporting;
 
@@ -188,11 +192,15 @@ class ZatcaComplianceService
                 : $certApi->reportInvoice($signed['xml'], $signed['hash'], $uuid, $material['certificate']->certificate_pem, $secret);
         }
 
-        $accepted = $flow === ZatcaInvoiceFlow::Clearance ? ! empty($resp['cleared']) : ! empty($resp['reported']);
+        // Accept either flow's success signal: ZATCA's compliance endpoint
+        // returns clearanceStatus=CLEARED for B2B and reportingStatus=REPORTED
+        // for B2C regardless of the Clearance-Status header we send, so the
+        // client populates whichever key matches the response.
+        $accepted = ! empty($resp['cleared']) || ! empty($resp['reported']);
         $invoice->update([
             // Existing tests assert 'accepted' for both flows on success.
             'submission_status' => $accepted ? ZatcaSubmissionStatus::Accepted : ZatcaSubmissionStatus::Rejected,
-            'cleared_xml' => $flow === ZatcaInvoiceFlow::Clearance ? ($resp['cleared_xml'] ?? null) : null,
+            'cleared_xml' => ! empty($resp['cleared']) ? ($resp['cleared_xml'] ?? null) : null,
             'zatca_response_code' => $resp['response_code'] ?? '200',
             'zatca_response_message' => $resp['message'] ?? null,
             'submitted_at' => $accepted ? now() : null,
@@ -428,11 +436,11 @@ class ZatcaComplianceService
                 : $certApi->reportInvoice($invoice->invoice_xml, $invoice->invoice_hash, $invoice->uuid, $material['certificate']->certificate_pem, $secret);
         }
 
-        $accepted = $flow === ZatcaInvoiceFlow::Clearance ? ! empty($resp['cleared']) : ! empty($resp['reported']);
+        $accepted = ! empty($resp['cleared']) || ! empty($resp['reported']);
         $attempts = (int) ($invoice->submission_attempts ?? 0) + 1;
         $invoice->update([
             'submission_status' => $accepted ? ZatcaSubmissionStatus::Accepted : ZatcaSubmissionStatus::Rejected,
-            'cleared_xml' => $flow === ZatcaInvoiceFlow::Clearance ? ($resp['cleared_xml'] ?? $invoice->cleared_xml) : $invoice->cleared_xml,
+            'cleared_xml' => ! empty($resp['cleared']) ? ($resp['cleared_xml'] ?? $invoice->cleared_xml) : $invoice->cleared_xml,
             'zatca_response_code' => $resp['response_code'] ?? null,
             'zatca_response_message' => $resp['message'] ?? null,
             'submitted_at' => $accepted ? now() : $invoice->submitted_at,

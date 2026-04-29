@@ -435,6 +435,11 @@
         <li><p>If any are ❌, open the failing invoice in <strong>ZATCA → Invoices</strong>, read the ZATCA response message, fix the underlying data, and re-run.</p></li>
     </ol>
 
+    <div class="callout info">
+        <div class="callout-icon">ℹ</div>
+        <p><strong>Re-running the suite:</strong> ZATCA tracks compliance progress server-side per CCSID. If you re-run after a previous successful submission, the already-completed invoice types return <em>“Compliance check already completed for …”</em> — this counts as passed and does <strong>not</strong> require resubmission. Only the types you have not yet submitted in this CCSID's lifecycle need to actually clear ZATCA in the new run.</p>
+    </div>
+
     <h3>Step E — Exchange CCSID for PCSID (Production CSID) <span class="badge badge-req">Required for Simulation/Production</span></h3>
     <ol class="steps">
         <li><p>Once all 6 compliance tests pass, go to <strong>ZATCA → Certificates</strong> and click the green <strong>“Get Production Certificate (PCSID)”</strong> button (shield icon) in the top-right header.</p></li>
@@ -549,11 +554,11 @@
         <li>Full address (city, district, street, building number, postal code) entered</li>
         <li>Simulation enrollment completed — CCSID issued by ZATCA simulation</li>
         <li>All 6 compliance invoice types submitted in Simulation — every one Accepted (“Run All 6 Compliance Tests” shows ✅ × 6)</li>
-        <li>CCSID exchanged for PCSID in Simulation (Renew Certificate) — production cert active</li>
+        <li>CCSID exchanged for PCSID in Simulation (“Get Production Certificate (PCSID)” button) — production cert active</li>
         <li>Production OTP obtained from client (generated on production Fatoora portal)</li>
         <li>Production enrollment completed — certificate status Active</li>
         <li>All 6 compliance invoice types re-run in Production environment — every one Accepted</li>
-        <li>CCSID exchanged for PCSID in Production</li>
+        <li>CCSID exchanged for PCSID in Production (“Get Production Certificate (PCSID)” button)</li>
         <li>Device provisioned and activation code recorded</li>
         <li>Auto-submit enabled (unless client requested manual)</li>
         <li>First production invoice submitted and confirmed Accepted or Reported by ZATCA</li>
