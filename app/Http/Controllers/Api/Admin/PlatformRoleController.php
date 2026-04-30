@@ -27,8 +27,12 @@ class PlatformRoleController extends BaseApiController
     /**
      * GET /admin/roles
      */
-    public function listRoles(): JsonResponse
+    public function listRoles(Request $request): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['admin_team.roles', 'admin_team.view', 'admin_team.manage'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $roles = $this->service->listRoles();
 
         return $this->success([
@@ -39,8 +43,12 @@ class PlatformRoleController extends BaseApiController
     /**
      * GET /admin/roles/{roleId}
      */
-    public function showRole(string $roleId): JsonResponse
+    public function showRole(Request $request, string $roleId): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['admin_team.roles', 'admin_team.view', 'admin_team.manage'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $role = $this->service->getRole($roleId);
 
         if (!$role) {
@@ -57,6 +65,10 @@ class PlatformRoleController extends BaseApiController
      */
     public function createRole(CreateAdminRoleRequest $request): JsonResponse
     {
+        if (!$request->user()->hasPermission('admin_team.roles')) {
+            return $this->error('Forbidden', 403);
+        }
+
         $role = $this->service->createRole(
             $request->validated(),
             $request->user()->id
@@ -72,6 +84,10 @@ class PlatformRoleController extends BaseApiController
      */
     public function updateRole(UpdateAdminRoleRequest $request, string $roleId): JsonResponse
     {
+        if (!$request->user()->hasPermission('admin_team.roles')) {
+            return $this->error('Forbidden', 403);
+        }
+
         $role = AdminRole::find($roleId);
 
         if (!$role) {
@@ -98,6 +114,10 @@ class PlatformRoleController extends BaseApiController
      */
     public function deleteRole(Request $request, string $roleId): JsonResponse
     {
+        if (!$request->user()->hasPermission('admin_team.roles')) {
+            return $this->error('Forbidden', 403);
+        }
+
         $role = AdminRole::find($roleId);
 
         if (!$role) {
@@ -139,6 +159,10 @@ class PlatformRoleController extends BaseApiController
      */
     public function listTeam(Request $request): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['admin_team.view', 'admin_team.manage'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $filters = $request->only(['search', 'is_active', 'role_id']);
 
         if (isset($filters['is_active'])) {
@@ -161,8 +185,12 @@ class PlatformRoleController extends BaseApiController
     /**
      * GET /admin/team/{userId}
      */
-    public function showTeamUser(string $userId): JsonResponse
+    public function showTeamUser(Request $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['admin_team.view', 'admin_team.manage'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $user = $this->service->getAdminUser($userId);
 
         if (!$user) {
@@ -179,6 +207,10 @@ class PlatformRoleController extends BaseApiController
      */
     public function createTeamUser(CreateAdminTeamUserRequest $request): JsonResponse
     {
+        if (!$request->user()->hasPermission('admin_team.manage')) {
+            return $this->error('Forbidden', 403);
+        }
+
         $user = $this->service->createAdminUser(
             $request->validated(),
             $request->user()->id
@@ -194,6 +226,10 @@ class PlatformRoleController extends BaseApiController
      */
     public function updateTeamUser(UpdateAdminTeamUserRequest $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasPermission('admin_team.manage')) {
+            return $this->error('Forbidden', 403);
+        }
+
         $user = AdminUser::find($userId);
 
         if (!$user) {
@@ -216,6 +252,10 @@ class PlatformRoleController extends BaseApiController
      */
     public function deactivateTeamUser(Request $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasPermission('admin_team.manage')) {
+            return $this->error('Forbidden', 403);
+        }
+
         $user = AdminUser::find($userId);
 
         if (!$user) {
@@ -238,6 +278,10 @@ class PlatformRoleController extends BaseApiController
      */
     public function activateTeamUser(Request $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasPermission('admin_team.manage')) {
+            return $this->error('Forbidden', 403);
+        }
+
         $user = AdminUser::find($userId);
 
         if (!$user) {

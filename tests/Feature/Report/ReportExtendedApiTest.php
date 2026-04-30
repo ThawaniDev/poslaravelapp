@@ -557,7 +557,7 @@ class ReportExtendedApiTest extends TestCase
     public function test_export_validates_report_type(): void
     {
         $response = $this->postJson('/api/v2/reports/export', [
-            'report_type' => 'nonexistent',
+            'report_type' => '00000000-0000-0000-0000-000000000099',
             'format' => 'csv',
         ], $this->authHeader());
 

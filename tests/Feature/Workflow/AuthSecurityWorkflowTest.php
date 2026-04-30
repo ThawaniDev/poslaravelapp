@@ -349,8 +349,6 @@ class AuthSecurityWorkflowTest extends WorkflowTestCase
             'device_type' => 'tablet',
             'hardware_id' => 'DEV-OLD-001',
             'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
         $response = $this->withToken($this->ownerToken)
@@ -370,8 +368,6 @@ class AuthSecurityWorkflowTest extends WorkflowTestCase
             'device_type' => 'tablet',
             'hardware_id' => 'DEV-STOLEN-001',
             'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
         $response = $this->withToken($this->ownerToken)
@@ -391,8 +387,6 @@ class AuthSecurityWorkflowTest extends WorkflowTestCase
             'device_type' => 'desktop',
             'hardware_id' => 'DEV-POS-001',
             'is_active' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
         $response = $this->withToken($this->ownerToken)
@@ -435,7 +429,7 @@ class AuthSecurityWorkflowTest extends WorkflowTestCase
                 'attempt_type' => 'password',
                 'is_successful' => false,
                 'ip_address' => '192.168.1.100',
-                'created_at' => now(),
+                'attempted_at' => now(),
             ]);
         }
 
@@ -490,7 +484,7 @@ class AuthSecurityWorkflowTest extends WorkflowTestCase
     {
         $response = $this->withToken($this->ownerToken)
             ->postJson('/api/v2/security/sessions', [
-                'device_id' => 'DEV-POS-002',
+                'device_id' => '00000000-0000-0000-0000-000000000010',
                 'ip_address' => '192.168.1.50',
                 'user_agent' => 'POS-App/2.1',
             ]);
@@ -506,7 +500,7 @@ class AuthSecurityWorkflowTest extends WorkflowTestCase
             'id' => $sessionId,
             'store_id' => $this->store->id,
             'user_id' => $this->owner->id,
-            'device_id' => 'DEV-POS-002',
+            'device_id' => '00000000-0000-0000-0000-000000000010',
             'ip_address' => '192.168.1.50',
             'status' => 'active',
             'started_at' => now(),
@@ -526,7 +520,7 @@ class AuthSecurityWorkflowTest extends WorkflowTestCase
             'id' => $sessionId,
             'store_id' => $this->store->id,
             'user_id' => $this->owner->id,
-            'device_id' => 'DEV-POS-003',
+            'device_id' => '00000000-0000-0000-0000-000000000011',
             'ip_address' => '192.168.1.51',
             'status' => 'active',
             'started_at' => now(),
@@ -585,8 +579,6 @@ class AuthSecurityWorkflowTest extends WorkflowTestCase
             'description' => 'Test',
             'severity' => 'medium',
             'status' => 'open',
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
 
         $response = $this->withToken($this->ownerToken)

@@ -560,7 +560,7 @@ class SupportApiTest extends TestCase
     public function test_kb_show_returns_404_for_nonexistent(): void
     {
         $this->withToken($this->token)
-            ->getJson('/api/v2/support/kb/nonexistent-slug')
+            ->getJson('/api/v2/support/kb/00000000-0000-0000-0000-000000000099-slug')
             ->assertNotFound();
     }
 

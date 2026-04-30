@@ -48,9 +48,12 @@ class IndustryWorkflowApiTest extends TestCase
 
     private function createIndustryTables(): void
     {
-        DB::statement('PRAGMA foreign_keys = OFF');
+        $driver = DB::connection()->getDriverName();
+        if ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = OFF');
+        }
         // Pharmacy
-        DB::statement('DROP TABLE IF EXISTS prescriptions');
+        DB::statement('DROP TABLE IF EXISTS prescriptions CASCADE');
         DB::statement('CREATE TABLE prescriptions (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -67,7 +70,7 @@ class IndustryWorkflowApiTest extends TestCase
             updated_at TIMESTAMP
         )');
 
-        DB::statement('DROP TABLE IF EXISTS drug_schedules');
+        DB::statement('DROP TABLE IF EXISTS drug_schedules CASCADE');
         DB::statement('CREATE TABLE drug_schedules (
             id VARCHAR(36) PRIMARY KEY,
             product_id VARCHAR(36) NOT NULL,
@@ -76,13 +79,13 @@ class IndustryWorkflowApiTest extends TestCase
             dosage_form VARCHAR(100),
             strength VARCHAR(100),
             manufacturer VARCHAR(255),
-            requires_prescription BOOLEAN DEFAULT 0,
+            requires_prescription BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP,
             updated_at TIMESTAMP
         )');
 
         // Jewelry
-        DB::statement('DROP TABLE IF EXISTS daily_metal_rates');
+        DB::statement('DROP TABLE IF EXISTS daily_metal_rates CASCADE');
         DB::statement('CREATE TABLE daily_metal_rates (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -95,7 +98,7 @@ class IndustryWorkflowApiTest extends TestCase
             updated_at TIMESTAMP
         )');
 
-        DB::statement('DROP TABLE IF EXISTS jewelry_product_details');
+        DB::statement('DROP TABLE IF EXISTS jewelry_product_details CASCADE');
         DB::statement('CREATE TABLE jewelry_product_details (
             id VARCHAR(36) PRIMARY KEY,
             product_id VARCHAR(36) NOT NULL,
@@ -114,7 +117,7 @@ class IndustryWorkflowApiTest extends TestCase
             updated_at TIMESTAMP
         )');
 
-        DB::statement('DROP TABLE IF EXISTS buyback_transactions');
+        DB::statement('DROP TABLE IF EXISTS buyback_transactions CASCADE');
         DB::statement('CREATE TABLE buyback_transactions (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -132,7 +135,7 @@ class IndustryWorkflowApiTest extends TestCase
         )');
 
         // Electronics
-        DB::statement('DROP TABLE IF EXISTS device_imei_records');
+        DB::statement('DROP TABLE IF EXISTS device_imei_records CASCADE');
         DB::statement('CREATE TABLE device_imei_records (
             id VARCHAR(36) PRIMARY KEY,
             product_id VARCHAR(36) NOT NULL,
@@ -150,7 +153,7 @@ class IndustryWorkflowApiTest extends TestCase
             updated_at TIMESTAMP
         )');
 
-        DB::statement('DROP TABLE IF EXISTS repair_jobs');
+        DB::statement('DROP TABLE IF EXISTS repair_jobs CASCADE');
         DB::statement('CREATE TABLE repair_jobs (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -165,15 +168,15 @@ class IndustryWorkflowApiTest extends TestCase
             final_cost DECIMAL(10,2),
             parts_used TEXT,
             staff_user_id VARCHAR(36),
-            received_at DATETIME,
-            estimated_ready_at DATETIME,
-            completed_at DATETIME,
-            collected_at DATETIME,
+            received_at TIMESTAMP,
+            estimated_ready_at TIMESTAMP,
+            completed_at TIMESTAMP,
+            collected_at TIMESTAMP,
             created_at TIMESTAMP,
             updated_at TIMESTAMP
         )');
 
-        DB::statement('DROP TABLE IF EXISTS trade_in_records');
+        DB::statement('DROP TABLE IF EXISTS trade_in_records CASCADE');
         DB::statement('CREATE TABLE trade_in_records (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -189,7 +192,7 @@ class IndustryWorkflowApiTest extends TestCase
         )');
 
         // Florist
-        DB::statement('DROP TABLE IF EXISTS flower_arrangements');
+        DB::statement('DROP TABLE IF EXISTS flower_arrangements CASCADE');
         DB::statement('CREATE TABLE flower_arrangements (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -197,12 +200,12 @@ class IndustryWorkflowApiTest extends TestCase
             occasion VARCHAR(100),
             items_json TEXT,
             total_price DECIMAL(10,2) NOT NULL,
-            is_template BOOLEAN DEFAULT 0,
+            is_template BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP,
             updated_at TIMESTAMP
         )');
 
-        DB::statement('DROP TABLE IF EXISTS flower_freshness_log');
+        DB::statement('DROP TABLE IF EXISTS flower_freshness_log CASCADE');
         DB::statement('CREATE TABLE flower_freshness_log (
             id VARCHAR(36) PRIMARY KEY,
             product_id VARCHAR(36) NOT NULL,
@@ -212,12 +215,12 @@ class IndustryWorkflowApiTest extends TestCase
             markdown_date DATE,
             dispose_date DATE,
             quantity INTEGER NOT NULL,
-            status VARCHAR(20) NOT NULL DEFAULT "fresh",
+            status VARCHAR(20) NOT NULL DEFAULT \'fresh\',
             created_at TIMESTAMP,
             updated_at TIMESTAMP
         )');
 
-        DB::statement('DROP TABLE IF EXISTS flower_subscriptions');
+        DB::statement('DROP TABLE IF EXISTS flower_subscriptions CASCADE');
         DB::statement('CREATE TABLE flower_subscriptions (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -227,14 +230,14 @@ class IndustryWorkflowApiTest extends TestCase
             delivery_day VARCHAR(20) NOT NULL,
             delivery_address VARCHAR(500) NOT NULL,
             price_per_delivery DECIMAL(10,2) NOT NULL,
-            is_active BOOLEAN DEFAULT 1,
+            is_active BOOLEAN DEFAULT TRUE,
             next_delivery_date DATE NOT NULL,
             created_at TIMESTAMP,
             updated_at TIMESTAMP
         )');
 
         // Bakery
-        DB::statement('DROP TABLE IF EXISTS bakery_recipes');
+        DB::statement('DROP TABLE IF EXISTS bakery_recipes CASCADE');
         DB::statement('CREATE TABLE bakery_recipes (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -249,7 +252,7 @@ class IndustryWorkflowApiTest extends TestCase
             updated_at TIMESTAMP
         )');
 
-        DB::statement('DROP TABLE IF EXISTS production_schedules');
+        DB::statement('DROP TABLE IF EXISTS production_schedules CASCADE');
         DB::statement('CREATE TABLE production_schedules (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -259,13 +262,13 @@ class IndustryWorkflowApiTest extends TestCase
             actual_batches INTEGER,
             planned_yield INTEGER,
             actual_yield INTEGER,
-            status VARCHAR(20) NOT NULL DEFAULT "planned",
+            status VARCHAR(20) NOT NULL DEFAULT \'planned\',
             notes TEXT,
             created_at TIMESTAMP,
             updated_at TIMESTAMP
         )');
 
-        DB::statement('DROP TABLE IF EXISTS custom_cake_orders');
+        DB::statement('DROP TABLE IF EXISTS custom_cake_orders CASCADE');
         DB::statement('CREATE TABLE custom_cake_orders (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -279,14 +282,14 @@ class IndustryWorkflowApiTest extends TestCase
             delivery_time VARCHAR(10),
             price DECIMAL(10,2) NOT NULL,
             deposit_paid DECIMAL(10,2),
-            status VARCHAR(20) NOT NULL DEFAULT "ordered",
+            status VARCHAR(20) NOT NULL DEFAULT \'ordered\',
             reference_image_url VARCHAR(500),
             created_at TIMESTAMP,
             updated_at TIMESTAMP
         )');
 
         // Restaurant
-        DB::statement('DROP TABLE IF EXISTS restaurant_tables');
+        DB::statement('DROP TABLE IF EXISTS restaurant_tables CASCADE');
         DB::statement('CREATE TABLE restaurant_tables (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -296,14 +299,14 @@ class IndustryWorkflowApiTest extends TestCase
             zone VARCHAR(50),
             position_x REAL,
             position_y REAL,
-            status VARCHAR(20) NOT NULL DEFAULT "available",
+            status VARCHAR(20) NOT NULL DEFAULT \'available\',
             current_order_id VARCHAR(36),
-            is_active BOOLEAN DEFAULT 1,
+            is_active BOOLEAN DEFAULT TRUE,
             created_at TIMESTAMP,
             updated_at TIMESTAMP
         )');
 
-        DB::statement('DROP TABLE IF EXISTS kitchen_tickets');
+        DB::statement('DROP TABLE IF EXISTS kitchen_tickets CASCADE');
         DB::statement('CREATE TABLE kitchen_tickets (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -312,15 +315,15 @@ class IndustryWorkflowApiTest extends TestCase
             ticket_number VARCHAR(50) NOT NULL,
             items_json TEXT NOT NULL,
             station VARCHAR(50),
-            status VARCHAR(20) NOT NULL DEFAULT "pending",
+            status VARCHAR(20) NOT NULL DEFAULT \'pending\',
             course_number INTEGER,
-            fire_at DATETIME,
-            completed_at DATETIME,
+            fire_at TIMESTAMP,
+            completed_at TIMESTAMP,
             created_at TIMESTAMP,
             updated_at TIMESTAMP
         )');
 
-        DB::statement('DROP TABLE IF EXISTS table_reservations');
+        DB::statement('DROP TABLE IF EXISTS table_reservations CASCADE');
         DB::statement('CREATE TABLE table_reservations (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
@@ -331,22 +334,22 @@ class IndustryWorkflowApiTest extends TestCase
             reservation_date DATE NOT NULL,
             reservation_time VARCHAR(10) NOT NULL,
             duration_minutes INTEGER,
-            status VARCHAR(20) NOT NULL DEFAULT "confirmed",
+            status VARCHAR(20) NOT NULL DEFAULT \'confirmed\',
             notes TEXT,
             created_at TIMESTAMP,
             updated_at TIMESTAMP
         )');
 
-        DB::statement('DROP TABLE IF EXISTS open_tabs');
+        DB::statement('DROP TABLE IF EXISTS open_tabs CASCADE');
         DB::statement('CREATE TABLE open_tabs (
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
             order_id VARCHAR(36),
             customer_name VARCHAR(255),
             table_id VARCHAR(36),
-            opened_at DATETIME,
-            closed_at DATETIME,
-            status VARCHAR(10) NOT NULL DEFAULT "open",
+            opened_at TIMESTAMP,
+            closed_at TIMESTAMP,
+            status VARCHAR(10) NOT NULL DEFAULT \'open\',
             created_at TIMESTAMP,
             updated_at TIMESTAMP
         )');

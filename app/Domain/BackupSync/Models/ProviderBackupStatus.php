@@ -3,7 +3,7 @@
 namespace App\Domain\BackupSync\Models;
 
 use App\Domain\Core\Models\Store;
-use App\Domain\ProviderRegistration\Enums\ProviderBackupStatusEnum;
+use App\Domain\BackupSync\Enums\ProviderBackupStatusEnum;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;

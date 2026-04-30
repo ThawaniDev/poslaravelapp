@@ -534,12 +534,17 @@ class StaffService
                 ->update(['is_primary' => false]);
         }
 
-        return StaffBranchAssignment::create([
+        $payload = [
             'staff_user_id' => $staff->id,
             'branch_id'     => $data['branch_id'],
-            'role_id'       => $data['role_id'] ?? null,
             'is_primary'    => $data['is_primary'] ?? false,
-        ]);
+        ];
+
+        if (! empty($data['role_id'])) {
+            $payload['role_id'] = $data['role_id'];
+        }
+
+        return StaffBranchAssignment::create($payload);
     }
 
     public function unassignBranch(StaffUser $staff, string $branchId): bool

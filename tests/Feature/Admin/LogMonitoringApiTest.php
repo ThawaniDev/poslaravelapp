@@ -145,7 +145,7 @@ class LogMonitoringApiTest extends TestCase
             'admin_user_id' => $this->admin->id,
             'action'        => 'update_store',
             'entity_type'   => 'store',
-            'entity_id'     => 'abc-123',
+            'entity_id'     => '00000000-0000-0000-0000-000000000099',
             'details'       => json_encode(['field' => 'name']),
             'ip_address'    => '192.168.1.1',
             'created_at'    => now(),
@@ -159,7 +159,7 @@ class LogMonitoringApiTest extends TestCase
 
     public function test_show_activity_log_not_found(): void
     {
-        $this->getJson('/api/v2/admin/logs/activity/nonexistent-id')
+        $this->getJson('/api/v2/admin/logs/activity/00000000-0000-0000-0000-000000000099')
             ->assertNotFound();
     }
 
@@ -290,7 +290,7 @@ class LogMonitoringApiTest extends TestCase
 
     public function test_show_security_alert_not_found(): void
     {
-        $this->getJson('/api/v2/admin/logs/security-alerts/nonexistent')
+        $this->getJson('/api/v2/admin/logs/security-alerts/00000000-0000-0000-0000-000000000099')
             ->assertNotFound();
     }
 
@@ -335,7 +335,7 @@ class LogMonitoringApiTest extends TestCase
 
     public function test_resolve_nonexistent_alert_returns_404(): void
     {
-        $this->postJson('/api/v2/admin/logs/security-alerts/nonexistent/resolve')
+        $this->postJson('/api/v2/admin/logs/security-alerts/00000000-0000-0000-0000-000000000099/resolve')
             ->assertNotFound();
     }
 
@@ -564,7 +564,7 @@ class LogMonitoringApiTest extends TestCase
 
     public function test_show_platform_event_not_found(): void
     {
-        $this->getJson('/api/v2/admin/logs/events/nonexistent')
+        $this->getJson('/api/v2/admin/logs/events/00000000-0000-0000-0000-000000000099')
             ->assertNotFound();
     }
 

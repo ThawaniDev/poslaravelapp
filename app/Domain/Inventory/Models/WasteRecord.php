@@ -34,6 +34,7 @@ class WasteRecord extends Model
         'quantity' => 'decimal:3',
         'unit_cost' => 'decimal:4',
         'reason' => WasteReason::class,
+        'created_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

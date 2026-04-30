@@ -60,7 +60,6 @@ class OrderIngestService
                 'store_id' => $dto->storeId,
                 'platform' => $dto->platform,
                 'external_order_id' => $dto->externalOrderId,
-                'order_id' => null,
                 'delivery_status' => $config->auto_accept
                     ? DeliveryOrderStatus::Accepted->value
                     : DeliveryOrderStatus::Pending->value,

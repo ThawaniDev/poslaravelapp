@@ -155,7 +155,7 @@ class SecurityCenterApiTest extends TestCase
 
     public function test_show_alert_not_found(): void
     {
-        $this->getJson("{$this->base}/alerts/nonexistent")->assertNotFound();
+        $this->getJson("{$this->base}/alerts/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     public function test_resolve_alert(): void
@@ -190,7 +190,7 @@ class SecurityCenterApiTest extends TestCase
 
     public function test_resolve_alert_not_found(): void
     {
-        $this->postJson("{$this->base}/alerts/nonexistent/resolve")->assertNotFound();
+        $this->postJson("{$this->base}/alerts/00000000-0000-0000-0000-000000000099/resolve")->assertNotFound();
     }
 
     public function test_resolve_alert_sets_resolved_by(): void
@@ -262,7 +262,7 @@ class SecurityCenterApiTest extends TestCase
 
     public function test_show_session_not_found(): void
     {
-        $this->getJson("{$this->base}/sessions/nonexistent")->assertNotFound();
+        $this->getJson("{$this->base}/sessions/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     public function test_revoke_session(): void
@@ -303,14 +303,14 @@ class SecurityCenterApiTest extends TestCase
 
     public function test_revoke_session_not_found(): void
     {
-        $this->postJson("{$this->base}/sessions/nonexistent/revoke")->assertNotFound();
+        $this->postJson("{$this->base}/sessions/00000000-0000-0000-0000-000000000099/revoke")->assertNotFound();
     }
 
     // ── Device Registrations ─────────────────────────────────
     public function test_list_devices(): void
     {
         DeviceRegistration::forceCreate([
-            'store_id'    => 'store-1',
+            'store_id'    => '00000000-0000-0000-0000-000000000051',
             'device_name' => 'iPad #1',
             'hardware_id' => 'hw-123',
             'is_active'   => true,
@@ -325,7 +325,7 @@ class SecurityCenterApiTest extends TestCase
     public function test_show_device(): void
     {
         $d = DeviceRegistration::forceCreate([
-            'store_id' => 'store-2', 'device_name' => 'Tablet',
+            'store_id' => '00000000-0000-0000-0000-000000000052', 'device_name' => 'Tablet',
             'hardware_id' => 'hw-456', 'is_active' => true,
             'remote_wipe_requested' => false, 'registered_at' => now(),
         ]);
@@ -334,13 +334,13 @@ class SecurityCenterApiTest extends TestCase
 
     public function test_show_device_not_found(): void
     {
-        $this->getJson("{$this->base}/devices/nonexistent")->assertNotFound();
+        $this->getJson("{$this->base}/devices/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     public function test_wipe_device(): void
     {
         $d = DeviceRegistration::forceCreate([
-            'store_id' => 'store-3', 'device_name' => 'Wipe-me',
+            'store_id' => '00000000-0000-0000-0000-000000000053', 'device_name' => 'Wipe-me',
             'hardware_id' => 'hw-789', 'is_active' => true,
             'remote_wipe_requested' => false, 'registered_at' => now(),
         ]);
@@ -352,7 +352,7 @@ class SecurityCenterApiTest extends TestCase
     public function test_wipe_device_creates_audit_log(): void
     {
         $d = DeviceRegistration::forceCreate([
-            'store_id' => 'store-4', 'device_name' => 'Audit-wipe',
+            'store_id' => '00000000-0000-0000-0000-000000000054', 'device_name' => 'Audit-wipe',
             'hardware_id' => 'hw-audit', 'is_active' => true,
             'remote_wipe_requested' => false, 'registered_at' => now(),
         ]);
@@ -367,18 +367,18 @@ class SecurityCenterApiTest extends TestCase
 
     public function test_wipe_device_not_found(): void
     {
-        $this->postJson("{$this->base}/devices/nonexistent/wipe")->assertNotFound();
+        $this->postJson("{$this->base}/devices/00000000-0000-0000-0000-000000000099/wipe")->assertNotFound();
     }
 
     public function test_filter_devices_active(): void
     {
         DeviceRegistration::forceCreate([
-            'store_id' => 's1', 'device_name' => 'Active',
+            'store_id' => '00000000-0000-0000-0000-000000000031', 'device_name' => 'Active',
             'hardware_id' => 'h1', 'is_active' => true,
             'remote_wipe_requested' => false, 'registered_at' => now(),
         ]);
         DeviceRegistration::forceCreate([
-            'store_id' => 's2', 'device_name' => 'Inactive',
+            'store_id' => '00000000-0000-0000-0000-000000000091', 'device_name' => 'Inactive',
             'hardware_id' => 'h2', 'is_active' => false,
             'remote_wipe_requested' => false, 'registered_at' => now(),
         ]);
@@ -393,16 +393,16 @@ class SecurityCenterApiTest extends TestCase
     public function test_filter_devices_by_store(): void
     {
         DeviceRegistration::forceCreate([
-            'store_id' => 'store-target', 'device_name' => 'Target',
+            'store_id' => '00000000-0000-0000-0000-000000000060', 'device_name' => 'Target',
             'hardware_id' => 'h-t', 'is_active' => true,
             'remote_wipe_requested' => false, 'registered_at' => now(),
         ]);
         DeviceRegistration::forceCreate([
-            'store_id' => 'store-other', 'device_name' => 'Other',
+            'store_id' => '00000000-0000-0000-0000-000000000092', 'device_name' => 'Other',
             'hardware_id' => 'h-o', 'is_active' => true,
             'remote_wipe_requested' => false, 'registered_at' => now(),
         ]);
-        $r = $this->getJson("{$this->base}/devices?store_id=store-target");
+        $r = $this->getJson("{$this->base}/devices?store_id=00000000-0000-0000-0000-000000000060");
         $r->assertOk();
         $items = $r->json('data.data') ?? $r->json('data');
         $this->assertCount(1, $items);
@@ -437,7 +437,7 @@ class SecurityCenterApiTest extends TestCase
 
     public function test_show_login_attempt_not_found(): void
     {
-        $this->getJson("{$this->base}/login-attempts/nonexistent")->assertNotFound();
+        $this->getJson("{$this->base}/login-attempts/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     public function test_filter_login_attempts_by_type(): void
@@ -503,7 +503,7 @@ class SecurityCenterApiTest extends TestCase
 
     public function test_show_audit_log_not_found(): void
     {
-        $this->getJson("{$this->base}/audit-logs/nonexistent")->assertNotFound();
+        $this->getJson("{$this->base}/audit-logs/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     public function test_filter_audit_logs_by_severity(): void
@@ -532,7 +532,7 @@ class SecurityCenterApiTest extends TestCase
     public function test_list_policies(): void
     {
         SecurityPolicy::forceCreate([
-            'store_id'       => 'store-pol-1',
+            'store_id'       => '00000000-0000-0000-0000-000000000061',
             'pin_min_length' => 4,
             'pin_max_length' => 8,
             'auto_lock_seconds' => 300,
@@ -545,7 +545,7 @@ class SecurityCenterApiTest extends TestCase
     public function test_show_policy(): void
     {
         $p = SecurityPolicy::forceCreate([
-            'store_id'       => 'store-pol-2',
+            'store_id'       => '00000000-0000-0000-0000-000000000062',
             'pin_min_length' => 6,
             'pin_max_length' => 10,
             'auto_lock_seconds' => 600,
@@ -557,13 +557,13 @@ class SecurityCenterApiTest extends TestCase
 
     public function test_show_policy_not_found(): void
     {
-        $this->getJson("{$this->base}/policies/nonexistent")->assertNotFound();
+        $this->getJson("{$this->base}/policies/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     public function test_update_policy(): void
     {
         $p = SecurityPolicy::forceCreate([
-            'store_id'       => 'store-pol-3',
+            'store_id'       => '00000000-0000-0000-0000-000000000063',
             'pin_min_length' => 4,
             'pin_max_length' => 8,
             'auto_lock_seconds' => 300,
@@ -582,7 +582,7 @@ class SecurityCenterApiTest extends TestCase
     public function test_update_policy_creates_audit_log(): void
     {
         $p = SecurityPolicy::forceCreate([
-            'store_id'       => 'store-pol-audit',
+            'store_id'       => '00000000-0000-0000-0000-000000000065',
             'pin_min_length' => 4,
             'pin_max_length' => 8,
             'auto_lock_seconds' => 300,
@@ -602,7 +602,7 @@ class SecurityCenterApiTest extends TestCase
 
     public function test_update_policy_not_found(): void
     {
-        $this->putJson("{$this->base}/policies/nonexistent", [
+        $this->putJson("{$this->base}/policies/00000000-0000-0000-0000-000000000099", [
             'pin_min_length' => 6,
         ])->assertNotFound();
     }
@@ -610,7 +610,7 @@ class SecurityCenterApiTest extends TestCase
     public function test_update_policy_validation(): void
     {
         $p = SecurityPolicy::forceCreate([
-            'store_id' => 'store-pol-4',
+            'store_id' => '00000000-0000-0000-0000-000000000064',
             'pin_min_length' => 4, 'pin_max_length' => 8,
             'auto_lock_seconds' => 300,
             'max_failed_attempts' => 5, 'lockout_duration_minutes' => 15,
@@ -695,7 +695,7 @@ class SecurityCenterApiTest extends TestCase
 
     public function test_delete_allowlist_not_found(): void
     {
-        $this->deleteJson("{$this->base}/ip-allowlist/nonexistent")->assertNotFound();
+        $this->deleteJson("{$this->base}/ip-allowlist/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     // ── IP Blocklist ─────────────────────────────────────────
@@ -781,7 +781,7 @@ class SecurityCenterApiTest extends TestCase
 
     public function test_delete_blocklist_not_found(): void
     {
-        $this->deleteJson("{$this->base}/ip-blocklist/nonexistent")->assertNotFound();
+        $this->deleteJson("{$this->base}/ip-blocklist/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     // ── Pagination ───────────────────────────────────────────

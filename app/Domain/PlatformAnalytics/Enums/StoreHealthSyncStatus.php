@@ -10,4 +10,5 @@ enum StoreHealthSyncStatus: string
     case Pending = 'pending';
     case Warning = 'warning';
     case Critical = 'critical';
+    case Degraded = 'degraded';
 }

@@ -132,25 +132,31 @@ class SecurityService
 
         $logs = $query->orderByDesc('created_at')->limit(min($limit, 5000))->get();
 
-        $lines = [];
-        $lines[] = implode(',', ['timestamp', 'user_id', 'user_type', 'action', 'resource_type', 'resource_id', 'severity', 'ip_address', 'details']);
+        // Use an in-memory stream + fputcsv to handle embedded newlines, quotes, commas safely
+        $stream = fopen('php://temp', 'r+b');
+
+        fputcsv($stream, ['timestamp', 'user_id', 'user_type', 'action', 'resource_type', 'resource_id', 'severity', 'ip_address', 'details']);
 
         foreach ($logs as $log) {
-            $details = is_array($log->details) ? json_encode($log->details) : ($log->details ?? '');
-            $lines[] = implode(',', [
-                '"' . ($log->created_at?->toIso8601String() ?? '') . '"',
-                '"' . ($log->user_id ?? '') . '"',
-                '"' . ($log->user_type?->value ?? $log->user_type ?? '') . '"',
-                '"' . ($log->action?->value ?? $log->action ?? '') . '"',
-                '"' . ($log->resource_type ?? '') . '"',
-                '"' . ($log->resource_id ?? '') . '"',
-                '"' . ($log->severity?->value ?? $log->severity ?? '') . '"',
-                '"' . ($log->ip_address ?? '') . '"',
-                '"' . str_replace('"', '""', $details) . '"',
+            $details = is_array($log->details) ? json_encode($log->details, JSON_UNESCAPED_UNICODE) : ($log->details ?? '');
+            fputcsv($stream, [
+                $log->created_at?->toIso8601String() ?? '',
+                $log->user_id ?? '',
+                $log->user_type?->value ?? $log->user_type ?? '',
+                $log->action?->value ?? $log->action ?? '',
+                $log->resource_type ?? '',
+                $log->resource_id ?? '',
+                $log->severity?->value ?? $log->severity ?? '',
+                $log->ip_address ?? '',
+                $details,
             ]);
         }
 
-        return implode("\n", $lines);
+        rewind($stream);
+        $csv = stream_get_contents($stream);
+        fclose($stream);
+
+        return $csv;
     }
 
     // ─── Device Registration ────────────────────────────────────
@@ -237,7 +243,30 @@ class SecurityService
     {
         $data['attempted_at'] = now();
 
-        return LoginAttempt::create($data);
+        $attempt = LoginAttempt::create($data);
+
+        // Dispatch brute-force event on failed attempts after exceeding threshold
+        if (! ($data['is_successful'] ?? false)) {
+            $storeId        = $data['store_id'] ?? null;
+            $userIdentifier = $data['user_identifier'] ?? null;
+
+            if ($storeId && $userIdentifier) {
+                $policy     = $this->getPolicy($storeId);
+                $failCount  = $this->recentFailedAttempts($storeId, $userIdentifier, $policy->lockout_duration_minutes ?? 15);
+
+                if ($failCount >= ($policy->max_failed_attempts ?? 5)) {
+                    \App\Domain\Security\Events\BruteForceDetected::dispatch(
+                        storeId:        $storeId,
+                        userIdentifier: $userIdentifier,
+                        ipAddress:      $data['ip_address'] ?? '',
+                        failedAttempts: $failCount,
+                        attemptType:    $data['attempt_type'] ?? 'pin',
+                    );
+                }
+            }
+        }
+
+        return $attempt;
     }
 
     /**
@@ -254,17 +283,24 @@ class SecurityService
 
     /**
      * Check if a user is currently locked out.
+     *
+     * Uses max_failed_attempts within a sliding window of
+     * lockout_duration_minutes.  This fixes the prior bug where
+     * lockout_duration_minutes was used as both the lockout period
+     * and the detection window.
      */
     public function isLockedOut(string $storeId, string $userIdentifier): bool
     {
         $policy = $this->getPolicy($storeId);
+
+        // Detection window = lockout_duration_minutes (how far back we look)
         $recentFails = $this->recentFailedAttempts(
-            $storeId,
-            $userIdentifier,
-            $policy->lockout_duration_minutes,
+            storeId:        $storeId,
+            userIdentifier: $userIdentifier,
+            windowMinutes:  $policy->lockout_duration_minutes ?? 15,
         );
 
-        return $recentFails >= $policy->max_failed_attempts;
+        return $recentFails >= ($policy->max_failed_attempts ?? 5);
     }
 
     /**
@@ -430,6 +466,11 @@ class SecurityService
 
     /**
      * Get a comprehensive security overview for a store.
+     *
+     * Keys exposed here must match what SecurityOverviewWidget reads:
+     *   active_devices, active_sessions, unresolved_incidents,
+     *   failed_logins_today, total_audit_logs, locked_out_users,
+     *   recent_activity, policy, login_stats, audit_stats, critical_audits_7d
      */
     public function getOverview(string $storeId): array
     {
@@ -439,20 +480,79 @@ class SecurityService
 
         $activeDevices = DeviceRegistration::where('store_id', $storeId)->where('is_active', true)->count();
         $activeSessions = SecuritySession::where('store_id', $storeId)->where('status', 'active')->count();
-        $openIncidents = SecurityIncident::where('store_id', $storeId)->where('status', 'open')->count();
+        $unresolvedIncidents = SecurityIncident::where('store_id', $storeId)->where('status', 'open')->count();
+
         $criticalAudits = SecurityAuditLog::where('store_id', $storeId)
             ->where('severity', 'critical')
             ->where('created_at', '>=', now()->subDays(7))
             ->count();
 
+        // Failed logins in the last 24 h
+        $failedLoginsToday = LoginAttempt::where('store_id', $storeId)
+            ->where('is_successful', false)
+            ->where('attempted_at', '>=', now()->subHours(24))
+            ->count();
+
+        // Total audit logs (all time) for the store
+        $totalAuditLogs = SecurityAuditLog::where('store_id', $storeId)->count();
+
+        // Locked-out users: unique identifiers that hit the failed-attempt threshold
+        $lockedOutUsers = $this->countLockedOutUsers($storeId);
+
+        // Recent activity: last 10 audit log entries (type + description + timestamp)
+        $recentActivity = SecurityAuditLog::where('store_id', $storeId)
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get(['id', 'action', 'resource_type', 'created_at', 'user_id'])
+            ->map(fn ($log) => [
+                'id'          => $log->id,
+                'type'        => $log->action?->value ?? $log->action,
+                'description' => $log->resource_type
+                    ? (($log->action?->value ?? $log->action) . ' ' . $log->resource_type)
+                    : ($log->action?->value ?? $log->action),
+                'created_at'  => $log->created_at?->toIso8601String(),
+                'user_id'     => $log->user_id,
+            ])
+            ->values()
+            ->toArray();
+
         return [
-            'policy' => $policy->toArray(),
-            'login_stats' => $loginStats,
-            'audit_stats' => $auditStats,
-            'active_devices' => $activeDevices,
-            'active_sessions' => $activeSessions,
-            'open_incidents' => $openIncidents,
-            'critical_audits_7d' => $criticalAudits,
+            // KPI keys consumed by SecurityOverviewWidget
+            'active_devices'       => $activeDevices,
+            'active_sessions'      => $activeSessions,
+            'unresolved_incidents' => $unresolvedIncidents,
+            'failed_logins_today'  => $failedLoginsToday,
+            'total_audit_logs'     => $totalAuditLogs,
+            'locked_out_users'     => $lockedOutUsers,
+            'recent_activity'      => $recentActivity,
+            // Additional context
+            'policy'               => $policy->toArray(),
+            'login_stats'          => $loginStats,
+            'audit_stats'          => $auditStats,
+            'critical_audits_7d'   => $criticalAudits,
         ];
+    }
+
+    /**
+     * Count unique user identifiers currently locked out.
+     *
+     * A user is locked out when their recent failed attempts exceed the
+     * store's max_failed_attempts threshold.  We approximate this by
+     * counting unique identifiers with ≥ max_failed_attempts failures
+     * in the last lockout_duration_minutes window.
+     */
+    private function countLockedOutUsers(string $storeId): int
+    {
+        $policy = $this->getPolicy($storeId);
+        $window = now()->subMinutes($policy->lockout_duration_minutes ?? 15);
+
+        return LoginAttempt::where('store_id', $storeId)
+            ->where('is_successful', false)
+            ->where('attempted_at', '>=', $window)
+            ->selectRaw('user_identifier, COUNT(*) as fail_count')
+            ->groupBy('user_identifier')
+            ->havingRaw('COUNT(*) >= ?', [$policy->max_failed_attempts ?? 5])
+            ->get()
+            ->count();
     }
 }

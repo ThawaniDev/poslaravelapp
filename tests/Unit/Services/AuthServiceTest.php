@@ -249,7 +249,7 @@ class AuthServiceTest extends TestCase
     public function test_logout_all_removes_all_tokens(): void
     {
         $user = $this->seedUser();
-        $user->createToken('t1');
+        $user->createToken('00000000-0000-0000-0000-000000000041');
         $user->createToken('t2');
         $user->createToken('t3');
 

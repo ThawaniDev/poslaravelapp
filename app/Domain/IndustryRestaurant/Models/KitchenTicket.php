@@ -36,6 +36,7 @@ class KitchenTicket extends Model
         'items_json' => 'array',
         'fire_at' => 'datetime',
         'completed_at' => 'datetime',
+        'created_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

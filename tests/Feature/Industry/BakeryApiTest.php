@@ -39,14 +39,14 @@ class BakeryApiTest extends TestCase
 
     private function createTables(): void
     {
-        DB::statement('DROP TABLE IF EXISTS bakery_recipes');
+        DB::statement('DROP TABLE IF EXISTS bakery_recipes CASCADE');
         DB::statement('CREATE TABLE bakery_recipes (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, product_id VARCHAR(36), name VARCHAR(255) NOT NULL, expected_yield INTEGER, prep_time_minutes INTEGER, bake_time_minutes INTEGER, bake_temperature_c INTEGER, instructions TEXT, created_at TIMESTAMP, updated_at TIMESTAMP)');
 
-        DB::statement('DROP TABLE IF EXISTS production_schedules');
-        DB::statement('CREATE TABLE production_schedules (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, recipe_id VARCHAR(36) NOT NULL, schedule_date DATE NOT NULL, planned_batches INTEGER NOT NULL, actual_batches INTEGER, planned_yield INTEGER, actual_yield INTEGER, status VARCHAR(20) NOT NULL DEFAULT "planned", notes TEXT, created_at TIMESTAMP, updated_at TIMESTAMP)');
+        DB::statement('DROP TABLE IF EXISTS production_schedules CASCADE');
+        DB::statement("CREATE TABLE production_schedules (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, recipe_id VARCHAR(36) NOT NULL, schedule_date DATE NOT NULL, planned_batches INTEGER NOT NULL, actual_batches INTEGER, planned_yield INTEGER, actual_yield INTEGER, status VARCHAR(20) NOT NULL DEFAULT 'planned', notes TEXT, created_at TIMESTAMP, updated_at TIMESTAMP)");
 
-        DB::statement('DROP TABLE IF EXISTS custom_cake_orders');
-        DB::statement('CREATE TABLE custom_cake_orders (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, customer_id VARCHAR(36) NOT NULL, order_id VARCHAR(36), description TEXT NOT NULL, size VARCHAR(50) NOT NULL, flavor VARCHAR(100) NOT NULL, decoration_notes TEXT, delivery_date DATE NOT NULL, delivery_time VARCHAR(10), price DECIMAL(10,2) NOT NULL, deposit_paid DECIMAL(10,2), status VARCHAR(20) NOT NULL DEFAULT "ordered", reference_image_url VARCHAR(500), created_at TIMESTAMP, updated_at TIMESTAMP)');
+        DB::statement('DROP TABLE IF EXISTS custom_cake_orders CASCADE');
+        DB::statement("CREATE TABLE custom_cake_orders (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, customer_id VARCHAR(36) NOT NULL, order_id VARCHAR(36), description TEXT NOT NULL, size VARCHAR(50) NOT NULL, flavor VARCHAR(100) NOT NULL, decoration_notes TEXT, delivery_date DATE NOT NULL, delivery_time VARCHAR(10), price DECIMAL(10,2) NOT NULL, deposit_paid DECIMAL(10,2), status VARCHAR(20) NOT NULL DEFAULT 'ordered', reference_image_url VARCHAR(500), created_at TIMESTAMP, updated_at TIMESTAMP)");
     }
 
     private function h(?string $token = null): array

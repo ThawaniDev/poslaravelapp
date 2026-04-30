@@ -35,14 +35,14 @@ class FloristApiTest extends TestCase
 
     private function createTables(): void
     {
-        DB::statement('DROP TABLE IF EXISTS flower_arrangements');
-        DB::statement('CREATE TABLE flower_arrangements (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, name VARCHAR(255) NOT NULL, occasion VARCHAR(100), items_json TEXT, total_price DECIMAL(10,2) NOT NULL, is_template BOOLEAN DEFAULT 0, created_at TIMESTAMP, updated_at TIMESTAMP)');
+        DB::statement('DROP TABLE IF EXISTS flower_arrangements CASCADE');
+        DB::statement('CREATE TABLE flower_arrangements (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, name VARCHAR(255) NOT NULL, occasion VARCHAR(100), items_json TEXT, total_price DECIMAL(10,2) NOT NULL, is_template BOOLEAN DEFAULT FALSE, created_at TIMESTAMP, updated_at TIMESTAMP)');
 
-        DB::statement('DROP TABLE IF EXISTS flower_freshness_log');
-        DB::statement('CREATE TABLE flower_freshness_log (id VARCHAR(36) PRIMARY KEY, product_id VARCHAR(36) NOT NULL, store_id VARCHAR(36) NOT NULL, received_date DATE NOT NULL, expected_vase_life_days INTEGER NOT NULL, markdown_date DATE, dispose_date DATE, quantity INTEGER NOT NULL, status VARCHAR(20) NOT NULL DEFAULT "fresh", created_at TIMESTAMP, updated_at TIMESTAMP)');
+        DB::statement('DROP TABLE IF EXISTS flower_freshness_log CASCADE');
+        DB::statement("CREATE TABLE flower_freshness_log (id VARCHAR(36) PRIMARY KEY, product_id VARCHAR(36) NOT NULL, store_id VARCHAR(36) NOT NULL, received_date DATE NOT NULL, expected_vase_life_days INTEGER NOT NULL, markdown_date DATE, dispose_date DATE, quantity INTEGER NOT NULL, status VARCHAR(20) NOT NULL DEFAULT 'fresh', created_at TIMESTAMP, updated_at TIMESTAMP)");
 
-        DB::statement('DROP TABLE IF EXISTS flower_subscriptions');
-        DB::statement('CREATE TABLE flower_subscriptions (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, customer_id VARCHAR(36) NOT NULL, arrangement_template_id VARCHAR(36), frequency VARCHAR(20) NOT NULL, delivery_day VARCHAR(20) NOT NULL, delivery_address VARCHAR(500) NOT NULL, price_per_delivery DECIMAL(10,2) NOT NULL, is_active BOOLEAN DEFAULT 1, next_delivery_date DATE NOT NULL, created_at TIMESTAMP, updated_at TIMESTAMP)');
+        DB::statement('DROP TABLE IF EXISTS flower_subscriptions CASCADE');
+        DB::statement('CREATE TABLE flower_subscriptions (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, customer_id VARCHAR(36) NOT NULL, arrangement_template_id VARCHAR(36), frequency VARCHAR(20) NOT NULL, delivery_day VARCHAR(20) NOT NULL, delivery_address VARCHAR(500) NOT NULL, price_per_delivery DECIMAL(10,2) NOT NULL, is_active BOOLEAN DEFAULT TRUE, next_delivery_date DATE NOT NULL, created_at TIMESTAMP, updated_at TIMESTAMP)');
     }
 
     private function h(?string $token = null): array

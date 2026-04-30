@@ -66,6 +66,7 @@ return [
     'ip_blocklist'       => 'IP Blocklist',
     'ip_blocked'         => 'Your IP address has been blocked.',
     'ip_not_allowed'     => 'Your IP address is not in the allowlist.',
+    'pin_digits_only'    => 'PIN must contain digits only.',
     'admin_sessions'     => 'Admin Sessions',
     'admin_session'      => 'Admin Session',
     'trusted_devices'    => 'Trusted Devices',

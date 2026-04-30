@@ -310,7 +310,7 @@ class AdminTerminalApiTest extends TestCase
 
     public function test_admin_show_terminal_not_found(): void
     {
-        $response = $this->adminGet('/non-existent-uuid');
+        $response = $this->adminGet('/00000000-0000-0000-0000-000000000099');
 
         $response->assertStatus(404);
     }

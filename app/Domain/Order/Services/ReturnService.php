@@ -30,7 +30,7 @@ class ReturnService
     public function createReturn(Order $order, array $data, User $actor): SaleReturn
     {
         return DB::transaction(function () use ($order, $data, $actor) {
-            $return = SaleReturn::create([
+            $payload = [
                 'store_id' => $order->store_id,
                 'order_id' => $order->id,
                 'return_number' => $this->generateReturnNumber($order->store_id),
@@ -42,19 +42,30 @@ class ReturnService
                 'total_refund' => $data['total_refund'],
                 'notes' => $data['notes'] ?? null,
                 'processed_by' => $actor->id,
-            ]);
+            ];
+            if ($payload['reason_code'] === null) {
+                unset($payload['reason_code']);
+            }
+            $return = SaleReturn::create($payload);
 
             // Create return items
             if (!empty($data['items'])) {
                 foreach ($data['items'] as $item) {
-                    ReturnItem::create([
+                    $itemPayload = [
                         'return_id' => $return->id,
                         'order_item_id' => $item['order_item_id'] ?? null,
                         'product_id' => $item['product_id'] ?? null,
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['unit_price'],
                         'refund_amount' => $item['refund_amount'],
-                    ]);
+                    ];
+                    if ($itemPayload['product_id'] === null) {
+                        unset($itemPayload['product_id']);
+                    }
+                    if ($itemPayload['order_item_id'] === null) {
+                        unset($itemPayload['order_item_id']);
+                    }
+                    ReturnItem::create($itemPayload);
                 }
             }
 

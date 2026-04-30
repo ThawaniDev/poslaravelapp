@@ -18,7 +18,7 @@ class MenuSyncService
             'store_id' => $config->store_id,
             'platform' => $config->platform->value,
             'status' => 'syncing',
-            'products_count' => count($products),
+            'items_synced' => count($products),
             'triggered_by' => $trigger->value,
             'sync_type' => 'full',
         ]);
@@ -29,7 +29,7 @@ class MenuSyncService
 
             $log->update([
                 'status' => $result['success'] ? 'success' : 'failed',
-                'error_message' => $result['message'] ?? null,
+                'error_details' => isset($result['message']) ? ['message' => $result['message']] : null,
                 'duration_seconds' => $duration,
             ]);
 
@@ -46,7 +46,7 @@ class MenuSyncService
 
             $log->update([
                 'status' => 'failed',
-                'error_message' => $e->getMessage(),
+                'error_details' => ['message' => $e->getMessage()],
                 'duration_seconds' => $duration,
             ]);
         }

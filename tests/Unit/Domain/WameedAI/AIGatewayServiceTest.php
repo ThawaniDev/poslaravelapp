@@ -315,6 +315,8 @@ class AIGatewayServiceTest extends TestCase
         // Either null (no OpenAI) or a fresh response
         if ($result !== null) {
             $this->assertArrayNotHasKey('old', $result);
+        } else {
+            $this->assertNull($result);
         }
     }
 
@@ -348,12 +350,13 @@ class AIGatewayServiceTest extends TestCase
             'expires_at' => now()->addHour(),
         ]);
 
+        $userId = (string) \Illuminate\Support\Str::uuid();
         $this->gateway->call(
             'smart_reorder',
             $this->store->id,
             $this->org->id,
             ['x' => 1],
-            'user-123',
+            $userId,
         );
 
         $log = AIUsageLog::where('store_id', $this->store->id)
@@ -361,7 +364,7 @@ class AIGatewayServiceTest extends TestCase
             ->first();
 
         $this->assertNotNull($log);
-        $this->assertEquals('user-123', $log->user_id);
+        $this->assertEquals($userId, $log->user_id);
         $this->assertTrue($log->response_cached);
     }
 

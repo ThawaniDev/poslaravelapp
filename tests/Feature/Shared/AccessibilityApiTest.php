@@ -64,17 +64,19 @@ class AccessibilityApiTest extends TestCase
             });
         }
 
-        // Drop and recreate user_preferences with accessibility_json column
-        \Schema::dropIfExists('user_preferences');
-        \Schema::create('user_preferences', function ($t) {
-            $t->uuid('id')->primary();
-            $t->foreignUuid('user_id')->constrained('users');
-            $t->string('pos_handedness')->nullable();
-            $t->string('font_size')->nullable();
-            $t->string('theme')->nullable();
-            $t->uuid('pos_layout_id')->nullable();
-            $t->json('accessibility_json')->nullable();
-        });
+        // Drop and recreate user_preferences with accessibility_json column (SQLite only)
+        if (\DB::connection()->getDriverName() === 'sqlite') {
+            \Schema::dropIfExists('user_preferences');
+            \Schema::create('user_preferences', function ($t) {
+                $t->uuid('id')->primary();
+                $t->foreignUuid('user_id')->constrained('users');
+                $t->string('pos_handedness')->nullable();
+                $t->string('font_size')->nullable();
+                $t->string('theme')->nullable();
+                $t->uuid('pos_layout_id')->nullable();
+                $t->json('accessibility_json')->nullable();
+            });
+        }
 
         $org = Organization::create(['name' => 'Test Org', 'slug' => 'test-org']);
         $store = Store::create([

@@ -129,7 +129,7 @@ class TransactionService
                 );
             }
 
-            $transaction = Transaction::create([
+            $txPayload = [
                 'organization_id' => $actor->organization_id,
                 'store_id' => $actor->store_id,
                 'register_id' => $registerId,
@@ -151,14 +151,24 @@ class TransactionService
                 'notes' => $data['notes'] ?? null,
                 'approver_id' => $approverId,
                 'sync_version' => 1,
-            ]);
+            ];
+            // Drop nulls for register_id / pos_session_id so DB DEFAULT applies
+            // (these are NOT NULL columns in production but may be omitted by callers
+            // who don't track register state).
+            if ($registerId === null) {
+                unset($txPayload['register_id']);
+            }
+            if ($sessionId === null) {
+                unset($txPayload['pos_session_id']);
+            }
+            $transaction = Transaction::create($txPayload);
 
             // Create transaction items
             $isExempt = (bool) ($data['is_tax_exempt'] ?? false);
             if (!empty($data['items'])) {
                 foreach ($data['items'] as $item) {
                     $ageVerified = (bool) ($item['age_verified'] ?? false);
-                    TransactionItem::create([
+                    $itemPayload = [
                         'transaction_id' => $transaction->id,
                         'product_id' => $item['product_id'] ?? null,
                         'barcode' => $item['barcode'] ?? null,
@@ -178,7 +188,11 @@ class TransactionService
                         'age_verified' => $ageVerified,
                         'age_verified_at' => $ageVerified ? now() : null,
                         'age_verified_by' => $ageVerified ? $actor->id : null,
-                    ]);
+                    ];
+                    if ($itemPayload['product_id'] === null) {
+                        unset($itemPayload['product_id']);
+                    }
+                    TransactionItem::create($itemPayload);
                 }
             }
 

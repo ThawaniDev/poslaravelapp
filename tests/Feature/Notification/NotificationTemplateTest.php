@@ -474,7 +474,7 @@ class NotificationTemplateTest extends TestCase
     public function test_api_show_template_not_found(): void
     {
         $response = $this->withToken($this->token)
-            ->getJson('/api/v2/notification-templates/nonexistent-id');
+            ->getJson('/api/v2/notification-templates/00000000-0000-0000-0000-000000000099');
 
         $response->assertNotFound();
     }

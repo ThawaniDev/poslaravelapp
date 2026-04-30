@@ -23,12 +23,17 @@ class PlatformDailyStat extends Model
         'total_gmv',
         'total_mrr',
         'churn_count',
+        'arr',
+        'avg_revenue_per_store',
+        'refund_count',
     ];
 
     protected $casts = [
-        'total_gmv' => 'decimal:2',
-        'total_mrr' => 'decimal:2',
-        'date' => 'date',
+        'total_gmv'            => 'decimal:2',
+        'total_mrr'            => 'decimal:2',
+        'arr'                  => 'decimal:2',
+        'avg_revenue_per_store' => 'decimal:2',
+        'date'                 => 'date',
     ];
 
     public function setDateAttribute($value): void

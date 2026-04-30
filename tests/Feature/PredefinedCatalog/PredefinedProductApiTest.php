@@ -287,7 +287,7 @@ class PredefinedProductApiTest extends TestCase
     public function test_show_nonexistent_product_returns_404(): void
     {
         $response = $this->withToken($this->token)
-            ->getJson('/api/v2/predefined-catalog/products/nonexistent-id');
+            ->getJson('/api/v2/predefined-catalog/products/00000000-0000-0000-0000-000000000099');
 
         $response->assertNotFound();
     }

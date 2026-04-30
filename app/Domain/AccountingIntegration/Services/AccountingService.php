@@ -270,7 +270,7 @@ class AccountingService
             'frequency' => $config->frequency->value,
             'day_of_week' => $config->day_of_week,
             'day_of_month' => $config->day_of_month,
-            'time' => $config->time,
+            'time' => $config->time ? substr((string) $config->time, 0, 5) : null,
             'export_types' => $config->export_types ?? ['daily_summary'],
             'notify_email' => $config->notify_email,
             'retry_on_failure' => (bool) $config->retry_on_failure,

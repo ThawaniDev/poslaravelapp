@@ -6,6 +6,7 @@ use App\Domain\Report\Models\DailySalesSummary;
 use App\Domain\Report\Models\ProductSalesSummary;
 use App\Domain\Report\Models\ScheduledReport;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class ReportService
 {
@@ -426,9 +427,11 @@ class ReportService
             $hoursQuery->whereDate('clock_in_at', '<=', $filters['date_to']);
         }
         $driver = DB::getDriverName();
-        $timeDiffExpr = $driver === 'sqlite'
-            ? DB::raw("SUM(CAST((STRFTIME('%s', clock_out_at) - STRFTIME('%s', clock_in_at)) AS INTEGER)) as total_seconds")
-            : DB::raw('SUM(TIMESTAMPDIFF(SECOND, clock_in_at, clock_out_at)) as total_seconds');
+        $timeDiffExpr = match ($driver) {
+            'sqlite' => DB::raw("SUM(CAST((STRFTIME('%s', clock_out_at) - STRFTIME('%s', clock_in_at)) AS INTEGER)) as total_seconds"),
+            'pgsql'  => DB::raw('SUM(EXTRACT(EPOCH FROM (clock_out_at - clock_in_at))) as total_seconds'),
+            default  => DB::raw('SUM(TIMESTAMPDIFF(SECOND, clock_in_at, clock_out_at)) as total_seconds'),
+        };
 
         $hoursMap = $hoursQuery
             ->select('staff_user_id', $timeDiffExpr)
@@ -540,6 +543,8 @@ class ReportService
         ])
             ->groupBy('payments.method')
             ->orderByDesc('total_amount')
+            ->orderByDesc('transaction_count')
+            ->orderBy('payments.method')
             ->get()
             ->map(fn ($r) => [
                 'method' => $r->method,
@@ -1130,6 +1135,18 @@ class ReportService
     {
         [$dateFrom, $dateTo] = $this->resolveDateRange($filters);
 
+        if (! Schema::hasTable('external_orders')) {
+            return [
+                'totals' => [
+                    'total_orders'     => 0,
+                    'total_gross'      => 0,
+                    'total_commission' => 0,
+                    'total_net'        => 0,
+                ],
+                'platforms' => [],
+            ];
+        }
+
         $rows = DB::table('orders as o')
             ->leftJoin('external_orders as eo', 'eo.order_id', '=', 'o.id')
             ->select([
@@ -1246,11 +1263,12 @@ class ReportService
             ->where('organization_id', $orgId)
             ->sum('loyalty_points');
 
-        $loyaltyRedeemed = DB::table('orders')
-            ->join('stores', 'orders.store_id', '=', 'stores.id')
+        $loyaltyRedeemed = DB::table('payments')
+            ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
+            ->join('stores', 'transactions.store_id', '=', 'stores.id')
             ->where('stores.organization_id', $orgId)
-            ->whereNotIn('orders.status', ['cancelled', 'voided'])
-            ->sum('orders.loyalty_points_used');
+            ->whereNotIn('transactions.status', ['cancelled', 'voided'])
+            ->sum('payments.loyalty_points_used');
 
         $returningCustomers = max(0, $activeCustomers30d - $newCustomers30d);
 

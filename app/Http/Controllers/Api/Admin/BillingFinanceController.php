@@ -729,9 +729,9 @@ class BillingFinanceController extends BaseApiController
                 'id' => Str::uuid()->toString(),
                 'admin_user_id' => $admin?->id,
                 'action' => $action,
-                'description' => $description,
-                'target_type' => 'billing',
-                'target_id' => $targetId,
+                'entity_type' => 'billing',
+                'entity_id' => $targetId,
+                'details' => ['description' => $description],
                 'ip_address' => request()->ip(),
                 'created_at' => now(),
             ]);

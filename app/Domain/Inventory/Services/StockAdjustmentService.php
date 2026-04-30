@@ -42,13 +42,18 @@ class StockAdjustmentService
         return DB::transaction(function () use ($data, $items) {
             $type = StockAdjustmentType::from($data['type']);
 
-            $adjustment = StockAdjustment::create([
+            $payload = [
                 'store_id' => $data['store_id'],
                 'type' => $type,
-                'reason_code' => $data['reason_code'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'adjusted_by' => $data['adjusted_by'] ?? null,
-            ]);
+            ];
+
+            if (! empty($data['reason_code'])) {
+                $payload['reason_code'] = $data['reason_code'];
+            }
+
+            $adjustment = StockAdjustment::create($payload);
 
             foreach ($items as $item) {
                 StockAdjustmentItem::create([

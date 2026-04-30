@@ -25,6 +25,7 @@ class SecurityIncident extends Model
         'user_id',
         'device_id',
         'ip_address',
+        'source_ip',
         'metadata',
         'status',
         'resolved_at',

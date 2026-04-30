@@ -21,8 +21,10 @@ class AdminUserDetailResource extends JsonResource
             'roles' => $this->whenLoaded('adminUserRoles', function () {
                 return $this->adminUserRoles->map(fn ($aur) => [
                     'role_id' => $aur->admin_role_id,
-                    'role_name' => $aur->role?->name ?? null,
-                    'role_slug' => $aur->role?->slug ?? null,
+                    'role_name' => $aur->adminRole?->name ?? null,
+                    'role_slug' => $aur->adminRole?->slug instanceof \BackedEnum
+                        ? $aur->adminRole->slug->value
+                        : ($aur->adminRole?->slug ?? null),
                     'assigned_at' => $aur->assigned_at,
                 ]);
             }),

@@ -129,7 +129,7 @@ class DataManagementApiTest extends TestCase
 
     public function test_show_database_backup_not_found(): void
     {
-        $this->getJson("{$this->prefix}/database-backups/nonexistent")->assertNotFound();
+        $this->getJson("{$this->prefix}/database-backups/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     public function test_complete_database_backup(): void
@@ -217,7 +217,7 @@ class DataManagementApiTest extends TestCase
 
     public function test_show_backup_history_not_found(): void
     {
-        $this->getJson("{$this->prefix}/backup-history/nonexistent")->assertNotFound();
+        $this->getJson("{$this->prefix}/backup-history/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     // ──────────────── Sync Logs ────────────────
@@ -283,7 +283,7 @@ class DataManagementApiTest extends TestCase
 
     public function test_show_sync_log_not_found(): void
     {
-        $this->getJson("{$this->prefix}/sync-logs/nonexistent")->assertNotFound();
+        $this->getJson("{$this->prefix}/sync-logs/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     public function test_sync_log_summary(): void
@@ -375,7 +375,7 @@ class DataManagementApiTest extends TestCase
 
     public function test_show_sync_conflict_not_found(): void
     {
-        $this->getJson("{$this->prefix}/sync-conflicts/nonexistent")->assertNotFound();
+        $this->getJson("{$this->prefix}/sync-conflicts/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     public function test_resolve_sync_conflict(): void
@@ -451,7 +451,7 @@ class DataManagementApiTest extends TestCase
 
     public function test_show_provider_backup_status_not_found(): void
     {
-        $this->getJson("{$this->prefix}/provider-backup-statuses/nonexistent")->assertNotFound();
+        $this->getJson("{$this->prefix}/provider-backup-statuses/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     // ──────────────── Overview ────────────────

@@ -216,7 +216,7 @@ class BackupApiTest extends TestCase
     {
         BackupHistory::create([
             'store_id' => $this->storeId,
-            'terminal_id' => 'term-1',
+            'terminal_id' => '00000000-0000-0000-0000-000000000001',
             'backup_type' => 'manual',
             'status' => 'completed',
         ]);
@@ -230,8 +230,8 @@ class BackupApiTest extends TestCase
 
     public function test_list_backups_filter_by_type(): void
     {
-        BackupHistory::create(['store_id' => $this->storeId, 'terminal_id' => 't1', 'backup_type' => 'manual', 'status' => 'completed']);
-        BackupHistory::create(['store_id' => $this->storeId, 'terminal_id' => 't2', 'backup_type' => 'auto', 'status' => 'completed']);
+        BackupHistory::create(['store_id' => $this->storeId, 'terminal_id' => '00000000-0000-0000-0000-000000000041', 'backup_type' => 'manual', 'status' => 'completed']);
+        BackupHistory::create(['store_id' => $this->storeId, 'terminal_id' => '00000000-0000-0000-0000-000000000094', 'backup_type' => 'auto', 'status' => 'completed']);
 
         $res = $this->getJson('/api/v2/backup/list?backup_type=manual', $this->auth());
 
@@ -246,7 +246,7 @@ class BackupApiTest extends TestCase
     {
         $backup = BackupHistory::create([
             'store_id' => $this->storeId,
-            'terminal_id' => 'term-1',
+            'terminal_id' => '00000000-0000-0000-0000-000000000001',
             'backup_type' => 'manual',
             'status' => 'completed',
             'checksum' => 'abc123',
@@ -269,7 +269,7 @@ class BackupApiTest extends TestCase
     {
         $backup = BackupHistory::create([
             'store_id' => $this->storeId,
-            'terminal_id' => 'term-1',
+            'terminal_id' => '00000000-0000-0000-0000-000000000001',
             'backup_type' => 'manual',
             'status' => 'completed',
             'records_count' => 5000,
@@ -286,7 +286,7 @@ class BackupApiTest extends TestCase
     {
         $backup = BackupHistory::create([
             'store_id' => $this->storeId,
-            'terminal_id' => 'term-1',
+            'terminal_id' => '00000000-0000-0000-0000-000000000001',
             'backup_type' => 'manual',
             'status' => 'failed',
         ]);
@@ -308,7 +308,7 @@ class BackupApiTest extends TestCase
     {
         $backup = BackupHistory::create([
             'store_id' => $this->storeId,
-            'terminal_id' => 'term-1',
+            'terminal_id' => '00000000-0000-0000-0000-000000000001',
             'backup_type' => 'manual',
             'status' => 'completed',
             'checksum' => str_repeat('a', 64), // valid 64-char checksum
@@ -384,7 +384,7 @@ class BackupApiTest extends TestCase
     {
         $backup = BackupHistory::create([
             'store_id' => $this->storeId,
-            'terminal_id' => 'term-1',
+            'terminal_id' => '00000000-0000-0000-0000-000000000001',
             'backup_type' => 'manual',
             'status' => 'completed',
         ]);
@@ -451,7 +451,7 @@ class BackupApiTest extends TestCase
     {
         ProviderBackupStatus::create([
             'store_id' => $this->storeId,
-            'terminal_id' => 'term-001',
+            'terminal_id' => '00000000-0000-0000-0000-000000000020',
             'status' => 'healthy',
             'storage_used_bytes' => 1048576,
         ]);
@@ -538,7 +538,7 @@ class BackupApiTest extends TestCase
     {
         $backup = BackupHistory::create([
             'store_id' => $this->storeId,
-            'terminal_id' => 'term-1',
+            'terminal_id' => '00000000-0000-0000-0000-000000000001',
             'backup_type' => 'manual',
             'status' => 'completed',
             'checksum' => str_repeat('b', 64), // valid 64-char checksum
@@ -559,7 +559,7 @@ class BackupApiTest extends TestCase
     {
         BackupHistory::create([
             'store_id' => $this->storeId,
-            'terminal_id' => 'term-1',
+            'terminal_id' => '00000000-0000-0000-0000-000000000001',
             'backup_type' => 'manual',
             'status' => 'completed',
             'file_size_bytes' => 1024,
@@ -581,7 +581,7 @@ class BackupApiTest extends TestCase
     {
         $backup = BackupHistory::create([
             'store_id' => $this->storeId,
-            'terminal_id' => 'term-1',
+            'terminal_id' => '00000000-0000-0000-0000-000000000001',
             'backup_type' => 'manual',
             'status' => 'completed',
             'records_count' => 10000,

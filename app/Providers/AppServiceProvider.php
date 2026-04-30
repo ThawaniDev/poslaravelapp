@@ -91,6 +91,16 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Postgres: transparently rewrite `LIKE` to case-insensitive `ILIKE`
+        // so search queries written for MySQL behave consistently.
+        \DB::extend('pgsql', function ($config, $name) {
+            $connection = (new \Illuminate\Database\Connectors\ConnectionFactory($this->app))
+                ->make($config, $name);
+            $grammar = new \App\Database\PostgresIlikeGrammar($connection);
+            $connection->setQueryGrammar($grammar);
+            return $connection;
+        });
+
         // Enforce strict mode in non-production
         Model::shouldBeStrict(! $this->app->isProduction());
 
@@ -135,6 +145,20 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::listen(
             \Illuminate\Auth\Events\Failed::class,
             FireUnauthorizedAccessNotification::class,
+        );
+
+        // ── Security domain events ────────────────────────────────
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Domain\Security\Events\BruteForceDetected::class,
+            \App\Domain\Security\Listeners\CreateBruteForceAlert::class,
+        );
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Domain\Security\Events\AdminSessionRevoked::class,
+            \App\Domain\Security\Listeners\LogSessionRevocationAlert::class,
+        );
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Domain\Security\Events\SuspiciousActivityDetected::class,
+            \App\Domain\Security\Listeners\CreateSuspiciousActivityAlert::class,
         );
 
         // Configure API rate limiters

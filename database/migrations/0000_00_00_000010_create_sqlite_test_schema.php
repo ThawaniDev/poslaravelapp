@@ -711,6 +711,8 @@ return new class extends Migration
                 $table->string('status', 20)->default('healthy');
                 $table->integer('response_time_ms')->nullable();
                 $table->json('details')->nullable();
+                $table->text('error_message')->nullable();
+                $table->string('triggered_by', 50)->nullable();
                 $table->timestamp('checked_at')->nullable();
             });
         }
@@ -804,10 +806,15 @@ return new class extends Migration
             Schema::create('database_backups', function (Blueprint $table) {
                 $table->uuid('id')->primary();
                 $table->string('backup_type', 20);
-                $table->text('file_path');
+                $table->text('file_path')->nullable();
                 $table->bigInteger('file_size_bytes')->nullable();
+                $table->unsignedInteger('tables_count')->nullable();
+                $table->unsignedBigInteger('rows_count')->nullable();
+                $table->string('checksum', 64)->nullable();
                 $table->string('status', 20)->default('in_progress');
                 $table->text('error_message')->nullable();
+                $table->string('triggered_by', 50)->nullable();
+                $table->text('notes')->nullable();
                 $table->timestamp('started_at')->nullable();
                 $table->timestamp('completed_at')->nullable();
             });

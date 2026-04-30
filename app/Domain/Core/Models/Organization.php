@@ -40,6 +40,21 @@ class Organization extends Model
         'is_active' => 'boolean',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $org): void {
+            if (empty($org->slug) && ! empty($org->name)) {
+                $base = \Illuminate\Support\Str::slug($org->name) ?: \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8));
+                $slug = $base;
+                $i = 1;
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = $base . '-' . $i++;
+                }
+                $org->slug = $slug;
+            }
+        });
+    }
+
     public function stores(): HasMany
     {
         return $this->hasMany(Store::class);

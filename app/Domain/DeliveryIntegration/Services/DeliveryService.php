@@ -191,7 +191,7 @@ class DeliveryService
             $query->where('platform', $filters['platform']);
         }
 
-        return $query->orderByDesc('created_at')
+        return $query->orderByDesc('started_at')
             ->paginate($filters['per_page'] ?? 15);
     }
 

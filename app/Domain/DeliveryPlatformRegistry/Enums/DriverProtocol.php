@@ -15,4 +15,5 @@ enum DriverProtocol: string
     case Nexo = 'nexo';
     case NearpaySdk = 'nearpay_sdk';
     case NfcHid = 'nfc_hid';
+    case Generic = 'generic';
 }

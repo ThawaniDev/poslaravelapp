@@ -339,7 +339,7 @@ class RolesPermissionsEdgeCasesApiTest extends TestCase
     public function test_invalid_module_returns_empty(): void
     {
         $response = $this->withToken($this->token)
-            ->getJson('/api/v2/staff/permissions/module/nonexistent_module');
+            ->getJson('/api/v2/staff/permissions/module/00000000-0000-0000-0000-000000000099_module');
 
         $response->assertOk();
         $this->assertEmpty($response->json('data'));

@@ -126,6 +126,22 @@ class AppReleaseResource extends Resource
                         ->label(__('updates.released_at'))
                         ->native(false),
                 ])->columns(2),
+
+            Forms\Components\Section::make(__('updates.file_integrity'))
+                ->description(__('updates.file_integrity_helper'))
+                ->schema([
+                    Forms\Components\TextInput::make('file_checksum')
+                        ->label(__('updates.file_checksum'))
+                        ->placeholder('sha256:abc123...')
+                        ->maxLength(64)
+                        ->helperText(__('updates.file_checksum_helper')),
+                    Forms\Components\TextInput::make('file_size_bytes')
+                        ->label(__('updates.file_size_bytes'))
+                        ->numeric()
+                        ->minValue(0)
+                        ->suffix('bytes')
+                        ->helperText(__('updates.file_size_helper')),
+                ])->columns(2)->collapsible(),
         ]);
     }
 

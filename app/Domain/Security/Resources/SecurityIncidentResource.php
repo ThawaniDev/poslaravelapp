@@ -19,9 +19,8 @@ class SecurityIncidentResource extends JsonResource
             'description'      => $this->description,
             'user_id'          => $this->user_id,
             'device_id'        => $this->device_id,
-            'ip_address'       => $this->ip_address,
-            'details'          => $this->metadata ?? [],  // Flutter reads 'details', model stores as 'metadata'
-            'metadata'         => $this->metadata ?? [],
+            'ip_address'       => $this->source_ip,
+            'details'          => $this->metadata ?? [],
             'status'           => $this->status,
             'is_resolved'      => $this->status === 'resolved',   // computed bool for Flutter
             'resolved_by'      => $this->resolved_by,

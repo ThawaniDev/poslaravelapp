@@ -35,11 +35,11 @@ class PharmacyApiTest extends TestCase
 
     private function createTables(): void
     {
-        DB::statement('DROP TABLE IF EXISTS prescriptions');
+        DB::statement('DROP TABLE IF EXISTS prescriptions CASCADE');
         DB::statement('CREATE TABLE prescriptions (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, order_id VARCHAR(36), prescription_number VARCHAR(100) NOT NULL, patient_name VARCHAR(255) NOT NULL, patient_id VARCHAR(100), doctor_name VARCHAR(255) NOT NULL, doctor_license VARCHAR(100) NOT NULL, insurance_provider VARCHAR(255), insurance_claim_amount DECIMAL(10,2), notes TEXT, created_at TIMESTAMP, updated_at TIMESTAMP)');
 
-        DB::statement('DROP TABLE IF EXISTS drug_schedules');
-        DB::statement('CREATE TABLE drug_schedules (id VARCHAR(36) PRIMARY KEY, product_id VARCHAR(36) NOT NULL, schedule_type VARCHAR(30) NOT NULL, active_ingredient VARCHAR(255), dosage_form VARCHAR(100), strength VARCHAR(100), manufacturer VARCHAR(255), requires_prescription BOOLEAN DEFAULT 0, created_at TIMESTAMP, updated_at TIMESTAMP)');
+        DB::statement('DROP TABLE IF EXISTS drug_schedules CASCADE');
+        DB::statement('CREATE TABLE drug_schedules (id VARCHAR(36) PRIMARY KEY, product_id VARCHAR(36) NOT NULL, schedule_type VARCHAR(30) NOT NULL, active_ingredient VARCHAR(255), dosage_form VARCHAR(100), strength VARCHAR(100), manufacturer VARCHAR(255), requires_prescription BOOLEAN DEFAULT FALSE, created_at TIMESTAMP, updated_at TIMESTAMP)');
     }
 
     private function h(?string $token = null): array

@@ -127,7 +127,7 @@ class ContentManagementApiTest extends TestCase
 
     public function test_show_page_not_found(): void
     {
-        $this->getJson('/api/v2/admin/content/pages/nonexistent-id')
+        $this->getJson('/api/v2/admin/content/pages/00000000-0000-0000-0000-000000000099')
             ->assertNotFound();
     }
 
@@ -678,30 +678,30 @@ class ContentManagementApiTest extends TestCase
 
     public function test_page_not_found_returns_404(): void
     {
-        $this->getJson('/api/v2/admin/content/pages/fake-id')->assertNotFound();
-        $this->putJson('/api/v2/admin/content/pages/fake-id', ['title' => 'x'])->assertNotFound();
-        $this->deleteJson('/api/v2/admin/content/pages/fake-id')->assertNotFound();
+        $this->getJson('/api/v2/admin/content/pages/00000000-0000-0000-0000-000000000099')->assertNotFound();
+        $this->putJson('/api/v2/admin/content/pages/00000000-0000-0000-0000-000000000099', ['title' => 'x'])->assertNotFound();
+        $this->deleteJson('/api/v2/admin/content/pages/00000000-0000-0000-0000-000000000099')->assertNotFound();
     }
 
     public function test_article_not_found_returns_404(): void
     {
-        $this->getJson('/api/v2/admin/content/articles/fake-id')->assertNotFound();
-        $this->putJson('/api/v2/admin/content/articles/fake-id', ['title' => 'x', 'title_ar' => 'x', 'body' => 'x', 'body_ar' => 'x'])->assertNotFound();
-        $this->deleteJson('/api/v2/admin/content/articles/fake-id')->assertNotFound();
+        $this->getJson('/api/v2/admin/content/articles/00000000-0000-0000-0000-000000000099')->assertNotFound();
+        $this->putJson('/api/v2/admin/content/articles/00000000-0000-0000-0000-000000000099', ['title' => 'x', 'title_ar' => 'x', 'body' => 'x', 'body_ar' => 'x'])->assertNotFound();
+        $this->deleteJson('/api/v2/admin/content/articles/00000000-0000-0000-0000-000000000099')->assertNotFound();
     }
 
     public function test_template_not_found_returns_404(): void
     {
-        $this->getJson('/api/v2/admin/content/templates/fake-id')->assertNotFound();
-        $this->putJson('/api/v2/admin/content/templates/fake-id', ['title' => 'x'])->assertNotFound();
-        $this->deleteJson('/api/v2/admin/content/templates/fake-id')->assertNotFound();
+        $this->getJson('/api/v2/admin/content/templates/00000000-0000-0000-0000-000000000099')->assertNotFound();
+        $this->putJson('/api/v2/admin/content/templates/00000000-0000-0000-0000-000000000099', ['title' => 'x'])->assertNotFound();
+        $this->deleteJson('/api/v2/admin/content/templates/00000000-0000-0000-0000-000000000099')->assertNotFound();
     }
 
     public function test_announcement_not_found_returns_404(): void
     {
-        $this->getJson('/api/v2/admin/content/announcements/fake-id')->assertNotFound();
-        $this->putJson('/api/v2/admin/content/announcements/fake-id', ['title' => 'x'])->assertNotFound();
-        $this->deleteJson('/api/v2/admin/content/announcements/fake-id')->assertNotFound();
+        $this->getJson('/api/v2/admin/content/announcements/00000000-0000-0000-0000-000000000099')->assertNotFound();
+        $this->putJson('/api/v2/admin/content/announcements/00000000-0000-0000-0000-000000000099', ['title' => 'x'])->assertNotFound();
+        $this->deleteJson('/api/v2/admin/content/announcements/00000000-0000-0000-0000-000000000099')->assertNotFound();
     }
 
     public function test_create_page_validation_requires_title(): void

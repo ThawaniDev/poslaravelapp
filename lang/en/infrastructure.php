@@ -103,4 +103,47 @@ return [
     'backup_started' => 'Backup started.',
     'backup_failed' => 'Backup failed: :error',
     'recheck_completed' => 'Re-check completed.',
+
+    // ─── Missing blade keys ──────────────────────────────────
+    'services' => 'Services',
+    'never' => 'Never',
+    'no_health_checks' => 'No health checks performed yet.',
+    'last_24h' => 'Last 24h',
+    'failed' => 'Failed',
+
+    // ─── New Endpoint Labels ─────────────────────────────────
+    'retry_all' => 'Retry All',
+    'retry_all_confirm' => 'This will re-queue all failed jobs. Are you sure?',
+    'jobs_retried' => ':count jobs re-queued successfully.',
+    'trigger_restore' => 'Restore Backup',
+    'restore_confirm' => 'Restoring will overwrite the current database. This action cannot be undone. Proceed?',
+    'restore_initiated' => 'Database restore has been queued. The application may be briefly unavailable.',
+    'restore_file_missing' => 'Backup file not found on disk.',
+    'flush_prefix' => 'Flush Cache Prefix',
+    'cache_prefix_flushed' => 'Cache prefix flushed successfully.',
+    'redis_only' => 'This operation requires the Redis cache driver.',
+
+    // ─── Queue Stats ─────────────────────────────────────────
+    'queue_stats' => 'Queue Statistics',
+    'queue_depth' => 'Queue Depth',
+    'pending_jobs' => 'Pending Jobs',
+    'failed_jobs_24h' => 'Failed (24h)',
+    'queue_depths' => 'Queue Depths by Name',
+
+    // ─── Cache Stats (Redis) ─────────────────────────────────
+    'redis_memory' => 'Redis Memory',
+    'redis_version' => 'Redis Version',
+    'redis_keys' => 'Total Keys',
+    'redis_hits' => 'Keyspace Hits',
+    'redis_misses' => 'Keyspace Misses',
+    'redis_clients' => 'Connected Clients',
+
+    // ─── Enhanced Server Metrics ─────────────────────────────
+    'disk_free' => 'Disk Free',
+    'disk_total' => 'Disk Total',
+    'disk_used_percent' => 'Disk Used',
+    'load_avg' => 'Load Average',
+    'load_avg_1min' => '1 Min Avg',
+    'load_avg_5min' => '5 Min Avg',
+    'load_avg_15min' => '15 Min Avg',
 ];

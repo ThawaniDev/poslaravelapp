@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Core;
 
+use App\Domain\ContentOnboarding\Models\OnboardingStep;
 use App\Domain\Core\Services\OnboardingService;
 use App\Http\Controllers\Api\BaseApiController;
 use App\Http\Requests\Core\OnboardingStepRequest;
@@ -121,18 +122,39 @@ class OnboardingController extends BaseApiController
     }
 
     /**
-     * GET /core/onboarding/steps — List all onboarding steps (metadata).
+     * GET /core/onboarding/steps — List all onboarding steps (metadata from DB,
+     * falling back to the hardcoded STEP_ORDER from OnboardingService).
      */
     public function steps(): JsonResponse
     {
-        $steps = collect(OnboardingService::STEP_ORDER)->map(fn ($step, $i) => [
-            'order' => $i,
-            'key' => $step,
-            'label_en' => $this->stepLabel($step, 'en'),
-            'label_ar' => $this->stepLabel($step, 'ar'),
-        ])->values();
+        $dbSteps = OnboardingStep::orderBy('sort_order')
+            ->orderBy('step_number')
+            ->get();
 
-        return $this->success($steps);
+        if ($dbSteps->isNotEmpty()) {
+            $steps = $dbSteps->map(fn ($step) => [
+                'order'          => (int) $step->sort_order,
+                'step_number'    => (int) $step->step_number,
+                'label_en'       => $step->title,
+                'label_ar'       => $step->title_ar,
+                'description'    => $step->description,
+                'description_ar' => $step->description_ar,
+                'is_required'    => (bool) $step->is_required,
+            ]);
+        } else {
+            // Fallback: use hardcoded STEP_ORDER if no DB records
+            $steps = collect(OnboardingService::STEP_ORDER)->map(fn ($step, $i) => [
+                'order'          => $i,
+                'step_number'    => $i + 1,
+                'label_en'       => $this->stepLabel($step, 'en'),
+                'label_ar'       => $this->stepLabel($step, 'ar'),
+                'description'    => null,
+                'description_ar' => null,
+                'is_required'    => true,
+            ]);
+        }
+
+        return $this->success($steps->values());
     }
 
     private function stepLabel(string $step, string $locale): string

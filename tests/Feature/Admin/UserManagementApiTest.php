@@ -5,6 +5,8 @@ namespace Tests\Feature\Admin;
 use App\Domain\AdminPanel\Models\AdminActivityLog;
 use App\Domain\AdminPanel\Models\AdminRole;
 use App\Domain\AdminPanel\Models\AdminUser;
+use App\Domain\AdminPanel\Models\AdminPermission;
+use App\Domain\AdminPanel\Models\AdminRolePermission;
 use App\Domain\AdminPanel\Models\AdminUserRole;
 use App\Domain\Auth\Models\User;
 use App\Domain\Core\Models\Organization;
@@ -102,6 +104,19 @@ class UserManagementApiTest extends TestCase
             'name' => 'Support Agent',
             'slug' => 'support-agent',
             'is_system' => false,
+        ]);
+
+        // Assign super_admin role to the test admin so all permission checks pass
+        $superAdminRole = AdminRole::forceCreate([
+            'id' => (string) Str::uuid(),
+            'name' => 'Super Admin',
+            'slug' => 'super_admin',
+            'is_system' => true,
+        ]);
+        AdminUserRole::forceCreate([
+            'admin_user_id' => $this->admin->id,
+            'admin_role_id' => $superAdminRole->id,
+            'assigned_at' => now(),
         ]);
     }
 
@@ -750,5 +765,109 @@ class UserManagementApiTest extends TestCase
         $this->assertArrayHasKey('entity_type', $log);
         $this->assertArrayHasKey('ip_address', $log);
         $this->assertArrayHasKey('created_at', $log);
+    }
+
+    // ─── Permission Enforcement Tests ─────────────────────────
+
+    public function test_list_provider_users_forbidden_without_permission(): void
+    {
+        // Create an admin with NO roles/permissions
+        $limitedAdmin = AdminUser::forceCreate([
+            'id' => (string) Str::uuid(),
+            'name' => 'Limited Admin',
+            'email' => 'limited@test.com',
+            'password_hash' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+        $token = $limitedAdmin->createToken('test')->plainTextToken;
+
+        $response = $this->getJson(
+            '/api/v2/admin/users/provider',
+            ['Authorization' => "Bearer {$token}"]
+        );
+
+        $response->assertForbidden();
+    }
+
+    public function test_invite_admin_forbidden_without_permission(): void
+    {
+        $limitedAdmin = AdminUser::forceCreate([
+            'id' => (string) Str::uuid(),
+            'name' => 'Limited Admin',
+            'email' => 'limited2@test.com',
+            'password_hash' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+        $token = $limitedAdmin->createToken('test')->plainTextToken;
+
+        $response = $this->postJson(
+            '/api/v2/admin/users/admins',
+            ['name' => 'New Admin', 'email' => 'new@test.com', 'role_ids' => [$this->role->id]],
+            ['Authorization' => "Bearer {$token}"]
+        );
+
+        $response->assertForbidden();
+    }
+
+    public function test_reset_password_forbidden_without_permission(): void
+    {
+        $limitedAdmin = AdminUser::forceCreate([
+            'id' => (string) Str::uuid(),
+            'name' => 'Limited Admin',
+            'email' => 'limited3@test.com',
+            'password_hash' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+        $token = $limitedAdmin->createToken('test')->plainTextToken;
+
+        $response = $this->postJson(
+            "/api/v2/admin/users/provider/{$this->providerUser1->id}/reset-password",
+            [],
+            ['Authorization' => "Bearer {$token}"]
+        );
+
+        $response->assertForbidden();
+    }
+
+    public function test_list_provider_users_allowed_with_users_view_permission(): void
+    {
+        // Create admin with only users.view permission
+        $viewerAdmin = AdminUser::forceCreate([
+            'id' => (string) Str::uuid(),
+            'name' => 'Viewer Admin',
+            'email' => 'viewer@test.com',
+            'password_hash' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+        $viewerRole = AdminRole::forceCreate([
+            'id' => (string) Str::uuid(),
+            'name' => 'Viewer',
+            'slug' => 'viewer',
+            'is_system' => false,
+        ]);
+        $usersViewPerm = AdminPermission::forceCreate([
+            'id' => (string) Str::uuid(),
+            'name' => 'users.view',
+            'group' => 'users',
+            'description' => 'View cross-store user list',
+            'created_at' => now(),
+        ]);
+        AdminRolePermission::forceCreate([
+            'admin_role_id' => $viewerRole->id,
+            'admin_permission_id' => $usersViewPerm->id,
+        ]);
+        AdminUserRole::forceCreate([
+            'admin_user_id' => $viewerAdmin->id,
+            'admin_role_id' => $viewerRole->id,
+            'assigned_at' => now(),
+        ]);
+        $token = $viewerAdmin->createToken('test')->plainTextToken;
+
+        $response = $this->getJson(
+            '/api/v2/admin/users/provider',
+            ['Authorization' => "Bearer {$token}"]
+        );
+
+        $response->assertOk()->assertJsonPath('success', true);
     }
 }

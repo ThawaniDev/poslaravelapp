@@ -4,6 +4,8 @@ namespace App\Filament\Resources;
 
 use App\Domain\AppUpdateManagement\Models\AppUpdateStat;
 use App\Domain\BackupSync\Enums\AppUpdateStatus;
+use Filament\Forms;
+use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -51,6 +53,51 @@ class AppUpdateStatResource extends Resource
         return false;
     }
 
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make(__('updates.stat_record_details'))
+                    ->schema([
+                        Forms\Components\TextInput::make('store_id')
+                            ->label(__('updates.store'))
+                            ->disabled(),
+                        Forms\Components\Select::make('app_release_id')
+                            ->label(__('updates.release'))
+                            ->relationship('appRelease', 'version_number')
+                            ->disabled(),
+                        Forms\Components\Select::make('status')
+                            ->label(__('updates.status'))
+                            ->options(
+                                collect(AppUpdateStatus::cases())
+                                    ->mapWithKeys(fn ($c) => [$c->value => __('updates.stat_status_' . $c->value)])
+                            )
+                            ->disabled(),
+                    ])->columns(3),
+
+                Forms\Components\Section::make(__('updates.error_details'))
+                    ->schema([
+                        Forms\Components\Textarea::make('error_message')
+                            ->label(__('updates.error_message'))
+                            ->rows(4)
+                            ->disabled(),
+                    ])
+                    ->visible(fn ($record) => filled($record?->error_message)),
+
+                Forms\Components\Section::make(__('common.timestamps'))
+                    ->schema([
+                        Forms\Components\TextInput::make('created_at')
+                            ->label(__('common.created_at'))
+                            ->disabled()
+                            ->formatStateUsing(fn ($state) => $state?->format('Y-m-d H:i:s')),
+                        Forms\Components\TextInput::make('updated_at')
+                            ->label(__('common.updated_at'))
+                            ->disabled()
+                            ->formatStateUsing(fn ($state) => $state?->format('Y-m-d H:i:s')),
+                    ])->columns(2)->collapsible(),
+            ]);
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -84,6 +131,12 @@ class AppUpdateStatResource extends Resource
                     ->label(__('updates.error'))
                     ->limit(40)
                     ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('common.updated_at'))
+                    ->dateTime()
+                    ->sortable()
+                    ->since()
+                    ->toggleable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
@@ -105,6 +158,7 @@ class AppUpdateStatResource extends Resource
     {
         return [
             'index' => AppUpdateStatResource\Pages\ListAppUpdateStats::route('/'),
+            'view' => AppUpdateStatResource\Pages\ViewAppUpdateStat::route('/{record}'),
         ];
     }
 }

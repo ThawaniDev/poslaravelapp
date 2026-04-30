@@ -206,6 +206,7 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
         Route::get('stores', [AnalyticsReportingController::class, 'storePerformanceDashboard']);
         Route::get('features', [AnalyticsReportingController::class, 'featureAdoptionDashboard']);
         Route::get('support', [AnalyticsReportingController::class, 'supportAnalyticsDashboard']);
+        Route::get('system-health', [AnalyticsReportingController::class, 'systemHealthDashboard']);
         Route::get('health', [AnalyticsReportingController::class, 'systemHealthDashboard']);
         Route::get('notifications', [AnalyticsReportingController::class, 'notificationAnalytics']);
 
@@ -613,6 +614,7 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
 
         Route::prefix('failed-jobs')->group(function () {
             Route::get('/', [InfrastructureController::class, 'failedJobs']);
+            Route::post('retry-all', [InfrastructureController::class, 'retryAllFailedJobs']);
             Route::get('{id}', [InfrastructureController::class, 'showFailedJob']);
             Route::post('{id}/retry', [InfrastructureController::class, 'retryFailedJob']);
             Route::delete('{id}', [InfrastructureController::class, 'deleteFailedJob']);
@@ -620,7 +622,9 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
 
         Route::prefix('database-backups')->group(function () {
             Route::get('/', [InfrastructureController::class, 'databaseBackups']);
+            Route::post('trigger', [InfrastructureController::class, 'triggerDatabaseBackup']);
             Route::get('{id}', [InfrastructureController::class, 'showDatabaseBackup']);
+            Route::post('{id}/restore', [InfrastructureController::class, 'restoreDatabaseBackup']);
         });
 
         Route::prefix('health-checks')->group(function () {
@@ -640,10 +644,12 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
 
         Route::get('server-metrics', [InfrastructureController::class, 'serverMetrics']);
         Route::get('storage-usage', [InfrastructureController::class, 'storageUsage']);
+        Route::get('queue-stats', [InfrastructureController::class, 'queueStats']);
 
         Route::prefix('cache')->group(function () {
             Route::get('stats', [InfrastructureController::class, 'cacheStats']);
             Route::post('flush', [InfrastructureController::class, 'flushCache']);
+            Route::post('flush-prefix', [InfrastructureController::class, 'flushCachePrefix']);
         });
     });
 

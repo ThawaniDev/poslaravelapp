@@ -14,12 +14,15 @@ class SecurityAlertResource extends JsonResource
             'admin_user_id'    => $this->admin_user_id,
             'alert_type'       => $this->alert_type,
             'severity'         => $this->severity,
-            'details'          => $this->details,
+            'description'      => $this->description,
+            'ip_address'       => $this->ip_address,
+            'details'          => $this->details ?? [],
             'status'           => $this->status,
             'resolved_at'      => $this->resolved_at?->toIso8601String(),
             'resolved_by'      => $this->resolved_by,
             'resolution_notes' => $this->resolution_notes,
             'created_at'       => $this->created_at?->toIso8601String(),
+            'updated_at'       => $this->updated_at?->toIso8601String(),
         ];
     }
 }

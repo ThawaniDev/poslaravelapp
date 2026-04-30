@@ -141,7 +141,7 @@ class GiftCardCashSessionApiTest extends TestCase
             'status' => 'active',
             'issued_by' => $this->user->id,
             'created_at' => now(),
-            'updated_at' => now(),
+
         ]);
 
         $response = $this->withToken($this->token)
@@ -170,7 +170,7 @@ class GiftCardCashSessionApiTest extends TestCase
             'status' => 'active',
             'issued_by' => $this->user->id,
             'created_at' => now(),
-            'updated_at' => now(),
+
         ]);
 
         $response = $this->withToken($this->token)
@@ -197,7 +197,7 @@ class GiftCardCashSessionApiTest extends TestCase
             'status' => 'active',
             'issued_by' => $this->user->id,
             'created_at' => now(),
-            'updated_at' => now(),
+
         ]);
 
         $response = $this->withToken($this->token)
@@ -219,7 +219,7 @@ class GiftCardCashSessionApiTest extends TestCase
             'status' => 'active',
             'issued_by' => $this->user->id,
             'created_at' => now(),
-            'updated_at' => now(),
+
         ]);
 
         $response = $this->withToken($this->token)

@@ -25,7 +25,7 @@ CREATE TABLE cfd_configurations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     store_id UUID NOT NULL UNIQUE REFERENCES stores(id),
     is_enabled BOOLEAN DEFAULT false,
-    target_monitor INTEGER DEFAULT 1,
+    target_monitor VARCHAR(50) DEFAULT 'secondary',
     theme_config JSONB DEFAULT '{}',
     idle_content JSONB DEFAULT '[]',
     idle_rotation_seconds INTEGER DEFAULT 10,

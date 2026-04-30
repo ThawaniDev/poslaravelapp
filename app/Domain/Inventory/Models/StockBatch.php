@@ -31,6 +31,7 @@ class StockBatch extends Model
         'quantity' => 'decimal:2',
         'unit_cost' => 'decimal:2',
         'expiry_date' => 'date',
+        'created_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

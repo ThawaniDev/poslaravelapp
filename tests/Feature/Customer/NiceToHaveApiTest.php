@@ -64,7 +64,10 @@ class NiceToHaveApiTest extends TestCase
             });
         }
 
-        // Nice-to-have tables
+        // Nice-to-have tables (SQLite only — Postgres uses production migrations)
+        if (\DB::connection()->getDriverName() !== 'sqlite') {
+            goto skip_nice_to_have_schema;
+        }
         \Schema::dropIfExists('customer_badges');
         \Schema::dropIfExists('customer_challenge_progress');
         \Schema::dropIfExists('loyalty_tiers');
@@ -185,6 +188,8 @@ class NiceToHaveApiTest extends TestCase
             $t->uuid('badge_id');
             $t->timestamp('earned_at')->nullable();
         });
+
+        skip_nice_to_have_schema:
 
         $org = Organization::create(['name' => 'Test Org', 'slug' => 'test-org']);
         $store = Store::create([

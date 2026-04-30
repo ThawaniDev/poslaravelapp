@@ -64,7 +64,10 @@ class AutoUpdateApiTest extends TestCase
             });
         }
 
-        // Drop outdated SQLite test schema and recreate with correct columns
+        // Drop outdated SQLite test schema and recreate with correct columns (SQLite only)
+        if (\DB::connection()->getDriverName() !== 'sqlite') {
+            goto skip_app_update_schema;
+        }
         \Schema::dropIfExists('app_update_stats');
         \Schema::dropIfExists('app_releases');
 
@@ -94,6 +97,8 @@ class AutoUpdateApiTest extends TestCase
             $t->string('status');
             $t->text('error_message')->nullable();
         });
+
+        skip_app_update_schema:
 
         $org = Organization::create(['name' => 'Test Org', 'slug' => 'test-org']);
         $store = Store::create([

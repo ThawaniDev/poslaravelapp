@@ -640,7 +640,11 @@ class SecurityApiTest extends TestCase
         $this->assertArrayHasKey('audit_stats', $data);
         $this->assertArrayHasKey('active_devices', $data);
         $this->assertArrayHasKey('active_sessions', $data);
-        $this->assertArrayHasKey('open_incidents', $data);
+        $this->assertArrayHasKey('unresolved_incidents', $data);
+        $this->assertArrayHasKey('failed_logins_today', $data);
+        $this->assertArrayHasKey('total_audit_logs', $data);
+        $this->assertArrayHasKey('locked_out_users', $data);
+        $this->assertArrayHasKey('recent_activity', $data);
         $this->assertArrayHasKey('critical_audits_7d', $data);
     }
 

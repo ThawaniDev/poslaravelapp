@@ -23,8 +23,8 @@ class SecuritySessionResource extends JsonResource
             'ended_at'         => $this->ended_at?->toIso8601String(),
             'end_reason'       => $this->end_reason,
             'metadata'         => $this->metadata ?? [],
-            'created_at'       => $this->created_at?->toIso8601String(),
-            'updated_at'       => $this->updated_at?->toIso8601String(),
+            'created_at'       => $this->started_at?->toIso8601String(),
+            'updated_at'       => $this->last_activity_at?->toIso8601String(),
         ];
     }
 }

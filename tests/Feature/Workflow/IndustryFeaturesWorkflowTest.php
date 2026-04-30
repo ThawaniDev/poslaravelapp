@@ -635,7 +635,6 @@ class IndustryFeaturesWorkflowTest extends WorkflowTestCase
             'expected_yield' => 24,
             'prep_time_minutes' => 20,
             'bake_time_minutes' => 25,
-            'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $response = $this->withToken($this->ownerToken)
@@ -656,7 +655,6 @@ class IndustryFeaturesWorkflowTest extends WorkflowTestCase
             'name' => 'Old Recipe',
             'expected_yield' => 10,
             'prep_time_minutes' => 30,
-            'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $response = $this->withToken($this->ownerToken)
@@ -685,7 +683,6 @@ class IndustryFeaturesWorkflowTest extends WorkflowTestCase
             'product_id' => $this->product->id,
             'name' => 'Croissants',
             'expected_yield' => 50,
-            'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $response = $this->withToken($this->ownerToken)
@@ -708,7 +705,6 @@ class IndustryFeaturesWorkflowTest extends WorkflowTestCase
             'product_id' => $this->product->id,
             'name' => 'Baguettes',
             'expected_yield' => 30,
-            'created_at' => now(), 'updated_at' => now(),
         ]);
 
         DB::table('production_schedules')->insert([
@@ -739,7 +735,6 @@ class IndustryFeaturesWorkflowTest extends WorkflowTestCase
             'product_id' => $this->product->id,
             'name' => 'Muffins',
             'expected_yield' => 20,
-            'created_at' => now(), 'updated_at' => now(),
         ]);
 
         DB::table('production_schedules')->insert([
@@ -870,7 +865,6 @@ class IndustryFeaturesWorkflowTest extends WorkflowTestCase
             'zone' => 'outdoor',
             'status' => 'available',
             'is_active' => true,
-            'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $response = $this->withToken($this->ownerToken)
@@ -892,7 +886,6 @@ class IndustryFeaturesWorkflowTest extends WorkflowTestCase
             'zone' => 'indoor',
             'status' => 'available',
             'is_active' => true,
-            'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $response = $this->withToken($this->ownerToken)
@@ -940,7 +933,6 @@ class IndustryFeaturesWorkflowTest extends WorkflowTestCase
             'tax_amount' => 15.00,
             'total' => 115.00,
             'created_by' => $this->owner->id,
-            'created_at' => now(), 'updated_at' => now(),
         ]);
 
         DB::table('kitchen_tickets')->insert([
@@ -950,7 +942,6 @@ class IndustryFeaturesWorkflowTest extends WorkflowTestCase
             'ticket_number' => 1,
             'items_json' => json_encode([['name' => 'Pasta', 'qty' => 1]]),
             'status' => 'pending',
-            'created_at' => now(), 'updated_at' => now(),
         ]);
 
         $response = $this->withToken($this->ownerToken)
@@ -1064,7 +1055,6 @@ class IndustryFeaturesWorkflowTest extends WorkflowTestCase
             'tax_amount' => 7.50,
             'total' => 57.50,
             'created_by' => $this->owner->id,
-            'created_at' => now(), 'updated_at' => now(),
         ]);
 
         DB::table('open_tabs')->insert([

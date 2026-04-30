@@ -266,8 +266,8 @@ class NotificationService
             'user_id' => $pref->user_id,
             'preferences' => $pref->preferences_json ?? $this->defaultPreferences(),
             'per_category_channels' => $pref->per_category_channels ?? $this->defaultCategoryChannels(),
-            'quiet_hours_start' => $pref->quiet_hours_start,
-            'quiet_hours_end' => $pref->quiet_hours_end,
+            'quiet_hours_start' => $pref->quiet_hours_start ? substr((string) $pref->quiet_hours_start, 0, 5) : null,
+            'quiet_hours_end' => $pref->quiet_hours_end ? substr((string) $pref->quiet_hours_end, 0, 5) : null,
             'sound_enabled' => $pref->sound_enabled ?? true,
             'email_digest' => $pref->email_digest ?? 'none',
         ];
@@ -295,8 +295,8 @@ class NotificationService
             'user_id' => $pref->user_id,
             'preferences' => $pref->preferences_json ?? $this->defaultPreferences(),
             'per_category_channels' => $pref->per_category_channels ?? $this->defaultCategoryChannels(),
-            'quiet_hours_start' => $pref->quiet_hours_start,
-            'quiet_hours_end' => $pref->quiet_hours_end,
+            'quiet_hours_start' => $pref->quiet_hours_start ? substr((string) $pref->quiet_hours_start, 0, 5) : null,
+            'quiet_hours_end' => $pref->quiet_hours_end ? substr((string) $pref->quiet_hours_end, 0, 5) : null,
             'sound_enabled' => $pref->sound_enabled ?? true,
             'email_digest' => $pref->email_digest ?? 'none',
         ];

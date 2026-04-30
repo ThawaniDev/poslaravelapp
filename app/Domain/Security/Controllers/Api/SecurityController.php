@@ -357,6 +357,11 @@ class SecurityController extends BaseApiController
             'metadata'      => 'nullable|array',
         ]);
 
+        if (isset($validated['ip_address'])) {
+            $validated['source_ip'] = $validated['ip_address'];
+            unset($validated['ip_address']);
+        }
+
         $incident = $this->service->createIncident(
             array_merge($validated, ['user_id' => $request->user()->id]),
         );

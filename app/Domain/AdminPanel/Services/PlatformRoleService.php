@@ -292,6 +292,7 @@ class PlatformRoleService
                 'slug' => $r->slug instanceof \BackedEnum ? $r->slug->value : $r->slug,
             ])->values()->toArray(),
             'permissions' => $permissions,
+            'all_permissions' => $permissions,
         ];
     }
 

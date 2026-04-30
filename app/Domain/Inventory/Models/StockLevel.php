@@ -34,6 +34,7 @@ class StockLevel extends Model
         'reorder_point' => 'decimal:2',
         'max_stock_level' => 'decimal:2',
         'average_cost' => 'decimal:2',
+        'updated_at' => 'datetime',
     ];
 
     public function store(): BelongsTo

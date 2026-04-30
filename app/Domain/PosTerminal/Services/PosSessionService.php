@@ -74,7 +74,7 @@ class PosSessionService
             }
         }
 
-        return PosSession::create([
+        return PosSession::create(array_filter([
             'store_id' => $actor->store_id,
             'register_id' => $data['register_id'] ?? null,
             'cashier_id' => $actor->id,
@@ -88,7 +88,7 @@ class PosSessionService
             'transaction_count' => 0,
             'opened_at' => now(),
             'z_report_printed' => false,
-        ])->load(['store:id,name', 'register:id,name', 'cashier:id,name']);
+        ], fn ($v) => $v !== null))->load(['store:id,name', 'register:id,name', 'cashier:id,name']);
     }
 
     public function close(PosSession $session, array $data): PosSession

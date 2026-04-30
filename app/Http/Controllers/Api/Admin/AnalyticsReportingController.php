@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Domain\Analytics\Models\FeatureAdoptionStat;
-use App\Domain\Analytics\Models\PlatformDailyStat;
-use App\Domain\Analytics\Models\PlatformPlanStat;
-use App\Domain\Analytics\Models\StoreHealthSnapshot;
+use App\Domain\PlatformAnalytics\Models\FeatureAdoptionStat;
+use App\Domain\PlatformAnalytics\Models\PlatformDailyStat;
+use App\Domain\PlatformAnalytics\Models\PlatformPlanStat;
+use App\Domain\PlatformAnalytics\Models\StoreHealthSnapshot;
+use App\Domain\PlatformAnalytics\Exports\RevenueExport;
+use App\Domain\PlatformAnalytics\Exports\StoresExport;
+use App\Domain\PlatformAnalytics\Exports\SubscriptionsExport;
 use App\Domain\AdminPanel\Models\AdminActivityLog;
 use App\Domain\AdminPanel\Models\AdminUser;
 use App\Domain\Core\Models\Store;
@@ -20,6 +23,8 @@ use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Maatwebsite\Excel\Facades\Excel;
 
 class AnalyticsReportingController extends BaseApiController
 {
@@ -193,7 +198,7 @@ class AnalyticsReportingController extends BaseApiController
                 ->value('avg_days');
         } else {
             $avgAge = StoreSubscription::where('status', 'active')
-                ->selectRaw('AVG(EXTRACT(EPOCH FROM (CURRENT_DATE - created_at::date)) / 86400) as avg_days')
+                ->selectRaw('AVG(CURRENT_DATE - created_at::date) as avg_days')
                 ->value('avg_days');
         }
 
@@ -251,7 +256,9 @@ class AnalyticsReportingController extends BaseApiController
             ->selectRaw("sync_status, COUNT(*) as count")
             ->groupBy('sync_status')
             ->get()
-            ->pluck('count', 'sync_status')
+            ->mapWithKeys(fn ($item) => [
+                ($item->sync_status instanceof \BackedEnum ? $item->sync_status->value : (string) $item->sync_status) => (int) $item->count,
+            ])
             ->toArray();
 
         return $this->success([
@@ -417,7 +424,9 @@ class AnalyticsReportingController extends BaseApiController
             ->selectRaw('sync_status, COUNT(*) as count')
             ->groupBy('sync_status')
             ->get()
-            ->pluck('count', 'sync_status')
+            ->mapWithKeys(fn ($item) => [
+                ($item->sync_status instanceof \BackedEnum ? $item->sync_status->value : (string) $item->sync_status) => (int) $item->count,
+            ])
             ->toArray();
 
         return $this->success([
@@ -634,20 +643,32 @@ class AnalyticsReportingController extends BaseApiController
     public function exportRevenue(Request $request): JsonResponse
     {
         $dateFrom = $request->input('date_from', now()->subDays(30)->toDateString());
-        $dateTo = $request->input('date_to', now()->toDateString());
+        $dateTo   = $request->input('date_to', now()->toDateString());
+        $format   = $request->input('format', 'xlsx');
 
-        $stats = PlatformDailyStat::whereBetween('date', [$dateFrom, $dateTo])
-            ->orderBy('date')
-            ->get();
+        $filename = "revenue_export_{$dateFrom}_to_{$dateTo}." . ($format === 'csv' ? 'csv' : 'xlsx');
+        $diskPath = "analytics/exports/{$filename}";
+
+        if ($format === 'csv') {
+            Excel::store(new RevenueExport($dateFrom, $dateTo), $diskPath, 'local', \Maatwebsite\Excel\Excel::CSV);
+        } else {
+            Excel::store(new RevenueExport($dateFrom, $dateTo), $diskPath, 'local');
+        }
+
+        $downloadUrl = Storage::disk('local')->temporaryUrl($diskPath, now()->addHours(1));
 
         $this->logActivity($request, 'export_revenue', "Exported revenue report ({$dateFrom} to {$dateTo})");
 
+        $recordCount = PlatformDailyStat::whereBetween('date', [$dateFrom, $dateTo])->count();
+
         return $this->success([
-            'export_type' => 'revenue',
-            'format' => $request->input('format', 'xlsx'),
-            'date_range' => ['from' => $dateFrom, 'to' => $dateTo],
-            'record_count' => $stats->count(),
-            'download_url' => null, // Placeholder for actual file generation
+            'export_type'  => 'revenue',
+            'format'       => $format,
+            'date_range'   => ['from' => $dateFrom, 'to' => $dateTo],
+            'filename'     => $filename,
+            'download_url' => $downloadUrl,
+            'record_count' => $recordCount,
+            'expires_at'   => now()->addHours(1)->toIso8601String(),
         ]);
     }
 
@@ -657,20 +678,32 @@ class AnalyticsReportingController extends BaseApiController
     public function exportSubscriptions(Request $request): JsonResponse
     {
         $dateFrom = $request->input('date_from', now()->subDays(30)->toDateString());
-        $dateTo = $request->input('date_to', now()->toDateString());
+        $dateTo   = $request->input('date_to', now()->toDateString());
+        $format   = $request->input('format', 'xlsx');
 
-        $count = StoreSubscription::where('created_at', '>=', $dateFrom)
-            ->where('created_at', '<', \Carbon\Carbon::parse($dateTo)->addDay()->toDateString())
-            ->count();
+        $filename = "subscriptions_export_{$dateFrom}_to_{$dateTo}." . ($format === 'csv' ? 'csv' : 'xlsx');
+        $diskPath = "analytics/exports/{$filename}";
+
+        if ($format === 'csv') {
+            Excel::store(new SubscriptionsExport($dateFrom, $dateTo), $diskPath, 'local', \Maatwebsite\Excel\Excel::CSV);
+        } else {
+            Excel::store(new SubscriptionsExport($dateFrom, $dateTo), $diskPath, 'local');
+        }
+
+        $downloadUrl = Storage::disk('local')->temporaryUrl($diskPath, now()->addHours(1));
 
         $this->logActivity($request, 'export_subscriptions', "Exported subscription report ({$dateFrom} to {$dateTo})");
 
+        $recordCount = StoreSubscription::whereBetween('created_at', [$dateFrom, $dateTo.' 23:59:59'])->count();
+
         return $this->success([
-            'export_type' => 'subscriptions',
-            'format' => $request->input('format', 'xlsx'),
-            'date_range' => ['from' => $dateFrom, 'to' => $dateTo],
-            'record_count' => $count,
-            'download_url' => null,
+            'export_type'  => 'subscriptions',
+            'format'       => $format,
+            'date_range'   => ['from' => $dateFrom, 'to' => $dateTo],
+            'filename'     => $filename,
+            'download_url' => $downloadUrl,
+            'record_count' => $recordCount,
+            'expires_at'   => now()->addHours(1)->toIso8601String(),
         ]);
     }
 
@@ -679,15 +712,33 @@ class AnalyticsReportingController extends BaseApiController
      */
     public function exportStores(Request $request): JsonResponse
     {
-        $count = Store::count();
+        $dateFrom = $request->input('date_from', now()->subDays(30)->toDateString());
+        $dateTo   = $request->input('date_to', now()->toDateString());
+        $format   = $request->input('format', 'xlsx');
 
-        $this->logActivity($request, 'export_stores', "Exported store performance report (total: {$count})");
+        $filename = "stores_export_{$dateFrom}_to_{$dateTo}." . ($format === 'csv' ? 'csv' : 'xlsx');
+        $diskPath = "analytics/exports/{$filename}";
+
+        if ($format === 'csv') {
+            Excel::store(new StoresExport($dateFrom, $dateTo), $diskPath, 'local', \Maatwebsite\Excel\Excel::CSV);
+        } else {
+            Excel::store(new StoresExport($dateFrom, $dateTo), $diskPath, 'local');
+        }
+
+        $downloadUrl = Storage::disk('local')->temporaryUrl($diskPath, now()->addHours(1));
+
+        $this->logActivity($request, 'export_stores', "Exported store performance report ({$dateFrom} to {$dateTo})");
+
+        $recordCount = Store::count();
 
         return $this->success([
-            'export_type' => 'stores',
-            'format' => $request->input('format', 'xlsx'),
-            'record_count' => $count,
-            'download_url' => null,
+            'export_type'  => 'stores',
+            'format'       => $format,
+            'date_range'   => ['from' => $dateFrom, 'to' => $dateTo],
+            'filename'     => $filename,
+            'download_url' => $downloadUrl,
+            'record_count' => $recordCount,
+            'expires_at'   => now()->addHours(1)->toIso8601String(),
         ]);
     }
 

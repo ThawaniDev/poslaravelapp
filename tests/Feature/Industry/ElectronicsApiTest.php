@@ -35,13 +35,13 @@ class ElectronicsApiTest extends TestCase
 
     private function createTables(): void
     {
-        DB::statement('DROP TABLE IF EXISTS device_imei_records');
+        DB::statement('DROP TABLE IF EXISTS device_imei_records CASCADE');
         DB::statement('CREATE TABLE device_imei_records (id VARCHAR(36) PRIMARY KEY, product_id VARCHAR(36) NOT NULL, store_id VARCHAR(36) NOT NULL, imei VARCHAR(20) NOT NULL, imei2 VARCHAR(20), serial_number VARCHAR(100), condition_grade VARCHAR(5) NOT NULL, purchase_price DECIMAL(10,2), status VARCHAR(20) NOT NULL, warranty_end_date DATE, store_warranty_end_date DATE, sold_order_id VARCHAR(36), created_at TIMESTAMP, updated_at TIMESTAMP)');
 
-        DB::statement('DROP TABLE IF EXISTS repair_jobs');
-        DB::statement('CREATE TABLE repair_jobs (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, customer_id VARCHAR(36) NOT NULL, device_description VARCHAR(500) NOT NULL, imei VARCHAR(20), issue_description TEXT NOT NULL, status VARCHAR(20) NOT NULL, diagnosis_notes TEXT, repair_notes TEXT, estimated_cost DECIMAL(10,2), final_cost DECIMAL(10,2), parts_used TEXT, staff_user_id VARCHAR(36), received_at DATETIME, estimated_ready_at DATETIME, completed_at DATETIME, collected_at DATETIME, created_at TIMESTAMP, updated_at TIMESTAMP)');
+        DB::statement('DROP TABLE IF EXISTS repair_jobs CASCADE');
+        DB::statement('CREATE TABLE repair_jobs (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, customer_id VARCHAR(36) NOT NULL, device_description VARCHAR(500) NOT NULL, imei VARCHAR(20), issue_description TEXT NOT NULL, status VARCHAR(20) NOT NULL, diagnosis_notes TEXT, repair_notes TEXT, estimated_cost DECIMAL(10,2), final_cost DECIMAL(10,2), parts_used TEXT, staff_user_id VARCHAR(36), received_at TIMESTAMP, estimated_ready_at TIMESTAMP, completed_at TIMESTAMP, collected_at TIMESTAMP, created_at TIMESTAMP, updated_at TIMESTAMP)');
 
-        DB::statement('DROP TABLE IF EXISTS trade_in_records');
+        DB::statement('DROP TABLE IF EXISTS trade_in_records CASCADE');
         DB::statement('CREATE TABLE trade_in_records (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, customer_id VARCHAR(36) NOT NULL, device_description VARCHAR(500) NOT NULL, imei VARCHAR(20), condition_grade VARCHAR(5) NOT NULL, assessed_value DECIMAL(10,2) NOT NULL, applied_to_order_id VARCHAR(36), staff_user_id VARCHAR(36), created_at TIMESTAMP, updated_at TIMESTAMP)');
     }
 

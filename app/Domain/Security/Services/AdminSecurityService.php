@@ -167,6 +167,8 @@ class AdminSecurityService
             details: ['target_admin_id' => $session->admin_user_id],
         );
 
+        \App\Domain\Security\Events\AdminSessionRevoked::dispatch($session, $revokedById);
+
         return $session->fresh(['adminUser']);
     }
 

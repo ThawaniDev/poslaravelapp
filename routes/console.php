@@ -10,6 +10,7 @@ use App\Domain\ProviderSubscription\Jobs\ResetSoftPosCountersJob;
 use App\Domain\ProviderSubscription\Jobs\RetryFailedPaymentsJob;
 use App\Domain\Report\Jobs\ProcessScheduledReportsJob;
 use App\Domain\Report\Jobs\RefreshDailySummariesJob;
+use App\Domain\SystemConfig\Jobs\CacheFeatureFlags;
 use App\Domain\ThawaniIntegration\Jobs\ProcessThawaniSyncQueue;
 use App\Domain\WameedAI\Jobs\CalculateEfficiencyScoreJob;
 use App\Domain\WameedAI\Jobs\DetectAnomaliesJob;
@@ -92,6 +93,12 @@ Schedule::job(new SendPaymentReminders)
 // Check for auto-rollback of failing releases (every 30 minutes)
 Schedule::job(new CheckAutoRollback)
     ->everyThirtyMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Rebuild feature-flag Redis cache every minute so provider apps see changes quickly
+Schedule::job(new CacheFeatureFlags)
+    ->everyMinute()
     ->withoutOverlapping()
     ->onOneServer();
 
@@ -252,5 +259,48 @@ Schedule::command('delivery:sync-operating-hours')
 // (Spec Sec 9.2 escalating retries: 30s → 2m → 10m → 1h → 6h).
 Schedule::command('zatca:retry-failed')
     ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// ─── Infrastructure & Operations ─────────────────────────────
+
+// Daily database backup at 02:00 (14 day retention via backup:clean)
+Schedule::command('backup:run --only-db')
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Daily uploaded-files backup at 02:30 (storage/app/public → DO Spaces)
+Schedule::command('backup:run --only-files')
+    ->dailyAt('02:30')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Remove backups beyond retention limits (14d daily / 90d weekly)
+Schedule::command('backup:clean')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Capture Horizon metrics snapshot for dashboard graphs
+Schedule::command('horizon:snapshot')
+    ->everyFiveMinutes()
+    ->onOneServer();
+
+// Flush jobs stuck in reserved state for more than 24 hours
+Schedule::command('queue:flush')
+    ->dailyAt('04:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Run infrastructure health checks every 10 minutes
+Schedule::command('infra:health-check')
+    ->everyTenMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+// Update provider backup status based on last_successful_sync age
+Schedule::job(new \App\Domain\BackupSync\Jobs\CheckProviderBackupStatusJob)
+    ->hourly()
     ->withoutOverlapping()
     ->onOneServer();

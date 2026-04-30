@@ -203,7 +203,7 @@ class PlanApiTest extends TestCase
 
     public function test_get_plan_by_slug_returns_404_for_unknown(): void
     {
-        $response = $this->getJson('/api/v2/subscription/plans/slug/nonexistent');
+        $response = $this->getJson('/api/v2/subscription/plans/slug/00000000-0000-0000-0000-000000000099');
 
         $response->assertNotFound();
     }

@@ -948,4 +948,76 @@ class PlatformRoleApiTest extends TestCase
         // Deduped
         $this->assertEquals(count($permissions), count(array_unique($permissions)));
     }
+
+    // ─── all_permissions key (Flutter compatibility) ─────────
+
+    public function test_me_includes_all_permissions_key_for_flutter(): void
+    {
+        $response = $this->getJson('/api/v2/admin/me');
+
+        $response->assertOk();
+        $profile = $response->json('data.profile');
+
+        $this->assertArrayHasKey('all_permissions', $profile);
+        $this->assertIsArray($profile['all_permissions']);
+        $this->assertContains('stores.view', $profile['all_permissions']);
+    }
+
+    // ─── Permission Enforcement ───────────────────────────────
+
+    public function test_create_role_forbidden_without_admin_team_roles_permission(): void
+    {
+        // Create admin with only a viewer role (no admin_team.roles perm)
+        $viewerAdmin = AdminUser::forceCreate([
+            'name' => 'Viewer',
+            'email' => 'viewer@test.com',
+            'password_hash' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+        AdminUserRole::create([
+            'admin_user_id' => $viewerAdmin->id,
+            'admin_role_id' => $this->viewerRole->id,
+            'assigned_at' => now(),
+        ]);
+        $this->app['auth']->forgetGuards();
+        Sanctum::actingAs($viewerAdmin, ['*'], 'admin-api');
+
+        $response = $this->postJson('/api/v2/admin/roles', [
+            'name' => 'New Role',
+        ]);
+
+        $response->assertForbidden();
+    }
+
+    public function test_create_team_user_forbidden_without_admin_team_manage_permission(): void
+    {
+        $viewerAdmin = AdminUser::forceCreate([
+            'name' => 'Viewer2',
+            'email' => 'viewer2@test.com',
+            'password_hash' => bcrypt('password'),
+            'is_active' => true,
+        ]);
+        AdminUserRole::create([
+            'admin_user_id' => $viewerAdmin->id,
+            'admin_role_id' => $this->viewerRole->id,
+            'assigned_at' => now(),
+        ]);
+        $this->app['auth']->forgetGuards();
+        Sanctum::actingAs($viewerAdmin, ['*'], 'admin-api');
+
+        $response = $this->postJson('/api/v2/admin/team', [
+            'name' => 'New User',
+            'email' => 'newuser@test.com',
+            'password' => 'password123456!',
+        ]);
+
+        $response->assertForbidden();
+    }
+
+    public function test_list_roles_allowed_with_admin_team_roles_permission(): void
+    {
+        // The default test admin is a super admin, so can list roles
+        $response = $this->getJson('/api/v2/admin/roles');
+        $response->assertOk()->assertJsonPath('success', true);
+    }
 }

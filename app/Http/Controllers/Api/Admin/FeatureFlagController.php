@@ -165,6 +165,8 @@ class FeatureFlagController extends BaseApiController
             return $this->notFound('Feature flag not found');
         }
 
+        // FK SET NULL is bypassed in tests (session_replication_role=replica); apply manually.
+        \App\Domain\SystemConfig\Models\ABTest::where('feature_flag_id', $flag->id)->update(['feature_flag_id' => null]);
         $flag->delete();
 
         return $this->success(null, 'Feature flag deleted');
@@ -327,7 +329,9 @@ class FeatureFlagController extends BaseApiController
             return $this->error('Cannot delete a running test. Stop it first.', 422);
         }
 
-        $test->delete(); // variants cascade
+        // FK cascade is bypassed in tests (session_replication_role=replica); delete children explicitly.
+        $test->variants()->delete();
+        $test->delete();
 
         return $this->success(null, 'A/B test deleted');
     }

@@ -25,7 +25,7 @@
                     <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('infrastructure.database_backups') }}</p>
                     <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $backupsCompleted }}</p>
                     @if ($backupsFailed > 0)
-                        <p class="text-xs text-danger-500">{{ $backupsFailed }} {{ __('infrastructure.failed') }}</p>
+                        <p class="text-xs text-danger-500">{{ $backupsFailed }} {{ __('infrastructure.backups_failed') }}</p>
                     @endif
                 </div>
             </div>

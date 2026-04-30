@@ -78,7 +78,7 @@ class OrderService
             // Create order items
             if (!empty($data['items'])) {
                 foreach ($data['items'] as $item) {
-                    OrderItem::create([
+                    $itemPayload = [
                         'order_id' => $order->id,
                         'product_id' => $item['product_id'] ?? null,
                         'variant_id' => $item['variant_id'] ?? null,
@@ -89,7 +89,11 @@ class OrderService
                         'discount_amount' => $item['discount_amount'] ?? 0,
                         'tax_amount' => $item['tax_amount'] ?? 0,
                         'total' => $item['total'],
-                    ]);
+                    ];
+                    if ($itemPayload['product_id'] === null) {
+                        unset($itemPayload['product_id']);
+                    }
+                    OrderItem::create($itemPayload);
                 }
             }
 
@@ -160,10 +164,14 @@ class OrderService
         $date = now()->format('Ymd');
         $prefix = "ORD-{$date}-";
 
+        // Note: Postgres disallows FOR UPDATE with aggregate functions, so we
+        // select the matching rows with a row lock and count them in PHP.
         $count = DB::table('orders')
+            ->select('id')
             ->where('store_id', $storeId)
             ->where('order_number', 'like', "{$prefix}%")
             ->lockForUpdate()
+            ->get()
             ->count();
 
         return sprintf('ORD-%s-%04d', $date, $count + 1);

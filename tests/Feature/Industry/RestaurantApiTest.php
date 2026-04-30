@@ -35,17 +35,17 @@ class RestaurantApiTest extends TestCase
 
     private function createTables(): void
     {
-        DB::statement('DROP TABLE IF EXISTS restaurant_tables');
-        DB::statement('CREATE TABLE restaurant_tables (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, table_number VARCHAR(20) NOT NULL, display_name VARCHAR(100), seats INTEGER NOT NULL, zone VARCHAR(50), position_x REAL, position_y REAL, status VARCHAR(20) NOT NULL DEFAULT "available", current_order_id VARCHAR(36), is_active BOOLEAN DEFAULT 1, created_at TIMESTAMP, updated_at TIMESTAMP)');
+        DB::statement('DROP TABLE IF EXISTS restaurant_tables CASCADE');
+        DB::statement("CREATE TABLE restaurant_tables (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, table_number VARCHAR(20) NOT NULL, display_name VARCHAR(100), seats INTEGER NOT NULL, zone VARCHAR(50), position_x REAL, position_y REAL, status VARCHAR(20) NOT NULL DEFAULT 'available', current_order_id VARCHAR(36), is_active BOOLEAN DEFAULT TRUE, created_at TIMESTAMP, updated_at TIMESTAMP)");
 
-        DB::statement('DROP TABLE IF EXISTS kitchen_tickets');
-        DB::statement('CREATE TABLE kitchen_tickets (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, order_id VARCHAR(36), table_id VARCHAR(36), ticket_number VARCHAR(50) NOT NULL, items_json TEXT NOT NULL, station VARCHAR(50), status VARCHAR(20) NOT NULL DEFAULT "pending", course_number INTEGER, fire_at DATETIME, completed_at DATETIME, created_at TIMESTAMP, updated_at TIMESTAMP)');
+        DB::statement('DROP TABLE IF EXISTS kitchen_tickets CASCADE');
+        DB::statement("CREATE TABLE kitchen_tickets (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, order_id VARCHAR(36), table_id VARCHAR(36), ticket_number VARCHAR(50) NOT NULL, items_json TEXT NOT NULL, station VARCHAR(50), status VARCHAR(20) NOT NULL DEFAULT 'pending', course_number INTEGER, fire_at TIMESTAMP, completed_at TIMESTAMP, created_at TIMESTAMP, updated_at TIMESTAMP)");
 
-        DB::statement('DROP TABLE IF EXISTS table_reservations');
-        DB::statement('CREATE TABLE table_reservations (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, table_id VARCHAR(36), customer_name VARCHAR(255) NOT NULL, customer_phone VARCHAR(20), party_size INTEGER NOT NULL, reservation_date DATE NOT NULL, reservation_time VARCHAR(10) NOT NULL, duration_minutes INTEGER, status VARCHAR(20) NOT NULL DEFAULT "confirmed", notes TEXT, created_at TIMESTAMP, updated_at TIMESTAMP)');
+        DB::statement('DROP TABLE IF EXISTS table_reservations CASCADE');
+        DB::statement("CREATE TABLE table_reservations (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, table_id VARCHAR(36), customer_name VARCHAR(255) NOT NULL, customer_phone VARCHAR(20), party_size INTEGER NOT NULL, reservation_date DATE NOT NULL, reservation_time VARCHAR(10) NOT NULL, duration_minutes INTEGER, status VARCHAR(20) NOT NULL DEFAULT 'confirmed', notes TEXT, created_at TIMESTAMP, updated_at TIMESTAMP)");
 
-        DB::statement('DROP TABLE IF EXISTS open_tabs');
-        DB::statement('CREATE TABLE open_tabs (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, order_id VARCHAR(36), customer_name VARCHAR(255), table_id VARCHAR(36), opened_at DATETIME, closed_at DATETIME, status VARCHAR(10) NOT NULL DEFAULT "open", created_at TIMESTAMP, updated_at TIMESTAMP)');
+        DB::statement('DROP TABLE IF EXISTS open_tabs CASCADE');
+        DB::statement("CREATE TABLE open_tabs (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, order_id VARCHAR(36), customer_name VARCHAR(255), table_id VARCHAR(36), opened_at TIMESTAMP, closed_at TIMESTAMP, status VARCHAR(10) NOT NULL DEFAULT 'open', created_at TIMESTAMP, updated_at TIMESTAMP)");
     }
 
     private function h(?string $token = null): array

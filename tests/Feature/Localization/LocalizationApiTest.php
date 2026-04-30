@@ -141,6 +141,8 @@ class LocalizationApiTest extends TestCase
         }
 
         // Seed test data
+        SupportedLocale::query()->delete();
+
         $org = Organization::create([
             'name' => 'Localization Test Org',
             'business_type' => 'grocery',
@@ -200,14 +202,16 @@ class LocalizationApiTest extends TestCase
 
     public function test_save_locale_updates_existing()
     {
-        SupportedLocale::create([
-            'locale_code' => 'ar',
-            'language_name' => 'Arabic',
-            'language_name_native' => 'العربية',
-            'direction' => 'rtl',
-            'is_active' => true,
-            'is_default' => true,
-        ]);
+        SupportedLocale::updateOrCreate(
+            ['locale_code' => 'ar'],
+            [
+                'language_name' => 'Arabic',
+                'language_name_native' => 'العربية',
+                'direction' => 'rtl',
+                'is_active' => true,
+                'is_default' => true,
+            ],
+        );
 
         $res = $this->postJson('/api/v2/settings/locales', [
             'locale_code' => 'ar',

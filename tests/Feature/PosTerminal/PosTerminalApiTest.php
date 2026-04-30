@@ -74,7 +74,7 @@ class PosTerminalApiTest extends TestCase
     {
         PosSession::create([
             'store_id' => $this->store->id,
-            'register_id' => 'REG-001',
+            'register_id' => '00000000-0000-0000-0000-000000000003',
             'cashier_id' => $this->user->id,
             'status' => CashSessionStatus::Open,
             'opening_cash' => 50,
@@ -90,7 +90,7 @@ class PosTerminalApiTest extends TestCase
 
         $response = $this->withToken($this->token)
             ->postJson('/api/v2/pos/sessions', [
-                'register_id' => 'REG-001',
+                'register_id' => '00000000-0000-0000-0000-000000000003',
                 'opening_cash' => 100.00,
             ]);
 

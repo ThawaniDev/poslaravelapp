@@ -131,7 +131,7 @@ class SupportTicketApiTest extends TestCase
 
     public function test_show_ticket_not_found(): void
     {
-        $this->getJson('/api/v2/admin/support/tickets/nonexistent')
+        $this->getJson('/api/v2/admin/support/tickets/00000000-0000-0000-0000-000000000099')
             ->assertNotFound();
     }
 
@@ -150,7 +150,7 @@ class SupportTicketApiTest extends TestCase
 
     public function test_update_ticket_not_found(): void
     {
-        $this->putJson('/api/v2/admin/support/tickets/nonexistent', ['subject' => 'X'])
+        $this->putJson('/api/v2/admin/support/tickets/00000000-0000-0000-0000-000000000099', ['subject' => 'X'])
             ->assertNotFound();
     }
 
@@ -225,7 +225,7 @@ class SupportTicketApiTest extends TestCase
 
     public function test_change_status_not_found(): void
     {
-        $this->postJson('/api/v2/admin/support/tickets/nonexistent/status', ['status' => 'closed'])
+        $this->postJson('/api/v2/admin/support/tickets/00000000-0000-0000-0000-000000000099/status', ['status' => 'closed'])
             ->assertNotFound();
     }
 
@@ -357,14 +357,14 @@ class SupportTicketApiTest extends TestCase
 
     public function test_add_message_ticket_not_found(): void
     {
-        $this->postJson('/api/v2/admin/support/tickets/nonexistent/messages', [
+        $this->postJson('/api/v2/admin/support/tickets/00000000-0000-0000-0000-000000000099/messages', [
             'message_text' => 'test',
         ])->assertNotFound();
     }
 
     public function test_list_messages_ticket_not_found(): void
     {
-        $this->getJson('/api/v2/admin/support/tickets/nonexistent/messages')
+        $this->getJson('/api/v2/admin/support/tickets/00000000-0000-0000-0000-000000000099/messages')
             ->assertNotFound();
     }
 
@@ -429,7 +429,7 @@ class SupportTicketApiTest extends TestCase
 
     public function test_show_canned_response_not_found(): void
     {
-        $this->getJson('/api/v2/admin/support/canned-responses/nonexistent')
+        $this->getJson('/api/v2/admin/support/canned-responses/00000000-0000-0000-0000-000000000099')
             ->assertNotFound();
     }
 
@@ -676,7 +676,7 @@ class SupportTicketApiTest extends TestCase
 
     public function test_show_kb_article_not_found(): void
     {
-        $this->getJson('/api/v2/admin/support/kb/nonexistent')
+        $this->getJson('/api/v2/admin/support/kb/00000000-0000-0000-0000-000000000099')
             ->assertNotFound();
     }
 

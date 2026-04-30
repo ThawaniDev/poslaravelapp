@@ -86,7 +86,7 @@ class ProviderAnnouncementApiTest extends TestCase
 
     public function test_unauthenticated_cannot_dismiss_announcement(): void
     {
-        $this->postJson('/api/v2/announcements/fake-id/dismiss')
+        $this->postJson('/api/v2/announcements/00000000-0000-0000-0000-000000000099/dismiss')
             ->assertUnauthorized();
     }
 

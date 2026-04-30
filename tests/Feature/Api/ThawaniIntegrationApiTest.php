@@ -286,7 +286,7 @@ class ThawaniIntegrationApiTest extends TestCase
         ThawaniSyncQueue::create([
             'store_id' => $this->store->id,
             'entity_type' => 'product',
-            'entity_id' => 'test-uuid',
+            'entity_id' => '00000000-0000-0000-0000-000000000099',
             'action' => 'create',
             'status' => 'pending',
             'scheduled_at' => now(),

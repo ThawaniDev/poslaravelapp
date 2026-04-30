@@ -195,7 +195,7 @@ class DeploymentApiTest extends TestCase
 
     public function test_show_release_not_found(): void
     {
-        $res = $this->getJson("{$this->prefix}/releases/nonexistent");
+        $res = $this->getJson("{$this->prefix}/releases/00000000-0000-0000-0000-000000000099");
         $res->assertNotFound();
     }
 
@@ -218,7 +218,7 @@ class DeploymentApiTest extends TestCase
 
     public function test_update_release_not_found(): void
     {
-        $res = $this->putJson("{$this->prefix}/releases/nonexistent", [
+        $res = $this->putJson("{$this->prefix}/releases/00000000-0000-0000-0000-000000000099", [
             'version_number' => '1.0.0',
         ]);
         $res->assertNotFound();
@@ -249,7 +249,7 @@ class DeploymentApiTest extends TestCase
 
     public function test_activate_not_found(): void
     {
-        $this->postJson("{$this->prefix}/releases/nonexistent/activate")->assertNotFound();
+        $this->postJson("{$this->prefix}/releases/00000000-0000-0000-0000-000000000099/activate")->assertNotFound();
     }
 
     // ──────────────── Rollout ────────────────
@@ -276,7 +276,7 @@ class DeploymentApiTest extends TestCase
 
     public function test_update_rollout_not_found(): void
     {
-        $this->putJson("{$this->prefix}/releases/nonexistent/rollout", [
+        $this->putJson("{$this->prefix}/releases/00000000-0000-0000-0000-000000000099/rollout", [
             'rollout_percentage' => 50,
         ])->assertNotFound();
     }
@@ -295,7 +295,7 @@ class DeploymentApiTest extends TestCase
 
     public function test_delete_release_not_found(): void
     {
-        $this->deleteJson("{$this->prefix}/releases/nonexistent")->assertNotFound();
+        $this->deleteJson("{$this->prefix}/releases/00000000-0000-0000-0000-000000000099")->assertNotFound();
     }
 
     // ──────────────── Stats ────────────────
@@ -323,7 +323,7 @@ class DeploymentApiTest extends TestCase
 
     public function test_list_stats_release_not_found(): void
     {
-        $this->getJson("{$this->prefix}/releases/nonexistent/stats")->assertNotFound();
+        $this->getJson("{$this->prefix}/releases/00000000-0000-0000-0000-000000000099/stats")->assertNotFound();
     }
 
     public function test_record_stat(): void
@@ -350,7 +350,7 @@ class DeploymentApiTest extends TestCase
 
     public function test_record_stat_release_not_found(): void
     {
-        $this->postJson("{$this->prefix}/releases/nonexistent/stats", [
+        $this->postJson("{$this->prefix}/releases/00000000-0000-0000-0000-000000000099/stats", [
             'date' => '2024-06-15',
         ])->assertNotFound();
     }
@@ -377,7 +377,7 @@ class DeploymentApiTest extends TestCase
 
     public function test_release_summary_not_found(): void
     {
-        $this->getJson("{$this->prefix}/releases/nonexistent/summary")->assertNotFound();
+        $this->getJson("{$this->prefix}/releases/00000000-0000-0000-0000-000000000099/summary")->assertNotFound();
     }
 
     public function test_release_summary_empty(): void

@@ -45,6 +45,24 @@ class SubscriptionPlan extends Model
         'annual_price' => 'decimal:2',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $plan): void {
+            if (empty($plan->name_ar) && ! empty($plan->name)) {
+                $plan->name_ar = $plan->name;
+            }
+            if (empty($plan->slug) && ! empty($plan->name)) {
+                $base = \Illuminate\Support\Str::slug($plan->name) ?: \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8));
+                $slug = $base;
+                $i = 1;
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = $base . '-' . $i++;
+                }
+                $plan->slug = $slug;
+            }
+        });
+    }
+
     public function planFeatureToggles(): HasMany
     {
         return $this->hasMany(PlanFeatureToggle::class);

@@ -68,6 +68,10 @@ class UserManagementController extends BaseApiController
      */
     public function listProviderUsers(Request $request): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['users.view', 'users.manage', 'users.edit'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $query = User::query()->with(['store', 'organization']);
 
         // Search by name, email, or phone
@@ -117,8 +121,12 @@ class UserManagementController extends BaseApiController
      * GET /admin/users/provider/{userId}
      * Show a single provider user with relationships.
      */
-    public function showProviderUser(string $userId): JsonResponse
+    public function showProviderUser(Request $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['users.view', 'users.manage', 'users.edit'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $user = User::with(['store', 'organization'])->find($userId);
 
         if (!$user) {
@@ -132,8 +140,12 @@ class UserManagementController extends BaseApiController
      * POST /admin/users/provider/{userId}/reset-password
      * Generate a temporary password and return it.
      */
-    public function resetPassword(string $userId): JsonResponse
+    public function resetPassword(Request $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['users.reset_password', 'users.manage'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $user = User::find($userId);
 
         if (!$user) {
@@ -158,8 +170,12 @@ class UserManagementController extends BaseApiController
      * POST /admin/users/provider/{userId}/force-password-change
      * Set must_change_password flag.
      */
-    public function forcePasswordChange(string $userId): JsonResponse
+    public function forcePasswordChange(Request $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['users.manage', 'users.edit'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $user = User::find($userId);
 
         if (!$user) {
@@ -179,8 +195,12 @@ class UserManagementController extends BaseApiController
      * POST /admin/users/provider/{userId}/toggle-active
      * Enable or disable a provider user account.
      */
-    public function toggleProviderActive(string $userId): JsonResponse
+    public function toggleProviderActive(Request $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['users.edit', 'users.manage'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $user = User::find($userId);
 
         if (!$user) {
@@ -206,8 +226,12 @@ class UserManagementController extends BaseApiController
      * GET /admin/users/provider/{userId}/activity
      * View activity log for a specific provider user.
      */
-    public function providerUserActivity(string $userId): JsonResponse
+    public function providerUserActivity(Request $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['users.view', 'users.manage', 'users.edit'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $user = User::find($userId);
 
         if (!$user) {
@@ -236,6 +260,10 @@ class UserManagementController extends BaseApiController
      */
     public function listAdminUsers(Request $request): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['admin_team.view', 'admin_team.manage'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $query = AdminUser::query()->with('adminUserRoles.adminRole');
 
         if ($search = $request->get('search')) {
@@ -260,8 +288,12 @@ class UserManagementController extends BaseApiController
      * GET /admin/users/admins/{userId}
      * Show a single admin user with roles and details.
      */
-    public function showAdminUser(string $userId): JsonResponse
+    public function showAdminUser(Request $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['admin_team.view', 'admin_team.manage'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $admin = AdminUser::with('adminUserRoles.adminRole')->find($userId);
 
         if (!$admin) {
@@ -277,6 +309,10 @@ class UserManagementController extends BaseApiController
      */
     public function inviteAdmin(InviteAdminRequest $request): JsonResponse
     {
+        if (!$request->user()->hasPermission('admin_team.manage')) {
+            return $this->error('Forbidden', 403);
+        }
+
         $tempPassword = Str::random(16);
 
         $admin = AdminUser::forceCreate([
@@ -315,6 +351,10 @@ class UserManagementController extends BaseApiController
      */
     public function updateAdmin(UpdateAdminUserRequest $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasPermission('admin_team.manage')) {
+            return $this->error('Forbidden', 403);
+        }
+
         $admin = AdminUser::find($userId);
 
         if (!$admin) {
@@ -356,8 +396,12 @@ class UserManagementController extends BaseApiController
      * POST /admin/users/admins/{userId}/reset-2fa
      * Clear 2FA secret for an admin user.
      */
-    public function resetAdmin2fa(string $userId): JsonResponse
+    public function resetAdmin2fa(Request $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasPermission('admin_team.manage')) {
+            return $this->error('Forbidden', 403);
+        }
+
         $admin = AdminUser::find($userId);
 
         if (!$admin) {
@@ -384,8 +428,12 @@ class UserManagementController extends BaseApiController
      * GET /admin/users/admins/{userId}/activity
      * View activity log for a specific admin user.
      */
-    public function adminUserActivity(string $userId): JsonResponse
+    public function adminUserActivity(Request $request, string $userId): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['admin_team.view', 'admin_team.manage'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $admin = AdminUser::find($userId);
 
         if (!$admin) {

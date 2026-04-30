@@ -35,13 +35,13 @@ class JewelryApiTest extends TestCase
 
     private function createTables(): void
     {
-        DB::statement('DROP TABLE IF EXISTS daily_metal_rates');
+        DB::statement('DROP TABLE IF EXISTS daily_metal_rates CASCADE');
         DB::statement('CREATE TABLE daily_metal_rates (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, metal_type VARCHAR(20) NOT NULL, karat VARCHAR(20), rate_per_gram DECIMAL(12,2) NOT NULL, buyback_rate_per_gram DECIMAL(12,2), effective_date DATE NOT NULL, created_at TIMESTAMP, updated_at TIMESTAMP)');
 
-        DB::statement('DROP TABLE IF EXISTS jewelry_product_details');
+        DB::statement('DROP TABLE IF EXISTS jewelry_product_details CASCADE');
         DB::statement('CREATE TABLE jewelry_product_details (id VARCHAR(36) PRIMARY KEY, product_id VARCHAR(36) NOT NULL, metal_type VARCHAR(20) NOT NULL, karat VARCHAR(20), gross_weight_g DECIMAL(10,2) NOT NULL, net_weight_g DECIMAL(10,2), making_charges_type VARCHAR(20) NOT NULL, making_charges_value DECIMAL(10,2) NOT NULL, stone_type VARCHAR(100), stone_weight_carat DECIMAL(8,2), stone_count INTEGER, certificate_number VARCHAR(100), certificate_url VARCHAR(500), created_at TIMESTAMP, updated_at TIMESTAMP)');
 
-        DB::statement('DROP TABLE IF EXISTS buyback_transactions');
+        DB::statement('DROP TABLE IF EXISTS buyback_transactions CASCADE');
         DB::statement('CREATE TABLE buyback_transactions (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, customer_id VARCHAR(36) NOT NULL, metal_type VARCHAR(20) NOT NULL, karat VARCHAR(20), weight_g DECIMAL(10,2) NOT NULL, rate_per_gram DECIMAL(12,2) NOT NULL, total_amount DECIMAL(12,2) NOT NULL, payment_method VARCHAR(30) NOT NULL, staff_user_id VARCHAR(36), notes TEXT, created_at TIMESTAMP, updated_at TIMESTAMP)');
     }
 

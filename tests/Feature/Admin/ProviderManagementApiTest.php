@@ -719,7 +719,7 @@ class ProviderManagementApiTest extends TestCase
     public function test_remove_nonexistent_limit_override(): void
     {
         $response = $this
-            ->deleteJson("/api/v2/admin/providers/stores/{$this->store->id}/limits/nonexistent");
+            ->deleteJson("/api/v2/admin/providers/stores/{$this->store->id}/limits/00000000-0000-0000-0000-000000000099");
 
         $response->assertNotFound();
     }

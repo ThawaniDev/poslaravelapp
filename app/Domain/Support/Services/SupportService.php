@@ -3,15 +3,14 @@
 namespace App\Domain\Support\Services;
 
 use App\Domain\AdminPanel\Models\AdminActivityLog;
+use App\Domain\Notification\Services\NotificationService;
 use App\Domain\Support\Enums\TicketPriority;
 use App\Domain\Support\Enums\TicketSenderType;
 use App\Domain\Support\Enums\TicketStatus;
 use App\Domain\Support\Models\SupportTicket;
 use App\Domain\Support\Models\SupportTicketMessage;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class SupportService
 {
@@ -21,8 +20,10 @@ class SupportService
 
     public function listTickets(string $userId, string $storeId, array $filters = []): array
     {
-        $query = SupportTicket::where('user_id', $userId)
-            ->orWhere('store_id', $storeId);
+        // Scope by user OR store (wrapped to avoid SQL precedence issues)
+        $query = SupportTicket::where(function ($q) use ($userId, $storeId) {
+            $q->where('user_id', $userId)->orWhere('store_id', $storeId);
+        });
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
@@ -32,6 +33,14 @@ class SupportService
         }
         if (!empty($filters['priority'])) {
             $query->where('priority', $filters['priority']);
+        }
+        if (!empty($filters['search'])) {
+            $s = $filters['search'];
+            $query->where(function ($q) use ($s) {
+                $q->where('subject', 'like', "%{$s}%")
+                  ->orWhere('ticket_number', 'like', "%{$s}%")
+                  ->orWhere('description', 'like', "%{$s}%");
+            });
         }
 
         return $query->orderByDesc('created_at')
@@ -53,7 +62,7 @@ class SupportService
             $priority = TicketPriority::tryFrom($data['priority'] ?? 'medium') ?? TicketPriority::Medium;
 
             $ticket = SupportTicket::create([
-                'ticket_number'   => 'TKT-' . strtoupper(Str::random(8)),
+                'ticket_number'   => $this->generateTicketNumber(),
                 'user_id'         => $userId,
                 'store_id'        => $storeId,
                 'organization_id' => $organizationId,
@@ -62,6 +71,7 @@ class SupportService
                 'status'          => TicketStatus::Open,
                 'subject'         => $data['subject'],
                 'description'     => $data['description'],
+                'sla_deadline_at' => now()->addMinutes($priority->slaResolutionMinutes()),
             ]);
 
             Log::channel('daily')->info('Support ticket created by provider', [
@@ -75,6 +85,25 @@ class SupportService
 
             return $ticket;
         });
+    }
+
+    /**
+     * Generate a sequential ticket number: TKT-{YEAR}-{SEQUENCE}.
+     * Uses lockForUpdate to prevent race conditions in concurrent inserts.
+     */
+    private function generateTicketNumber(): string
+    {
+        $year   = now()->year;
+        $prefix = "TKT-{$year}-";
+
+        $last = SupportTicket::where('ticket_number', 'like', "{$prefix}%")
+            ->lockForUpdate()
+            ->orderByDesc('ticket_number')
+            ->value('ticket_number');
+
+        $seq = $last ? ((int) substr($last, strlen($prefix)) + 1) : 1;
+
+        return $prefix . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
     }
 
     public function addMessage(string $ticketId, string $userId, string $storeId, array $data): ?SupportTicketMessage
@@ -178,6 +207,26 @@ class SupportService
             $ticket->update(['status' => TicketStatus::InProgress]);
         }
 
+        // Notify provider when admin replies (not for internal notes)
+        if (!$isInternalNote && $ticket->user_id) {
+            try {
+                app(NotificationService::class)->create($ticket->user_id, $ticket->store_id, [
+                    'category'       => 'support',
+                    'title'          => "Reply on ticket {$ticket->ticket_number}",
+                    'message'        => mb_substr($messageText, 0, 200),
+                    'reference_type' => 'support_ticket',
+                    'reference_id'   => $ticket->id,
+                    'priority'       => 'high',
+                    'channel'        => 'in_app',
+                ]);
+            } catch (\Throwable $e) {
+                Log::channel('daily')->warning('Failed to send ticket reply notification', [
+                    'ticket_id' => $ticket->id,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
+        }
+
         Log::channel('daily')->info('Admin replied to support ticket', [
             'ticket_id'      => $ticket->id,
             'message_id'     => $message->id,
@@ -249,21 +298,59 @@ class SupportService
 
     public function getAdminStats(): array
     {
+        $driver = DB::getDriverName();
+
+        $avgResponseMin = (int) SupportTicket::whereNotNull('first_response_at')
+            ->selectRaw(
+                $driver === 'sqlite'
+                    ? 'AVG((julianday(first_response_at) - julianday(created_at)) * 24 * 60) as avg'
+                    : 'AVG(EXTRACT(EPOCH FROM (first_response_at - created_at)) / 60) as avg'
+            )
+            ->value('avg');
+
+        $avgResolutionMin = (int) SupportTicket::whereNotNull('resolved_at')
+            ->selectRaw(
+                $driver === 'sqlite'
+                    ? 'AVG((julianday(resolved_at) - julianday(created_at)) * 24 * 60) as avg'
+                    : 'AVG(EXTRACT(EPOCH FROM (resolved_at - created_at)) / 60) as avg'
+            )
+            ->value('avg');
+
         return [
-            'total'            => SupportTicket::count(),
-            'open'             => SupportTicket::open()->count(),
-            'in_progress'      => SupportTicket::inProgress()->count(),
-            'unresolved'       => SupportTicket::unresolved()->count(),
-            'sla_breached'     => SupportTicket::slaBreach()->count(),
-            'resolved_today'   => SupportTicket::where('status', TicketStatus::Resolved)
+            'total'              => SupportTicket::count(),
+            'open'               => SupportTicket::open()->count(),
+            'in_progress'        => SupportTicket::inProgress()->count(),
+            'unresolved'         => SupportTicket::unresolved()->count(),
+            'sla_breached'       => SupportTicket::slaBreach()->count(),
+            'resolved_today'     => SupportTicket::where('status', TicketStatus::Resolved)
                 ->whereDate('resolved_at', today())->count(),
-            'avg_response_min' => (int) SupportTicket::whereNotNull('first_response_at')
-                ->selectRaw(
-                    DB::getDriverName() === 'sqlite'
-                        ? 'AVG((julianday(first_response_at) - julianday(created_at)) * 24 * 60) as avg'
-                        : 'AVG(EXTRACT(EPOCH FROM (first_response_at - created_at)) / 60) as avg'
-                )
-                ->value('avg'),
+            'critical'           => SupportTicket::where('priority', TicketPriority::Critical)
+                ->unresolved()->count(),
+            'unassigned'         => SupportTicket::unresolved()->whereNull('assigned_to')->count(),
+            'avg_response_min'   => $avgResponseMin,
+            'avg_resolution_min' => $avgResolutionMin,
         ];
+    }
+
+    /**
+     * Rate a resolved ticket (provider-facing satisfaction rating 1–5).
+     */
+    public function rateTicket(string $ticketId, string $userId, string $storeId, int $rating, ?string $comment): bool
+    {
+        $ticket = SupportTicket::where('id', $ticketId)
+            ->where(fn ($q) => $q->where('user_id', $userId)->orWhere('store_id', $storeId))
+            ->whereIn('status', [TicketStatus::Resolved, TicketStatus::Closed])
+            ->first();
+
+        if (!$ticket) {
+            return false;
+        }
+
+        $ticket->update([
+            'satisfaction_rating'  => $rating,
+            'satisfaction_comment' => $comment,
+        ]);
+
+        return true;
     }
 }

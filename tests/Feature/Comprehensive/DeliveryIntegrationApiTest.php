@@ -443,7 +443,7 @@ class DeliveryIntegrationApiTest extends TestCase
     {
         $response = $this->withToken($this->token)
             ->postJson('/api/v2/delivery/menu-sync', [
-                'platform' => 'nonexistent',
+                'platform' => '00000000-0000-0000-0000-000000000099',
                 'products' => [
                     ['id' => Str::uuid()->toString(), 'name' => 'Item', 'price' => 10.00],
                 ],

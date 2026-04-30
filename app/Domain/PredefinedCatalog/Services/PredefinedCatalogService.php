@@ -185,6 +185,8 @@ class PredefinedCatalogService
 
     public function deleteProduct(PredefinedProduct $product): void
     {
+        // FK cascade is bypassed in tests (session_replication_role=replica); delete children explicitly.
+        $product->images()->delete();
         $product->delete();
     }
 

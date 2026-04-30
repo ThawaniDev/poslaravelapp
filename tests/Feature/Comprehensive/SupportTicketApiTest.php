@@ -386,7 +386,7 @@ class SupportTicketApiTest extends TestCase
     public function test_kb_article_returns_404_for_unknown_slug(): void
     {
         $response = $this->withToken($this->token)
-            ->getJson('/api/v2/support/kb/nonexistent-slug');
+            ->getJson('/api/v2/support/kb/00000000-0000-0000-0000-000000000099-slug');
 
         $response->assertNotFound();
     }

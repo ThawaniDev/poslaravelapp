@@ -166,9 +166,9 @@ class PosLayoutApiTest extends TestCase
         $this->labelTemplate->businessTypes()->attach($this->businessType->id);
 
         // Seed platform defaults
-        PlatformUiDefault::create(['key' => 'handedness', 'value' => 'right']);
-        PlatformUiDefault::create(['key' => 'font_size', 'value' => 'medium']);
-        PlatformUiDefault::create(['key' => 'theme', 'value' => 'light_classic']);
+        PlatformUiDefault::updateOrCreate(['key' => 'handedness'], ['value' => 'right']);
+        PlatformUiDefault::updateOrCreate(['key' => 'font_size'], ['value' => 'medium']);
+        PlatformUiDefault::updateOrCreate(['key' => 'theme'], ['value' => 'light_classic']);
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -647,7 +647,7 @@ class PosLayoutApiTest extends TestCase
     public function test_get_receipt_template_not_found(): void
     {
         $response = $this->withToken($this->token)
-            ->getJson('/api/v2/ui/receipt-templates/nonexistent');
+            ->getJson('/api/v2/ui/receipt-templates/00000000-0000-0000-0000-000000000099');
 
         $response->assertNotFound()
             ->assertJsonPath('success', false);
@@ -704,7 +704,7 @@ class PosLayoutApiTest extends TestCase
     public function test_get_cfd_theme_not_found(): void
     {
         $response = $this->withToken($this->token)
-            ->getJson('/api/v2/ui/cfd-themes/nonexistent');
+            ->getJson('/api/v2/ui/cfd-themes/00000000-0000-0000-0000-000000000099');
 
         $response->assertNotFound()
             ->assertJsonPath('success', false);
@@ -766,7 +766,7 @@ class PosLayoutApiTest extends TestCase
     public function test_get_signage_template_not_found(): void
     {
         $response = $this->withToken($this->token)
-            ->getJson('/api/v2/ui/signage-templates/nonexistent');
+            ->getJson('/api/v2/ui/signage-templates/00000000-0000-0000-0000-000000000099');
 
         $response->assertNotFound()
             ->assertJsonPath('success', false);
@@ -812,7 +812,7 @@ class PosLayoutApiTest extends TestCase
     public function test_get_label_template_not_found(): void
     {
         $response = $this->withToken($this->token)
-            ->getJson('/api/v2/ui/label-templates/nonexistent');
+            ->getJson('/api/v2/ui/label-templates/00000000-0000-0000-0000-000000000099');
 
         $response->assertNotFound()
             ->assertJsonPath('success', false);

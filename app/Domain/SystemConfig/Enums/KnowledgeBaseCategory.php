@@ -4,6 +4,7 @@ namespace App\Domain\SystemConfig\Enums;
 
 enum KnowledgeBaseCategory: string
 {
+    case General = 'general';
     case GettingStarted = 'getting_started';
     case PosUsage = 'pos_usage';
     case Inventory = 'inventory';
@@ -14,6 +15,7 @@ enum KnowledgeBaseCategory: string
     public function label(): string
     {
         return match ($this) {
+            self::General        => __('support.kb_cat_general'),
             self::GettingStarted => __('support.kb_cat_getting_started'),
             self::PosUsage       => __('support.kb_cat_pos_usage'),
             self::Inventory      => __('support.kb_cat_inventory'),

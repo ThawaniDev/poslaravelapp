@@ -21,6 +21,16 @@ abstract class TestCase extends BaseTestCase
         $router->aliasMiddleware('plan.limit', BypassPermissionMiddleware::class);
         $router->aliasMiddleware('plan.active', BypassPermissionMiddleware::class);
 
+        // Disable Postgres FK enforcement in tests to match prior SQLite behavior
+        // (the test schema and many test fixtures don't honor FK relationships).
+        if (DB::connection()->getDriverName() === 'pgsql') {
+            try {
+                DB::statement("SET session_replication_role = 'replica'");
+            } catch (\Throwable $e) {
+                // ignore (non-superuser may not be allowed)
+            }
+        }
+
         // Register PostgreSQL functions for SQLite test database
         if (DB::connection()->getDriverName() === 'sqlite') {
             /** @var \PDO $pdo */

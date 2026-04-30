@@ -141,16 +141,37 @@ class BusinessTypeResource extends Resource
                         $newType->slug = $record->slug . '-copy';
                         $newType->save();
 
-                        // Duplicate template relations
-                        foreach ($record->businessTypeCategoryTemplates as $tpl) {
-                            $new = $tpl->replicate();
-                            $new->business_type_id = $newType->id;
-                            $new->save();
+                        // Duplicate all hasMany template relations
+                        $hasManyRelations = [
+                            'businessTypeCategoryTemplates',
+                            'businessTypeShiftTemplates',
+                            'businessTypePromotionTemplates',
+                            'businessTypeCommissionTemplates',
+                            'businessTypeCustomerGroupTemplates',
+                            'businessTypeWasteReasonTemplates',
+                            'businessTypeServiceCategoryTemplates',
+                            'businessTypeGiftRegistryTypes',
+                            'businessTypeGamificationBadges',
+                            'businessTypeGamificationChallenges',
+                            'businessTypeGamificationMilestones',
+                        ];
+
+                        foreach ($hasManyRelations as $relation) {
+                            foreach ($record->$relation as $tpl) {
+                                $new = $tpl->replicate();
+                                $new->business_type_id = $newType->id;
+                                $new->save();
+                            }
                         }
-                        foreach ($record->businessTypeShiftTemplates as $tpl) {
-                            $new = $tpl->replicate();
-                            $new->business_type_id = $newType->id;
-                            $new->save();
+
+                        // Duplicate hasOne relations
+                        foreach (['businessTypeReceiptTemplate', 'businessTypeIndustryConfig', 'businessTypeLoyaltyConfig', 'businessTypeReturnPolicy', 'businessTypeAppointmentConfig'] as $hasOne) {
+                            $related = $record->$hasOne;
+                            if ($related) {
+                                $new = $related->replicate();
+                                $new->business_type_id = $newType->id;
+                                $new->save();
+                            }
                         }
                     }),
             ])
@@ -206,6 +227,38 @@ class BusinessTypeResource extends Resource
                         ->label(__('Customer Group Templates'))
                         ->state(fn (BusinessType $record) => $record->businessTypeCustomerGroupTemplates()->count())
                         ->badge()->color('info'),
+                    Infolists\Components\TextEntry::make('service_categories_count')
+                        ->label(__('Service Category Templates'))
+                        ->state(fn (BusinessType $record) => $record->businessTypeServiceCategoryTemplates()->count())
+                        ->badge()->color('info'),
+                    Infolists\Components\TextEntry::make('gamification_badges_count')
+                        ->label(__('Gamification Badges'))
+                        ->state(fn (BusinessType $record) => $record->businessTypeGamificationBadges()->count())
+                        ->badge()->color('info'),
+                    Infolists\Components\TextEntry::make('gamification_challenges_count')
+                        ->label(__('Gamification Challenges'))
+                        ->state(fn (BusinessType $record) => $record->businessTypeGamificationChallenges()->count())
+                        ->badge()->color('info'),
+                    Infolists\Components\TextEntry::make('gamification_milestones_count')
+                        ->label(__('Gamification Milestones'))
+                        ->state(fn (BusinessType $record) => $record->businessTypeGamificationMilestones()->count())
+                        ->badge()->color('info'),
+                    Infolists\Components\IconEntry::make('has_receipt_template')
+                        ->label(__('Receipt Template'))
+                        ->state(fn (BusinessType $record) => $record->businessTypeReceiptTemplate()->exists())
+                        ->boolean(),
+                    Infolists\Components\IconEntry::make('has_industry_config')
+                        ->label(__('Industry Config'))
+                        ->state(fn (BusinessType $record) => $record->businessTypeIndustryConfig()->exists())
+                        ->boolean(),
+                    Infolists\Components\IconEntry::make('has_loyalty_config')
+                        ->label(__('Loyalty Config'))
+                        ->state(fn (BusinessType $record) => $record->businessTypeLoyaltyConfig()->exists())
+                        ->boolean(),
+                    Infolists\Components\IconEntry::make('has_return_policy')
+                        ->label(__('Return Policy'))
+                        ->state(fn (BusinessType $record) => $record->businessTypeReturnPolicy()->exists())
+                        ->boolean(),
                 ])
                 ->columns(6),
 
@@ -223,15 +276,30 @@ class BusinessTypeResource extends Resource
     public static function getRelations(): array
     {
         return [
-            BusinessTypeResource\RelationManagers\PosLayoutTemplatesRelationManager::class,
+            // ── Core Templates ───────────────────────────────────────────
             BusinessTypeResource\RelationManagers\CategoryTemplatesRelationManager::class,
             BusinessTypeResource\RelationManagers\ShiftTemplatesRelationManager::class,
+            BusinessTypeResource\RelationManagers\ReceiptTemplateRelationManager::class,
+            BusinessTypeResource\RelationManagers\IndustryConfigRelationManager::class,
+            // ── Pricing & Commerce ───────────────────────────────────────
             BusinessTypeResource\RelationManagers\PromotionTemplatesRelationManager::class,
             BusinessTypeResource\RelationManagers\CommissionTemplatesRelationManager::class,
+            // ── Customer & Loyalty ───────────────────────────────────────
+            BusinessTypeResource\RelationManagers\LoyaltyConfigRelationManager::class,
             BusinessTypeResource\RelationManagers\CustomerGroupTemplatesRelationManager::class,
+            // ── Operations & Compliance ──────────────────────────────────
+            BusinessTypeResource\RelationManagers\ReturnPolicyRelationManager::class,
             BusinessTypeResource\RelationManagers\WasteReasonTemplatesRelationManager::class,
+            // ── Service & Appointment ────────────────────────────────────
+            BusinessTypeResource\RelationManagers\AppointmentConfigRelationManager::class,
             BusinessTypeResource\RelationManagers\ServiceCategoryTemplatesRelationManager::class,
+            // ── Nice-to-Have ─────────────────────────────────────────────
+            BusinessTypeResource\RelationManagers\GiftRegistryTypesRelationManager::class,
             BusinessTypeResource\RelationManagers\GamificationBadgesRelationManager::class,
+            BusinessTypeResource\RelationManagers\GamificationChallengesRelationManager::class,
+            BusinessTypeResource\RelationManagers\GamificationMilestonesRelationManager::class,
+            // ── POS Layout ───────────────────────────────────────────────
+            BusinessTypeResource\RelationManagers\PosLayoutTemplatesRelationManager::class,
         ];
     }
 

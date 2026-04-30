@@ -8,7 +8,7 @@
 
 ## 1. Feature Overview
 
-Content & Onboarding Management controls all the content that providers encounter when they first register, set up their store, and browse the public-facing pricing page. It manages the list of business types shown during onboarding, the step-by-step onboarding flow, help articles and integration guides, and the marketing content (feature bullet lists, FAQs) displayed on the pricing page. Several of these entities are shared with other features — business types are also used by POS Layout Management, and help articles overlap with the Support Ticket System's knowledge base.
+Content & Onboarding Management controls all the content that providers encounter when they first register, set up their organizations, first-stores, and browse the public-facing pricing page. It manages the list of business types shown during onboarding, the step-by-step onboarding flow, help articles and integration guides, and the marketing content (feature bullet lists, FAQs) displayed on the pricing page. Several of these entities are shared with other features — business types are also used by POS Layout Management, and help articles overlap with the Support Ticket System's knowledge base.
 
 ### What This Feature Does
 - Manage business type options shown to providers during onboarding (supermarket, restaurant, pharmacy, bakery, etc.)

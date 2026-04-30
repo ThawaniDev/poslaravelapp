@@ -18,15 +18,20 @@ class HeldCartService
 
     public function hold(array $data, User $actor): HeldCart
     {
-        return HeldCart::create([
+        $payload = [
             'store_id' => $actor->store_id,
-            'register_id' => $data['register_id'] ?? null,
             'cashier_id' => $actor->id,
             'customer_id' => $data['customer_id'] ?? null,
             'cart_data' => $data['cart_data'],
             'label' => $data['label'] ?? null,
             'held_at' => now(),
-        ]);
+        ];
+
+        if (! empty($data['register_id'])) {
+            $payload['register_id'] = $data['register_id'];
+        }
+
+        return HeldCart::create($payload);
     }
 
     public function recall(HeldCart $cart, User $actor): HeldCart

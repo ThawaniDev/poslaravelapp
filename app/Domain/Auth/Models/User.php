@@ -55,6 +55,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password_hash',
         'pin_hash',
+        'two_factor_secret',
+        'remember_token',
     ];
 
     // ─── Auth Overrides ──────────────────────────────────────────────

@@ -107,7 +107,7 @@ class MarketplaceApiTest extends TestCase
 
     public function test_show_store_config_not_found(): void
     {
-        $this->getJson('/api/v2/admin/marketplace/stores/nonexistent')
+        $this->getJson('/api/v2/admin/marketplace/stores/00000000-0000-0000-0000-000000000099')
             ->assertNotFound();
     }
 
@@ -128,7 +128,7 @@ class MarketplaceApiTest extends TestCase
 
     public function test_update_store_config_not_found(): void
     {
-        $this->putJson('/api/v2/admin/marketplace/stores/nonexistent', ['commission_rate' => 1])
+        $this->putJson('/api/v2/admin/marketplace/stores/00000000-0000-0000-0000-000000000099', ['commission_rate' => 1])
             ->assertNotFound();
     }
 
@@ -157,7 +157,7 @@ class MarketplaceApiTest extends TestCase
 
     public function test_connect_store_not_found(): void
     {
-        $this->postJson('/api/v2/admin/marketplace/stores/nonexistent/connect')
+        $this->postJson('/api/v2/admin/marketplace/stores/00000000-0000-0000-0000-000000000099/connect')
             ->assertNotFound();
     }
 
@@ -172,7 +172,7 @@ class MarketplaceApiTest extends TestCase
 
     public function test_disconnect_store_not_found(): void
     {
-        $this->postJson('/api/v2/admin/marketplace/stores/nonexistent/disconnect')
+        $this->postJson('/api/v2/admin/marketplace/stores/00000000-0000-0000-0000-000000000099/disconnect')
             ->assertNotFound();
     }
 
@@ -228,7 +228,7 @@ class MarketplaceApiTest extends TestCase
 
     public function test_show_product_mapping_not_found(): void
     {
-        $this->getJson('/api/v2/admin/marketplace/products/nonexistent')
+        $this->getJson('/api/v2/admin/marketplace/products/00000000-0000-0000-0000-000000000099')
             ->assertNotFound();
     }
 
@@ -250,7 +250,7 @@ class MarketplaceApiTest extends TestCase
 
     public function test_update_product_not_found(): void
     {
-        $this->putJson('/api/v2/admin/marketplace/products/nonexistent', ['online_price' => 1])
+        $this->putJson('/api/v2/admin/marketplace/products/00000000-0000-0000-0000-000000000099', ['online_price' => 1])
             ->assertNotFound();
     }
 
@@ -340,7 +340,7 @@ class MarketplaceApiTest extends TestCase
 
     public function test_show_order_not_found(): void
     {
-        $this->getJson('/api/v2/admin/marketplace/orders/nonexistent')
+        $this->getJson('/api/v2/admin/marketplace/orders/00000000-0000-0000-0000-000000000099')
             ->assertNotFound();
     }
 
@@ -386,7 +386,7 @@ class MarketplaceApiTest extends TestCase
 
     public function test_show_settlement_not_found(): void
     {
-        $this->getJson('/api/v2/admin/marketplace/settlements/nonexistent')
+        $this->getJson('/api/v2/admin/marketplace/settlements/00000000-0000-0000-0000-000000000099')
             ->assertNotFound();
     }
 

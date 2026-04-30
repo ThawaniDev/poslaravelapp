@@ -32,6 +32,8 @@ class AppRelease extends Model
         'rollout_percentage',
         'is_active',
         'released_at',
+        'file_checksum',
+        'file_size_bytes',
     ];
 
     protected $casts = [
@@ -41,6 +43,7 @@ class AppRelease extends Model
         'is_force_update' => 'boolean',
         'is_active' => 'boolean',
         'released_at' => 'datetime',
+        'file_size_bytes' => 'integer',
     ];
 
     public function appUpdateStats(): HasMany

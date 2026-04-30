@@ -151,9 +151,13 @@ class DataParsingConsistencyTest extends TestCase
         $data = $response->json('data');
 
         // Nullable fields should be null, not "" (empty string)
+        $this->assertIsArray($data);
         if (array_key_exists('description', $data) && $data['description'] !== null) {
             $this->assertNotEquals('', $data['description'],
                 'description should be null, not empty string, when not set');
+        } else {
+            // Either the key is absent, or value is null — both acceptable
+            $this->assertTrue(! array_key_exists('description', $data) || $data['description'] === null);
         }
     }
 

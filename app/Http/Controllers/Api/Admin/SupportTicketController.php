@@ -149,7 +149,7 @@ class SupportTicketController extends BaseApiController
             'assigned_to' => 'required|uuid',
         ]);
 
-        $this->supportService->assignTicket($ticket, $request->assigned_to, $request->user());
+        $this->supportService->assignTicket($ticket, $request->assigned_to, $request->user()->id);
 
         return $this->success($ticket->fresh(), __('support.ticket_assigned'));
     }
@@ -204,7 +204,7 @@ class SupportTicketController extends BaseApiController
 
         $message = $this->supportService->adminAddMessage(
             $ticket,
-            $request->user(),
+            $request->user()->id,
             $request->message_text,
             $request->boolean('is_internal_note', false),
             $request->input('attachments'),

@@ -176,7 +176,7 @@ class PackageSubscriptionApiTest extends TestCase
 
     public function test_show_plan_returns_404_for_invalid_id(): void
     {
-        $response = $this->getJson('/api/v2/admin/plans/nonexistent');
+        $response = $this->getJson('/api/v2/admin/plans/00000000-0000-0000-0000-000000000099');
 
         $response->assertNotFound();
     }

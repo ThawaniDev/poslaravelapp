@@ -122,7 +122,8 @@ class AutoUpdateService
             'channel' => $release->channel->value ?? $release->channel,
             'download_url' => $release->download_url,
             'store_url' => $release->store_url,
-            'checksum' => hash('sha256', $release->version_number . $release->build_number),
+            'checksum' => $release->file_checksum, // Real SHA-256 of the binary, stored at upload time
+            'file_size_bytes' => $release->file_size_bytes,
             'is_force_update' => $release->is_force_update,
             'min_supported_version' => $release->min_supported_version,
             'release_notes' => $release->release_notes,
@@ -151,7 +152,8 @@ class AutoUpdateService
             'version' => $release->version_number,
             'download_url' => $release->download_url,
             'store_url' => $release->store_url,
-            'checksum' => hash('sha256', $release->version_number . $release->build_number),
+            'checksum' => $release->file_checksum, // Real SHA-256 stored at upload time
+            'file_size_bytes' => $release->file_size_bytes,
             'build_number' => $release->build_number,
             'platform' => $release->platform->value ?? $release->platform,
         ];

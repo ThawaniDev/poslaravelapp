@@ -189,6 +189,21 @@ class Store extends Model
         'extra_metadata' => 'array',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $store): void {
+            if (empty($store->slug) && ! empty($store->name)) {
+                $base = \Illuminate\Support\Str::slug($store->name) ?: \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8));
+                $slug = $base;
+                $i = 1;
+                while (static::where('slug', $slug)->exists()) {
+                    $slug = $base . '-' . $i++;
+                }
+                $store->slug = $slug;
+            }
+        });
+    }
+
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);

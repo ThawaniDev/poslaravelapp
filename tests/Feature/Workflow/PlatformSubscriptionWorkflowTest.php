@@ -550,7 +550,6 @@ class PlatformSubscriptionWorkflowTest extends WorkflowTestCase
             'group' => 'system',
             'updated_by' => $this->adminUser->id,
             'updated_at' => now(),
-            'created_at' => now(),
         ]);
 
         $response = $this->actingAs($this->adminUser, 'admin-api')

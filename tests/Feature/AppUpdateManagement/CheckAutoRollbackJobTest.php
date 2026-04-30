@@ -9,6 +9,7 @@ use App\Domain\AdminPanel\Models\AdminActivityLog;
 use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -22,34 +23,36 @@ class CheckAutoRollbackJobTest extends TestCase
     {
         parent::setUp();
 
-        // Recreate app_releases and app_update_stats with correct columns
+        // Recreate app_releases and app_update_stats with correct columns (SQLite only)
         // The SQLite test schema uses different column names
-        \Schema::dropIfExists('app_update_stats');
-        \Schema::dropIfExists('app_releases');
+        if (\DB::connection()->getDriverName() === 'sqlite') {
+            \Schema::dropIfExists('app_update_stats');
+            \Schema::dropIfExists('app_releases');
 
-        \Schema::create('app_releases', function ($t) {
-            $t->uuid('id')->primary();
-            $t->string('version_number', 20);
-            $t->string('platform', 20);
-            $t->string('channel', 20)->default('stable');
-            $t->string('download_url')->nullable();
-            $t->string('build_number', 20)->nullable();
-            $t->text('release_notes')->nullable();
-            $t->text('release_notes_ar')->nullable();
-            $t->boolean('is_force_update')->default(false);
-            $t->boolean('is_active')->default(true);
-            $t->integer('rollout_percentage')->default(100);
-            $t->timestamp('released_at')->nullable();
-            $t->timestamps();
-        });
+            \Schema::create('app_releases', function ($t) {
+                $t->uuid('id')->primary();
+                $t->string('version_number', 20);
+                $t->string('platform', 20);
+                $t->string('channel', 20)->default('stable');
+                $t->string('download_url')->nullable();
+                $t->string('build_number', 20)->nullable();
+                $t->text('release_notes')->nullable();
+                $t->text('release_notes_ar')->nullable();
+                $t->boolean('is_force_update')->default(false);
+                $t->boolean('is_active')->default(true);
+                $t->integer('rollout_percentage')->default(100);
+                $t->timestamp('released_at')->nullable();
+                $t->timestamps();
+            });
 
-        \Schema::create('app_update_stats', function ($t) {
-            $t->uuid('id')->primary();
-            $t->uuid('store_id')->nullable();
-            $t->uuid('app_release_id');
-            $t->string('status', 20)->default('pending');
-            $t->text('error_message')->nullable();
-        });
+            \Schema::create('app_update_stats', function ($t) {
+                $t->uuid('id')->primary();
+                $t->uuid('store_id')->nullable();
+                $t->uuid('app_release_id');
+                $t->string('status', 20)->default('pending');
+                $t->text('error_message')->nullable();
+            });
+        }
 
         $org = Organization::forceCreate([
             'name' => 'Rollback Org',
@@ -272,5 +275,64 @@ class CheckAutoRollbackJobTest extends TestCase
         $log = AdminActivityLog::where('action', 'auto_rollback_release')->first();
         $this->assertNotNull($log);
         $this->assertNull($log->admin_user_id);
+    }
+
+    public function test_uses_configurable_failure_threshold(): void
+    {
+        // Set a higher threshold in system_settings — release should NOT be rolled back
+        if (\Schema::hasTable('system_settings')) {
+            \DB::table('system_settings')->insert([
+                'id' => Str::uuid()->toString(),
+                'key' => 'updates.auto_rollback_failure_percent',
+                'value' => '50',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $release = $this->createRelease(['version_number' => '9.0.0']);
+        // 30% failure rate — below 50% threshold
+        $this->createStats($release->id, 7, 3);
+
+        (new CheckAutoRollback)->handle();
+
+        $release->refresh();
+        $this->assertTrue($release->is_active, 'Release should stay active when failure rate is below custom threshold');
+    }
+
+    public function test_rollback_creates_security_alert_when_table_exists(): void
+    {
+        if (!\Schema::hasTable('security_alerts')) {
+            // Cannot test without table — skip gracefully
+            $this->markTestSkipped('security_alerts table not available in test env');
+        }
+
+        Notification::fake();
+
+        $release = $this->createRelease(['version_number' => '8.0.0']);
+        // 50% failure — triggers rollback
+        $this->createStats($release->id, 5, 5);
+
+        (new CheckAutoRollback)->handle();
+
+        $this->assertDatabaseHas('security_alerts', [
+            'alert_type' => 'app_crash_loop',
+            'severity' => 'critical',
+        ]);
+    }
+
+    public function test_does_not_rollback_releases_older_than_eval_window(): void
+    {
+        // Release released 5 days ago — outside the 1-day eval window
+        $release = $this->createRelease([
+            'version_number' => '7.0.0',
+            'released_at' => now()->subDays(5),
+        ]);
+        $this->createStats($release->id, 0, 15); // 100% failure but ignored
+
+        (new CheckAutoRollback)->handle();
+
+        $release->refresh();
+        $this->assertTrue($release->is_active, 'Releases outside eval window should not be rolled back');
     }
 }

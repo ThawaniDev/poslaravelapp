@@ -100,7 +100,7 @@ class PaymentApiTest extends TestCase
     public function test_can_open_cash_session(): void
     {
         $response = $this->withToken($this->token)->postJson('/api/v2/cash-sessions', [
-            'terminal_id' => 'TERM-001',
+            'terminal_id' => '00000000-0000-0000-0000-000000000002',
             'opening_float' => 200.00,
         ]);
 
@@ -108,7 +108,7 @@ class PaymentApiTest extends TestCase
         $response->assertJsonPath('success', true);
         $this->assertDatabaseHas('cash_sessions', [
             'store_id' => $this->store->id,
-            'terminal_id' => 'TERM-001',
+            'terminal_id' => '00000000-0000-0000-0000-000000000002',
             'status' => 'open',
         ]);
     }
@@ -117,7 +117,7 @@ class PaymentApiTest extends TestCase
     {
         CashSession::create([
             'store_id' => $this->store->id,
-            'terminal_id' => 'TERM-001',
+            'terminal_id' => '00000000-0000-0000-0000-000000000002',
             'opened_by' => $this->user->id,
             'opening_float' => 100,
             'expected_cash' => 100,
@@ -126,7 +126,7 @@ class PaymentApiTest extends TestCase
         ]);
 
         $response = $this->withToken($this->token)->postJson('/api/v2/cash-sessions', [
-            'terminal_id' => 'TERM-001',
+            'terminal_id' => '00000000-0000-0000-0000-000000000002',
             'opening_float' => 200.00,
         ]);
 
@@ -138,7 +138,7 @@ class PaymentApiTest extends TestCase
     {
         CashSession::create([
             'store_id' => $this->store->id,
-            'terminal_id' => 'TERM-001',
+            'terminal_id' => '00000000-0000-0000-0000-000000000002',
             'opened_by' => $this->user->id,
             'opening_float' => 100,
             'expected_cash' => 100,
@@ -157,7 +157,7 @@ class PaymentApiTest extends TestCase
     {
         $session = CashSession::create([
             'store_id' => $this->store->id,
-            'terminal_id' => 'TERM-001',
+            'terminal_id' => '00000000-0000-0000-0000-000000000002',
             'opened_by' => $this->user->id,
             'opening_float' => 100,
             'expected_cash' => 100,
@@ -176,7 +176,7 @@ class PaymentApiTest extends TestCase
     {
         $session = CashSession::create([
             'store_id' => $this->store->id,
-            'terminal_id' => 'TERM-001',
+            'terminal_id' => '00000000-0000-0000-0000-000000000002',
             'opened_by' => $this->user->id,
             'opening_float' => 100,
             'expected_cash' => 100,
@@ -201,7 +201,7 @@ class PaymentApiTest extends TestCase
     {
         $session = CashSession::create([
             'store_id' => $this->store->id,
-            'terminal_id' => 'TERM-001',
+            'terminal_id' => '00000000-0000-0000-0000-000000000002',
             'opened_by' => $this->user->id,
             'opening_float' => 100,
             'expected_cash' => 100,
@@ -225,7 +225,7 @@ class PaymentApiTest extends TestCase
     {
         $session = CashSession::create([
             'store_id' => $this->store->id,
-            'terminal_id' => 'TERM-001',
+            'terminal_id' => '00000000-0000-0000-0000-000000000002',
             'opened_by' => $this->user->id,
             'opening_float' => 100,
             'expected_cash' => 100,
@@ -251,7 +251,7 @@ class PaymentApiTest extends TestCase
     {
         $session = CashSession::create([
             'store_id' => $this->store->id,
-            'terminal_id' => 'TERM-001',
+            'terminal_id' => '00000000-0000-0000-0000-000000000002',
             'opened_by' => $this->user->id,
             'opening_float' => 200,
             'expected_cash' => 200,
@@ -630,7 +630,7 @@ class PaymentApiTest extends TestCase
     {
         $session = PosSession::create([
             'store_id' => $this->store->id,
-            'register_id' => 'REG-001',
+            'register_id' => '00000000-0000-0000-0000-000000000003',
             'cashier_id' => $this->user->id,
             'status' => CashSessionStatus::Open,
             'opening_cash' => 100.00,
@@ -664,7 +664,7 @@ class PaymentApiTest extends TestCase
         ]);
     }
 
-    private function createOpenCashSession(string $terminal = 'TERM-001'): CashSession
+    private function createOpenCashSession(string $terminal = '00000000-0000-0000-0000-000000000002'): CashSession
     {
         return CashSession::create([
             'store_id' => $this->store->id,
@@ -719,7 +719,7 @@ class PaymentApiTest extends TestCase
 
     public function test_list_payment_refunds_returns_404_for_missing_payment(): void
     {
-        $response = $this->withToken($this->token)->getJson('/api/v2/payments/non-existent-id/refunds');
+        $response = $this->withToken($this->token)->getJson('/api/v2/payments/00000000-0000-0000-0000-000000000099/refunds');
 
         $response->assertStatus(404);
         $response->assertJsonPath('success', false);
@@ -759,7 +759,7 @@ class PaymentApiTest extends TestCase
 
     public function test_create_refund_returns_404_for_missing_payment(): void
     {
-        $response = $this->withToken($this->token)->postJson('/api/v2/payments/non-existent-id/refund', [
+        $response = $this->withToken($this->token)->postJson('/api/v2/payments/00000000-0000-0000-0000-000000000099/refund', [
             'amount' => 25.00,
             'method' => 'cash',
             'reason' => 'Return',
@@ -813,7 +813,7 @@ class PaymentApiTest extends TestCase
 
     public function test_update_expense_returns_404_for_missing_expense(): void
     {
-        $response = $this->withToken($this->token)->putJson('/api/v2/expenses/non-existent-id', [
+        $response = $this->withToken($this->token)->putJson('/api/v2/expenses/00000000-0000-0000-0000-000000000099', [
             'amount' => 20.00,
             'category' => 'supplies',
         ]);
@@ -844,7 +844,7 @@ class PaymentApiTest extends TestCase
 
     public function test_delete_expense_returns_404_for_missing_expense(): void
     {
-        $response = $this->withToken($this->token)->deleteJson('/api/v2/expenses/non-existent-id');
+        $response = $this->withToken($this->token)->deleteJson('/api/v2/expenses/00000000-0000-0000-0000-000000000099');
 
         $response->assertStatus(404);
         $response->assertJsonPath('success', false);
@@ -999,7 +999,7 @@ class PaymentApiTest extends TestCase
 
     public function test_show_cash_session_returns_404_for_missing_session(): void
     {
-        $response = $this->withToken($this->token)->getJson('/api/v2/cash-sessions/non-existent-id');
+        $response = $this->withToken($this->token)->getJson('/api/v2/cash-sessions/00000000-0000-0000-0000-000000000099');
 
         $response->assertStatus(404);
         $response->assertJsonPath('success', false);

@@ -27,12 +27,14 @@ class SaveSecurityPolicyRequest extends FormRequest
             'discount_override_threshold' => ['sometimes', 'numeric', 'min:0', 'max:100'],
             'biometric_enabled' => ['sometimes', 'boolean'],
             'max_devices' => ['sometimes', 'integer', 'min:1', 'max:50'],
-            'audit_retention_days' => ['sometimes', 'integer', 'min:1', 'max:365'],
+            'audit_retention_days'        => ['sometimes', 'integer', 'min:1', 'max:365'],
+            'pin_expiry_days'             => ['sometimes', 'integer', 'min:0', 'max:365'],
+            'password_expiry_days'        => ['sometimes', 'integer', 'min:0', 'max:365'],
             'force_logout_on_role_change' => ['sometimes', 'boolean'],
-            'require_strong_password' => ['sometimes', 'boolean'],
-            'ip_restriction_enabled' => ['sometimes', 'boolean'],
-            'allowed_ip_ranges' => ['sometimes', 'array'],
-            'allowed_ip_ranges.*' => ['string'],
+            'require_strong_password'     => ['sometimes', 'boolean'],
+            'ip_restriction_enabled'      => ['sometimes', 'boolean'],
+            'allowed_ip_ranges'           => ['sometimes', 'array'],
+            'allowed_ip_ranges.*'         => ['string', 'max:50'],
         ];
     }
 }

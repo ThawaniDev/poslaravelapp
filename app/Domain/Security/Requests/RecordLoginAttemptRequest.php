@@ -20,8 +20,11 @@ class RecordLoginAttemptRequest extends FormRequest
             'user_identifier' => ['required', 'string', 'max:255'],
             'attempt_type' => ['required', new Enum(LoginAttemptType::class)],
             'is_successful' => ['required', 'boolean'],
-            'ip_address' => ['sometimes', 'string', 'max:45'],
-            'device_id' => ['sometimes', 'string', 'max:255'],
+            'ip_address'     => ['sometimes', 'nullable', 'ip'],
+            'device_id'      => ['sometimes', 'nullable', 'string', 'max:255'],
+            'user_agent'     => ['sometimes', 'nullable', 'string', 'max:500'],
+            'failure_reason' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'device_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
         ];
     }
 }
