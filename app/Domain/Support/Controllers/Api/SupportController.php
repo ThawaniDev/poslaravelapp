@@ -3,6 +3,7 @@
 namespace App\Domain\Support\Controllers\Api;
 
 use App\Domain\ContentOnboarding\Models\KnowledgeBaseArticle;
+use App\Domain\Support\Resources\SupportTicketResource;
 use App\Domain\Support\Services\SupportService;
 use App\Http\Controllers\Api\BaseApiController;
 use Illuminate\Http\JsonResponse;
@@ -20,16 +21,17 @@ class SupportController extends BaseApiController
     public function index(Request $request): JsonResponse
     {
         $request->validate([
-            'status' => 'nullable|string|in:open,in_progress,resolved,closed',
+            'status'   => 'nullable|string|in:open,in_progress,resolved,closed',
             'category' => 'nullable|string|in:billing,technical,zatca,feature_request,general,hardware',
             'priority' => 'nullable|string|in:low,medium,high,critical',
+            'search'   => 'nullable|string|max:200',
             'per_page' => 'nullable|integer|min:1|max:50',
         ]);
 
         $tickets = $this->supportService->listTickets(
             $request->user()->id,
             $this->resolvedStoreId($request) ?? $request->user()->store_id,
-            $request->only(['status', 'category', 'priority', 'per_page']),
+            $request->only(['status', 'category', 'priority', 'search', 'per_page']),
         );
 
         return $this->success($tickets, __('support.tickets_retrieved'));
@@ -50,7 +52,7 @@ class SupportController extends BaseApiController
             return $this->notFound(__('support.ticket_not_found'));
         }
 
-        return $this->success($ticket, __('support.ticket_retrieved'));
+        return $this->success(new SupportTicketResource($ticket), __('support.ticket_retrieved'));
     }
 
     /**
@@ -138,7 +140,7 @@ class SupportController extends BaseApiController
     public function kbIndex(Request $request): JsonResponse
     {
         $request->validate([
-            'category' => 'nullable|string|in:getting_started,pos_usage,inventory,delivery,billing,troubleshooting',
+            'category' => 'nullable|string|in:general,getting_started,pos_usage,inventory,delivery,billing,troubleshooting',
             'search'   => 'nullable|string|max:200',
         ]);
 
@@ -181,5 +183,31 @@ class SupportController extends BaseApiController
         }
 
         return $this->success($article, __('support.kb_article_retrieved'));
+    }
+
+    /**
+     * POST /api/v2/support/tickets/{id}/rate
+     * Allows provider to rate a resolved/closed ticket (satisfaction: 1–5).
+     */
+    public function rate(Request $request, string $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'rating'  => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:1000',
+        ]);
+
+        $ok = $this->supportService->rateTicket(
+            $id,
+            $request->user()->id,
+            $this->resolvedStoreId($request) ?? $request->user()->store_id,
+            $validated['rating'],
+            $validated['comment'] ?? null,
+        );
+
+        if (!$ok) {
+            return $this->notFound(__('support.ticket_not_found'));
+        }
+
+        return $this->success(null, __('support.ticket_rated'));
     }
 }

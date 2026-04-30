@@ -17,16 +17,26 @@ class DeliveryPlatform extends Model
 
     protected $fillable = [
         'name',
+        'name_ar',
         'slug',
         'logo_url',
         'auth_method',
         'is_active',
         'sort_order',
+        'description',
+        'description_ar',
+        'api_type',
+        'base_url',
+        'documentation_url',
+        'supported_countries',
+        'default_commission_percent',
     ];
 
     protected $casts = [
         'auth_method' => DeliveryAuthMethod::class,
         'is_active' => 'boolean',
+        'supported_countries' => 'array',
+        'default_commission_percent' => 'decimal:2',
     ];
 
     public function deliveryPlatformFields(): HasMany

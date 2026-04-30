@@ -46,24 +46,69 @@ class DeliveryService
     {
         $attributes = $data instanceof SavePlatformConfigDTO ? $data->toArray() : $data;
 
+        // Build update payload — only include keys that are explicitly present in $attributes
+        // so we never accidentally overwrite existing values with nulls, but DO allow false booleans.
+        $payload = [];
+
+        $stringNullables = ['api_key', 'merchant_id', 'webhook_secret', 'branch_id_on_platform'];
+        foreach ($stringNullables as $key) {
+            if (array_key_exists($key, $attributes) && $attributes[$key] !== null && $attributes[$key] !== '') {
+                $payload[$key] = $attributes[$key];
+            }
+        }
+
+        $booleans = ['is_enabled', 'auto_accept', 'sync_menu_on_product_change'];
+        foreach ($booleans as $key) {
+            if (array_key_exists($key, $attributes)) {
+                $payload[$key] = (bool) $attributes[$key];
+            }
+        }
+
+        $integers = ['auto_accept_timeout_seconds', 'throttle_limit', 'max_daily_orders', 'menu_sync_interval_hours'];
+        foreach ($integers as $key) {
+            if (array_key_exists($key, $attributes) && $attributes[$key] !== null) {
+                $payload[$key] = (int) $attributes[$key];
+            }
+        }
+
+        if (isset($attributes['operating_hours_json']) && $attributes['operating_hours_json'] !== null) {
+            $payload['operating_hours_json'] = is_array($attributes['operating_hours_json'])
+                ? json_encode($attributes['operating_hours_json'])
+                : $attributes['operating_hours_json'];
+        }
+
+        if (array_key_exists('status', $attributes) && $attributes['status'] !== null) {
+            $payload['status'] = $attributes['status'];
+        }
+
         return DeliveryPlatformConfig::updateOrCreate(
             ['store_id' => $storeId, 'platform' => $attributes['platform']],
-            array_filter([
-                'api_key' => $attributes['api_key'] ?? null,
-                'merchant_id' => $attributes['merchant_id'] ?? null,
-                'webhook_secret' => $attributes['webhook_secret'] ?? null,
-                'branch_id_on_platform' => $attributes['branch_id_on_platform'] ?? null,
-                'is_enabled' => $attributes['is_enabled'] ?? false,
-                'auto_accept' => $attributes['auto_accept'] ?? false,
-                'auto_accept_timeout_seconds' => $attributes['auto_accept_timeout_seconds'] ?? null,
-                'throttle_limit' => $attributes['throttle_limit'] ?? null,
-                'max_daily_orders' => $attributes['max_daily_orders'] ?? null,
-                'sync_menu_on_product_change' => $attributes['sync_menu_on_product_change'] ?? false,
-                'menu_sync_interval_hours' => $attributes['menu_sync_interval_hours'] ?? null,
-                'operating_hours_json' => isset($attributes['operating_hours_json']) ? json_encode($attributes['operating_hours_json']) : null,
-                'status' => $attributes['status'] ?? 'pending',
-            ], fn ($v) => $v !== null),
+            $payload,
         );
+    }
+
+    /**
+     * Enforce the max_delivery_platforms subscription limit.
+     * Returns the current enabled-platform count vs the limit.
+     * Returns null limit when the plan has no limit set.
+     */
+    public function getPlatformLimitInfo(string $storeId): array
+    {
+        $current = DeliveryPlatformConfig::where('store_id', $storeId)->count();
+
+        // Look up the plan limit
+        $limit = \App\Domain\Subscription\Models\PlanLimit::join('store_subscriptions', function ($j) use ($storeId) {
+            $j->on('plan_limits.subscription_plan_id', '=', 'store_subscriptions.subscription_plan_id')
+              ->where('store_subscriptions.store_id', $storeId)
+              ->where('store_subscriptions.status', 'active');
+        })->where('plan_limits.limit_key', 'max_delivery_platforms')
+          ->value('plan_limits.limit_value');
+
+        return [
+            'current' => $current,
+            'limit' => $limit ? (int) $limit : null,
+            'reached' => $limit !== null && $current >= (int) $limit,
+        ];
     }
 
     public function toggleConfig(string $configId, string $storeId): ?DeliveryPlatformConfig

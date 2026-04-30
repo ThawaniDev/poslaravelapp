@@ -10,11 +10,13 @@ class ProviderNoteResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id'              => $this->id,
             'organization_id' => $this->organization_id,
-            'admin_user_id' => $this->admin_user_id,
-            'note_text' => $this->note_text,
-            'created_at' => $this->created_at instanceof \DateTimeInterface
+            'admin_user_id'   => $this->admin_user_id,
+            'admin_user_name' => $this->adminUser?->name,
+            'admin_user_email' => $this->adminUser?->email,
+            'note_text'       => $this->note_text,
+            'created_at'      => $this->created_at instanceof \DateTimeInterface
                 ? $this->created_at->toIso8601String()
                 : $this->created_at,
         ];

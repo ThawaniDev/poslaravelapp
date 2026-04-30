@@ -359,7 +359,7 @@ class SupportTicketController extends BaseApiController
             'slug'     => 'required|string|max:100|unique:knowledge_base_articles,slug',
             'body'     => 'required|string',
             'body_ar'  => 'required|string',
-            'category' => 'required|string|in:getting_started,pos_usage,inventory,delivery,billing,troubleshooting',
+            'category' => 'required|string|in:general,getting_started,pos_usage,inventory,delivery,billing,troubleshooting',
             'is_published' => 'sometimes|boolean',
             'sort_order'   => 'sometimes|integer|min:0',
         ]);
@@ -401,7 +401,7 @@ class SupportTicketController extends BaseApiController
             'slug'     => 'sometimes|string|max:100|unique:knowledge_base_articles,slug,' . $id,
             'body'     => 'sometimes|string',
             'body_ar'  => 'sometimes|string',
-            'category' => 'sometimes|string|in:getting_started,pos_usage,inventory,delivery,billing,troubleshooting',
+            'category' => 'sometimes|string|in:general,getting_started,pos_usage,inventory,delivery,billing,troubleshooting',
             'is_published' => 'sometimes|boolean',
             'sort_order'   => 'sometimes|integer|min:0',
         ]);

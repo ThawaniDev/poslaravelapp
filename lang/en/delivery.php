@@ -58,22 +58,51 @@ return [
     'credential_fields' => 'Credential Fields',
     'credential_fields_desc' => 'Define the fields stores need to fill when setting up this platform.',
     'field_key' => 'Field Key',
+    'field_key_hint' => 'Internal key (e.g. restaurant_id). Lowercase letters, numbers, underscores only.',
     'field_label' => 'Field Label',
     'field_type' => 'Field Type',
     'is_required' => 'Required',
     'placeholder' => 'Placeholder',
     'sort_order' => 'Sort Order',
     'add_credential_field' => 'Add Credential Field',
+    'auth_method' => 'Auth Method',
+    'slug_hint' => 'Auto-generated from name. Must be unique.',
+    'is_active_hint' => 'When disabled, this platform is hidden from all providers.',
 
     // Filament - API endpoints
-    'api_endpoints' => 'API Endpoints',
-    'api_endpoints_desc' => 'Define the API endpoints for this platform integration.',
+    'api_endpoints' => 'Operation Endpoints',
+    'api_endpoints_desc' => 'Map platform operations to their API endpoints and field transformations.',
+    'operation' => 'Operation',
     'endpoint_key' => 'Endpoint Key',
     'endpoint_label' => 'Endpoint Label',
     'http_method' => 'HTTP Method',
     'url_template' => 'URL Template',
     'endpoint_description' => 'Description',
     'add_endpoint' => 'Add Endpoint',
+    'request_mapping' => 'Request Field Mapping',
+    'mapping_target_field' => 'Target Field (Platform)',
+    'mapping_source_field' => 'Source Field (Thawani)',
+
+    // Filament - Inbound webhook
+    'inbound_webhook' => 'Inbound Webhook',
+    'inbound_webhook_desc' => 'Configure the webhook path where this platform sends order events.',
+    'webhook_path_template' => 'Path Template',
+    'add_webhook_template' => 'Add Webhook Template',
+
+    // Filament - Connectivity test
+    'test_connectivity' => 'Test Connectivity',
+    'test_connectivity_desc' => 'Send a ping request to the platform base URL to verify reachability.',
+    'test_no_base_url' => 'No base URL configured for this platform.',
+    'test_connectivity_result' => 'HTTP :status',
+    'test_connectivity_ok' => 'Platform endpoint is reachable.',
+    'test_connectivity_error' => 'Platform returned an error. Check the base URL.',
+    'test_connectivity_failed' => 'Connection failed.',
+
+    // Filament - Platform actions
+    'deactivate' => 'Deactivate',
+    'activate' => 'Activate',
+    'platform_activated' => 'Platform activated.',
+    'platform_deactivated' => 'Platform deactivated.',
 
     // Filament - Store config
     'store_config' => 'Store Configuration',
@@ -124,11 +153,22 @@ return [
     'today_revenue' => 'Today\'s Revenue',
     'delivered_orders_revenue' => 'From delivered orders',
 
+    // Sync health stats
+    'total_platforms' => 'Total Platforms',
+    'active_of_total' => 'Active platforms of total',
+    'active_integrations' => 'Active Integrations',
+    'enabled_store_integrations' => 'Enabled store-platform configs',
+    'sync_error_rate_24h' => 'Sync Error Rate (24h)',
+    'sync_error_rate_desc' => ':failed failed of :total syncs',
+    'sync_health_dashboard' => 'Sync Health Dashboard',
+    'refresh' => 'Refresh',
+
     // New API responses
     'webhook_logs_retrieved' => 'Webhook logs retrieved.',
     'status_push_logs_retrieved' => 'Status push logs retrieved.',
     'config_retrieved' => 'Delivery config retrieved.',
     'config_deleted' => 'Delivery config deleted.',
+    'plan_limit_reached' => 'You have reached your plan\'s limit of :limit delivery platform integrations. Upgrade your plan to add more.',
 
     // Config fields
     'auto_accept_timeout_seconds' => 'Auto-Reject Timeout (seconds)',

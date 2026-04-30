@@ -194,6 +194,11 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
         // Internal notes
         Route::post('notes', [ProviderManagementController::class, 'addNote']);
         Route::get('notes/{organizationId}', [ProviderManagementController::class, 'listNotes']);
+
+        // Impersonation
+        Route::post('stores/{storeId}/impersonate', [ProviderManagementController::class, 'startImpersonation']);
+        Route::post('impersonate/end', [ProviderManagementController::class, 'endImpersonation']);
+        Route::post('impersonate/extend', [ProviderManagementController::class, 'extendImpersonation']);
     });
 
     // ─── Analytics & Reporting (P6) ─────────────────────────────
@@ -332,37 +337,57 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
     Route::prefix('support')->group(function () {
 
         // Stats
-        Route::get('stats', [SupportTicketController::class, 'stats']);
+        Route::get('stats', [SupportTicketController::class, 'stats'])
+            ->middleware('permission:tickets.view');
 
         // Tickets
         Route::prefix('tickets')->group(function () {
-            Route::get('/', [SupportTicketController::class, 'listTickets']);
-            Route::post('/', [SupportTicketController::class, 'createTicket']);
-            Route::get('{ticketId}', [SupportTicketController::class, 'showTicket']);
-            Route::put('{ticketId}', [SupportTicketController::class, 'updateTicket']);
-            Route::post('{ticketId}/assign', [SupportTicketController::class, 'assignTicket']);
-            Route::post('{ticketId}/status', [SupportTicketController::class, 'changeStatus']);
-            Route::get('{ticketId}/messages', [SupportTicketController::class, 'listMessages']);
-            Route::post('{ticketId}/messages', [SupportTicketController::class, 'addMessage']);
+            Route::get('/', [SupportTicketController::class, 'listTickets'])
+                ->middleware('permission:tickets.view');
+            Route::post('/', [SupportTicketController::class, 'createTicket'])
+                ->middleware('permission:tickets.respond');
+            Route::get('{ticketId}', [SupportTicketController::class, 'showTicket'])
+                ->middleware('permission:tickets.view');
+            Route::put('{ticketId}', [SupportTicketController::class, 'updateTicket'])
+                ->middleware('permission:tickets.respond');
+            Route::post('{ticketId}/assign', [SupportTicketController::class, 'assignTicket'])
+                ->middleware('permission:tickets.respond');
+            Route::post('{ticketId}/status', [SupportTicketController::class, 'changeStatus'])
+                ->middleware('permission:tickets.respond');
+            Route::get('{ticketId}/messages', [SupportTicketController::class, 'listMessages'])
+                ->middleware('permission:tickets.view');
+            Route::post('{ticketId}/messages', [SupportTicketController::class, 'addMessage'])
+                ->middleware('permission:tickets.respond');
         });
 
         // Canned Responses
         Route::prefix('canned-responses')->group(function () {
-            Route::get('/', [SupportTicketController::class, 'listCannedResponses']);
-            Route::post('/', [SupportTicketController::class, 'createCannedResponse']);
-            Route::get('{responseId}', [SupportTicketController::class, 'showCannedResponse']);
-            Route::put('{responseId}', [SupportTicketController::class, 'updateCannedResponse']);
-            Route::delete('{responseId}', [SupportTicketController::class, 'destroyCannedResponse']);
-            Route::post('{responseId}/toggle', [SupportTicketController::class, 'toggleCannedResponse']);
+            Route::get('/', [SupportTicketController::class, 'listCannedResponses'])
+                ->middleware('permission:kb.manage|tickets.respond');
+            Route::post('/', [SupportTicketController::class, 'createCannedResponse'])
+                ->middleware('permission:kb.manage');
+            Route::get('{responseId}', [SupportTicketController::class, 'showCannedResponse'])
+                ->middleware('permission:kb.manage|tickets.respond');
+            Route::put('{responseId}', [SupportTicketController::class, 'updateCannedResponse'])
+                ->middleware('permission:kb.manage');
+            Route::delete('{responseId}', [SupportTicketController::class, 'destroyCannedResponse'])
+                ->middleware('permission:kb.manage');
+            Route::post('{responseId}/toggle', [SupportTicketController::class, 'toggleCannedResponse'])
+                ->middleware('permission:kb.manage');
         });
 
         // Knowledge Base Articles
         Route::prefix('kb')->group(function () {
-            Route::get('/', [SupportTicketController::class, 'listKbArticles']);
-            Route::post('/', [SupportTicketController::class, 'createKbArticle']);
-            Route::get('{articleId}', [SupportTicketController::class, 'showKbArticle']);
-            Route::put('{articleId}', [SupportTicketController::class, 'updateKbArticle']);
-            Route::delete('{articleId}', [SupportTicketController::class, 'destroyKbArticle']);
+            Route::get('/', [SupportTicketController::class, 'listKbArticles'])
+                ->middleware('permission:kb.manage');
+            Route::post('/', [SupportTicketController::class, 'createKbArticle'])
+                ->middleware('permission:kb.manage');
+            Route::get('{articleId}', [SupportTicketController::class, 'showKbArticle'])
+                ->middleware('permission:kb.manage');
+            Route::put('{articleId}', [SupportTicketController::class, 'updateKbArticle'])
+                ->middleware('permission:kb.manage');
+            Route::delete('{articleId}', [SupportTicketController::class, 'destroyKbArticle'])
+                ->middleware('permission:kb.manage');
         });
     });
 

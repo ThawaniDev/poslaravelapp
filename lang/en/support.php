@@ -199,4 +199,6 @@ return [
     'kb_article_created'         => 'Knowledge base article created.',
     'kb_article_updated'         => 'Knowledge base article updated.',
     'kb_article_deleted'         => 'Knowledge base article deleted.',
+    'ticket_rated'               => 'Thank you for your feedback.',
+    'ticket_already_rated'       => 'This ticket has already been rated.',
 ];

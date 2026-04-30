@@ -10,18 +10,20 @@ class LimitOverrideResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id'              => $this->id,
             'organization_id' => $this->organization_id,
-            'limit_key' => $this->limit_key,
-            'override_value' => $this->override_value,
-            'reason' => $this->reason,
-            'set_by' => $this->set_by,
-            'expires_at' => $this->expires_at instanceof \DateTimeInterface
+            'limit_key'       => $this->limit_key,
+            'override_value'  => $this->override_value,
+            'reason'          => $this->reason,
+            'set_by'          => $this->set_by,
+            'set_by_name'     => $this->setBy?->name,
+            'expires_at'      => $this->expires_at instanceof \DateTimeInterface
                 ? $this->expires_at->toIso8601String()
                 : $this->expires_at,
-            'created_at' => $this->created_at instanceof \DateTimeInterface
+            'created_at'      => $this->created_at instanceof \DateTimeInterface
                 ? $this->created_at->toIso8601String()
                 : $this->created_at,
+            'is_expired'      => $this->expires_at !== null && $this->expires_at < now(),
         ];
     }
 }

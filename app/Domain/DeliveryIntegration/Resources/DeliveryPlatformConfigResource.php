@@ -16,6 +16,7 @@ class DeliveryPlatformConfigResource extends JsonResource
             'merchant_id'                => $this->merchant_id,
             'branch_id_on_platform'      => $this->branch_id_on_platform,
             'is_enabled'                 => (bool) $this->is_enabled,
+            'has_api_key'                => ! empty($this->api_key),
             'auto_accept'                => (bool) $this->auto_accept,
             'auto_accept_timeout_seconds'=> (int) ($this->auto_accept_timeout_seconds ?? 300),
             'throttle_limit'             => $this->throttle_limit,

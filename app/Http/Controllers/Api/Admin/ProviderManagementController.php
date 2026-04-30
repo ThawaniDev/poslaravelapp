@@ -194,12 +194,14 @@ class ProviderManagementController extends BaseApiController
     public function approveRegistration(Request $request, string $registrationId): JsonResponse
     {
         try {
-            $registration = $this->service->approveRegistration($registrationId, $request->user()->id);
+            $result = $this->service->approveRegistration($registrationId, $request->user()->id);
 
-            return $this->success(
-                new ProviderRegistrationResource($registration),
-                'Registration approved successfully'
-            );
+            return $this->success([
+                'registration' => new ProviderRegistrationResource($result['registration']),
+                'organization' => ['id' => $result['organization']->id, 'name' => $result['organization']->name],
+                'store'        => new StoreAdminResource($result['store']->load('organization')),
+                'user'         => ['id' => $result['user']->id, 'email' => $result['user']->email, 'name' => $result['user']->name],
+            ], 'Registration approved successfully');
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return $this->notFound('Registration not found');
         } catch (\InvalidArgumentException $e) {
@@ -310,5 +312,58 @@ class ProviderManagementController extends BaseApiController
         }
 
         return $this->success(null, 'Limit override removed');
+    }
+
+    // ─── Impersonation Endpoints ─────────────────────────────────
+
+    /**
+     * POST /admin/providers/stores/{storeId}/impersonate
+     * Start an impersonation session.
+     */
+    public function startImpersonation(Request $request, string $storeId): JsonResponse
+    {
+        try {
+            $result = $this->service->startImpersonation(
+                $storeId,
+                $request->user()->id,
+                $request->ip() ?? '127.0.0.1',
+                $request->userAgent() ?? ''
+            );
+            return $this->success($result, 'Impersonation session started');
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->notFound('Store not found');
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * POST /admin/providers/impersonate/end
+     * End an active impersonation session.
+     */
+    public function endImpersonation(Request $request): JsonResponse
+    {
+        $token = $request->input('token');
+        if (!$token) return $this->error('Token required', 422);
+
+        $ended = $this->service->endImpersonation($token, $request->user()->id);
+        if (!$ended) return $this->notFound('Impersonation session not found or already ended');
+
+        return $this->success(null, 'Impersonation session ended');
+    }
+
+    /**
+     * POST /admin/providers/impersonate/extend
+     * Extend an active impersonation session by 30 minutes.
+     */
+    public function extendImpersonation(Request $request): JsonResponse
+    {
+        $token = $request->input('token');
+        if (!$token) return $this->error('Token required', 422);
+
+        $session = $this->service->extendImpersonation($token, $request->user()->id);
+        if (!$session) return $this->notFound('Impersonation session not found or expired');
+
+        return $this->success(['expires_at' => $session->expires_at->toIso8601String()], 'Session extended');
     }
 }

@@ -461,13 +461,26 @@ class ProviderManagementApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('success', true)
-            ->assertJsonPath('data.status', 'approved')
-            ->assertJsonPath('data.reviewed_by', $this->admin->id)
-            ->assertJsonPath('message', 'Registration approved successfully');
+            ->assertJsonPath('data.registration.status', 'approved')
+            ->assertJsonPath('data.registration.reviewed_by', $this->admin->id)
+            ->assertJsonPath('message', 'Registration approved successfully')
+            ->assertJsonStructure([
+                'success', 'message', 'data' => [
+                    'registration', 'organization', 'store', 'user',
+                ],
+            ]);
 
         $this->assertDatabaseHas('provider_registrations', [
             'id' => $reg->id,
             'status' => 'approved',
+        ]);
+
+        $this->assertDatabaseHas('organizations', [
+            'name' => 'Approvable Corp',
+        ]);
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'owner@approvable.com',
         ]);
 
         $this->assertDatabaseHas('admin_activity_logs', [
@@ -812,5 +825,149 @@ class ProviderManagementApiTest extends TestCase
         $this->assertDatabaseHas('admin_activity_logs', [
             'action' => 'store.create_manual',
         ]);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── Impersonation ────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_start_impersonation_creates_session(): void
+    {
+        // Need an owner user in this store
+        $user = \App\Domain\Auth\Models\User::forceCreate([
+            'store_id'      => $this->store->id,
+            'organization_id' => $this->org->id,
+            'name'          => 'Store Owner',
+            'email'         => 'owner@teststore.com',
+            'phone'         => '+96600000001',
+            'password_hash' => bcrypt('pass'),
+            'role'          => 'owner',
+            'is_active'     => true,
+        ]);
+
+        $response = $this
+            ->postJson("/api/v2/admin/providers/stores/{$this->store->id}/impersonate");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure([
+                'data' => ['session_id', 'token', 'expires_at', 'target_user', 'store_name', 'organization_name'],
+            ]);
+
+        $this->assertDatabaseHas('impersonation_sessions', [
+            'admin_user_id'  => $this->admin->id,
+            'target_user_id' => $user->id,
+            'store_id'       => $this->store->id,
+        ]);
+    }
+
+    public function test_end_impersonation(): void
+    {
+        $user = \App\Domain\Auth\Models\User::forceCreate([
+            'store_id'        => $this->store->id,
+            'organization_id' => $this->org->id,
+            'name'            => 'Store Owner 2',
+            'email'           => 'owner2@teststore.com',
+            'phone'           => '+96600000002',
+            'password_hash'   => bcrypt('pass'),
+            'role'            => 'owner',
+            'is_active'       => true,
+        ]);
+
+        // Start session
+        $startResp = $this
+            ->postJson("/api/v2/admin/providers/stores/{$this->store->id}/impersonate");
+        $token = $startResp->json('data.token');
+
+        $response = $this
+            ->postJson('/api/v2/admin/providers/impersonate/end', ['token' => $token]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Impersonation session ended');
+
+        $this->assertDatabaseHas('impersonation_sessions', [
+            'admin_user_id' => $this->admin->id,
+        ]);
+        // ended_at should be set
+        $session = \App\Domain\ProviderRegistration\Models\ImpersonationSession::where('token', $token)->first();
+        $this->assertNotNull($session->ended_at);
+    }
+
+    public function test_extend_impersonation(): void
+    {
+        $user = \App\Domain\Auth\Models\User::forceCreate([
+            'store_id'        => $this->store->id,
+            'organization_id' => $this->org->id,
+            'name'            => 'Store Owner 3',
+            'email'           => 'owner3@teststore.com',
+            'phone'           => '+96600000003',
+            'password_hash'   => bcrypt('pass'),
+            'role'            => 'owner',
+            'is_active'       => true,
+        ]);
+
+        $startResp = $this
+            ->postJson("/api/v2/admin/providers/stores/{$this->store->id}/impersonate");
+        $token = $startResp->json('data.token');
+
+        $response = $this
+            ->postJson('/api/v2/admin/providers/impersonate/extend', ['token' => $token]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure(['data' => ['expires_at']]);
+    }
+
+    public function test_list_notes_returns_admin_user_name(): void
+    {
+        \App\Domain\ProviderRegistration\Models\ProviderNote::forceCreate([
+            'organization_id' => $this->org->id,
+            'admin_user_id'   => $this->admin->id,
+            'note_text'       => 'Test note with admin name',
+        ]);
+
+        $response = $this->getJson("/api/v2/admin/providers/notes/{$this->org->id}");
+
+        $response->assertOk();
+        $notes = $response->json('data');
+        $this->assertNotEmpty($notes);
+        $this->assertArrayHasKey('admin_user_name', $notes[0]);
+        $this->assertEquals($this->admin->name, $notes[0]['admin_user_name']);
+    }
+
+    public function test_list_limit_overrides_returns_set_by_name(): void
+    {
+        \App\Domain\ProviderSubscription\Models\ProviderLimitOverride::forceCreate([
+            'organization_id' => $this->org->id,
+            'limit_key'       => 'max_products',
+            'override_value'  => 999,
+            'set_by'          => $this->admin->id,
+        ]);
+
+        $response = $this->getJson("/api/v2/admin/providers/stores/{$this->store->id}/limits");
+
+        $response->assertOk();
+        $overrides = $response->json('data');
+        $this->assertNotEmpty($overrides);
+        $this->assertArrayHasKey('set_by_name', $overrides[0]);
+        $this->assertEquals($this->admin->name, $overrides[0]['set_by_name']);
+    }
+
+    public function test_store_metrics_comprehensive(): void
+    {
+        $response = $this->getJson("/api/v2/admin/providers/stores/{$this->store->id}/metrics");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure([
+                'data' => [
+                    'store_id', 'store_name', 'is_active',
+                    'organization' => ['id', 'name'],
+                    'usage' => ['staff_count', 'products_count', 'registers_count', 'branches_count', 'delivery_platforms_count', 'recent_orders_30d'],
+                    'registers', 'delivery_platforms', 'branches',
+                    'limit_overrides', 'active_overrides', 'internal_notes_count',
+                ],
+            ]);
     }
 }

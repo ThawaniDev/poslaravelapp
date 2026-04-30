@@ -20,6 +20,7 @@ Route::prefix('support')->middleware(['auth:sanctum', 'plan.active'])->group(fun
     Route::get('tickets/{id}', [SupportController::class, 'show'])->middleware('permission:support.view');
     Route::post('tickets/{id}/messages', [SupportController::class, 'addMessage'])->middleware('permission:support.create_ticket');
     Route::put('tickets/{id}/close', [SupportController::class, 'close'])->middleware('permission:support.create_ticket');
+    Route::post('tickets/{id}/rate', [SupportController::class, 'rate'])->middleware('permission:support.create_ticket');
 
     // Knowledge Base (published articles only)
     Route::get('kb', [SupportController::class, 'kbIndex'])->middleware('permission:support.view');

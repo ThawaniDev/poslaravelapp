@@ -73,7 +73,21 @@ class DeliveryController extends BaseApiController
             'operating_hours_json.*.is_closed' => 'nullable|boolean',
         ]);
 
-        $config = $this->deliveryService->saveConfig($this->resolvedStoreId($request) ?? $request->user()->store_id, $validated);
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+
+        // Enforce max_delivery_platforms plan limit only when creating a new config
+        $existingConfig = $this->deliveryService->getConfigByPlatform($storeId, $validated['platform']);
+        if (! $existingConfig) {
+            $limitInfo = $this->deliveryService->getPlatformLimitInfo($storeId);
+            if ($limitInfo['reached']) {
+                return $this->error(
+                    __('delivery.plan_limit_reached', ['limit' => $limitInfo['limit']]),
+                    403,
+                );
+            }
+        }
+
+        $config = $this->deliveryService->saveConfig($storeId, $validated);
 
         return $this->success(
             (new DeliveryPlatformConfigResource($config))->resolve(),
@@ -256,6 +270,38 @@ class DeliveryController extends BaseApiController
      */
     public function platforms(): JsonResponse
     {
+        $platforms = DeliveryPlatform::where('is_active', true)
+            ->with(['fields' => fn ($q) => $q->orderBy('sort_order')])
+            ->orderBy('sort_order')
+            ->get()
+            ->map(function (DeliveryPlatform $platform) {
+                return [
+                    'id'                         => $platform->id,
+                    'name'                       => $platform->name,
+                    'name_ar'                    => $platform->name_ar,
+                    'slug'                       => $platform->slug,
+                    'description'                => $platform->description,
+                    'description_ar'             => $platform->description_ar,
+                    'logo_url'                   => $platform->logo_url,
+                    'api_type'                   => $platform->api_type,
+                    'auth_method'                => $platform->auth_method,
+                    'base_url'                   => $platform->base_url,
+                    'documentation_url'          => $platform->documentation_url,
+                    'default_commission_percent' => $platform->default_commission_percent,
+                    'supported_countries'        => $platform->supported_countries ?? [],
+                    'fields'                     => $platform->fields->map(fn ($f) => [
+                        'field_key'   => $f->field_key,
+                        'field_label' => $f->field_label,
+                        'field_type'  => $f->field_type,
+                        'is_required' => (bool) $f->is_required,
+                        'placeholder' => $f->placeholder,
+                        'sort_order'  => $f->sort_order,
+                    ])->values(),
+                ];
+            });
+
+        return response()->json(['data' => $platforms]);
+    }
         $platforms = DeliveryPlatform::where('is_active', true)
             ->orderBy('sort_order')
             ->get()

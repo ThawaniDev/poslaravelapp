@@ -2,6 +2,7 @@
 
 namespace App\Domain\ProviderSubscription\Models;
 
+use App\Domain\AdminPanel\Models\AdminUser;
 use App\Domain\Core\Models\Organization;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;

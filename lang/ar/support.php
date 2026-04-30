@@ -199,4 +199,6 @@ return [
     'kb_article_created'         => 'تم إنشاء مقال قاعدة المعرفة.',
     'kb_article_updated'         => 'تم تحديث مقال قاعدة المعرفة.',
     'kb_article_deleted'         => 'تم حذف مقال قاعدة المعرفة.',
+    'ticket_rated'               => 'شكراً على ملاحظاتك.',
+    'ticket_already_rated'       => 'تم تقييم هذه التذكرة بالفعل.',
 ];

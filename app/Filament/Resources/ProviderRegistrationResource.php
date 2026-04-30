@@ -42,18 +42,19 @@ class ProviderRegistrationResource extends Resource
     {
         return $form->schema([
             Forms\Components\Section::make(__('Registration Details'))->schema([
-                Forms\Components\TextInput::make('business_name')->disabled(),
+                Forms\Components\TextInput::make('organization_name')->disabled(),
                 Forms\Components\TextInput::make('owner_name')->disabled(),
-                Forms\Components\TextInput::make('email')->disabled(),
-                Forms\Components\TextInput::make('phone')->disabled(),
-                Forms\Components\TextInput::make('business_type')->disabled(),
-                Forms\Components\TextInput::make('city')->disabled(),
+                Forms\Components\TextInput::make('owner_email')->disabled(),
+                Forms\Components\TextInput::make('owner_phone')->disabled(),
+                Forms\Components\TextInput::make('cr_number')->disabled(),
+                Forms\Components\TextInput::make('vat_number')->disabled(),
                 Forms\Components\Select::make('status')->options([
-                    'pending' => __('Pending'),
+                    'pending'  => __('Pending'),
                     'approved' => __('Approved'),
                     'rejected' => __('Rejected'),
                 ])->required(),
-                Forms\Components\Textarea::make('admin_notes')->rows(3),
+                Forms\Components\Textarea::make('rejection_reason')->rows(3),
+                Forms\Components\Textarea::make('internal_notes')->rows(3)->label(__('Internal Notes')),
             ])->columns(2),
         ]);
     }
@@ -62,21 +63,23 @@ class ProviderRegistrationResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('business_name')->searchable()->sortable(),
+                Tables\Columns\TextColumn::make('organization_name')->searchable()->sortable(),
                 Tables\Columns\TextColumn::make('owner_name')->searchable(),
-                Tables\Columns\TextColumn::make('email')->searchable(),
-                Tables\Columns\TextColumn::make('business_type')->badge(),
+                Tables\Columns\TextColumn::make('owner_email')->searchable(),
                 Tables\Columns\TextColumn::make('status')->badge()
                     ->color(fn (string $state) => match ($state) {
                         'approved' => 'success',
                         'rejected' => 'danger',
-                        default => 'warning',
+                        default    => 'warning',
                     }),
+                Tables\Columns\TextColumn::make('source')->badge(),
                 Tables\Columns\TextColumn::make('created_at')->dateTime()->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options([
-                    'pending' => __('Pending'), 'approved' => 'Approved', 'rejected' => 'Rejected',
+                    'pending'  => __('Pending'),
+                    'approved' => 'Approved',
+                    'rejected' => 'Rejected',
                 ]),
             ])
             ->actions([Tables\Actions\EditAction::make()])
