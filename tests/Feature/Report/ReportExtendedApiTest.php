@@ -557,7 +557,7 @@ class ReportExtendedApiTest extends TestCase
     public function test_export_validates_report_type(): void
     {
         $response = $this->postJson('/api/v2/reports/export', [
-            'report_type' => '00000000-0000-0000-0000-000000000099',
+            'report_type' => 'nonexistent',
             'format' => 'csv',
         ], $this->authHeader());
 
@@ -687,7 +687,7 @@ class ReportExtendedApiTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    'totals' => ['total_orders', 'total_gross', 'total_commission', 'total_net'],
+                    'totals' => ['total_orders', 'total_gross', 'total_fee', 'total_net'],
                     'platforms',
                 ],
             ]);
@@ -749,7 +749,7 @@ class ReportExtendedApiTest extends TestCase
         ]);
 
         $this->deleteJson("/api/v2/reports/schedules/{$schedule->id}", [], $this->authHeader())
-             ->assertOk();
+             ->assertNoContent();
 
         $this->assertDatabaseMissing('scheduled_reports', ['id' => $schedule->id]);
     }

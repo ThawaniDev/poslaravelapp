@@ -6,7 +6,6 @@ use App\Domain\Report\Models\DailySalesSummary;
 use App\Domain\Report\Models\ProductSalesSummary;
 use App\Domain\Report\Models\ScheduledReport;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class ReportService
 {
@@ -207,16 +206,6 @@ class ReportService
                 default => "strftime('%Y-%m-%d', $column)",
             },
         };
-    }
-
-    /**
-     * Resolve a [dateFrom, dateTo] pair from filters, defaulting to the last 30 days.
-     */
-    private function resolveDateRange(array $filters): array
-    {
-        $dateFrom = $filters['date_from'] ?? now()->subDays(30)->toDateString();
-        $dateTo   = $filters['date_to']   ?? now()->toDateString();
-        return [$dateFrom, $dateTo];
     }
 
     private function previousPeriodSummary(string $storeId, string $dateFrom, string $dateTo): array
@@ -426,15 +415,8 @@ class ReportService
         if (! empty($filters['date_to'])) {
             $hoursQuery->whereDate('clock_in_at', '<=', $filters['date_to']);
         }
-        $driver = DB::getDriverName();
-        $timeDiffExpr = match ($driver) {
-            'sqlite' => DB::raw("SUM(CAST((STRFTIME('%s', clock_out_at) - STRFTIME('%s', clock_in_at)) AS INTEGER)) as total_seconds"),
-            'pgsql'  => DB::raw('SUM(EXTRACT(EPOCH FROM (clock_out_at - clock_in_at))) as total_seconds'),
-            default  => DB::raw('SUM(TIMESTAMPDIFF(SECOND, clock_in_at, clock_out_at)) as total_seconds'),
-        };
-
         $hoursMap = $hoursQuery
-            ->select('staff_user_id', $timeDiffExpr)
+            ->select('staff_user_id', DB::raw('SUM(TIMESTAMPDIFF(SECOND, clock_in_at, clock_out_at)) as total_seconds'))
             ->groupBy('staff_user_id')
             ->pluck('total_seconds', 'staff_user_id')
             ->toArray();
@@ -543,8 +525,6 @@ class ReportService
         ])
             ->groupBy('payments.method')
             ->orderByDesc('total_amount')
-            ->orderByDesc('transaction_count')
-            ->orderBy('payments.method')
             ->get()
             ->map(fn ($r) => [
                 'method' => $r->method,
@@ -894,29 +874,23 @@ class ReportService
         $dateFrom = $filters['date_from'] ?? now()->toDateString();
         $dateTo   = $filters['date_to']   ?? now()->addDays(90)->toDateString();
 
-        $items = DB::table('stock_batches as sb')
-            ->join('products as p', 'p.id', '=', 'sb.product_id')
+        $items = DB::table('stock_levels as sl')
+            ->join('products as p', 'p.id', '=', 'sl.product_id')
             ->select([
                 'p.id as product_id',
                 'p.name as product_name',
                 'p.sku',
-                'sb.batch_number',
-                'sb.expiry_date',
-                'sb.quantity',
+                'sl.batch_number',
+                'sl.expiry_date',
+                'sl.quantity',
+                DB::raw("(sl.expiry_date::date - CURRENT_DATE) AS days_until_expiry"),
             ])
-            ->where('sb.store_id', $storeId)
-            ->whereNotNull('sb.expiry_date')
-            ->whereBetween('sb.expiry_date', [$dateFrom, $dateTo])
-            ->where('sb.quantity', '>', 0)
-            ->orderBy('sb.expiry_date')
-            ->get()
-            ->map(function ($r) {
-                $r->days_until_expiry = (int) now()->startOfDay()->diffInDays(
-                    \Carbon\Carbon::parse($r->expiry_date)->startOfDay(),
-                    false
-                );
-                return $r;
-            });
+            ->where('sl.store_id', $storeId)
+            ->whereNotNull('sl.expiry_date')
+            ->whereBetween('sl.expiry_date', [$dateFrom, $dateTo])
+            ->where('sl.quantity', '>', 0)
+            ->orderBy('sl.expiry_date')
+            ->get();
 
         $expired  = $items->filter(fn ($r) => $r->days_until_expiry < 0);
         $critical = $items->filter(fn ($r) => $r->days_until_expiry >= 0 && $r->days_until_expiry <= 7);
@@ -1135,30 +1109,18 @@ class ReportService
     {
         [$dateFrom, $dateTo] = $this->resolveDateRange($filters);
 
-        if (! Schema::hasTable('external_orders')) {
-            return [
-                'totals' => [
-                    'total_orders'     => 0,
-                    'total_gross'      => 0,
-                    'total_commission' => 0,
-                    'total_net'        => 0,
-                ],
-                'platforms' => [],
-            ];
-        }
-
         $rows = DB::table('orders as o')
             ->leftJoin('external_orders as eo', 'eo.order_id', '=', 'o.id')
             ->select([
                 DB::raw("COALESCE(eo.platform, 'direct') AS platform"),
                 DB::raw('COUNT(o.id) AS order_count'),
-                DB::raw('SUM(o.total) AS gross_sales'),
+                DB::raw('SUM(o.total_amount) AS gross_sales'),
                 DB::raw('SUM(COALESCE(eo.commission_amount, 0)) AS total_commission'),
-                DB::raw('SUM(o.total - COALESCE(eo.commission_amount, 0)) AS net_settlement'),
+                DB::raw('SUM(o.total_amount - COALESCE(eo.commission_amount, 0)) AS net_settlement'),
             ])
             ->where('o.store_id', $storeId)
             ->whereIn('o.status', ['completed', 'delivered'])
-            ->whereRaw('DATE(o.created_at) BETWEEN ? AND ?', [$dateFrom, $dateTo])
+            ->whereBetween(DB::raw('o.created_at::date'), [$dateFrom, $dateTo])
             ->groupBy(DB::raw("COALESCE(eo.platform, 'direct')"))
             ->orderByDesc('gross_sales')
             ->get();
@@ -1263,12 +1225,11 @@ class ReportService
             ->where('organization_id', $orgId)
             ->sum('loyalty_points');
 
-        $loyaltyRedeemed = DB::table('payments')
-            ->join('transactions', 'payments.transaction_id', '=', 'transactions.id')
-            ->join('stores', 'transactions.store_id', '=', 'stores.id')
+        $loyaltyRedeemed = DB::table('orders')
+            ->join('stores', 'orders.store_id', '=', 'stores.id')
             ->where('stores.organization_id', $orgId)
-            ->whereNotIn('transactions.status', ['cancelled', 'voided'])
-            ->sum('payments.loyalty_points_used');
+            ->whereNotIn('orders.status', ['cancelled', 'voided'])
+            ->sum('orders.loyalty_points_used');
 
         $returningCustomers = max(0, $activeCustomers30d - $newCustomers30d);
 
@@ -1440,7 +1401,6 @@ class ReportService
             'generated_at' => now()->toIso8601String(),
             'filters' => $filters,
             'data' => $data,
-            'url' => null,
         ];
     }
 }

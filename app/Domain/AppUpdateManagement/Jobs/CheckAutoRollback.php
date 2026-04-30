@@ -92,16 +92,13 @@ class CheckAutoRollback implements ShouldQueue
         // 3. Create a security alert (visible in the admin security center)
         try {
             SecurityAlert::create([
-                'store_id' => null,
                 'alert_type' => 'app_crash_loop',
                 'severity' => 'critical',
-                'title' => "Auto-Rollback: v{$release->version_number} ({$details['platform']}) deactivated",
-                'description' => "Failure rate {$details['failure_rate']}% exceeded threshold. "
-                    . "{$failedAttempts}/{$totalAttempts} installs failed. "
-                    . 'Release has been automatically deactivated.',
-                'metadata' => $details,
-                'is_resolved' => false,
-                'created_at' => now(),
+                'description' => "Auto-Rollback: v{$release->version_number} ({$details['platform']}) deactivated. "
+                    . "Failure rate {$details['failure_rate']}% exceeded threshold. "
+                    . "{$failedAttempts}/{$totalAttempts} installs failed.",
+                'details' => $details,
+                'status' => 'new',
             ]);
         } catch (\Throwable $e) {
             Log::error('CheckAutoRollback: failed to create security alert', ['error' => $e->getMessage()]);
@@ -136,8 +133,11 @@ class CheckAutoRollback implements ShouldQueue
                 'key', 'updates.auto_rollback_failure_percent'
             )->first();
 
-            if ($setting && is_numeric($setting->value)) {
-                return (float) $setting->value;
+            if ($setting) {
+                $raw = is_array($setting->value) ? ($setting->value[0] ?? null) : $setting->value;
+                if (is_numeric($raw)) {
+                    return (float) $raw;
+                }
             }
         } catch (\Throwable) {
             // fallback to constant

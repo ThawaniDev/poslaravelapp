@@ -80,7 +80,7 @@ class CheckAutoRollbackJobTest extends TestCase
             'is_force_update' => false,
             'is_active' => true,
             'rollout_percentage' => 100,
-            'released_at' => now()->subDays(2),
+            'released_at' => now()->subHours(12),
         ], $overrides));
     }
 
@@ -142,8 +142,9 @@ class CheckAutoRollbackJobTest extends TestCase
     {
         $release = $this->createRelease();
 
-        // 2 failed out of 10 = 20% < 30% threshold
-        $this->createStats($release->id, 8, 2);
+        // 1 failed out of 10 = 10% < 10% threshold (strictly less)... use 0 fails
+        // 0 failed out of 10 = 0% < 10% threshold — should NOT rollback
+        $this->createStats($release->id, 10, 0);
 
         (new CheckAutoRollback)->handle();
 
@@ -155,8 +156,8 @@ class CheckAutoRollbackJobTest extends TestCase
     {
         $release = $this->createRelease();
 
-        // 3 failed out of 10 = 30% = threshold (>= so this SHOULD trigger)
-        $this->createStats($release->id, 7, 3);
+        // 1 failed out of 10 = 10% = threshold (>= 10% so this SHOULD trigger)
+        $this->createStats($release->id, 9, 1);
 
         (new CheckAutoRollback)->handle();
 
@@ -192,10 +193,10 @@ class CheckAutoRollbackJobTest extends TestCase
         ]);
     }
 
-    public function test_skips_old_releases_beyond_7_days(): void
+    public function test_skips_old_releases_beyond_eval_window(): void
     {
         $release = $this->createRelease([
-            'released_at' => now()->subDays(10), // Older than 7 days
+            'released_at' => now()->subDays(3), // Older than 1-day eval window
         ]);
 
         $this->createStats($release->id, 5, 10);
@@ -212,9 +213,9 @@ class CheckAutoRollbackJobTest extends TestCase
         $release1 = $this->createRelease(['version_number' => '1.0.0']);
         $this->createStats($release1->id, 5, 5);
 
-        // Release 2: should NOT be rolled back (10% failure rate)
+        // Release 2: should NOT be rolled back (9% failure rate — below 10%)
         $release2 = $this->createRelease(['version_number' => '2.0.0', 'platform' => 'android']);
-        $this->createStats($release2->id, 9, 1);
+        $this->createStats($release2->id, 10, 0);
 
         (new CheckAutoRollback)->handle();
 
@@ -281,12 +282,11 @@ class CheckAutoRollbackJobTest extends TestCase
     {
         // Set a higher threshold in system_settings — release should NOT be rolled back
         if (\Schema::hasTable('system_settings')) {
-            \DB::table('system_settings')->insert([
+            \DB::table('system_settings')->insertOrIgnore([
                 'id' => Str::uuid()->toString(),
                 'key' => 'updates.auto_rollback_failure_percent',
-                'value' => '50',
-                'created_at' => now(),
-                'updated_at' => now(),
+                'value' => json_encode(50),
+                'group' => 'updates',
             ]);
         }
 
@@ -302,11 +302,6 @@ class CheckAutoRollbackJobTest extends TestCase
 
     public function test_rollback_creates_security_alert_when_table_exists(): void
     {
-        if (!\Schema::hasTable('security_alerts')) {
-            // Cannot test without table — skip gracefully
-            $this->markTestSkipped('security_alerts table not available in test env');
-        }
-
         Notification::fake();
 
         $release = $this->createRelease(['version_number' => '8.0.0']);

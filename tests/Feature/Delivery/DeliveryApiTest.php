@@ -601,4 +601,131 @@ class DeliveryApiTest extends TestCase
         $r = $this->getJson('/api/v2/delivery/stats');
         $r->assertStatus(401);
     }
+
+    // ─── Boolean-false persistence regression ─────────────
+
+    public function test_saving_false_values_does_not_strip_them(): void
+    {
+        // Create a config with boolean fields set to true
+        $config = $this->makeConfig([
+            'auto_accept' => true,
+            'sync_menu_on_product_change' => true,
+            'is_enabled' => true,
+        ]);
+
+        // Update with all booleans set to false — POST with same platform updates existing
+        $r = $this->withToken($this->token)->postJson('/api/v2/delivery/configs', [
+            'platform'                  => 'jahez',
+            'is_enabled'                => false,
+            'auto_accept'               => false,
+            'sync_menu_on_product_change' => false,
+            'auto_accept_timeout_seconds' => 60,
+            'menu_sync_interval_hours'  => 1,
+        ]);
+
+        $r->assertOk();
+        $config->refresh();
+        $this->assertFalse((bool) $config->auto_accept, 'auto_accept should persist as false');
+        $this->assertFalse((bool) $config->sync_menu_on_product_change, 'sync_menu_on_product_change should persist as false');
+        $this->assertFalse((bool) $config->is_enabled, 'is_enabled should persist as false');
+    }
+
+    // ─── Plan limit enforcement ────────────────────────────
+
+    public function test_plan_limit_blocks_creating_too_many_configs(): void
+    {
+        // Set a limit of 1 delivery integration on the plan
+        $plan = \App\Domain\ProviderSubscription\Models\StoreSubscription::where(
+            'organization_id', $this->org->id
+        )->first()->subscriptionPlan;
+
+        \App\Domain\Subscription\Models\PlanLimit::updateOrCreate(
+            ['subscription_plan_id' => $plan->id, 'feature_key' => 'delivery_integrations_count'],
+            ['limit_value' => 1]
+        );
+
+        // First config should succeed
+        $r1 = $this->withToken($this->token)->postJson('/api/v2/delivery/configs', [
+            'platform'   => 'jahez',
+            'api_key'    => 'KEY-1',
+            'is_enabled' => true,
+        ]);
+        $r1->assertStatus(201);
+
+        // Second config should be blocked
+        $r2 = $this->withToken($this->token)->postJson('/api/v2/delivery/configs', [
+            'platform'   => 'hungerstation',
+            'api_key'    => 'KEY-2',
+            'is_enabled' => true,
+        ]);
+        $r2->assertStatus(403);
+        $r2->assertJsonPath('error', 'delivery.plan_limit_reached');
+    }
+
+    public function test_update_at_limit_succeeds(): void
+    {
+        $plan = \App\Domain\ProviderSubscription\Models\StoreSubscription::where(
+            'organization_id', $this->org->id
+        )->first()->subscriptionPlan;
+
+        \App\Domain\Subscription\Models\PlanLimit::updateOrCreate(
+            ['subscription_plan_id' => $plan->id, 'feature_key' => 'delivery_integrations_count'],
+            ['limit_value' => 1]
+        );
+
+        $config = $this->makeConfig();
+
+        // Updating the existing config (not creating a new one) should succeed even at limit
+        $r = $this->withToken($this->token)->postJson('/api/v2/delivery/configs', [
+            'platform'   => 'jahez',
+            'is_enabled' => false,
+            'auto_accept' => false,
+        ]);
+        $r->assertOk();
+    }
+
+    // ─── Platforms endpoint returns fields ─────────────────
+
+    public function test_platforms_endpoint_returns_fields(): void
+    {
+        // Add a platform field to the jahez platform
+        $platform = \App\Domain\DeliveryPlatformRegistry\Models\DeliveryPlatform
+            ::where('slug', 'jahez')->first();
+
+        \Illuminate\Support\Facades\DB::table('delivery_platform_fields')->insert([
+            'id'                   => (string) Str::uuid(),
+            'delivery_platform_id' => $platform->id,
+            'field_key'            => 'api_key',
+            'field_label'          => 'API Key',
+            'field_type'           => 'password',
+            'is_required'          => true,
+            'sort_order'           => 1,
+        ]);
+
+        $r = $this->withToken($this->token)->getJson('/api/v2/delivery/platforms');
+        $r->assertOk();
+
+        $platforms = $r->json('data');
+        $jahez = collect($platforms)->firstWhere('slug', 'jahez');
+
+        $this->assertNotNull($jahez, 'jahez platform should be present');
+        $this->assertArrayHasKey('fields', $jahez);
+        $this->assertCount(1, $jahez['fields']);
+        $this->assertEquals('api_key', $jahez['fields'][0]['field_key']);
+        $this->assertEquals('password', $jahez['fields'][0]['field_type']);
+        $this->assertTrue($jahez['fields'][0]['is_required']);
+    }
+
+    public function test_platforms_endpoint_returns_empty_fields_array_when_none_defined(): void
+    {
+        $r = $this->withToken($this->token)->getJson('/api/v2/delivery/platforms');
+        $r->assertOk();
+
+        $platforms = $r->json('data');
+        foreach ($platforms as $platform) {
+            $slug = $platform['slug'];
+            $this->assertArrayHasKey('fields', $platform, "Platform {$slug} must have 'fields' key");
+            $this->assertIsArray($platform['fields']);
+        }
+    }
 }

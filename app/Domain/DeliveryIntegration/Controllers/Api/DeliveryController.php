@@ -294,33 +294,12 @@ class DeliveryController extends BaseApiController
                         'field_label' => $f->field_label,
                         'field_type'  => $f->field_type,
                         'is_required' => (bool) $f->is_required,
-                        'placeholder' => $f->placeholder,
                         'sort_order'  => $f->sort_order,
                     ])->values(),
                 ];
             });
 
         return response()->json(['data' => $platforms]);
-    }
-        $platforms = DeliveryPlatform::where('is_active', true)
-            ->orderBy('sort_order')
-            ->get()
-            ->map(fn (DeliveryPlatform $p) => [
-                'value' => $p->slug,
-                'label' => $p->name,
-                'name_ar' => $p->name_ar,
-                'logo_url' => $p->logo_url,
-                'description' => $p->description,
-                'description_ar' => $p->description_ar,
-                'api_type' => $p->api_type ?? 'rest',
-                'base_url' => $p->base_url,
-                'default_commission_percent' => $p->default_commission_percent ? (float) $p->default_commission_percent : null,
-                'supported_countries' => $p->supported_countries ?? ['SA'],
-                'color' => DeliveryConfigPlatform::tryFrom($p->slug)?->color() ?? '#666666',
-            ])
-            ->values();
-
-        return $this->success($platforms, __('delivery.platforms_retrieved'));
     }
 
     /**
