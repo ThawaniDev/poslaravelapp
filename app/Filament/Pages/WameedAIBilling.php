@@ -85,7 +85,7 @@ class WameedAIBilling extends Page
         }
         $value = $this->editingSettings[$key] ?? '';
         AIBillingSetting::setValue($key, $value);
-        Notification::make()->title('Setting updated')->success()->send();
+        Notification::make()->title(__('ai.notif_setting_updated'))->success()->send();
     }
 
     public function addNewSetting(): void
@@ -101,7 +101,7 @@ class WameedAIBilling extends Page
         $this->newSettingValue = '';
         $this->newSettingDesc = '';
         $this->editingSettings = AIBillingSetting::pluck('value', 'key')->toArray();
-        Notification::make()->title('Setting added')->success()->send();
+        Notification::make()->title(__('ai.notif_setting_added'))->success()->send();
     }
 
     public function deleteSetting(string $key): void
@@ -111,7 +111,7 @@ class WameedAIBilling extends Page
         }
         AIBillingSetting::where('key', $key)->delete();
         unset($this->editingSettings[$key]);
-        Notification::make()->title('Setting deleted')->success()->send();
+        Notification::make()->title(__('ai.notif_setting_deleted'))->success()->send();
     }
 
     // --- Store Config Actions ---
@@ -149,7 +149,7 @@ class WameedAIBilling extends Page
         ]);
 
         $this->editingConfigId = null;
-        Notification::make()->title('Store config updated')->success()->send();
+        Notification::make()->title(__('ai.notif_store_config_updated'))->success()->send();
     }
 
     public function cancelEditConfig(): void
@@ -173,8 +173,8 @@ class WameedAIBilling extends Page
             'disabled_at' => ! $newState ? now() : $config->disabled_at,
         ]);
         Notification::make()
-            ->title($newState ? 'AI Enabled' : 'AI Disabled')
-            ->body('AI for this store has been ' . ($newState ? 'enabled' : 'disabled'))
+            ->title($newState ? __('ai.notif_ai_enabled') : __('ai.notif_ai_disabled'))
+            ->body($newState ? __('ai.ai_enabled_body') : __('ai.ai_disabled_body'))
             ->success()
             ->send();
     }
@@ -209,7 +209,7 @@ class WameedAIBilling extends Page
             'payment_notes' => $this->paymentNotes ?: null,
         ]);
         $this->markingInvoiceId = null;
-        Notification::make()->title('Invoice marked as paid')->success()->send();
+        Notification::make()->title(__('ai.notif_invoice_paid'))->success()->send();
     }
 
     public function markInvoiceOverdue(string $invoiceId): void
@@ -222,7 +222,7 @@ class WameedAIBilling extends Page
             return;
         }
         $invoice->update(['status' => 'overdue']);
-        Notification::make()->title('Invoice marked as overdue')->warning()->send();
+        Notification::make()->title(__('ai.notif_invoice_overdue'))->warning()->send();
     }
 
     // --- Generate Invoices ---
@@ -294,8 +294,8 @@ class WameedAIBilling extends Page
         }
 
         Notification::make()
-            ->title("Invoices generated: {$created}")
-            ->body("For {$year}-" . str_pad($month, 2, '0', STR_PAD_LEFT))
+            ->title(__('ai.notif_invoices_generated') . ": {$created}")
+            ->body(__('ai.billing_month_subtitle', ['year' => $year, 'month' => str_pad($month, 2, '0', STR_PAD_LEFT)]))
             ->success()
             ->send();
     }

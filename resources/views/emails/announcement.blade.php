@@ -25,7 +25,7 @@
 <div class="wrapper">
     <div class="container">
         <div class="header">
-            <h1>Wameed POS</h1>
+            <h1>{{ __('ui.app_name') }}</h1>
         </div>
         <div class="content">
             <span class="badge badge-{{ $type }}">{{ ucfirst($type) }}</span>
@@ -33,7 +33,7 @@
             <div>{!! $announcementBody !!}</div>
         </div>
         <div class="footer">
-            &copy; {{ date('Y') }} Wameed POS. All rights reserved.
+            &copy; {{ date('Y') }} {{ __('ui.app_name') }}. {{ __('ui.all_rights_reserved') }}
         </div>
     </div>
 </div>

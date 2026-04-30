@@ -182,19 +182,19 @@
     {{-- Field Details --}}
     @if(!$isSimpleFormat && !empty($fields))
         <details class="bg-white rounded-xl shadow p-6">
-            <summary class="font-semibold text-gray-900 cursor-pointer">Field Layout Details</summary>
+            <summary class="font-semibold text-gray-900 cursor-pointer">{{ __('ui.field_layout_details') }}</summary>
             <div class="mt-4 overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="text-left border-b">
                             <th class="py-2 px-3 text-gray-500">#</th>
-                            <th class="py-2 px-3 text-gray-500">Field</th>
-                            <th class="py-2 px-3 text-gray-500">Label (EN)</th>
-                            <th class="py-2 px-3 text-gray-500">Label (AR)</th>
-                            <th class="py-2 px-3 text-gray-500">Position</th>
-                            <th class="py-2 px-3 text-gray-500">Size</th>
-                            <th class="py-2 px-3 text-gray-500">Font</th>
-                            <th class="py-2 px-3 text-gray-500">Align</th>
+                            <th class="py-2 px-3 text-gray-500">{{ __('ui.col_field') }}</th>
+                            <th class="py-2 px-3 text-gray-500">{{ __('ui.col_label_en') }}</th>
+                            <th class="py-2 px-3 text-gray-500">{{ __('ui.col_label_ar') }}</th>
+                            <th class="py-2 px-3 text-gray-500">{{ __('ui.col_position') }}</th>
+                            <th class="py-2 px-3 text-gray-500">{{ __('ui.col_size') }}</th>
+                            <th class="py-2 px-3 text-gray-500">{{ __('ui.col_font') }}</th>
+                            <th class="py-2 px-3 text-gray-500">{{ __('ui.col_align') }}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -208,7 +208,7 @@
                                 <td class="py-2 px-3 font-mono text-xs">{{ $field['w'] ?? 0 }}% × {{ $field['h'] ?? 0 }}%</td>
                                 <td class="py-2 px-3">
                                     {{ $field['font_size'] ?? 'medium' }}
-                                    @if($field['is_bold'] ?? false) <span class="font-bold">(Bold)</span> @endif
+                                    @if($field['is_bold'] ?? false) <span class="font-bold">({{ __('ui.bold_indicator') }})</span> @endif
                                 </td>
                                 <td class="py-2 px-3">{{ $field['alignment'] ?? 'left' }}</td>
                             </tr>
@@ -219,12 +219,12 @@
 
             @if(!empty($barcode))
                 <div class="mt-4 p-3 bg-gray-50 rounded-lg">
-                    <h4 class="font-semibold text-sm mb-2">Barcode Settings</h4>
+                    <h4 class="font-semibold text-sm mb-2">{{ __('ui.barcode_settings') }}</h4>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                        <div><span class="text-gray-500">Type:</span> {{ $record->barcode_type ?? 'N/A' }}</div>
-                        <div><span class="text-gray-500">Position:</span> {{ $barcode['x'] ?? 0 }}%, {{ $barcode['y'] ?? 0 }}%</div>
-                        <div><span class="text-gray-500">Size:</span> {{ $barcode['w'] ?? 100 }}% × {{ $barcode['h'] ?? 30 }}%</div>
-                        <div><span class="text-gray-500">Show Number:</span> {{ $record->show_barcode_number ? '✓' : '✗' }}</div>
+                        <div><span class="text-gray-500">{{ __('ui.barcode_type_label') }}:</span> {{ $record->barcode_type ?? 'N/A' }}</div>
+                        <div><span class="text-gray-500">{{ __('ui.col_position') }}:</span> {{ $barcode['x'] ?? 0 }}%, {{ $barcode['y'] ?? 0 }}%</div>
+                        <div><span class="text-gray-500">{{ __('ui.col_size') }}:</span> {{ $barcode['w'] ?? 100 }}% × {{ $barcode['h'] ?? 30 }}%</div>
+                        <div><span class="text-gray-500">{{ __('ui.barcode_show_number') }}:</span> {{ $record->show_barcode_number ? '✓' : '✗' }}</div>
                     </div>
                 </div>
             @endif
@@ -233,8 +233,8 @@
 
     @if($isSimpleFormat)
         <details class="bg-white rounded-xl shadow p-6">
-            <summary class="font-semibold text-gray-900 cursor-pointer">Field Layout Details</summary>
-            <p class="mt-3 text-sm text-gray-500">Simple layout — fields are stacked vertically in order.</p>
+            <summary class="font-semibold text-gray-900 cursor-pointer">{{ __('ui.field_layout_details') }}</summary>
+            <p class="mt-3 text-sm text-gray-500">{{ __('ui.simple_format_desc') }}</p>
             <div class="flex gap-2 flex-wrap mt-3">
                 @foreach($fields as $fieldName)
                     <span class="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{{ $fieldName }}</span>

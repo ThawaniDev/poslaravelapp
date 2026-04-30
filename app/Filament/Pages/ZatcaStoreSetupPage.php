@@ -418,7 +418,7 @@ class ZatcaStoreSetupPage extends Page implements HasForms
                         ->password()
                         ->revealable()
                         ->maxLength(255)
-                        ->helperText('Get OTP from https://fatoora.zatca.gov.sa → EGS Units → Add Device. Use 123321 for developer-portal only.'),
+                        ->helperText(__('zatca.otp_help_portal')),
                     Select::make('environment')
                         ->label(__('zatca.environment'))
                         ->options([
@@ -428,7 +428,7 @@ class ZatcaStoreSetupPage extends Page implements HasForms
                         ])
                         ->default(fn () => $this->data['environment'] ?? 'simulation')
                         ->required()
-                        ->helperText('This is stored on the certificate. Each store can be on a different environment independently of the server .env.'),
+                        ->helperText(__('zatca.env_scope_help')),
                 ])
                 ->action(function (array $data) {
                     $sid = $this->data['store_id'] ?? null;

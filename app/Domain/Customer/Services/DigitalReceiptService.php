@@ -76,7 +76,7 @@ class DigitalReceiptService
                     sprintf("Receipt for order %s\nTotal: %s", $order->order_number ?? $order->id, $order->total),
                     function ($message) use ($destination, $customer) {
                         $message->to($destination, $customer->name)
-                            ->subject('Your receipt');
+                            ->subject(__('notifications.receipt_subject'));
                     }
                 );
             } catch (\Throwable $e) {

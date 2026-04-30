@@ -1,7 +1,7 @@
             {{-- Daily Usage Chart (Bar viz) --}}
-            <x-filament::section heading="Daily Usage (Last {{ $dateRange }} Days)">
+            <x-filament::section :heading="__('ai.section_daily_usage_last_days', ['days' => $dateRange])">
                 @if ($trends['dailyUsage']->isEmpty())
-                    <p class="text-sm text-gray-400">No daily usage data.</p>
+                    <p class="text-sm text-gray-400">{{ __('ai.no_daily_usage') }}</p>
                 @else
                     <div class="space-y-2">
                         @foreach ($trends['dailyUsage'] as $day)
@@ -25,21 +25,21 @@
                         @endforeach
                     </div>
                     <div class="flex items-center gap-3 mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400">
-                        <span class="w-20">Date</span>
-                        <span class="flex-1">Volume</span>
-                        <span class="w-14 text-right">Reqs</span>
-                        <span class="w-20 text-right">Raw $</span>
-                        <span class="w-20 text-right">Billed $</span>
-                        <span class="w-14 text-right">Latency</span>
-                        <span class="w-8 text-right">Err</span>
+                        <span class="w-20">{{ __('ai.col_date') }}</span>
+                        <span class="flex-1">{{ __('ai.col_volume') }}</span>
+                        <span class="w-14 text-right">{{ __('ai.col_reqs') }}</span>
+                        <span class="w-20 text-right">{{ __('ai.col_raw_cost_abbr') }}</span>
+                        <span class="w-20 text-right">{{ __('ai.col_billed_abbr') }}</span>
+                        <span class="w-14 text-right">{{ __('ai.col_latency') }}</span>
+                        <span class="w-8 text-right">{{ __('ai.col_err') }}</span>
                     </div>
                 @endif
             </x-filament::section>
 
             {{-- Hourly Breakdown Today --}}
-            <x-filament::section heading="Today's Hourly Breakdown" class="mt-4">
+            <x-filament::section :heading="__('ai.section_hourly_breakdown')" class="mt-4">
                 @if ($trends['hourlyToday']->isEmpty())
-                    <p class="text-sm text-gray-400">No requests today.</p>
+                    <p class="text-sm text-gray-400">{{ __('ai.no_requests_today') }}</p>
                 @else
                     <div class="space-y-1">
                         @foreach ($trends['hourlyToday'] as $hr)
@@ -63,21 +63,21 @@
             </x-filament::section>
 
             {{-- Daily Summaries Table --}}
-            <x-filament::section heading="Daily Summaries (Aggregated)" class="mt-4">
+            <x-filament::section :heading="__('ai.section_daily_summaries')" class="mt-4">
                 @if ($trends['dailySummaries']->isEmpty())
-                    <p class="text-sm text-gray-400">No daily summaries available.</p>
+                    <p class="text-sm text-gray-400">{{ __('ai.no_daily_summaries') }}</p>
                 @else
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="border-b border-gray-200 dark:border-gray-700">
-                                    <th class="px-3 py-2 text-start font-medium text-gray-500">Date</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Total Reqs</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Cached</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Failed</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Input Tokens</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Output Tokens</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Est. Cost</th>
+                                    <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.col_date') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_total_reqs') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_cached') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_failed') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_input_tokens') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_output_tokens') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_est_cost') }}</th>
                                 </tr>
                             </thead>
                             <tbody>

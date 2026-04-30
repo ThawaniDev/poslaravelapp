@@ -110,7 +110,7 @@ class PricingPageContentResource extends Resource
                 ->schema([
                     Forms\Components\TextInput::make('highlight_badge')
                         ->label(__('pricing.highlight_badge'))
-                        ->placeholder('Most Popular')
+                        ->placeholder(__('pricing.placeholder_most_popular'))
                         ->maxLength(60),
                     Forms\Components\TextInput::make('highlight_badge_ar')
                         ->label(__('pricing.highlight_badge_ar'))
@@ -156,7 +156,7 @@ class PricingPageContentResource extends Resource
                 ->schema([
                     Forms\Components\TextInput::make('cta_label')
                         ->label(__('pricing.cta_label'))
-                        ->placeholder('Get Started')
+                        ->placeholder(__('pricing.placeholder_get_started'))
                         ->maxLength(80),
                     Forms\Components\TextInput::make('cta_label_ar')
                         ->label(__('pricing.cta_label_ar'))
@@ -165,7 +165,7 @@ class PricingPageContentResource extends Resource
                         ->extraAttributes(['dir' => 'rtl']),
                     Forms\Components\TextInput::make('cta_secondary_label')
                         ->label(__('pricing.cta_secondary_label'))
-                        ->placeholder('Learn More')
+                        ->placeholder(__('pricing.placeholder_learn_more'))
                         ->maxLength(80),
                     Forms\Components\TextInput::make('cta_secondary_label_ar')
                         ->label(__('pricing.cta_secondary_label_ar'))
@@ -186,7 +186,7 @@ class PricingPageContentResource extends Resource
                 ->schema([
                     Forms\Components\TextInput::make('price_prefix')
                         ->label(__('pricing.price_prefix'))
-                        ->placeholder('Starting at')
+                        ->placeholder(__('pricing.placeholder_starting_at'))
                         ->maxLength(60),
                     Forms\Components\TextInput::make('price_prefix_ar')
                         ->label(__('pricing.price_prefix_ar'))
@@ -312,7 +312,7 @@ class PricingPageContentResource extends Resource
                                     Forms\Components\Grid::make(4)->schema([
                                         Forms\Components\TextInput::make('limit')
                                             ->label(__('pricing.feature_limit'))
-                                            ->placeholder('Unlimited')
+                                            ->placeholder(__('pricing.placeholder_unlimited'))
                                             ->maxLength(50),
                                         Forms\Components\TextInput::make('icon')
                                             ->label(__('pricing.feature_icon'))

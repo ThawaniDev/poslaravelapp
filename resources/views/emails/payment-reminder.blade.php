@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="{{ app()->getLocale() }}" dir="{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Subscription Reminder</title>
+    <title>{{ __('subscription.email_reminder_title') }}</title>
     <style>
         body { margin: 0; padding: 0; background-color: #f4f4f7; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
         .wrapper { width: 100%; background-color: #f4f4f7; padding: 24px 0; }
@@ -26,43 +26,43 @@
 <div class="wrapper">
     <div class="container">
         <div class="header">
-            <h1>Wameed POS</h1>
+            <h1>{{ __('subscription.email_brand_name') }}</h1>
         </div>
         <div class="content">
             @if($reminderType === 'upcoming')
-                <h2>Your subscription is expiring soon</h2>
+                <h2>{{ __('subscription.email_upcoming_heading') }}</h2>
                 <div class="alert alert-warning">
-                    Your <strong>{{ $planName }}</strong> plan expires on <strong>{{ $expiryDate }}</strong>. Please renew to avoid service interruption.
+                    {{ __('subscription.email_upcoming_body', ['plan' => $planName, 'date' => $expiryDate]) }}
                 </div>
             @elseif($reminderType === 'overdue')
-                <h2>Your subscription has expired</h2>
+                <h2>{{ __('subscription.email_overdue_heading') }}</h2>
                 <div class="alert alert-danger">
-                    Your <strong>{{ $planName }}</strong> plan expired. Please renew immediately to restore full access.
+                    {{ __('subscription.email_overdue_body', ['plan' => $planName]) }}
                 </div>
             @elseif($reminderType === 'trial_ending')
-                <h2>Your trial is ending soon</h2>
+                <h2>{{ __('subscription.email_trial_heading') }}</h2>
                 <div class="alert alert-info">
-                    Your trial for <strong>{{ $planName }}</strong> ends on <strong>{{ $expiryDate }}</strong>. Subscribe now to keep all features.
+                    {{ __('subscription.email_trial_body', ['plan' => $planName, 'date' => $expiryDate]) }}
                 </div>
             @endif
 
             <table style="width: 100%; margin-top: 20px; border-collapse: collapse;">
                 <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0; color: #666; font-size: 14px;">Organization</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0; color: #666; font-size: 14px;">{{ __('subscription.email_label_organization') }}</td>
                     <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #1a1a2e; font-size: 14px; text-align: right;">{{ $organizationName }}</td>
                 </tr>
                 <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0; color: #666; font-size: 14px;">Plan</td>
+                    <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0; color: #666; font-size: 14px;">{{ __('subscription.email_label_plan') }}</td>
                     <td style="padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #1a1a2e; font-size: 14px; text-align: right;">{{ $planName }}</td>
                 </tr>
                 <tr>
-                    <td style="padding: 8px 0; color: #666; font-size: 14px;">Expiry Date</td>
+                    <td style="padding: 8px 0; color: #666; font-size: 14px;">{{ __('subscription.email_label_expiry_date') }}</td>
                     <td style="padding: 8px 0; font-weight: 600; color: #1a1a2e; font-size: 14px; text-align: right;">{{ $expiryDate }}</td>
                 </tr>
             </table>
         </div>
         <div class="footer">
-            &copy; {{ date('Y') }} Wameed POS. All rights reserved.
+            &copy; {{ date('Y') }} {{ __('subscription.email_brand_name') }}. {{ __('subscription.email_footer_rights') }}
         </div>
     </div>
 </div>

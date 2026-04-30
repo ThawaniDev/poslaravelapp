@@ -94,6 +94,7 @@ return [
     'invoice_col_qty'             => 'Qty',
     'invoice_col_unit_price'      => 'Unit Price (SAR)',
     'invoice_col_total'           => 'Total (SAR)',
+    'invoice_items'               => 'Invoice Items',
     'invoice_subtotal'            => 'Subtotal',
     'invoice_vat'                 => 'VAT (15%)',
     'invoice_total_due'           => 'Total Due',
@@ -104,4 +105,7 @@ return [
     'invoice_footer_thanks'       => 'Thank you for your business with Wameed POS.',
     'invoice_footer_billing'      => 'For billing inquiries, contact billing@wameedpos.sa',
     'invoice_footer_generated'    => 'This is a computer-generated invoice and does not require a signature.',
+
+    // ── Issuer info (shown on invoice) ────────────────────────────
+    'issuer_company_name'         => 'Wameed Technology',
 ];

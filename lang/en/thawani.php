@@ -202,4 +202,6 @@ return [
 
     // Inventory
     'inventory_synced' => 'Inventory synced to Thawani.',
-];
+    // ── Column Mapping Placeholders ────────────────────────────────────
+    'thawani_field_placeholder'   => 'name, price, image...',
+    'wameed_field_placeholder'    => 'name, sell_price, image_url...',];

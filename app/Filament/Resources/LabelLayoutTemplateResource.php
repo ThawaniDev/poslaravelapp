@@ -171,19 +171,19 @@ class LabelLayoutTemplateResource extends Resource
                                 ->label(__('ui.field_label_ar'))
                                 ->maxLength(50),
                             Forms\Components\TextInput::make('position.x')
-                                ->label('X %')
+                                ->label(__('ui.position_x'))
                                 ->numeric()
                                 ->default(0),
                             Forms\Components\TextInput::make('position.y')
-                                ->label('Y %')
+                                ->label(__('ui.position_y'))
                                 ->numeric()
                                 ->default(0),
                             Forms\Components\TextInput::make('position.w')
-                                ->label('W %')
+                                ->label(__('ui.dimension_w'))
                                 ->numeric()
                                 ->default(50),
                             Forms\Components\TextInput::make('position.h')
-                                ->label('H %')
+                                ->label(__('ui.dimension_h'))
                                 ->numeric()
                                 ->default(10),
                             Forms\Components\TextInput::make('font_size')

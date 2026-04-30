@@ -66,19 +66,19 @@ class ZatcaCertificateResource extends Resource
                     ->options(collect(ZatcaCertificateType::cases())->mapWithKeys(fn ($c) => [$c->value => __('zatca.cert_type_' . $c->value)]))
                     ->required(),
                 Forms\Components\TextInput::make('environment')
-                    ->label('Environment')
+                    ->label(__('zatca.environment_label'))
                     ->disabled()
-                    ->helperText('developer-portal = stub QA · simulation = ZATCA simulation server · production = live ZATCA'),
+                    ->helperText(__('zatca.environment_help')),
                 Forms\Components\TextInput::make('api_url')
-                    ->label('ZATCA API URL')
+                    ->label(__('zatca.api_url'))
                     ->disabled()
                     ->columnSpanFull(),
                 Forms\Components\Select::make('status')
                     ->label(__('zatca.status'))
                     ->options(collect(ZatcaCertificateStatus::cases())->mapWithKeys(fn ($c) => [$c->value => __('zatca.cert_status_' . $c->value)]))
                     ->required(),
-                Forms\Components\TextInput::make('ccsid')->label('CCSID')->disabled(),
-                Forms\Components\TextInput::make('pcsid')->label('PCSID')->disabled(),
+                Forms\Components\TextInput::make('ccsid')->label(__('zatca.ccsid'))->disabled(),
+                Forms\Components\TextInput::make('pcsid')->label(__('zatca.pcsid'))->disabled(),
                 Forms\Components\DateTimePicker::make('issued_at')->label(__('zatca.issued_at'))->disabled(),
                 Forms\Components\DateTimePicker::make('expires_at')->label(__('zatca.expires_at')),
             ])->columns(2),
@@ -87,9 +87,9 @@ class ZatcaCertificateResource extends Resource
                 ->collapsible()
                 ->collapsed()
                 ->schema([
-                    Forms\Components\Textarea::make('certificate_pem')->label('Certificate PEM')->rows(8)->disabled(),
-                    Forms\Components\Textarea::make('csr_pem')->label('CSR PEM')->rows(8)->disabled(),
-                    Forms\Components\Textarea::make('public_key_pem')->label('Public Key PEM')->rows(6)->disabled(),
+                    Forms\Components\Textarea::make('certificate_pem')->label(__('zatca.certificate_pem'))->rows(8)->disabled(),
+                    Forms\Components\Textarea::make('csr_pem')->label(__('zatca.csr_pem'))->rows(8)->disabled(),
+                    Forms\Components\Textarea::make('public_key_pem')->label(__('zatca.public_key_pem'))->rows(6)->disabled(),
                 ]),
         ]);
     }
@@ -102,8 +102,8 @@ class ZatcaCertificateResource extends Resource
                 Tables\Columns\TextColumn::make('certificate_type')
                     ->label(__('zatca.certificate_type'))
                     ->formatStateUsing(fn ($state) => __('zatca.cert_type_' . ($state?->value ?? $state))),
-                Tables\Columns\TextColumn::make('ccsid')->label('CCSID')->copyable()->limit(20),
-                Tables\Columns\TextColumn::make('pcsid')->label('PCSID')->copyable()->limit(20)->toggleable(),
+                Tables\Columns\TextColumn::make('ccsid')->label(__('zatca.ccsid'))->copyable()->limit(20),
+                Tables\Columns\TextColumn::make('pcsid')->label(__('zatca.pcsid'))->copyable()->limit(20)->toggleable(),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('zatca.status'))
                     ->badge()

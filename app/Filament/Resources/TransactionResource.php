@@ -173,7 +173,7 @@ class TransactionResource extends Resource
                 ])
                 ->collapsible(),
 
-            Infolists\Components\Section::make('ZATCA')
+            Infolists\Components\Section::make(__('zatca.nav_group'))
                 ->schema([
                     Infolists\Components\TextEntry::make('zatca_status')
                         ->label(__('Status'))
@@ -185,8 +185,8 @@ class TransactionResource extends Resource
                             default => 'gray',
                         })
                         ->placeholder('—'),
-                    Infolists\Components\TextEntry::make('zatca_uuid')->label('UUID')->copyable()->placeholder('—'),
-                    Infolists\Components\TextEntry::make('zatca_hash')->label('Hash')->limit(20)->copyable()->placeholder('—'),
+                    Infolists\Components\TextEntry::make('zatca_uuid')->label(__('zatca.uuid'))->copyable()->placeholder('—'),
+                    Infolists\Components\TextEntry::make('zatca_hash')->label(__('zatca.hash'))->limit(20)->copyable()->placeholder('—'),
                 ])
                 ->columns(3)
                 ->collapsible()
@@ -267,7 +267,7 @@ class TransactionResource extends Resource
                     ->alignRight()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('zatca_status')
-                    ->label('ZATCA')
+                    ->label(__('zatca.nav_group'))
                     ->badge()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')
@@ -298,7 +298,7 @@ class TransactionResource extends Resource
                     ->searchable()
                     ->preload(),
                 Tables\Filters\SelectFilter::make('zatca_status')
-                    ->label('ZATCA')
+                    ->label(__('zatca.nav_group'))
                     ->options(collect(ZatcaComplianceStatus::cases())->mapWithKeys(fn ($c) => [$c->value => $c->name])->toArray()),
                 Tables\Filters\TernaryFilter::make('is_tax_exempt')
                     ->label(__('Tax Exempt')),

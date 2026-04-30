@@ -202,4 +202,8 @@ return [
 
     // Inventory
     'inventory_synced' => 'تمت مزامنة المخزون مع ثواني.',
+
+    // ── Column Mapping Placeholders ────────────────────────────────────
+    'thawani_field_placeholder'   => 'الاسم، السعر، الصورة...',
+    'wameed_field_placeholder'    => 'name, sell_price, image_url...',
 ];

@@ -60,10 +60,10 @@
                     {{ $record->paper_width }}mm
                 </span>
                 <span style="display:inline-block; padding:2px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:{{ $record->is_active ? '#dcfce7' : '#fee2e2' }}; color:{{ $record->is_active ? '#166534' : '#991b1b' }};">
-                    {{ $record->is_active ? 'Active' : 'Inactive' }}
+                    {{ $record->is_active ? __('ui.active') : __('ui.inactive') }}
                 </span>
                 @if($record->show_bilingual)
-                    <span style="display:inline-block; padding:2px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#dbeafe; color:#1e40af;">Bilingual</span>
+                    <span style="display:inline-block; padding:2px 10px; border-radius:9999px; font-size:12px; font-weight:500; background:#dbeafe; color:#1e40af;">{{ __('ui.bilingual') }}</span>
                 @endif
             </div>
         </div>
@@ -107,7 +107,7 @@
                 @if(($record->zatca_qr_position ?? 'footer') === 'header')
                     <div class="mx-auto my-2 bg-gray-200 border border-gray-300 flex items-center justify-center"
                          style="width: {{ $footer['zatca_qr_size_px'] ?? 120 }}px; height: {{ $footer['zatca_qr_size_px'] ?? 120 }}px;">
-                        <span class="text-xs text-gray-500">ZATCA QR</span>
+                        <span class="text-xs text-gray-500">{{ __('ui.zatca_qr_label') }}</span>
                     </div>
                 @endif
             </div>
@@ -119,9 +119,9 @@
             {{-- ═══ BODY ═══ --}}
             <div class="my-2">
                 <div class="flex {{ $itemSize }} font-bold text-black border-b border-gray-300 pb-1 mb-1">
-                    <div style="width:{{ $colName }}%">Item</div>
-                    <div style="width:{{ $colQty }}%" class="text-center">Qty</div>
-                    <div style="width:{{ $colPrice }}%" class="{{ $priceAlign }}">Total</div>
+                    <div style="width:{{ $colName }}%">{{ __('ui.col_item') }}</div>
+                    <div style="width:{{ $colQty }}%" class="text-center">{{ __('ui.col_qty') }}</div>
+                    <div style="width:{{ $colPrice }}%" class="{{ $priceAlign }}">{{ __('ui.col_total') }}</div>
                 </div>
 
                 @foreach($sampleItems as $item)
@@ -148,10 +148,10 @@
                 @endif
 
                 <div class="space-y-0.5 {{ $itemSize }} text-black">
-                    <div class="flex justify-between"><span>Subtotal</span><span>{{ number_format($subtotal, 3) }} SAR</span></div>
-                    <div class="flex justify-between"><span>VAT (5%)</span><span>{{ number_format($vat, 3) }} SAR</span></div>
+                    <div class="flex justify-between"><span>{{ __('ui.subtotal') }}</span><span>{{ number_format($subtotal, 3) }} SAR</span></div>
+                    <div class="flex justify-between"><span>{{ __('ui.col_vat_5') }}</span><span>{{ number_format($vat, 3) }} SAR</span></div>
                     <div class="flex justify-between {{ $totalsBold }} text-black border-t border-gray-400 pt-1 mt-1">
-                        <span>TOTAL</span><span>{{ number_format($total, 3) }} SAR</span>
+                        <span>{{ __('ui.col_total_row') }}</span><span>{{ number_format($total, 3) }} SAR</span>
                     </div>
                 </div>
             </div>
@@ -178,7 +178,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                       d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0 1 3.75 9.375v-4.5Zm0 9.75c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5Zm9.75-9.75c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 0 1-1.125-1.125v-4.5Z" />
                             </svg>
-                            <span class="text-xs text-gray-500">ZATCA QR</span>
+                            <span class="text-xs text-gray-500">{{ __('ui.zatca_qr_label') }}</span>
                         </div>
                     </div>
                 @endif
@@ -206,31 +206,31 @@
 
     {{-- Configuration Summary --}}
     <details style="margin-top:20px; background:#fff; border-radius:12px; padding:16px 20px; box-shadow:0 1px 3px rgba(0,0,0,.1);">
-        <summary style="font-weight:600; font-size:14px; cursor:pointer; color:#374151;">Configuration Summary</summary>
+        <summary style="font-weight:600; font-size:14px; cursor:pointer; color:#374151;">{{ __('ui.config_summary') }}</summary>
         <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-top:12px; font-size:13px;">
             <div>
-                <h4 style="font-weight:600; font-size:13px; color:#6b7280; margin-bottom:8px;">Header Design</h4>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">Logo Height</span><span>{{ $header['logo_max_height_px'] ?? 60 }}px</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">Name Font</span><span>{{ $header['store_name_font_size'] ?? 'large' }}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">Name Bold</span><span>{{ ($header['store_name_bold'] ?? true) ? '✓' : '✗' }}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">Separator</span><span>{{ $header['separator'] ?? 'dashes' }}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">VAT Number</span><span>{{ ($header['show_vat_number'] ?? true) ? '✓' : '✗' }}</span></div>
+                <h4 style="font-weight:600; font-size:13px; color:#6b7280; margin-bottom:8px;">{{ __('ui.header_design') }}</h4>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_logo_height') }}</span><span>{{ $header['logo_max_height_px'] ?? 60 }}px</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_name_font') }}</span><span>{{ $header['store_name_font_size'] ?? 'large' }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_name_bold') }}</span><span>{{ ($header['store_name_bold'] ?? true) ? '✓' : '✗' }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_separator') }}</span><span>{{ $header['separator'] ?? 'dashes' }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_vat_number') }}</span><span>{{ ($header['show_vat_number'] ?? true) ? '✓' : '✗' }}</span></div>
             </div>
             <div>
-                <h4 style="font-weight:600; font-size:13px; color:#6b7280; margin-bottom:8px;">Body Design</h4>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">Item Font</span><span>{{ $body['item_font_size'] ?? 'medium' }}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">Price Align</span><span>{{ $body['price_alignment'] ?? 'right' }}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">Show SKU</span><span>{{ ($body['show_sku'] ?? false) ? '✓' : '✗' }}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">Totals Bold</span><span>{{ ($body['totals_bold'] ?? true) ? '✓' : '✗' }}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">Columns</span><span>{{ $colName }}/{{ $colQty }}/{{ $colPrice }}%</span></div>
+                <h4 style="font-weight:600; font-size:13px; color:#6b7280; margin-bottom:8px;">{{ __('ui.body_design') }}</h4>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_item_font') }}</span><span>{{ $body['item_font_size'] ?? 'medium' }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_price_align') }}</span><span>{{ $body['price_alignment'] ?? 'right' }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.show_sku') }}</span><span>{{ ($body['show_sku'] ?? false) ? '✓' : '✗' }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.totals_bold') }}</span><span>{{ ($body['totals_bold'] ?? true) ? '✓' : '✗' }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_columns') }}</span><span>{{ $colName }}/{{ $colQty }}/{{ $colPrice }}%</span></div>
             </div>
             <div>
-                <h4 style="font-weight:600; font-size:13px; color:#6b7280; margin-bottom:8px;">Footer Design</h4>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">QR Size</span><span>{{ $footer['zatca_qr_size_px'] ?? 120 }}px</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">QR Position</span><span>{{ $record->zatca_qr_position ?? 'footer' }}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">Receipt #</span><span>{{ ($footer['show_receipt_number'] ?? true) ? '✓' : '✗' }}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">Cashier</span><span>{{ ($footer['show_cashier_name'] ?? true) ? '✓' : '✗' }}</span></div>
-                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">Socials</span><span>{{ ($footer['show_social_handles'] ?? false) ? '✓' : '✗' }}</span></div>
+                <h4 style="font-weight:600; font-size:13px; color:#6b7280; margin-bottom:8px;">{{ __('ui.footer_design') }}</h4>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_qr_size') }}</span><span>{{ $footer['zatca_qr_size_px'] ?? 120 }}px</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_qr_position') }}</span><span>{{ $record->zatca_qr_position ?? 'footer' }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_receipt_hash') }}</span><span>{{ ($footer['show_receipt_number'] ?? true) ? '✓' : '✗' }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_cashier_label') }}</span><span>{{ ($footer['show_cashier_name'] ?? true) ? '✓' : '✗' }}</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#9ca3af;">{{ __('ui.preview_socials_label') }}</span><span>{{ ($footer['show_social_handles'] ?? false) ? '✓' : '✗' }}</span></div>
             </div>
         </div>
     </details>

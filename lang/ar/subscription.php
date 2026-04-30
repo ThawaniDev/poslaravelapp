@@ -94,6 +94,7 @@ return [
     'invoice_col_qty'             => 'الكمية',
     'invoice_col_unit_price'      => 'سعر الوحدة (ر.س)',
     'invoice_col_total'           => 'الإجمالي (ر.س)',
+    'invoice_items'               => 'عناصر الفاتورة',
     'invoice_subtotal'            => 'المجموع الجزئي',
     'invoice_vat'                 => 'ضريبة القيمة المضافة (15%)',
     'invoice_total_due'           => 'إجمالي المستحق',
@@ -104,4 +105,7 @@ return [
     'invoice_footer_thanks'       => 'شكراً لتعاملكم مع Wameed POS.',
     'invoice_footer_billing'      => 'للاستفسارات تواصل مع billing@wameedpos.sa',
     'invoice_footer_generated'    => 'هذه فاتورة مولّدة آلياً ولا تحتاج إلى توقيع.',
+
+    // ── Issuer info (shown on invoice) ────────────────────────────
+    'issuer_company_name'         => 'شركة وامد للتقنية',
 ];

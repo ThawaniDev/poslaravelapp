@@ -34,13 +34,13 @@ class AutoRollbackNotification extends Notification
 
         return (new MailMessage)
             ->error()
-            ->subject("[CRITICAL] Auto-Rollback: v{$version} ({$platform}) deactivated")
-            ->greeting('Alert: App Release Auto-Rolled Back')
-            ->line("Release **v{$version}** for **{$platform}** has been automatically deactivated.")
-            ->line("**Failure Rate:** {$rate}% ({$this->details['failed_attempts']} / {$this->details['total_attempts']} installs failed)")
-            ->line('The release has been deactivated. Stores will fall back to the previous active release on next update check.')
-            ->action('Review in Admin Panel', url('/admin/updates/releases'))
-            ->line('Please review the release and investigate the root cause before re-activating.');
+            ->subject(__('infrastructure.rollback_subject', ['version' => $version, 'platform' => $platform]))
+            ->greeting(__('infrastructure.rollback_greeting'))
+            ->line(__('infrastructure.rollback_deactivated', ['version' => $version, 'platform' => $platform]))
+            ->line(__('infrastructure.rollback_failure_rate', ['rate' => $rate, 'failed' => $this->details['failed_attempts'], 'total' => $this->details['total_attempts']]))
+            ->line(__('infrastructure.rollback_fallback'))
+            ->action(__('infrastructure.rollback_action'), url('/admin/updates/releases'))
+            ->line(__('infrastructure.rollback_review'));
     }
 
     /** @return array<string, mixed> */

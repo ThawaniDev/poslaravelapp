@@ -126,4 +126,10 @@ return [
     'meta_description'    => 'وصف Meta (EN)',
     'meta_description_ar' => 'وصف Meta (AR)',
 
+    // ── Placeholders ─────────────────────────────────────────────────
+    'placeholder_most_popular' => 'الأكثر شيوعاً',
+    'placeholder_get_started'  => 'ابدأ الآن',
+    'placeholder_learn_more'   => 'اعرف المزيد',
+    'placeholder_starting_at'  => 'يبدأ من',
+    'placeholder_unlimited'    => 'غير محدود',
 ];

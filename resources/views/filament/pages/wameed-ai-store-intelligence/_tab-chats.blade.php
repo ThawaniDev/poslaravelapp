@@ -14,19 +14,19 @@
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Avg Msgs/Chat</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.avg_msgs_per_chat') }}</p>
                         <p class="text-2xl font-bold text-warning-600">{{ $chatData['chatStats']['avgMessagesPerChat'] }}</p>
                     </div>
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Chat Tokens</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.chat_tokens') }}</p>
                         <p class="text-2xl font-bold text-gray-600 dark:text-gray-300">{{ number_format($chatData['chatStats']['totalTokens']) }}</p>
                     </div>
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Chat Cost</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.chat_cost') }}</p>
                         <p class="text-2xl font-bold text-success-600">${{ number_format($chatData['chatStats']['totalCost'], 4) }}</p>
                     </div>
                 </x-filament::section>
@@ -45,7 +45,7 @@
                                 ])
                             >
                                 <div class="flex items-center justify-between">
-                                    <span class="font-medium text-sm">{{ $chat->user?->name ?? 'Anonymous' }}</span>
+                                    <span class="font-medium text-sm">{{ $chat->user?->name ?? __('ai.anonymous') }}</span>
                                     <span class="text-xs text-gray-400">{{ $chat->created_at->diffForHumans() }}</span>
                                 </div>
                                 <div class="flex items-center gap-2 mt-0.5">
@@ -62,16 +62,16 @@
                                 @endif
                             </button>
                         @empty
-                            <p class="px-3 py-8 text-center text-sm text-gray-400">No chats for this store</p>
+                            <p class="px-3 py-8 text-center text-sm text-gray-400">{{ __('ai.no_chats_store') }}</p>
                         @endforelse
                     </div>
                 </x-filament::section>
 
                 {{-- Chat Messages --}}
-                <x-filament::section heading="{{ $chatData['selectedChat'] ? ($chatData['selectedChat']->title ?? 'Chat Detail') : 'Select a chat' }}">
+                <x-filament::section :heading="$chatData['selectedChat'] ? ($chatData['selectedChat']->title ?? __('ai.chat_detail')) : __('ai.select_a_chat')">
                     @if ($chatData['selectedChat'])
                         <div class="mb-3 flex items-center gap-3 text-xs text-gray-500">
-                            <span>{{ $chatData['selectedChat']->user?->name ?? 'Anonymous' }}</span>
+                            <span>{{ $chatData['selectedChat']->user?->name ?? __('ai.anonymous') }}</span>
                             <span>·</span>
                             <span>{{ $chatData['selectedChat']->created_at->format('M d, Y H:i') }}</span>
                             <button wire:click="clearChat" class="ms-auto text-danger-500 hover:text-danger-700">✕</button>

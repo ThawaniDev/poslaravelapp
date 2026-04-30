@@ -134,20 +134,20 @@
             </div>
             <h1>
                 @if($isSuccess)
-                    تم الدفع بنجاح
+                    {{ __('subscription.payment_success_title') }}
                 @elseif($isPending)
-                    الدفع قيد المعالجة
+                    {{ __('subscription.payment_pending_title') }}
                 @else
-                    فشل الدفع
+                    {{ __('subscription.payment_failed_title') }}
                 @endif
             </h1>
             <p>
                 @if($isSuccess)
-                    Payment Successful
+                    {{ __('subscription.payment_success_sub') }}
                 @elseif($isPending)
-                    Payment Processing
+                    {{ __('subscription.payment_pending_sub') }}
                 @else
-                    Payment Failed
+                    {{ __('subscription.payment_failed_sub') }}
                 @endif
             </p>
         </div>
@@ -155,7 +155,7 @@
         <div class="body">
             @if($payment)
             <div class="amount-box">
-                <div class="label">المبلغ الإجمالي / Total Amount</div>
+                <div class="label">{{ __('subscription.payment_total_amount') }}</div>
                 <div class="value">
                     {{ number_format((float) $payment->total_amount, 2) }}
                     <span class="currency">{{ $payment->currency }}</span>
@@ -169,59 +169,59 @@
 
             <div class="details">
                 <div class="detail-row">
-                    <span class="label">الغرض / Purpose</span>
+                    <span class="label">{{ __('subscription.payment_purpose') }}</span>
                     <span class="value">{{ $payment->purpose_label ?? $payment->purpose?->label() ?? '-' }}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="label">المبلغ / Subtotal</span>
+                    <span class="label">{{ __('subscription.payment_subtotal') }}</span>
                     <span class="value">{{ number_format((float) $payment->amount, 2) }} {{ $payment->currency }}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="label">الضريبة / VAT</span>
+                    <span class="label">{{ __('subscription.payment_vat') }}</span>
                     <span class="value">{{ number_format((float) $payment->tax_amount, 2) }} {{ $payment->currency }}</span>
                 </div>
                 @if($payment->tran_ref)
                 <div class="detail-row">
-                    <span class="label">رقم المرجع / Reference</span>
+                    <span class="label">{{ __('subscription.payment_reference') }}</span>
                     <span class="value mono">{{ $payment->tran_ref }}</span>
                 </div>
                 @endif
                 @if($payment->cart_id)
                 <div class="detail-row">
-                    <span class="label">رقم الطلب / Order ID</span>
+                    <span class="label">{{ __('subscription.payment_order_id') }}</span>
                     <span class="value mono">{{ $payment->cart_id }}</span>
                 </div>
                 @endif
                 @if($payment->payment_description)
                 <div class="detail-row">
-                    <span class="label">البطاقة / Card</span>
+                    <span class="label">{{ __('subscription.payment_card') }}</span>
                     <span class="value">{{ $payment->payment_description }}</span>
                 </div>
                 @endif
                 <div class="detail-row">
-                    <span class="label">التاريخ / Date</span>
+                    <span class="label">{{ __('subscription.payment_date') }}</span>
                     <span class="value">{{ $payment->updated_at?->format('Y-m-d H:i') ?? now()->format('Y-m-d H:i') }}</span>
                 </div>
                 @if(!$isSuccess && $payment->response_message)
                 <div class="detail-row">
-                    <span class="label">السبب / Reason</span>
+                    <span class="label">{{ __('subscription.payment_reason') }}</span>
                     <span class="value" style="color: #EF4444;">{{ $payment->response_message }}</span>
                 </div>
                 @endif
             </div>
             @else
             <div class="amount-box">
-                <div class="label">لا يمكن العثور على معلومات الدفع</div>
-                <div class="value" style="font-size: 16px; color: #64748B;">Payment information not available</div>
+                <div class="label">{{ __('subscription.payment_not_available') }}</div>
+                <div class="value" style="font-size: 16px; color: #64748B;">{{ __('subscription.payment_not_available') }}</div>
             </div>
             @endif
         </div>
 
         <div class="footer">
             <div class="logo">
-                <span class="logo-text">Wameed POS</span>
+                <span class="logo-text">{{ __('ui.app_name') }}</span>
             </div>
-            <p>وميض نقاط البيع &nbsp;|&nbsp; شكراً لاستخدامكم خدماتنا</p>
+            <p>{!! __('subscription.payment_footer') !!}</p>
         </div>
     </div>
 </body>

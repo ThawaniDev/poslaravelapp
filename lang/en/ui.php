@@ -227,6 +227,10 @@ return [
     'field_font_size'      => 'Font Size',
     'field_is_bold'        => 'Bold',
     'field_alignment'      => 'Alignment',
+    'position_x'           => 'X %',
+    'position_y'           => 'Y %',
+    'dimension_w'          => 'W %',
+    'dimension_h'          => 'H %',
     'label_business_types_help' => 'Which business types can use this label template.',
 
     // Label Type enum
@@ -589,4 +593,72 @@ return [
     'physical_size'              => 'Physical size',
     'bordered'                   => 'Bordered',
     'simple_label_layout_note'   => 'This label uses a simple stacked layout with the following fields:',
+
+    // ── Locale Switcher ───────────────────────────────────────────────
+    'switch_to_english'           => 'Switch to English',
+    'switch_to_arabic'            => 'Switch to Arabic',
+
+    // ── Business Type / Gamification placeholders ─────────────────────
+    'placeholder_wedding'          => 'Wedding',
+    'placeholder_silver'           => 'Silver',
+    'placeholder_weekend_warrior'  => 'Weekend Warrior',
+    'placeholder_first_1000_sar'   => 'First 1000 SAR Spent',
+    'placeholder_thank_you_footer' => 'e.g., Thank you for your visit!',
+    'unknown_error'                => 'Unknown error',
+
+    // ── Marketplace preview ───────────────────────────────────────────
+    'featured'           => 'Featured',
+    'verified'           => 'Verified',
+    'screenshots'        => 'Screenshots',
+    'arabic_description' => 'Arabic Description',
+    'publisher'          => 'Publisher',
+    'rating'             => 'Rating',
+    'downloads'          => 'Downloads',
+    'published'          => 'Published',
+    'tags'               => 'Tags',
+    'demo_video'         => 'Demo Video',
+    'changelog'          => 'Changelog',
+    'watch_demo'         => 'Watch Demo',
+    'no_description'     => 'No description available.',
+
+    // ── Brand & Company ─────────────────────────────────────────────────
+    'app_name'                   => 'Wameed POS',
+    'all_rights_reserved'        => 'All rights reserved.',
+    'company_legal_name'         => 'Wameed Technology',
+    'company_legal_address'      => 'Riyadh, Saudi Arabia',
+
+    // ── Receipt preview labels ──────────────────────────────────────────
+    'col_item'                   => 'Item',
+    'col_qty'                    => 'Qty',
+    'col_total'                  => 'Total',
+    'col_vat_5'                  => 'VAT (5%)',
+    'col_total_row'              => 'TOTAL',
+    'zatca_qr_label'             => 'ZATCA QR',
+    'config_summary'             => 'Configuration Summary',
+    'preview_logo_height'        => 'Logo Height',
+    'preview_name_font'          => 'Name Font',
+    'preview_name_bold'          => 'Name Bold',
+    'preview_separator'          => 'Separator',
+    'preview_vat_number'         => 'VAT Number',
+    'preview_item_font'          => 'Item Font',
+    'preview_price_align'        => 'Price Align',
+    'preview_columns'            => 'Columns',
+    'preview_qr_size'            => 'QR Size',
+    'preview_qr_position'        => 'QR Position',
+    'preview_receipt_hash'       => 'Receipt #',
+    'preview_cashier_label'      => 'Cashier',
+    'preview_socials_label'      => 'Socials',
+
+    // ── Label preview column headers ─────────────────────────────────────
+    'col_field'                  => 'Field',
+    'col_label_en'               => 'Label (EN)',
+    'col_label_ar'               => 'Label (AR)',
+    'col_position'               => 'Position',
+    'col_size'                   => 'Size',
+    'col_font'                   => 'Font',
+    'col_align'                  => 'Align',
+    'barcode_type_label'         => 'Type',
+    'barcode_show_number'        => 'Show Number',
+    'bold_indicator'             => 'Bold',
+    'simple_format_desc'         => 'Simple layout — fields are stacked vertically in order.',
 ];

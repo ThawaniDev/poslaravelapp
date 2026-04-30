@@ -8,4 +8,7 @@ return [
     'test_success' => 'Hardware device test completed successfully.',
     'event_recorded' => 'Hardware event recorded successfully.',
     'logs_listed' => 'Hardware event logs retrieved successfully.',
+
+    // ── UI helpers ───────────────────────────────────────────────────
+    'helper_item_description' => 'e.g., Sunmi V2 Pro, Epson TM-T88VI',
 ];

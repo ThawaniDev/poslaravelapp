@@ -53,8 +53,8 @@ class ZatcaInvoiceResource extends Resource
             Forms\Components\Section::make(__('zatca.invoice_info'))->schema([
                 Forms\Components\TextInput::make('invoice_number')->label(__('zatca.invoice_number'))->disabled(),
                 Forms\Components\TextInput::make('invoice_type')->label(__('zatca.invoice_type'))->disabled(),
-                Forms\Components\TextInput::make('uuid')->label('UUID')->disabled(),
-                Forms\Components\TextInput::make('icv')->label('ICV')->disabled()->numeric(),
+                Forms\Components\TextInput::make('uuid')->label(__('zatca.uuid'))->disabled(),
+                Forms\Components\TextInput::make('icv')->label(__('zatca.icv'))->disabled()->numeric(),
                 Forms\Components\TextInput::make('total_amount')->label(__('zatca.total_amount'))->disabled()->numeric(),
                 Forms\Components\TextInput::make('vat_amount')->label(__('zatca.vat_amount'))->disabled()->numeric(),
                 Forms\Components\TextInput::make('submission_status')->label(__('zatca.submission_status'))->disabled(),
@@ -83,7 +83,7 @@ class ZatcaInvoiceResource extends Resource
                 ->collapsible()
                 ->collapsed()
                 ->schema([
-                    Forms\Components\Textarea::make('invoice_xml')->label('XML')->rows(20)->disabled()->columnSpanFull(),
+                    Forms\Components\Textarea::make('invoice_xml')->label(__('zatca.xml'))->rows(20)->disabled()->columnSpanFull(),
                     Forms\Components\Textarea::make('invoice_hash')->label(__('zatca.invoice_hash'))->rows(2)->disabled(),
                     Forms\Components\Textarea::make('previous_invoice_hash')->label(__('zatca.previous_hash'))->rows(2)->disabled(),
                 ]),
@@ -108,7 +108,7 @@ class ZatcaInvoiceResource extends Resource
                     ->color('warning')
                     ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('invoice_type')->label(__('zatca.invoice_type'))->badge()->toggleable(),
-                Tables\Columns\TextColumn::make('icv')->label('ICV')->numeric()->sortable()->toggleable(),
+                Tables\Columns\TextColumn::make('icv')->label(__('zatca.icv'))->numeric()->sortable()->toggleable(),
                 Tables\Columns\TextColumn::make('total_amount')->label(__('zatca.total_amount'))->numeric(2)->sortable(),
                 Tables\Columns\TextColumn::make('vat_amount')->label(__('zatca.vat_amount'))->numeric(2)->toggleable(),
                 Tables\Columns\TextColumn::make('submission_status')
@@ -123,7 +123,7 @@ class ZatcaInvoiceResource extends Resource
                         default => 'gray',
                     })
                     ->formatStateUsing(fn ($state) => __('zatca.sub_status_' . ($state?->value ?? $state))),
-                Tables\Columns\IconColumn::make('is_b2b')->label('B2B')->boolean()->toggleable(),
+                Tables\Columns\IconColumn::make('is_b2b')->label(__('zatca.b2b'))->boolean()->toggleable(),
                 Tables\Columns\TextColumn::make('submitted_at')->label(__('zatca.submitted_at'))->dateTime('Y-m-d H:i')->sortable(),
                 Tables\Columns\TextColumn::make('created_at')->label(__('zatca.created_at'))->dateTime('Y-m-d')->toggleable(isToggledHiddenByDefault: true)->sortable(),
             ])
@@ -137,7 +137,7 @@ class ZatcaInvoiceResource extends Resource
                         'standard' => __('zatca.type_standard'),
                         'simplified' => __('zatca.type_simplified'),
                     ]),
-                Tables\Filters\TernaryFilter::make('is_b2b')->label('B2B'),
+                Tables\Filters\TernaryFilter::make('is_b2b')->label(__('zatca.b2b')),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

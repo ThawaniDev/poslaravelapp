@@ -120,4 +120,5 @@ return [
     'providers_disabled' => ':count providers disabled.',
     'reset_health_selected' => 'Reset Health Selected',
     'providers_health_reset' => ':count providers health reset.',
+    'receipt_subject'        => 'Your receipt',
 ];

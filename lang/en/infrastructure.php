@@ -146,4 +146,13 @@ return [
     'load_avg_1min' => '1 Min Avg',
     'load_avg_5min' => '5 Min Avg',
     'load_avg_15min' => '15 Min Avg',
+
+    // ── Auto-Rollback Notification ─────────────────────────────────
+    'rollback_greeting'     => 'Alert: App Release Auto-Rolled Back',
+    'rollback_deactivated'  => 'Release **v:version** for **:platform** has been automatically deactivated.',
+    'rollback_failure_rate' => '**Failure Rate:** :rate% (:failed / :total installs failed)',
+    'rollback_fallback'     => 'The release has been deactivated. Stores will fall back to the previous active release on next update check.',
+    'rollback_review'       => 'Please review the release and investigate the root cause before re-activating.',
+    'rollback_subject'      => '[CRITICAL] Auto-Rollback: v:version (:platform) deactivated',
+    'rollback_action'       => 'Review in Admin Panel',
 ];

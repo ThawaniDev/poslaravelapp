@@ -198,4 +198,18 @@ return [
     'activate' => 'تفعيل',
     'platform_activated' => 'تم تفعيل المنصة.',
     'platform_deactivated' => 'تم تعطيل المنصة.',
-    'plan_limit_reached' => 'لقد وصلت إلى الحد الأقصى لخطتك البالغ :limit منصة توصيل. قم بترقية خطتك لإضافة المزيد.',];
+    'plan_limit_reached' => 'لقد وصلت إلى الحد الأقصى لخطتك البالغ :limit منصة توصيل. قم بترقية خطتك لإضافة المزيد.',
+
+    // ── Placeholders ─────────────────────────────────────────────────
+    'placeholder_restaurant_id' => 'معرف المطعم',
+
+    // ── Stats / Dashboard ─────────────────────────────────────────────────
+    'total_platforms'             => 'إجمالي المنصات',
+    'active_of_total'             => 'المنصات النشطة من الإجمالي',
+    'active_integrations'         => 'التكاملات النشطة',
+    'enabled_store_integrations'  => 'إعدادات المتاجر والمنصات المفعّلة',
+    'sync_error_rate_24h'         => 'معدل أخطاء المزامنة (24 ساعة)',
+    'sync_error_rate_desc'        => ':failed فاشل من :total عملية مزامنة',
+    'sync_health_dashboard'       => 'لوحة صحة المزامنة',
+    'refresh'                     => 'تحديث',
+];

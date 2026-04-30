@@ -126,4 +126,10 @@ return [
     'meta_description'     => 'Meta Description (EN)',
     'meta_description_ar'  => 'Meta Description (AR)',
 
+    // ── Placeholders ─────────────────────────────────────────────────
+    'placeholder_most_popular' => 'Most Popular',
+    'placeholder_get_started'  => 'Get Started',
+    'placeholder_learn_more'   => 'Learn More',
+    'placeholder_starting_at'  => 'Starting at',
+    'placeholder_unlimited'    => 'Unlimited',
 ];

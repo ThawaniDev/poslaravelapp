@@ -30,7 +30,7 @@ class ListZatcaCertificates extends ListRecords
         return [
             // ── Run all 6 compliance invoice types ───────────────────────────
             Action::make('run_compliance_tests')
-                ->label('Run All 6 Compliance Tests')
+                ->label(__('zatca.compliance_run_all'))
                 ->icon('heroicon-o-rocket-launch')
                 ->color('warning')
                 ->modalHeading('Run All 6 ZATCA Compliance Tests')
@@ -38,7 +38,7 @@ class ListZatcaCertificates extends ListRecords
                 ->modalSubmitActionLabel('Run Tests Now')
                 ->form([
                     Select::make('store_id')
-                        ->label('Store')
+                        ->label(__('zatca.store'))
                         ->options(fn () => Store::orderBy('name')->pluck('name', 'id'))
                         ->searchable()
                         ->required(),
@@ -178,7 +178,7 @@ class ListZatcaCertificates extends ListRecords
                     foreach ($results as $r) {
                         if (! $r['ok'] && $r['errors']) {
                             Notification::make()
-                                ->title('❌ Failed: ' . $r['label'])
+                                ->title(__('zatca.compliance_failed', ['label' => $r['label']]))
                                 ->body($r['errors'])
                                 ->danger()
                                 ->persistent()
@@ -189,7 +189,7 @@ class ListZatcaCertificates extends ListRecords
 
             // ── Get Production Certificate (PCSID) ───────────────────────────
             Action::make('get_pcsid')
-                ->label('Get Production Certificate (PCSID)')
+                ->label(__('zatca.get_production_cert'))
                 ->icon('heroicon-o-shield-check')
                 ->color('success')
                 ->requiresConfirmation()
@@ -197,7 +197,7 @@ class ListZatcaCertificates extends ListRecords
                 ->modalDescription('Calls ZATCA /production/csids to exchange the active compliance CCSID for a real PCSID. Only do this after all 6 compliance invoice types have been accepted for this store.')
                 ->form([
                     Select::make('store_id')
-                        ->label('Store')
+                        ->label(__('zatca.store'))
                         ->options(fn () => Store::orderBy('name')->pluck('name', 'id'))
                         ->searchable()
                         ->required(),
@@ -207,14 +207,14 @@ class ListZatcaCertificates extends ListRecords
                         $store = Store::findOrFail($data['store_id']);
                         $cert = app(CertificateService::class)->renewCertificate($store);
                         Notification::make()
-                            ->title('Production certificate issued')
-                            ->body('PCSID: ' . $cert->pcsid . "\nExpires: " . $cert->expires_at)
+                            ->title(__('zatca.notif_cert_issued'))
+                            ->body(__('zatca.notif_cert_body', ['pcsid' => $cert->pcsid, 'expires' => $cert->expires_at]))
                             ->success()
                             ->persistent()
                             ->send();
                     } catch (\Throwable $e) {
                         Notification::make()
-                            ->title('PCSID issuance failed')
+                            ->title(__('zatca.notif_pcsid_failed'))
                             ->body($e->getMessage())
                             ->danger()
                             ->persistent()

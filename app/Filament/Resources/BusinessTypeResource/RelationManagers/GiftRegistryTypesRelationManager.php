@@ -29,7 +29,7 @@ class GiftRegistryTypesRelationManager extends RelationManager
                 ->label(__('Registry Type Name (EN)'))
                 ->required()
                 ->maxLength(100)
-                ->placeholder('Wedding'),
+                ->placeholder(__('ui.placeholder_wedding')),
             Forms\Components\TextInput::make('name_ar')
                 ->label(__('Registry Type Name (AR)'))
                 ->required()

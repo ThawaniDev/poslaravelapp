@@ -1,4 +1,4 @@
-        <x-filament::section heading="Invoices">
+        <x-filament::section :heading="__('ai.invoices')">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
@@ -6,11 +6,11 @@
                             <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.invoice_number') }}</th>
                             <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.store') }}</th>
                             <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.period') }}</th>
-                            <th class="px-3 py-2 text-end font-medium text-gray-500">Requests</th>
-                            <th class="px-3 py-2 text-end font-medium text-gray-500">Raw Cost</th>
+                            <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.field_messages_sent') }}</th>
+                            <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.field_raw_cost_openai') }}</th>
                             <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.margin_percentage') }}</th>
                             <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.margin_dollar') }}</th>
-                            <th class="px-3 py-2 text-end font-medium text-gray-500">Billed</th>
+                            <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.field_billed_cost') }}</th>
                             <th class="px-3 py-2 text-center font-medium text-gray-500">{{ __('ai.status') }}</th>
                             <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.due_date') }}</th>
                             @if ($canManage)
@@ -62,7 +62,7 @@
                                         <div class="flex items-end gap-3">
                                             <div class="flex-1">
                                                 <label class="text-xs font-medium text-gray-600">{{ __('ai.payment_reference') }}</label>
-                                                <input wire:model="paymentReference" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="e.g. bank transfer #123">
+                                                <input wire:model="paymentReference" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="{{ __('ai.placeholder_bank_transfer') }}">
                                             </div>
                                             <div class="flex-1">
                                                 <label class="text-xs font-medium text-gray-600">{{ __('ai.notes') }}</label>

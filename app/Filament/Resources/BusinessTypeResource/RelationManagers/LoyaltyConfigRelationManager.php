@@ -107,7 +107,7 @@ class LoyaltyConfigRelationManager extends RelationManager
                             Forms\Components\TextInput::make('name')
                                 ->label(__('Tier Name (EN)'))
                                 ->required()
-                                ->placeholder('Silver'),
+                                ->placeholder(__('ui.placeholder_silver')),
                             Forms\Components\TextInput::make('name_ar')
                                 ->label(__('Tier Name (AR)'))
                                 ->placeholder('فضي'),

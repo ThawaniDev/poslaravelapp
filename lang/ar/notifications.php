@@ -120,4 +120,5 @@ return [
     'providers_enabled' => 'تم تفعيل :count مزود(مزودين).',
     'providers_disabled' => 'تم تعطيل :count مزود(مزودين).',
     'providers_health_reset' => 'تم إعادة تعيين صحة :count مزود(مزودين).',
+    'receipt_subject'        => 'إيصالك',
 ];

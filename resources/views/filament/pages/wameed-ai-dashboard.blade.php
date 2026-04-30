@@ -5,7 +5,7 @@
             <div class="text-center">
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.todays_requests') }}</p>
                 <p class="text-3xl font-bold text-primary-600">{{ number_format($todayRequests) }}</p>
-                <p class="text-xs text-gray-400">Total: {{ number_format($totalRequests) }}</p>
+                <p class="text-xs text-gray-400">{{ __('ai.total_label') }}{{ number_format($totalRequests) }}</p>
             </div>
         </x-filament::section>
 
@@ -13,7 +13,7 @@
             <div class="text-center">
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.todays_raw_cost') }}</p>
                 <p class="text-3xl font-bold text-warning-600">${{ $todayCost }}</p>
-                <p class="text-xs text-gray-400">Total: ${{ $totalCost }}</p>
+                <p class="text-xs text-gray-400">{{ __('ai.total_label') }}${{ $totalCost }}</p>
             </div>
         </x-filament::section>
 
@@ -21,7 +21,7 @@
             <div class="text-center">
                 <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.todays_billed') }}</p>
                 <p class="text-3xl font-bold text-success-600">${{ $todayBilledCost }}</p>
-                <p class="text-xs text-gray-400">Total: ${{ $totalBilledCost }}</p>
+                <p class="text-xs text-gray-400">{{ __('ai.total_label') }}${{ $totalBilledCost }}</p>
             </div>
         </x-filament::section>
 

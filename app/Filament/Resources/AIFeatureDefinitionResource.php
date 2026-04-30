@@ -32,12 +32,12 @@ class AIFeatureDefinitionResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return 'AI Feature';
+        return __('ai.model_label');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'AI Features';
+        return __('ai.model_label_plural');
     }
 
     public static function canAccess(): bool
@@ -49,74 +49,74 @@ class AIFeatureDefinitionResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Section::make('Feature Details')
+            Forms\Components\Section::make(__('ai.section_feature_details'))
                 ->schema([
                     Forms\Components\TextInput::make('slug')
-                        ->label('Slug')
+                        ->label(__('ai.field_slug'))
                         ->required()
                         ->unique(ignoreRecord: true)
                         ->maxLength(100)
                         ->alphaDash(),
                     Forms\Components\TextInput::make('name')
-                        ->label('Name (English)')
+                        ->label(__('ai.field_name_en'))
                         ->required()
                         ->maxLength(200),
                     Forms\Components\TextInput::make('name_ar')
-                        ->label('Name (Arabic)')
+                        ->label(__('ai.field_name_ar'))
                         ->maxLength(200),
                     Forms\Components\Textarea::make('description')
-                        ->label('Description (English)')
+                        ->label(__('ai.field_description_en'))
                         ->rows(3),
                     Forms\Components\Textarea::make('description_ar')
-                        ->label('Description (Arabic)')
+                        ->label(__('ai.field_description_ar'))
                         ->rows(3),
                     Forms\Components\Select::make('category')
-                        ->label('Category')
+                        ->label(__('ai.field_category'))
                         ->options(collect(AIFeatureCategory::cases())->mapWithKeys(fn ($c) => [$c->value => ucfirst($c->value)]))
                         ->required(),
                     Forms\Components\TextInput::make('icon')
-                        ->label('Icon')
+                        ->label(__('ai.field_icon'))
                         ->maxLength(100)
                         ->placeholder('auto_awesome'),
                     Forms\Components\TextInput::make('sort_order')
-                        ->label('Sort Order')
+                        ->label(__('ai.field_sort_order'))
                         ->numeric()
                         ->default(0),
                 ])->columns(2),
 
-            Forms\Components\Section::make('AI Configuration')
+            Forms\Components\Section::make(__('ai.section_ai_config'))
                 ->schema([
                     Forms\Components\TextInput::make('default_model')
-                        ->label('Default Model')
+                        ->label(__('ai.field_default_model'))
                         ->maxLength(100)
                         ->placeholder('gpt-4o-mini'),
                     Forms\Components\TextInput::make('default_max_tokens')
-                        ->label('Default Max Tokens')
+                        ->label(__('ai.field_default_max_tokens'))
                         ->numeric()
                         ->default(2048),
                     Forms\Components\TextInput::make('cost_per_request_estimate')
-                        ->label('Cost Per Request (USD)')
+                        ->label(__('ai.field_cost_per_request'))
                         ->numeric()
                         ->step(0.000001)
                         ->prefix('$'),
                 ])->columns(3),
 
-            Forms\Components\Section::make('Limits & Access')
+            Forms\Components\Section::make(__('ai.section_limits_access'))
                 ->schema([
                     Forms\Components\Toggle::make('is_enabled')
-                        ->label('Enabled')
+                        ->label(__('ai.field_is_enabled'))
                         ->default(true),
                     Forms\Components\Toggle::make('is_premium')
-                        ->label('Premium Only')
+                        ->label(__('ai.field_is_premium'))
                         ->default(false),
                     Forms\Components\TextInput::make('daily_limit')
-                        ->label('Daily Limit')
+                        ->label(__('ai.field_daily_limit'))
                         ->numeric()
-                        ->helperText('0 = unlimited'),
+                        ->helperText(__('ai.unlimited_helper')),
                     Forms\Components\TextInput::make('monthly_limit')
-                        ->label('Monthly Limit')
+                        ->label(__('ai.field_monthly_limit'))
                         ->numeric()
-                        ->helperText('0 = unlimited'),
+                        ->helperText(__('ai.unlimited_helper')),
                 ])->columns(4),
         ]);
     }
@@ -126,43 +126,43 @@ class AIFeatureDefinitionResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('slug')
-                    ->label('Slug')
+                    ->label(__('ai.field_slug'))
                     ->searchable()
                     ->sortable()
                     ->copyable(),
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Name')
+                    ->label(__('ai.field_name_en'))
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('category')
-                    ->label('Category')
+                    ->label(__('ai.field_category'))
                     ->badge()
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_enabled')
-                    ->label('Enabled')
+                    ->label(__('ai.field_is_enabled'))
                     ->boolean()
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_premium')
-                    ->label('Premium')
+                    ->label(__('ai.field_is_premium'))
                     ->boolean()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('default_model')
-                    ->label('Model')
+                    ->label(__('ai.field_model'))
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('daily_limit')
-                    ->label('Daily Limit')
+                    ->label(__('ai.field_daily_limit'))
                     ->numeric()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('sort_order')
-                    ->label('Sort')
+                    ->label(__('ai.field_order'))
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_enabled')
-                    ->label('Enabled'),
+                    ->label(__('ai.field_is_enabled')),
                 Tables\Filters\TernaryFilter::make('is_premium')
-                    ->label('Premium'),
+                    ->label(__('ai.field_is_premium')),
                 Tables\Filters\SelectFilter::make('category')
                     ->options(collect(AIFeatureCategory::cases())->mapWithKeys(fn ($c) => [$c->value => ucfirst($c->value)])),
             ])

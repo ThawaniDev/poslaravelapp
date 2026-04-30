@@ -72,7 +72,7 @@ class HardwareSaleResource extends Resource
 
                     Forms\Components\TextInput::make('item_description')
                         ->maxLength(255)
-                        ->helperText('e.g., Sunmi V2 Pro, Epson TM-T88VI'),
+                        ->helperText(__('hardware.helper_item_description')),
                 ])
                 ->columns(2),
 

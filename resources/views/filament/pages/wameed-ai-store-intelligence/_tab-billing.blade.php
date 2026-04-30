@@ -2,13 +2,13 @@
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Invoiced</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.total_invoiced') }}</p>
                         <p class="text-3xl font-bold text-primary-600">${{ number_format($billing['totalInvoiced'], 4) }}</p>
                     </div>
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Paid</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.total_paid') }}</p>
                         <p class="text-3xl font-bold text-success-600">${{ number_format($billing['totalPaid'], 4) }}</p>
                     </div>
                 </x-filament::section>
@@ -20,25 +20,25 @@
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Overdue</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.overdue') }}</p>
                         <p class="text-3xl font-bold text-danger-600">${{ number_format($billing['totalOverdue'], 4) }}</p>
                     </div>
                 </x-filament::section>
             </div>
 
             {{-- Current Month Running --}}
-            <x-filament::section heading="Current Month (Running)" class="mt-4">
+            <x-filament::section :heading="__('ai.section_current_month')" class="mt-4">
                 <div class="grid grid-cols-3 gap-4">
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Requests</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.col_requests') }}</p>
                         <p class="text-2xl font-bold text-primary-600">{{ number_format($billing['currentMonthRequests']) }}</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Raw Cost</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.col_raw_cost') }}</p>
                         <p class="text-2xl font-bold text-warning-600">${{ number_format($billing['currentMonthRawCost'], 4) }}</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Billed Cost</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.billed_cost_all_time') }}</p>
                         <p class="text-2xl font-bold text-success-600">${{ number_format($billing['currentMonthBilledCost'], 4) }}</p>
                     </div>
                 </div>
@@ -49,7 +49,7 @@
                     @endphp
                     <div class="mt-3">
                         <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
-                            <span>Monthly Limit: ${{ number_format($limit, 2) }}</span>
+                            <span>{{ __('ai.monthly_limit_display', ['amount' => number_format($limit, 2)]) }}</span>
                             <span>{{ $usedPct }}% used</span>
                         </div>
                         <div class="h-3 rounded-full bg-gray-100 dark:bg-gray-800">
@@ -60,24 +60,24 @@
             </x-filament::section>
 
             {{-- Billing Configuration --}}
-            <x-filament::section heading="Billing Configuration" class="mt-4">
+            <x-filament::section :heading="__('ai.section_billing_configuration')" class="mt-4">
                 @if ($billing['billingConfig'])
                     @php $bc = $billing['billingConfig']; @endphp
                     <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 text-sm">
                         <div>
-                            <span class="text-gray-500">AI Enabled</span>
-                            <p class="font-medium">{{ $bc->is_ai_enabled ? 'Yes' : 'No' }}</p>
+                            <span class="text-gray-500">{{ __('ai.ai_enabled') }}</span>
+                            <p class="font-medium">{{ $bc->is_ai_enabled ? __('ai.yes') : __('ai.no_text') }}</p>
                         </div>
                         <div>
-                            <span class="text-gray-500">Monthly Limit</span>
-                            <p class="font-medium">{{ $bc->monthly_limit_usd > 0 ? '$' . number_format($bc->monthly_limit_usd, 2) : 'No limit' }}</p>
+                            <span class="text-gray-500">{{ __('ai.monthly_limit') }}</span>
+                            <p class="font-medium">{{ $bc->monthly_limit_usd > 0 ? '$' . number_format($bc->monthly_limit_usd, 2) : __('ai.no_limit') }}</p>
                         </div>
                         <div>
-                            <span class="text-gray-500">Custom Margin</span>
-                            <p class="font-medium">{{ $bc->custom_margin_percentage !== null ? $bc->custom_margin_percentage . '%' : 'Platform default' }}</p>
+                            <span class="text-gray-500">{{ __('ai.custom_margin') }}</span>
+                            <p class="font-medium">{{ $bc->custom_margin_percentage !== null ? $bc->custom_margin_percentage . '%' : __('ai.platform_default') }}</p>
                         </div>
                         <div>
-                            <span class="text-gray-500">Notes</span>
+                            <span class="text-gray-500">{{ __('ai.notes') }}</span>
                             <p class="text-xs">{{ $bc->notes ?? '—' }}</p>
                         </div>
                     </div>
@@ -87,9 +87,9 @@
             </x-filament::section>
 
             {{-- Invoice History --}}
-            <x-filament::section heading="Invoice History" class="mt-4">
+            <x-filament::section :heading="__('ai.section_invoice_history')" class="mt-4">
                 @if ($billing['invoices']->isEmpty())
-                    <p class="text-sm text-gray-400">No invoices yet.</p>
+                    <p class="text-sm text-gray-400">{{ __('ai.no_invoices_yet') }}</p>
                 @else
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
@@ -97,15 +97,15 @@
                                 <tr class="border-b border-gray-200 dark:border-gray-700">
                                     <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.invoice_number') }}</th>
                                     <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.period') }}</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Requests</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Tokens</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Raw Cost</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_requests') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_tokens') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_raw_cost') }}</th>
                                     <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.margin_percentage') }}</th>
                                     <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.margin_dollar') }}</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Billed</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_billed') }}</th>
                                     <th class="px-3 py-2 text-center font-medium text-gray-500">{{ __('ai.status') }}</th>
                                     <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.due_date') }}</th>
-                                    <th class="px-3 py-2 text-start font-medium text-gray-500">Paid At</th>
+                                    <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.col_paid_at') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -140,20 +140,20 @@
 
             {{-- Latest Invoice Items --}}
             @if ($billing['latestInvoice'])
-                <x-filament::section heading="Latest Invoice Breakdown: {{ $billing['latestInvoice']->invoice_number }}" class="mt-4">
+                <x-filament::section :heading="__('ai.section_latest_invoice', ['number' => $billing['latestInvoice']->invoice_number])" class="mt-4">
                     @if ($billing['latestInvoiceItems']->isEmpty())
-                        <p class="text-sm text-gray-400">No line items.</p>
+                        <p class="text-sm text-gray-400">{{ __('ai.no_line_items') }}</p>
                     @else
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm">
                                 <thead>
                                     <tr class="border-b border-gray-200 dark:border-gray-700">
-                                        <th class="px-3 py-2 text-start font-medium text-gray-500">Feature</th>
-                                        <th class="px-3 py-2 text-start font-medium text-gray-500">Feature (AR)</th>
-                                        <th class="px-3 py-2 text-end font-medium text-gray-500">Requests</th>
-                                        <th class="px-3 py-2 text-end font-medium text-gray-500">Tokens</th>
-                                        <th class="px-3 py-2 text-end font-medium text-gray-500">Raw Cost</th>
-                                        <th class="px-3 py-2 text-end font-medium text-gray-500">Billed</th>
+                                        <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.col_feature') }}</th>
+                                        <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.col_feature_ar') }}</th>
+                                        <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_requests') }}</th>
+                                        <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_tokens') }}</th>
+                                        <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_raw_cost') }}</th>
+                                        <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_billed') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -175,19 +175,19 @@
             @endif
 
             {{-- Payment History --}}
-            <x-filament::section heading="Payment History" class="mt-4">
+            <x-filament::section :heading="__('ai.section_payment_history')" class="mt-4">
                 @if ($billing['payments']->isEmpty())
-                    <p class="text-sm text-gray-400">No payments recorded.</p>
+                    <p class="text-sm text-gray-400">{{ __('ai.no_payments_recorded') }}</p>
                 @else
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="border-b border-gray-200 dark:border-gray-700">
-                                    <th class="px-3 py-2 text-start font-medium text-gray-500">Date</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Amount</th>
-                                    <th class="px-3 py-2 text-start font-medium text-gray-500">Method</th>
-                                    <th class="px-3 py-2 text-start font-medium text-gray-500">Reference</th>
-                                    <th class="px-3 py-2 text-start font-medium text-gray-500">Notes</th>
+                                    <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.col_date') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_amount') }}</th>
+                                    <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.col_method') }}</th>
+                                    <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.col_reference') }}</th>
+                                    <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.notes') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -207,20 +207,20 @@
             </x-filament::section>
 
             {{-- Monthly Summary Trend --}}
-            <x-filament::section heading="Monthly Usage Trend" class="mt-4">
+            <x-filament::section :heading="__('ai.section_monthly_usage_trend')" class="mt-4">
                 @if ($billing['monthlySummaries']->isEmpty())
-                    <p class="text-sm text-gray-400">No monthly summaries available.</p>
+                    <p class="text-sm text-gray-400">{{ __('ai.no_monthly_summaries') }}</p>
                 @else
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">
                             <thead>
                                 <tr class="border-b border-gray-200 dark:border-gray-700">
-                                    <th class="px-3 py-2 text-start font-medium text-gray-500">Month</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Requests</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Cached</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Failed</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Tokens</th>
-                                    <th class="px-3 py-2 text-end font-medium text-gray-500">Est. Cost</th>
+                                    <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.col_month') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_requests') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_cached') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_failed') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_tokens') }}</th>
+                                    <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_est_cost') }}</th>
                                 </tr>
                             </thead>
                             <tbody>

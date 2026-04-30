@@ -62,7 +62,7 @@ class FailedJobResource extends Resource
                     ->label('ID')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('uuid')
-                    ->label('UUID')
+                    ->label(__('infrastructure.uuid'))
                     ->searchable()
                     ->limit(12)
                     ->copyable()

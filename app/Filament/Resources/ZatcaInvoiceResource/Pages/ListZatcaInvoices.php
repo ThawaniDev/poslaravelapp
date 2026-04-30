@@ -35,7 +35,7 @@ class ListZatcaInvoices extends ListRecords
                         ->helperText(__('zatca.test_invoice_store_help')),
 
                     Select::make('invoice_type')
-                        ->label('Invoice Type')
+                        ->label(__('zatca.invoice_type'))
                         ->options([
                             'simplified'  => 'Simplified (B2C)',
                             'standard'    => 'Standard (B2B)',
@@ -46,16 +46,16 @@ class ListZatcaInvoices extends ListRecords
                         ->required(),
 
                     Toggle::make('is_b2b')
-                        ->label('B2B (for Credit/Debit notes)')
+                        ->label(__('zatca.b2b_credit_debit_label'))
                         ->default(false)
-                        ->helperText('ON = Standard B2B subtype, OFF = Simplified B2C'),
+                        ->helperText(__('zatca.b2b_subtype_help')),
 
                     TextInput::make('total_amount')
                         ->label(__('zatca.total_amount') . ' (SAR)')
                         ->numeric()
                         ->default('115.00')
                         ->required()
-                        ->helperText('Including VAT'),
+                        ->helperText(__('zatca.including_vat')),
 
                     TextInput::make('vat_amount')
                         ->label(__('zatca.vat_amount') . ' (SAR)')

@@ -180,4 +180,7 @@ return [
     'webhook_url_desc' => 'Endpoint your delivery platform should call for real-time order events.',
     'keep_current_key' => 'Leave blank to keep current key',
     'webhook_secret_hint' => 'Leave blank to keep current secret',
+
+    // ── Placeholders ─────────────────────────────────────────────────
+    'placeholder_restaurant_id' => 'Restaurant ID',
 ];

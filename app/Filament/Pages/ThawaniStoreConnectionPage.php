@@ -195,7 +195,7 @@ class ThawaniStoreConnectionPage extends Page implements HasForms
         } else {
             Notification::make()
                 ->title(__('thawani.connection_failed'))
-                ->body($result['message'] ?? 'Unknown error')
+                ->body($result['message'] ?? __('ui.unknown_error'))
                 ->danger()
                 ->send();
         }

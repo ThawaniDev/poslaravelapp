@@ -28,7 +28,7 @@
                                         <div class="flex items-center justify-center gap-1">
                                             <button wire:click="saveSetting('{{ $key }}')" class="text-xs text-primary-600 hover:text-primary-800 font-medium">{{ __('ai.save') }}</button>
                                             <span class="text-gray-300">|</span>
-                                            <button wire:click="deleteSetting('{{ $key }}')" wire:confirm="Delete setting '{{ $key }}'?" class="text-xs text-danger-600 hover:text-danger-800 font-medium">{{ __('ai.delete') }}</button>
+                                            <button wire:click="deleteSetting('{{ $key }}')" wire:confirm="{{ __('ai.confirm_delete_setting', ['key' => $key]) }}" class="text-xs text-danger-600 hover:text-danger-800 font-medium">{{ __('ai.delete') }}</button>
                                         </div>
                                     </td>
                                 @endif
@@ -47,18 +47,18 @@
                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">{{ __('ai.add_new_setting') }}</p>
                     <div class="flex items-end gap-3">
                         <div class="flex-1">
-                            <label class="text-xs font-medium text-gray-600">Key</label>
-                            <input wire:model="newSettingKey" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="e.g. margin_percentage">
+                            <label class="text-xs font-medium text-gray-600">{{ __('ai.key') }}</label>
+                            <input wire:model="newSettingKey" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="{{ __('ai.placeholder_setting_key') }}">
                         </div>
                         <div class="flex-1">
-                            <label class="text-xs font-medium text-gray-600">Value</label>
-                            <input wire:model="newSettingValue" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="e.g. 20">
+                            <label class="text-xs font-medium text-gray-600">{{ __('ai.value') }}</label>
+                            <input wire:model="newSettingValue" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="{{ __('ai.placeholder_setting_value') }}">
                         </div>
                         <div class="flex-1">
-                            <label class="text-xs font-medium text-gray-600">Description</label>
-                            <input wire:model="newSettingDesc" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="Optional description">
+                            <label class="text-xs font-medium text-gray-600">{{ __('ai.description') }}</label>
+                            <input wire:model="newSettingDesc" type="text" class="mt-1 block w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-800 text-sm" placeholder="{{ __('ai.placeholder_setting_desc') }}">
                         </div>
-                        <x-filament::button wire:click="addNewSetting" size="sm" color="primary" icon="heroicon-o-plus">Add</x-filament::button>
+                        <x-filament::button wire:click="addNewSetting" size="sm" color="primary" icon="heroicon-o-plus">{{ __('ai.add') }}</x-filament::button>
                     </div>
                 </div>
             @endif

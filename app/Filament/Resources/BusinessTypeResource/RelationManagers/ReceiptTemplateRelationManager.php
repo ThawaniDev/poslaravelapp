@@ -118,7 +118,7 @@ class ReceiptTemplateRelationManager extends RelationManager
                     Forms\Components\TextInput::make('custom_footer_text')
                         ->label(__('Custom Footer Text (EN)'))
                         ->maxLength(200)
-                        ->placeholder('e.g., Thank you for your visit!'),
+                        ->placeholder(__('ui.placeholder_thank_you_footer')),
                     Forms\Components\TextInput::make('custom_footer_text_ar')
                         ->label(__('Custom Footer Text (AR)'))
                         ->maxLength(200)

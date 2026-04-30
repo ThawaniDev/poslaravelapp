@@ -76,10 +76,10 @@ class ZatcaDeviceResource extends Resource
                     ->label(__('zatca.status'))
                     ->options(collect(ZatcaDeviceStatus::cases())->mapWithKeys(fn ($c) => [$c->value => __('zatca.device_status_' . $c->value)]))
                     ->required(),
-                Forms\Components\TextInput::make('device_uuid')->label('UUID')->disabled(),
+                Forms\Components\TextInput::make('device_uuid')->label(__('zatca.uuid'))->disabled(),
                 Forms\Components\TextInput::make('activation_code')->label(__('zatca.activation_code'))->disabled(),
-                Forms\Components\TextInput::make('current_icv')->label('ICV')->disabled()->numeric(),
-                Forms\Components\TextInput::make('current_pih')->label('PIH')->disabled(),
+                Forms\Components\TextInput::make('current_icv')->label(__('zatca.icv'))->disabled()->numeric(),
+                Forms\Components\TextInput::make('current_pih')->label(__('zatca.pih'))->disabled(),
                 Forms\Components\Toggle::make('is_tampered')->label(__('zatca.is_tampered'))->disabled(),
                 Forms\Components\Textarea::make('tamper_reason')->label(__('zatca.tamper_reason'))->rows(2)->disabled(),
                 Forms\Components\DateTimePicker::make('activated_at')->label(__('zatca.activated_at'))->disabled(),
@@ -113,7 +113,7 @@ class ZatcaDeviceResource extends Resource
                     ->boolean()
                     ->trueColor('danger')
                     ->falseColor('success'),
-                Tables\Columns\TextColumn::make('current_icv')->label('ICV')->numeric()->sortable(),
+                Tables\Columns\TextColumn::make('current_icv')->label(__('zatca.icv'))->numeric()->sortable(),
                 Tables\Columns\TextColumn::make('activated_at')->label(__('zatca.activated_at'))->dateTime('Y-m-d')->sortable(),
             ])
             ->filters([

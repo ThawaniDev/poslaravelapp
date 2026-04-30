@@ -13,11 +13,11 @@
                 </div>
                 <div>
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('thawani.thawani_field') }}</label>
-                    <input type="text" wire:model="thawaniField" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="name, price, image..." required>
+                    <input type="text" wire:model="thawaniField" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="{{ __('thawani.thawani_field_placeholder') }}" required>
                 </div>
                 <div>
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('thawani.wameed_field') }}</label>
-                    <input type="text" wire:model="wameedField" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="name, sell_price, image_url..." required>
+                    <input type="text" wire:model="wameedField" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white" placeholder="{{ __('thawani.wameed_field_placeholder') }}" required>
                 </div>
                 <div>
                     <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __('thawani.transform_type') }}</label>

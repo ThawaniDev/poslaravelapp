@@ -9,14 +9,14 @@
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Raw Cost (All Time)</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.raw_cost_all_time') }}</p>
                         <p class="text-3xl font-bold text-warning-600">${{ number_format($detail['totalRawCost'], 4) }}</p>
                         <p class="text-xs text-gray-400">Today: ${{ number_format($detail['todayRawCost'], 4) }} · Last {{ $dateRange }}d: ${{ number_format($detail['recentRawCost'], 4) }}</p>
                     </div>
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Billed Cost (All Time)</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.billed_cost_all_time') }}</p>
                         <p class="text-3xl font-bold text-success-600">${{ number_format($detail['totalBilledCost'], 4) }}</p>
                         <p class="text-xs text-gray-400">Today: ${{ number_format($detail['todayBilledCost'], 4) }} · Last {{ $dateRange }}d: ${{ number_format($detail['recentBilledCost'], 4) }}</p>
                     </div>
@@ -35,7 +35,7 @@
             <div class="grid grid-cols-2 gap-4 sm:grid-cols-5 mt-4">
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Total Tokens</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.total_tokens') }}</p>
                         <p class="text-2xl font-bold text-gray-600 dark:text-gray-300">{{ number_format($detail['totalTokens']) }}</p>
                     </div>
                 </x-filament::section>
@@ -53,71 +53,71 @@
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Error Rate</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.error_rate') }}</p>
                         <p class="text-2xl font-bold {{ $detail['errorRate'] > 5 ? 'text-danger-600' : 'text-success-600' }}">{{ $detail['errorRate'] }}%</p>
-                        <p class="text-xs text-gray-400">{{ number_format($detail['errorCount']) }} errors</p>
+                        <p class="text-xs text-gray-400">{{ number_format($detail['errorCount']) }} {{ __('ai.errors') }}</p>
                     </div>
                 </x-filament::section>
                 <x-filament::section>
                     <div class="text-center">
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Chats</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.chats') }}</p>
                         <p class="text-2xl font-bold text-purple-600">{{ number_format($detail['totalChats']) }}</p>
-                        <p class="text-xs text-gray-400">{{ number_format($detail['totalChatMessages']) }} messages</p>
+                        <p class="text-xs text-gray-400">{{ number_format($detail['totalChatMessages']) }} {{ __('ai.messages') }}</p>
                     </div>
                 </x-filament::section>
             </div>
 
             {{-- Store Info Card --}}
             <div class="grid grid-cols-1 gap-4 mt-4 lg:grid-cols-2">
-                <x-filament::section heading="Store Information">
+                <x-filament::section :heading="__('ai.section_store_information')">
                     <div class="grid grid-cols-2 gap-3 text-sm">
                         <div>
-                            <span class="text-gray-500 dark:text-gray-400">Store Name</span>
+                            <span class="text-gray-500 dark:text-gray-400">{{ __('ai.store_name') }}</span>
                             <p class="font-medium">{{ $detail['store']->name }}</p>
                         </div>
                         <div>
-                            <span class="text-gray-500 dark:text-gray-400">Arabic Name</span>
+                            <span class="text-gray-500 dark:text-gray-400">{{ __('ai.arabic_name') }}</span>
                             <p class="font-medium">{{ $detail['store']->name_ar ?? '—' }}</p>
                         </div>
                         <div>
-                            <span class="text-gray-500 dark:text-gray-400">Slug</span>
+                            <span class="text-gray-500 dark:text-gray-400">{{ __('ai.col_slug') }}</span>
                             <p class="font-mono text-xs">{{ $detail['store']->slug }}</p>
                         </div>
                         <div>
-                            <span class="text-gray-500 dark:text-gray-400">Business Type</span>
+                            <span class="text-gray-500 dark:text-gray-400">{{ __('ai.business_type') }}</span>
                             <p class="font-medium">{{ $detail['store']->business_type ?? '—' }}</p>
                         </div>
                         <div>
-                            <span class="text-gray-500 dark:text-gray-400">Store Active</span>
+                            <span class="text-gray-500 dark:text-gray-400">{{ __('ai.store_active') }}</span>
                             <p>
                                 @if ($detail['store']->is_active)
-                                    <span class="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">Active</span>
+                                    <span class="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">{{ __('ai.active') }}</span>
                                 @else
-                                    <span class="inline-flex items-center rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-500/10 dark:text-danger-400">Inactive</span>
+                                    <span class="inline-flex items-center rounded-full bg-danger-50 px-2 py-0.5 text-xs font-medium text-danger-700 dark:bg-danger-500/10 dark:text-danger-400">{{ __('ai.inactive') }}</span>
                                 @endif
                             </p>
                         </div>
                         <div>
-                            <span class="text-gray-500 dark:text-gray-400">Store Created</span>
+                            <span class="text-gray-500 dark:text-gray-400">{{ __('ai.store_created') }}</span>
                             <p class="text-xs">{{ $detail['store']->created_at?->format('M d, Y') ?? '—' }}</p>
                         </div>
                         <div>
-                            <span class="text-gray-500 dark:text-gray-400">First AI Use</span>
-                            <p class="text-xs">{{ $detail['firstActivity'] ? \Carbon\Carbon::parse($detail['firstActivity'])->format('M d, Y H:i') : 'Never' }}</p>
+                            <span class="text-gray-500 dark:text-gray-400">{{ __('ai.first_ai_use') }}</span>
+                            <p class="text-xs">{{ $detail['firstActivity'] ? \Carbon\Carbon::parse($detail['firstActivity'])->format('M d, Y H:i') : __('ai.never') }}</p>
                         </div>
                         <div>
-                            <span class="text-gray-500 dark:text-gray-400">Last AI Use</span>
-                            <p class="text-xs">{{ $detail['lastActivity'] ? \Carbon\Carbon::parse($detail['lastActivity'])->diffForHumans() . ' (' . \Carbon\Carbon::parse($detail['lastActivity'])->format('M d, Y H:i') . ')' : 'Never' }}</p>
+                            <span class="text-gray-500 dark:text-gray-400">{{ __('ai.last_ai_use') }}</span>
+                            <p class="text-xs">{{ $detail['lastActivity'] ? \Carbon\Carbon::parse($detail['lastActivity'])->diffForHumans() . ' (' . \Carbon\Carbon::parse($detail['lastActivity'])->format('M d, Y H:i') . ')' : __('ai.never') }}</p>
                         </div>
                     </div>
                 </x-filament::section>
 
-                <x-filament::section heading="Billing Configuration">
+                <x-filament::section :heading="__('ai.section_billing_configuration')">
                     @if ($detail['billingConfig'])
                         @php $bc = $detail['billingConfig']; @endphp
                         <div class="grid grid-cols-2 gap-3 text-sm">
                             <div>
-                                <span class="text-gray-500 dark:text-gray-400">AI Status</span>
+                                <span class="text-gray-500 dark:text-gray-400">{{ __('ai.ai_status') }}</span>
                                 <p>
                                     @if ($bc->is_ai_enabled)
                                         <span class="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700 dark:bg-success-500/10 dark:text-success-400">{{ __('ai.enabled') }}</span>
@@ -127,32 +127,32 @@
                                 </p>
                             </div>
                             <div>
-                                <span class="text-gray-500 dark:text-gray-400">Monthly Limit</span>
-                                <p class="font-medium">{{ $bc->monthly_limit_usd > 0 ? '$' . number_format($bc->monthly_limit_usd, 2) : 'No limit' }}</p>
+                                <span class="text-gray-500 dark:text-gray-400">{{ __('ai.monthly_limit') }}</span>
+                                <p class="font-medium">{{ $bc->monthly_limit_usd > 0 ? '$' . number_format($bc->monthly_limit_usd, 2) : __('ai.no_limit') }}</p>
                             </div>
                             <div>
-                                <span class="text-gray-500 dark:text-gray-400">Custom Margin %</span>
-                                <p class="font-medium">{{ $bc->custom_margin_percentage !== null ? $bc->custom_margin_percentage . '%' : 'Platform default' }}</p>
+                                <span class="text-gray-500 dark:text-gray-400">{{ __('ai.custom_margin_pct') }}</span>
+                                <p class="font-medium">{{ $bc->custom_margin_percentage !== null ? $bc->custom_margin_percentage . '%' : __('ai.platform_default') }}</p>
                             </div>
                             <div>
-                                <span class="text-gray-500 dark:text-gray-400">Disabled Reason</span>
+                                <span class="text-gray-500 dark:text-gray-400">{{ __('ai.disabled_reason') }}</span>
                                 <p class="text-xs">{{ $bc->disabled_reason ?? '—' }}</p>
                             </div>
                             <div>
-                                <span class="text-gray-500 dark:text-gray-400">Enabled At</span>
+                                <span class="text-gray-500 dark:text-gray-400">{{ __('ai.enabled_at') }}</span>
                                 <p class="text-xs">{{ $bc->enabled_at ? \Carbon\Carbon::parse($bc->enabled_at)->format('M d, Y H:i') : '—' }}</p>
                             </div>
                             <div>
-                                <span class="text-gray-500 dark:text-gray-400">Disabled At</span>
+                                <span class="text-gray-500 dark:text-gray-400">{{ __('ai.disabled_at') }}</span>
                                 <p class="text-xs">{{ $bc->disabled_at ? \Carbon\Carbon::parse($bc->disabled_at)->format('M d, Y H:i') : '—' }}</p>
                             </div>
                             <div class="col-span-2">
-                                <span class="text-gray-500 dark:text-gray-400">Notes</span>
+                                <span class="text-gray-500 dark:text-gray-400">{{ __('ai.notes') }}</span>
                                 <p class="text-xs">{{ $bc->notes ?? '—' }}</p>
                             </div>
                         </div>
                     @else
-                        <p class="text-sm text-gray-400">No billing configuration set up for this store.</p>
+                        <p class="text-sm text-gray-400">{{ __('ai.no_billing_config_store') }}</p>
                     @endif
                 </x-filament::section>
             </div>

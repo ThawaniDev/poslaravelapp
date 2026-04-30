@@ -8,4 +8,7 @@ return [
     'test_success' => 'تم اختبار الجهاز بنجاح.',
     'event_recorded' => 'تم تسجيل حدث الجهاز بنجاح.',
     'logs_listed' => 'تم استرجاع سجل أحداث الأجهزة بنجاح.',
+
+    // ── UI helpers ───────────────────────────────────────────────────
+    'helper_item_description' => 'مثال: Sunmi V2 Pro، Epson TM-T88VI',
 ];

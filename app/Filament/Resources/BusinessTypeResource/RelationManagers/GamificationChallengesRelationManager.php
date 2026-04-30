@@ -29,7 +29,7 @@ class GamificationChallengesRelationManager extends RelationManager
                 ->label(__('Challenge Name (EN)'))
                 ->required()
                 ->maxLength(100)
-                ->placeholder('Weekend Warrior'),
+                ->placeholder(__('ui.placeholder_weekend_warrior')),
             Forms\Components\TextInput::make('name_ar')
                 ->label(__('Challenge Name (AR)'))
                 ->required()

@@ -22,11 +22,11 @@
                 <dd class="mt-1 font-mono break-all">{{ config('zatca.api_url') ?: '—' }}</dd>
             </div>
             <div>
-                <dt class="text-gray-500 dark:text-gray-400">CSR Template</dt>
+                <dt class="text-gray-500 dark:text-gray-400">{{ __('zatca.csr_template') }}</dt>
                 <dd class="mt-1 font-mono">{{ config('zatca.csr_template') ?: '—' }}</dd>
             </div>
             <div>
-                <dt class="text-gray-500 dark:text-gray-400">.env key</dt>
+                <dt class="text-gray-500 dark:text-gray-400">{{ __('zatca.env_key') }}</dt>
                 <dd class="mt-1 font-mono text-xs text-gray-600 dark:text-gray-300">
                     ZATCA_ENVIRONMENT=<span class="font-semibold">{{ $env }}</span><br>
                     ZATCA_API_URL=<span class="font-semibold">{{ config('zatca.api_url') }}</span>

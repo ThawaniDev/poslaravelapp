@@ -146,4 +146,13 @@ return [
     'load_avg_1min' => 'متوسط دقيقة واحدة',
     'load_avg_5min' => 'متوسط 5 دقائق',
     'load_avg_15min' => 'متوسط 15 دقيقة',
+
+    // ── Auto-Rollback Notification ─────────────────────────────────────
+    'rollback_greeting'     => 'تنبيه: تم التراجع التلقائي عن إصدار التطبيق',
+    'rollback_deactivated'  => 'تم إلغاء تفعيل الإصدار **v:version** للمنصة **:platform** تلقائيًا.',
+    'rollback_failure_rate' => '**معدل الفشل:** :rate% (:failed / :total تثبيت فاشل)',
+    'rollback_fallback'     => 'تم إلغاء تفعيل الإصدار. ستعود المتاجر إلى الإصدار النشط السابق عند التحقق التالي من التحديثات.',
+    'rollback_review'       => 'يرجى مراجعة الإصدار والتحقيق في السبب الجذري قبل إعادة تفعيله.',
+    'rollback_subject'      => '[حرج] تراجع تلقائي: الإصدار v:version (:platform) تم إلغاء تفعيله',
+    'rollback_action'       => 'المراجعة في لوحة الإدارة',
 ];

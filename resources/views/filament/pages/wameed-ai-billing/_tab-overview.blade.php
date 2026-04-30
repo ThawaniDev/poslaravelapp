@@ -41,13 +41,11 @@
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Overdue</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.overdue') }}</p>
                     <p class="text-2xl font-bold text-danger-600">{{ number_format($overdueInvoices) }}</p>
                 </div>
             </x-filament::section>
         </div>
-
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 mt-4">
             <x-filament::section>
                 <div class="text-center">
                     <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.total_invoices') }}</p>
@@ -68,7 +66,7 @@
             </x-filament::section>
             <x-filament::section>
                 <div class="text-center">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Overdue</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ __('ai.overdue') }}</p>
                     <p class="text-2xl font-bold text-danger-600">{{ number_format($overdueInvoices) }}</p>
                 </div>
             </x-filament::section>

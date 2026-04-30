@@ -222,17 +222,17 @@
 <body>
 
 @if ($invoice->status?->value === 'paid' || $invoice->status === 'paid')
-    <div class="watermark">PAID</div>
+    <div class="watermark">{{ __('subscription.invoice_status_paid') }}</div>
 @endif
 
 {{-- ─── Header ─── --}}
 <div class="header">
     <div>
-        <div class="brand-name">Wameed POS</div>
-        <div class="brand-sub">وميض نقاط البيع — Platform Invoice</div>
+        <div class="brand-name">{{ __('subscription.invoice_brand') }}</div>
+        <div class="brand-sub">وميض نقاط البيع — {{ __('subscription.invoice_sub_brand') }}</div>
     </div>
     <div class="invoice-meta">
-        <div class="invoice-title">Invoice</div>
+        <div class="invoice-title">{{ __('subscription.invoice_title') }}</div>
         <div class="invoice-number"># {{ $invoice->invoice_number }}</div>
         @php
             $statusVal = $invoice->status?->value ?? $invoice->status;
@@ -251,13 +251,13 @@
 {{-- ─── Parties ─── --}}
 <div class="parties">
     <div class="party-box">
-        <div class="party-label">From</div>
-        <div class="party-name">Wameed Technology</div>
+        <div class="party-label">{{ __('subscription.invoice_from') }}</div>
+        <div class="party-name">{{ __('subscription.issuer_company_name') }}</div>
         <div class="party-detail">Riyadh, Saudi Arabia</div>
         <div class="party-detail">VAT: 300000000000003</div>
     </div>
     <div class="party-box">
-        <div class="party-label">Bill To</div>
+        <div class="party-label">{{ __('subscription.invoice_bill_to') }}</div>
         @if ($organization)
             <div class="party-name">{{ $organization->name }}</div>
             @if ($organization->owner ?? null)
@@ -272,22 +272,22 @@
 {{-- ─── Dates ─── --}}
 <div class="dates-row">
     <div class="date-item">
-        <div class="date-label">Issue Date</div>
+        <div class="date-label">{{ __('subscription.invoice_issue_date') }}</div>
         <div class="date-value">{{ $invoice->created_at?->format('d M Y') ?? '—' }}</div>
     </div>
     <div class="date-item">
-        <div class="date-label">Due Date</div>
+        <div class="date-label">{{ __('subscription.invoice_due_date') }}</div>
         <div class="date-value">{{ $invoice->due_date instanceof \DateTime ? $invoice->due_date->format('d M Y') : ($invoice->due_date ?? '—') }}</div>
     </div>
     @if ($invoice->paid_at)
     <div class="date-item">
-        <div class="date-label">Paid On</div>
+        <div class="date-label">{{ __('subscription.invoice_payment_date') }}</div>
         <div class="date-value">{{ $invoice->paid_at->format('d M Y') }}</div>
     </div>
     @endif
     @if ($invoice->storeSubscription?->billing_cycle)
     <div class="date-item">
-        <div class="date-label">Billing Cycle</div>
+        <div class="date-label">{{ __('subscription.invoice_sub_brand') }}</div>
         <div class="date-value">{{ ucfirst($invoice->storeSubscription->billing_cycle?->value ?? $invoice->storeSubscription->billing_cycle) }}</div>
     </div>
     @endif
@@ -295,15 +295,15 @@
 
 {{-- ─── Line Items ─── --}}
 <div class="table-section">
-    <h3>Invoice Items</h3>
+    <h3>{{ __('subscription.invoice_items') }}</h3>
     <table>
         <thead>
             <tr>
                 <th>#</th>
-                <th>Description</th>
-                <th class="num">Qty</th>
-                <th style="text-align:right">Unit Price (SAR)</th>
-                <th style="text-align:right">Total (SAR)</th>
+                <th>{{ __('subscription.invoice_col_description') }}</th>
+                <th class="num">{{ __('subscription.invoice_col_qty') }}</th>
+                <th style="text-align:right">{{ __('subscription.invoice_col_unit_price') }}</th>
+                <th style="text-align:right">{{ __('subscription.invoice_col_total') }}</th>
             </tr>
         </thead>
         <tbody>
@@ -333,19 +333,19 @@
         <tfoot>
             <tr>
                 <td colspan="3"></td>
-                <td class="label">Subtotal</td>
+                <td class="label">{{ __('subscription.invoice_subtotal') }}</td>
                 <td class="value">SAR {{ number_format((float)$invoice->amount, 2) }}</td>
             </tr>
             @if ((float)($invoice->tax ?? 0) > 0)
             <tr>
                 <td colspan="3"></td>
-                <td class="label">VAT (15%)</td>
+                <td class="label">{{ __('subscription.invoice_vat') }}</td>
                 <td class="value">SAR {{ number_format((float)$invoice->tax, 2) }}</td>
             </tr>
             @endif
             <tr class="total-row">
                 <td colspan="3"></td>
-                <td class="label" style="color:#fd8209!important;font-weight:700">Total Due</td>
+                <td class="label" style="color:#fd8209!important;font-weight:700">{{ __('subscription.invoice_total_due') }}</td>
                 <td class="value">SAR {{ number_format((float)$invoice->total, 2) }}</td>
             </tr>
         </tfoot>
@@ -355,22 +355,22 @@
 {{-- ─── Payment Info ─── --}}
 @if ($invoice->gateway_transaction_ref || $invoice->payment_method)
 <div class="payment-box">
-    <h4>Payment Details</h4>
+    <h4>{{ __('subscription.invoice_payment_details') }}</h4>
     @if ($invoice->payment_method ?? $invoice->storeSubscription?->payment_method)
     <div class="payment-row">
-        <span>Payment Method</span>
+        <span>{{ __('subscription.invoice_payment_method') }}</span>
         <span>{{ ucwords(str_replace('_', ' ', $invoice->payment_method ?? $invoice->storeSubscription?->payment_method ?? '')) }}</span>
     </div>
     @endif
     @if ($invoice->gateway_transaction_ref)
     <div class="payment-row">
-        <span>Transaction Reference</span>
+        <span>{{ __('subscription.invoice_transaction_ref') }}</span>
         <span>{{ $invoice->gateway_transaction_ref }}</span>
     </div>
     @endif
     @if ($invoice->paid_at)
     <div class="payment-row">
-        <span>Payment Date</span>
+        <span>{{ __('subscription.invoice_payment_date') }}</span>
         <span>{{ $invoice->paid_at->format('d M Y, H:i') }}</span>
     </div>
     @endif
@@ -379,9 +379,9 @@
 
 {{-- ─── Footer ─── --}}
 <div class="footer">
-    <p>Thank you for your business with <strong>Wameed POS</strong>.</p>
-    <p style="margin-top:4px">For billing inquiries, contact <strong>billing@wameedpos.sa</strong></p>
-    <p style="margin-top:4px; color:#cbd5e1">This is a computer-generated invoice and does not require a signature.</p>
+    <p>{{ __('subscription.invoice_footer_thanks') }}</p>
+    <p style="margin-top:4px">{{ __('subscription.invoice_footer_billing') }}</p>
+    <p style="margin-top:4px; color:#cbd5e1">{{ __('subscription.invoice_footer_generated') }}</p>
 </div>
 
 </body>

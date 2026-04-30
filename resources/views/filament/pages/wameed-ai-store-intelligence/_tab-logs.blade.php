@@ -1,18 +1,18 @@
-            <x-filament::section heading="Recent Usage Logs ({{ number_format($logData['totalLogs']) }} total)">
+            <x-filament::section :heading="__('ai.section_recent_logs', ['count' => number_format($logData['totalLogs'])])">
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
                             <tr class="border-b border-gray-200 dark:border-gray-700">
-                                <th class="px-3 py-2 text-start font-medium text-gray-500">Time</th>
-                                <th class="px-3 py-2 text-start font-medium text-gray-500">Feature</th>
-                                <th class="px-3 py-2 text-start font-medium text-gray-500">Model</th>
-                                <th class="px-3 py-2 text-end font-medium text-gray-500">In Tokens</th>
-                                <th class="px-3 py-2 text-end font-medium text-gray-500">Out Tokens</th>
-                                <th class="px-3 py-2 text-end font-medium text-gray-500">Raw Cost</th>
-                                <th class="px-3 py-2 text-end font-medium text-gray-500">Billed</th>
-                                <th class="px-3 py-2 text-end font-medium text-gray-500">Latency</th>
+                                <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.col_time') }}</th>
+                                <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.col_feature') }}</th>
+                                <th class="px-3 py-2 text-start font-medium text-gray-500">{{ __('ai.col_model') }}</th>
+                                <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_in_tokens') }}</th>
+                                <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_out_tokens') }}</th>
+                                <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_raw_cost') }}</th>
+                                <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_billed') }}</th>
+                                <th class="px-3 py-2 text-end font-medium text-gray-500">{{ __('ai.col_latency') }}</th>
                                 <th class="px-3 py-2 text-center font-medium text-gray-500">{{ __('ai.status') }}</th>
-                                <th class="px-3 py-2 text-center font-medium text-gray-500">Cached</th>
+                                <th class="px-3 py-2 text-center font-medium text-gray-500">{{ __('ai.col_cached') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -55,7 +55,7 @@
                                 @endif
                             @empty
                                 <tr>
-                                    <td colspan="10" class="px-3 py-8 text-center text-gray-400">No usage logs found</td>
+                                    <td colspan="10" class="px-3 py-8 text-center text-gray-400">{{ __('ai.no_feature_usage_period') }}</td>
                                 </tr>
                             @endforelse
                         </tbody>

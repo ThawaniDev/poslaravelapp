@@ -29,7 +29,7 @@ class GamificationMilestonesRelationManager extends RelationManager
                 ->label(__('Milestone Name (EN)'))
                 ->required()
                 ->maxLength(100)
-                ->placeholder('First 1000 SAR Spent'),
+                ->placeholder(__('ui.placeholder_first_1000_sar')),
             Forms\Components\TextInput::make('name_ar')
                 ->label(__('Milestone Name (AR)'))
                 ->required()

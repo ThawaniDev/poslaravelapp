@@ -202,7 +202,7 @@ class DeliveryPlatformResource extends Resource
                                 ->label(__('delivery.field_label'))
                                 ->required()
                                 ->maxLength(100)
-                                ->placeholder('Restaurant ID'),
+                            ->placeholder(__('delivery.placeholder_restaurant_id')),
 
                             Forms\Components\Select::make('field_type')
                                 ->label(__('delivery.field_type'))
