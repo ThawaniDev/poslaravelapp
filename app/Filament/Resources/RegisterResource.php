@@ -202,6 +202,30 @@ class RegisterResource extends Resource
                                 ])
                                 ->columns(2),
 
+                            Forms\Components\Section::make(__('SoftPOS Bilateral Billing'))
+                                ->description(__('Per-terminal bilateral fee rates. Merchant rate ≥ Gateway rate (platform margin = difference).'))
+                                ->icon('heroicon-o-credit-card')
+                                ->schema([
+                                    Forms\Components\TextInput::make('softpos_mada_merchant_rate')
+                                        ->label(__('Mada – Merchant Rate'))
+                                        ->helperText(__('Charged to merchant. e.g. 0.006 = 0.6%'))
+                                        ->numeric()->step(0.000001)->suffix('%'),
+                                    Forms\Components\TextInput::make('softpos_mada_gateway_rate')
+                                        ->label(__('Mada – Gateway Rate'))
+                                        ->helperText(__('Paid to gateway. Must be ≤ merchant rate.'))
+                                        ->numeric()->step(0.000001)->suffix('%'),
+                                    Forms\Components\TextInput::make('softpos_card_merchant_fee')
+                                        ->label(__('Visa/MC/Amex – Merchant Fee'))
+                                        ->helperText(__('Fixed SAR per transaction charged to merchant.'))
+                                        ->numeric()->step(0.001)->suffix('SAR'),
+                                    Forms\Components\TextInput::make('softpos_card_gateway_fee')
+                                        ->label(__('Visa/MC/Amex – Gateway Fee'))
+                                        ->helperText(__('Fixed SAR per transaction paid to gateway.'))
+                                        ->numeric()->step(0.001)->suffix('SAR'),
+                                ])
+                                ->columns(2)
+                                ->visible(fn ($record) => $record?->softpos_enabled),
+
                             Forms\Components\Section::make(__('Settlement'))
                                 ->description(__('Payment settlement configuration'))
                                 ->schema([
@@ -602,6 +626,38 @@ class RegisterResource extends Resource
                                         ->formatStateUsing(fn ($state) => $state ? number_format((float) $state * 100, 2) . '%' : 'N/A'),
                                 ])
                                 ->columns(3),
+
+                            Infolists\Components\Section::make(__('SoftPOS Bilateral Billing'))
+                                ->description(__('Per-terminal bilateral fee rates. Margin = merchant rate − gateway rate.'))
+                                ->icon('heroicon-o-credit-card')
+                                ->schema([
+                                    Infolists\Components\TextEntry::make('softpos_mada_merchant_rate')
+                                        ->label(__('Mada Merchant Rate'))
+                                        ->formatStateUsing(fn ($state) => number_format((float) $state * 100, 4) . '%'),
+                                    Infolists\Components\TextEntry::make('softpos_mada_gateway_rate')
+                                        ->label(__('Mada Gateway Rate'))
+                                        ->formatStateUsing(fn ($state) => number_format((float) $state * 100, 4) . '%'),
+                                    Infolists\Components\TextEntry::make('softpos_mada_merchant_rate')
+                                        ->label(__('Mada Margin'))
+                                        ->formatStateUsing(fn ($state, $record) =>
+                                            number_format(((float) $record->softpos_mada_merchant_rate - (float) $record->softpos_mada_gateway_rate) * 100, 4) . '%'
+                                        )
+                                        ->badge()->color('success'),
+                                    Infolists\Components\TextEntry::make('softpos_card_merchant_fee')
+                                        ->label(__('Card Merchant Fee'))
+                                        ->formatStateUsing(fn ($state) => number_format((float) $state, 3) . ' SAR'),
+                                    Infolists\Components\TextEntry::make('softpos_card_gateway_fee')
+                                        ->label(__('Card Gateway Fee'))
+                                        ->formatStateUsing(fn ($state) => number_format((float) $state, 3) . ' SAR'),
+                                    Infolists\Components\TextEntry::make('softpos_card_merchant_fee')
+                                        ->label(__('Card Margin'))
+                                        ->formatStateUsing(fn ($state, $record) =>
+                                            number_format((float) $record->softpos_card_merchant_fee - (float) $record->softpos_card_gateway_fee, 3) . ' SAR'
+                                        )
+                                        ->badge()->color('success'),
+                                ])
+                                ->columns(3)
+                                ->visible(fn ($record) => $record?->softpos_enabled),
 
                             Infolists\Components\Section::make(__('Settlement'))
                                 ->schema([

@@ -73,6 +73,11 @@ class AllPermissionsSyncSeeder extends Seeder
 
         // ── Installments admin ──────────────────────────────────
         ['name' => 'installments.configure',    'group' => 'integrations', 'description' => 'Configure installment provider credentials'],
+
+        // ── SoftPOS billing & transactions ──────────────────────
+        ['name' => 'softpos.view',              'group' => 'softpos',   'description' => 'View SoftPOS transactions list in admin panel'],
+        ['name' => 'softpos.financials.view',   'group' => 'softpos',   'description' => 'View SoftPOS financial analytics and P&L dashboard'],
+        ['name' => 'softpos.billing.manage',    'group' => 'softpos',   'description' => 'Edit per-terminal bilateral fee rates'],
     ];
 
     public function run(): void
