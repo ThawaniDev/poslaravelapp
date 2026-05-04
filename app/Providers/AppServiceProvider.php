@@ -39,6 +39,8 @@ use App\Domain\Inventory\Models\StockAdjustment;
 use App\Domain\AppUpdateManagement\Models\AppRelease;
 use App\Domain\Announcement\Models\PlatformAnnouncement;
 use App\Domain\Announcement\Observers\PlatformAnnouncementObserver;
+use App\Domain\Core\Models\Register;
+use App\Domain\Core\Observers\RegisterObserver;
 use App\Domain\ProviderSubscription\Services\BillingService;
 use App\Domain\Security\Services\PinOverrideService;
 use App\Domain\StaffManagement\Services\PermissionService;
@@ -136,6 +138,9 @@ class AppServiceProvider extends ServiceProvider
 
         // Register announcement observer for push + email dispatch
         PlatformAnnouncement::observe(PlatformAnnouncementObserver::class);
+
+        // Register terminal credential observer for audit logging
+        Register::observe(RegisterObserver::class);
 
         // Register auth event listeners for staff.login / staff.unauthorized_access
         \Illuminate\Support\Facades\Event::listen(

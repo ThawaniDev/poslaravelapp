@@ -117,6 +117,10 @@ return [
     // Settings enforcement
     'customer_required_for_sale' => 'يجب اختيار عميل لإتمام عملية البيع.',
     'discount_exceeds_maximum' => 'لا يمكن أن يتجاوز الخصم :max%.',
+    'discount_requires_manager_pin' => 'يلزم رمز المدير لتطبيق خصم يتجاوز الحد المسموح به.',
+    'tax_exempt_requires_manager_pin' => 'يلزم رمز المدير لاعتبار البيع معفى من الضريبة.',
+    'void_requires_manager_pin' => 'يلزم رمز المدير لإلغاء هذه المعاملة.',
+    'invalid_manager_pin_token' => 'انتهت صلاحية موافقة رمز المدير أو أنها غير صالحة لهذا الإجراء. يرجى إعادة التحقق.',
     'insufficient_stock' => 'المخزون غير كافٍ لـ :product. المتاح: :available، المطلوب: :requested.',
     'refunds_disabled' => 'المرتجعات معطلة لهذا المتجر.',
     'return_without_receipt_denied' => 'لا يُسمح بالإرجاع بدون إيصال أصلي في هذا المتجر.',

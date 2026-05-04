@@ -23,6 +23,9 @@ class TransactionItemResource extends JsonResource
             'tax_amount' => (float) $this->tax_amount,
             'line_total' => (float) $this->line_total,
             'is_return_item' => (bool) $this->is_return_item,
+            'modifier_total' => (float) ($this->modifier_total ?? 0),
+            'modifier_selections' => $this->modifier_selections,
+            'item_notes' => $this->item_notes,
             'notes' => $this->notes,
         ];
     }

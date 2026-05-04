@@ -36,7 +36,9 @@ class TransactionItem extends Model
         'batch_number',
         'expiry_date',
         'modifier_selections',
+        'modifier_total',
         'notes',
+        'item_notes',
         'is_return_item',
         'age_verified',
         'age_verified_at',
@@ -57,6 +59,7 @@ class TransactionItem extends Model
         'tax_rate' => 'decimal:2',
         'tax_amount' => 'decimal:2',
         'line_total' => 'decimal:2',
+        'modifier_total' => 'decimal:2',
         'expiry_date' => 'date',
     ];
 

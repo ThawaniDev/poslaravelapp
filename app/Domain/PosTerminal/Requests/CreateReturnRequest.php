@@ -37,10 +37,16 @@ class CreateReturnRequest extends FormRequest
             'items.*.line_total' => ['required', 'numeric'],
             'items.*.is_return_item' => ['nullable', 'boolean'],
             'payments' => ['required', 'array', 'min:1'],
-            'payments.*.method' => ['required', 'string', 'in:cash,card,card_mada,card_visa,card_mastercard,mada,apple_pay,stc_pay,store_credit,gift_card,mobile_payment,loyalty_points,bank_transfer'],
+            'payments.*.method' => ['required', 'string', 'in:cash,card,card_mada,card_visa,card_mastercard,mada,apple_pay,stc_pay,store_credit,gift_card,mobile_payment,loyalty_points,bank_transfer,soft_pos'],
             'payments.*.amount' => ['required', 'numeric', 'min:0.01'],
             'payments.*.cash_tendered' => ['nullable', 'numeric', 'min:0'],
             'payments.*.change_given' => ['nullable', 'numeric', 'min:0'],
+            // EdfaPay SoftPOS native field names (normalised to card_* by TransactionService)
+            'payments.*.approval_code' => ['nullable', 'string'],
+            'payments.*.rrn' => ['nullable', 'string'],
+            'payments.*.card_scheme' => ['nullable', 'string'],
+            'payments.*.masked_card' => ['nullable', 'string'],
+            'payments.*.card_transaction_id' => ['nullable', 'string'],
         ];
     }
 }

@@ -33,6 +33,9 @@ Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
     Route::get('/sessions/{session}/x-report', [PosTerminalController::class, 'xReport'])->middleware('permission:pos.view_sessions');
     Route::get('/sessions/{session}/z-report', [PosTerminalController::class, 'zReport'])->middleware('permission:pos.shift_close');
 
+    // Customer-Facing Display (secondary screen mirror)
+    Route::get('/sessions/{session}/cfd-display', [PosTerminalController::class, 'cfdDisplay'])->middleware('permission:pos.view_sessions');
+
     // Transactions
     Route::get('/transactions', [PosTerminalController::class, 'transactions'])->middleware('permission:pos.sell');
     Route::post('/transactions', [PosTerminalController::class, 'createTransaction'])->middleware(['permission:pos.sell', 'plan.limit:transactions_per_month']);
@@ -42,6 +45,7 @@ Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
     Route::get('/transactions/{transaction}', [PosTerminalController::class, 'showTransaction'])->middleware('permission:pos.sell');
     Route::get('/transactions/{transaction}/receipt', [PosTerminalController::class, 'transactionReceipt'])->middleware('permission:pos.sell');
     Route::post('/transactions/{transaction}/void', [PosTerminalController::class, 'voidTransaction'])->middleware('permission:pos.void_transaction');
+    Route::get('/transactions/{transaction}/refund-methods', [PosTerminalController::class, 'refundMethods'])->middleware('permission:pos.return');
     Route::put('/transactions/{transaction}/notes', [PosTerminalController::class, 'updateTransactionNotes'])->middleware('permission:pos.edit_transaction');
     Route::post('/transactions/exchange', [PosTerminalController::class, 'exchangeTransaction'])->middleware('permission:pos.return');
 

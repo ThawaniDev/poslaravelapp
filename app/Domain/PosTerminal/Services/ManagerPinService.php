@@ -89,4 +89,19 @@ class ManagerPinService
         }
         return $payload['approver_id'] ?? null;
     }
+
+    /**
+     * Look at an approval token without consuming it. Use this when the
+     * caller needs to validate the gate (e.g. discount > threshold) before
+     * deciding whether to actually consume. Returns null on miss/mismatch.
+     */
+    public static function peek(string $token, ?string $expectedAction = null): ?string
+    {
+        $payload = Cache::get(self::PREFIX . $token);
+        if (!$payload) return null;
+        if ($expectedAction !== null && ($payload['action'] ?? null) !== $expectedAction) {
+            return null;
+        }
+        return $payload['approver_id'] ?? null;
+    }
 }

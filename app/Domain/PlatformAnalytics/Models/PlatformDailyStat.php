@@ -26,14 +26,26 @@ class PlatformDailyStat extends Model
         'arr',
         'avg_revenue_per_store',
         'refund_count',
+        // SoftPOS revenue columns
+        'softpos_transaction_count',
+        'softpos_volume',
+        'softpos_platform_fees',
+        'softpos_gateway_fees',
+        'softpos_margin',
     ];
 
     protected $casts = [
-        'total_gmv'            => 'decimal:2',
-        'total_mrr'            => 'decimal:2',
-        'arr'                  => 'decimal:2',
-        'avg_revenue_per_store' => 'decimal:2',
-        'date'                 => 'date',
+        'total_gmv'                 => 'decimal:2',
+        'total_mrr'                 => 'decimal:2',
+        'arr'                       => 'decimal:2',
+        'avg_revenue_per_store'     => 'decimal:2',
+        'date'                      => 'date',
+        // SoftPOS
+        'softpos_transaction_count' => 'integer',
+        'softpos_volume'            => 'decimal:3',
+        'softpos_platform_fees'     => 'decimal:3',
+        'softpos_gateway_fees'      => 'decimal:3',
+        'softpos_margin'            => 'decimal:3',
     ];
 
     public function setDateAttribute($value): void

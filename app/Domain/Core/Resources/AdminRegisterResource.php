@@ -27,9 +27,11 @@ class AdminRegisterResource extends JsonResource
             'is_active'    => (bool) $this->is_active,
 
             // SoftPOS core
-            'softpos_enabled'   => (bool) $this->softpos_enabled,
-            'nearpay_tid'       => $this->nearpay_tid,
-            'nearpay_mid'       => $this->nearpay_mid,
+            'softpos_enabled'          => (bool) $this->softpos_enabled,
+            'nearpay_tid'              => $this->nearpay_tid,
+            'nearpay_mid'              => $this->nearpay_mid,
+            'edfapay_token'            => $this->edfapay_token,
+            'edfapay_token_updated_at' => $this->edfapay_token_updated_at?->toISOString(),
             // nearpay_auth_key is hidden ($hidden on model) — never exposed
 
             // Acquirer
@@ -51,17 +53,44 @@ class AdminRegisterResource extends JsonResource
             'wameed_margin_percentage' => (float) $this->wameed_margin_percentage,
             'fee_description'          => $this->fee_description,
 
+            // Bilateral SoftPOS billing rates (full breakdown — admin only)
+            'softpos_billing' => [
+                // Mada — percentage-based
+                'mada_merchant_rate'      => (float) ($this->softpos_mada_merchant_rate ?? 0.006),
+                'mada_gateway_rate'       => (float) ($this->softpos_mada_gateway_rate  ?? 0.004),
+                'mada_margin_rate'        => round(
+                    (float) ($this->softpos_mada_merchant_rate ?? 0.006) -
+                    (float) ($this->softpos_mada_gateway_rate  ?? 0.004),
+                    6
+                ),
+                'mada_merchant_rate_pct'  => round((float) ($this->softpos_mada_merchant_rate ?? 0.006) * 100, 4),
+                'mada_gateway_rate_pct'   => round((float) ($this->softpos_mada_gateway_rate  ?? 0.004) * 100, 4),
+                'mada_margin_rate_pct'    => round((
+                    (float) ($this->softpos_mada_merchant_rate ?? 0.006) -
+                    (float) ($this->softpos_mada_gateway_rate  ?? 0.004)
+                ) * 100, 4),
+                // Visa / Mastercard — fixed per transaction
+                'card_merchant_fee'       => (float) ($this->softpos_card_merchant_fee ?? 1.000),
+                'card_gateway_fee'        => (float) ($this->softpos_card_gateway_fee  ?? 0.500),
+                'card_margin_fee'         => round(
+                    (float) ($this->softpos_card_merchant_fee ?? 1.000) -
+                    (float) ($this->softpos_card_gateway_fee  ?? 0.500),
+                    3
+                ),
+            ],
+
             // Settlement
             'settlement_cycle'     => $this->settlement_cycle,
             'settlement_bank_name' => $this->settlement_bank_name,
             'settlement_iban'      => $this->settlement_iban,
 
             // Status
-            'softpos_status'       => $this->softpos_status,
-            'softpos_activated_at' => $this->softpos_activated_at?->toISOString(),
-            'last_transaction_at'  => $this->last_transaction_at?->toISOString(),
-            'is_softpos_ready'     => $this->is_softpos_ready,
-            'admin_notes'          => $this->admin_notes,
+            'softpos_status'           => $this->softpos_status,
+            'softpos_activated_at'     => $this->softpos_activated_at?->toISOString(),
+            'edfapay_token_updated_at' => $this->edfapay_token_updated_at?->toISOString(),
+            'last_transaction_at'      => $this->last_transaction_at?->toISOString(),
+            'is_softpos_ready'         => $this->is_softpos_ready,
+            'admin_notes'              => $this->admin_notes,
 
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),

@@ -27,6 +27,8 @@ class TransactionResource extends JsonResource
             'total_amount' => (float) $this->total_amount,
             'is_tax_exempt' => (bool) $this->is_tax_exempt,
             'return_transaction_id' => $this->return_transaction_id,
+            'tab_id' => $this->tab_id,
+            'approver_id' => $this->approver_id,
             'notes' => $this->notes,
             'sync_version' => $this->sync_version,
             'zatca_uuid' => $this->zatca_uuid,

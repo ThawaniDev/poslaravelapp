@@ -299,7 +299,7 @@ class DeliveryController extends BaseApiController
                 ];
             });
 
-        return response()->json(['data' => $platforms]);
+        return response()->json(['success' => true, 'data' => $platforms]);
     }
 
     /**

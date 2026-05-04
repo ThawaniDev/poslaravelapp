@@ -77,6 +77,19 @@ class StoreSettings extends Model
         // Customer display
         'enable_customer_display',
         'customer_display_message',
+        // Manager-PIN gate threshold (% above which PIN is required for discount)
+        'discount_pin_threshold_percent',
+        // Tip presets shown on payment screen
+        'tip_presets',
+        'tip_default_preset_index',
+        // Customer-facing display (CFD) configuration
+        'cfd_enabled',
+        'cfd_idle_layout',
+        'cfd_cart_layout',
+        'cfd_welcome_message',
+        'cfd_welcome_message_ar',
+        'cfd_logo_url',
+        'cfd_show_promotions',
         // Extra
         'extra',
     ];
@@ -117,6 +130,11 @@ class StoreSettings extends Model
         'auto_deduct_ingredients' => 'boolean',
         'enable_customer_display' => 'boolean',
         'low_stock_threshold' => 'integer',
+        'discount_pin_threshold_percent' => 'integer',
+        'tip_presets' => 'array',
+        'tip_default_preset_index' => 'integer',
+        'cfd_enabled' => 'boolean',
+        'cfd_show_promotions' => 'boolean',
         'extra' => 'array',
     ];
 

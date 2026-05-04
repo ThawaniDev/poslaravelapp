@@ -29,6 +29,7 @@ class StoreRegisterRequest extends FormRequest
             'softpos_enabled' => ['nullable', 'boolean'],
             'nearpay_tid'     => ['nullable', 'string', 'max:50'],
             'nearpay_mid'     => ['nullable', 'string', 'max:50'],
+            'edfapay_token'   => ['nullable', 'string', 'max:500'],
 
             // Acquirer
             'acquirer_source'    => ['nullable', 'string', 'in:hala,bank_rajhi,bank_snb,geidea,other'],

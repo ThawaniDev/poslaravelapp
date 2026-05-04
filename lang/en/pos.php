@@ -117,6 +117,10 @@ return [
     // Settings enforcement
     'customer_required_for_sale' => 'A customer must be selected to complete this sale.',
     'discount_exceeds_maximum' => 'Discount cannot exceed :max%.',
+    'discount_requires_manager_pin' => 'A manager PIN is required to apply a discount above the configured threshold.',
+    'tax_exempt_requires_manager_pin' => 'A manager PIN is required to mark a sale tax-exempt.',
+    'void_requires_manager_pin' => 'A manager PIN is required to void this transaction.',
+    'invalid_manager_pin_token' => 'The manager PIN approval has expired or is invalid for this action. Please re-verify.',
     'insufficient_stock' => 'Insufficient stock for :product. Available: :available, Requested: :requested.',
     'refunds_disabled' => 'Refunds are disabled for this store.',
     'return_without_receipt_denied' => 'Returns without an original receipt are not allowed at this store.',

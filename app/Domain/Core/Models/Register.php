@@ -31,6 +31,8 @@ class Register extends Model
         'nearpay_tid',
         'nearpay_mid',
         'nearpay_auth_key',
+        'edfapay_token',
+        'edfapay_token_updated_at',
         // Acquirer
         'acquirer_source',
         'acquirer_name',
@@ -46,6 +48,11 @@ class Register extends Model
         'fee_visa_mc_percentage',
         'fee_flat_per_txn',
         'wameed_margin_percentage',
+        // SoftPOS billing rates (bilateral: merchant-facing + gateway-facing)
+        'softpos_mada_merchant_rate',
+        'softpos_mada_gateway_rate',
+        'softpos_card_merchant_fee',
+        'softpos_card_gateway_fee',
         // Settlement
         'settlement_cycle',
         'settlement_bank_name',
@@ -68,12 +75,19 @@ class Register extends Model
         'fee_visa_mc_percentage' => 'decimal:4',
         'fee_flat_per_txn'       => 'decimal:2',
         'wameed_margin_percentage' => 'decimal:4',
-        'softpos_activated_at'   => 'datetime',
-        'last_transaction_at'    => 'datetime',
+        'softpos_mada_merchant_rate' => 'decimal:6',
+        'softpos_mada_gateway_rate'  => 'decimal:6',
+        'softpos_card_merchant_fee'  => 'decimal:3',
+        'softpos_card_gateway_fee'   => 'decimal:3',
+        'softpos_activated_at'      => 'datetime',
+        'last_transaction_at'       => 'datetime',
+        'edfapay_token'             => 'encrypted',
+        'edfapay_token_updated_at'  => 'datetime',
     ];
 
     protected $hidden = [
         'nearpay_auth_key',
+        'edfapay_token',
     ];
 
     public function store(): BelongsTo

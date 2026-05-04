@@ -21,6 +21,10 @@ use App\Domain\PosTerminal\Models\Transaction;
 use App\Domain\PosTerminal\Models\TransactionAuditLog;
 use App\Domain\PosTerminal\Models\TransactionItem;
 use App\Domain\PosTerminal\Models\PosSession;
+use App\Domain\Core\Models\Register;
+use App\Domain\PlatformAnalytics\Models\PlatformDailyStat;
+use App\Domain\ProviderSubscription\Services\SoftPosFeeService;
+use App\Domain\ProviderSubscription\Services\SoftPosService;
 use App\Domain\Report\Models\DailySalesSummary;
 use App\Domain\Report\Models\ProductSalesSummary;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -74,6 +78,17 @@ class TransactionService
     public function create(array $data, User $actor): Transaction
     {
         return DB::transaction(function () use ($data, $actor) {
+            // Idempotency: if a client-side key is provided, return the existing
+            // transaction rather than creating a duplicate (e.g. after offline retry).
+            if (!empty($data['idempotency_key'])) {
+                $existing = Transaction::where('store_id', $actor->store_id)
+                    ->where('idempotency_key', $data['idempotency_key'])
+                    ->first();
+                if ($existing) {
+                    return $existing->load(['transactionItems', 'payments']);
+                }
+            }
+
             // Load store settings for enforcement
             $settings = StoreSettings::where('store_id', $actor->store_id)->first();
 
@@ -122,10 +137,71 @@ class TransactionService
             // see ManagerPinService). Required for elevated actions when the
             // store enforces them; here we just record the approver if present.
             $approverId = null;
+            $approvedAction = null;
             if (!empty($data['approval_token'])) {
-                $approverId = \App\Domain\PosTerminal\Services\ManagerPinService::consume(
+                // First try action-bound consume so we can record exactly
+                // which gate the manager approved. Falls back to action=null
+                // for backward compatibility with older clients.
+                foreach (['discount', 'tax_exempt', 'price_override', 'refund'] as $candidate) {
+                    $approverId = \App\Domain\PosTerminal\Services\ManagerPinService::peek(
+                        $data['approval_token'],
+                        $candidate,
+                    );
+                    if ($approverId) {
+                        $approvedAction = $candidate;
+                        break;
+                    }
+                }
+                if (!$approverId) {
+                    // Legacy fallback: token without action binding.
+                    $approverId = \App\Domain\PosTerminal\Services\ManagerPinService::peek(
+                        $data['approval_token'],
+                        null,
+                    );
+                }
+            }
+
+            // ── Manager-PIN gate enforcement ────────────────────────────
+            // Discount above the configured threshold requires a manager PIN
+            // when `require_manager_for_discount` is set. The PIN may have
+            // been pre-verified through POST /pos/auth/verify-pin and posted
+            // back as `approval_token`. We accept either a discount-bound or
+            // a generic legacy token to ease rollout.
+            $subtotalForPct = (float) ($data['subtotal'] ?? 0);
+            $discountAmt = (float) ($data['discount_amount'] ?? 0);
+            $discountPct = $subtotalForPct > 0 ? ($discountAmt / $subtotalForPct) * 100 : 0;
+            // Aggregate per-item discounts as well so a cashier can't bypass
+            // the gate by spreading large discounts line-by-line.
+            $itemDiscountSum = 0;
+            foreach ($data['items'] ?? [] as $row) {
+                $itemDiscountSum += (float) ($row['discount_amount'] ?? 0);
+            }
+            $effectiveDiscount = max($discountAmt, $itemDiscountSum);
+            $effectivePct = $subtotalForPct > 0 ? ($effectiveDiscount / $subtotalForPct) * 100 : 0;
+            $threshold = (int) ($settings->discount_pin_threshold_percent ?? 0);
+            if ($settings && $settings->require_manager_for_discount && $effectivePct > $threshold) {
+                if (!$approverId) {
+                    throw new \RuntimeException(__('pos.discount_requires_manager_pin'));
+                }
+            }
+
+            // Tax-exempt sales require a manager PIN when the store opts in
+            // via `require_manager_for_discount` (the same approval policy
+            // applies to high-impact, tax-affecting actions). Stores that
+            // never want this gate simply leave the flag off.
+            if ($isExemptRequest = (bool) ($data['is_tax_exempt'] ?? false)) {
+                $requiresPinForExempt = (bool) ($settings?->require_manager_for_discount ?? false)
+                    && !($settings?->getExtra('tax_exempt_no_pin', false));
+                if ($requiresPinForExempt && !$approverId) {
+                    throw new \RuntimeException(__('pos.tax_exempt_requires_manager_pin'));
+                }
+            }
+
+            // Now consume (one-time-use) the token to prevent replay.
+            if ($approverId && !empty($data['approval_token'])) {
+                \App\Domain\PosTerminal\Services\ManagerPinService::consume(
                     $data['approval_token'],
-                    null,
+                    $approvedAction,
                 );
             }
 
@@ -137,6 +213,7 @@ class TransactionService
                 'cashier_id' => $actor->id,
                 'customer_id' => $data['customer_id'] ?? null,
                 'transaction_number' => $data['transaction_number'] ?? $this->generateNumber($actor->store_id, $registerId),
+                'idempotency_key' => $data['idempotency_key'] ?? null,
                 'type' => $data['type'] ?? TransactionType::Sale->value,
                 'status' => $data['status'] ?? TransactionStatus::Completed->value,
                 'subtotal' => $data['subtotal'] ?? 0,
@@ -146,6 +223,7 @@ class TransactionService
                 'total_amount' => $data['total_amount'] ?? 0,
                 'is_tax_exempt' => $data['is_tax_exempt'] ?? false,
                 'return_transaction_id' => $data['return_transaction_id'] ?? null,
+                'tab_id' => $data['tab_id'] ?? null,
                 'external_id' => $data['external_id'] ?? null,
                 'external_type' => $data['external_type'] ?? null,
                 'notes' => $data['notes'] ?? null,
@@ -161,6 +239,9 @@ class TransactionService
             if ($sessionId === null) {
                 unset($txPayload['pos_session_id']);
             }
+            if (($txPayload['tab_id'] ?? null) === null) {
+                unset($txPayload['tab_id']);
+            }
             $transaction = Transaction::create($txPayload);
 
             // Create transaction items
@@ -168,6 +249,19 @@ class TransactionService
             if (!empty($data['items'])) {
                 foreach ($data['items'] as $item) {
                     $ageVerified = (bool) ($item['age_verified'] ?? false);
+                    // Compute total price impact of selected modifiers (sum of
+                    // price_adjustment * quantity) so the line and the receipt
+                    // remain auditable even if the option is later edited.
+                    $modifierSelections = $item['modifier_selections'] ?? null;
+                    $modifierTotal = 0;
+                    if (is_array($modifierSelections)) {
+                        foreach ($modifierSelections as $mod) {
+                            $price = (float) ($mod['price_adjustment'] ?? 0);
+                            $qty = (int) ($mod['quantity'] ?? 1);
+                            $modifierTotal += $price * max(1, $qty);
+                        }
+                        $modifierTotal *= (float) ($item['quantity'] ?? 1);
+                    }
                     $itemPayload = [
                         'transaction_id' => $transaction->id,
                         'product_id' => $item['product_id'] ?? null,
@@ -188,9 +282,15 @@ class TransactionService
                         'age_verified' => $ageVerified,
                         'age_verified_at' => $ageVerified ? now() : null,
                         'age_verified_by' => $ageVerified ? $actor->id : null,
+                        'modifier_selections' => $modifierSelections,
+                        'modifier_total' => $modifierTotal,
+                        'item_notes' => $item['item_notes'] ?? null,
                     ];
                     if ($itemPayload['product_id'] === null) {
                         unset($itemPayload['product_id']);
+                    }
+                    if ($modifierSelections === null) {
+                        unset($itemPayload['modifier_selections']);
                     }
                     TransactionItem::create($itemPayload);
                 }
@@ -217,12 +317,27 @@ class TransactionService
             if (!empty($data['payments'])) {
                 foreach ($data['payments'] as $payment) {
                     $paymentData = [
-                        'transaction_id' => $transaction->id,
-                        'method' => $payment['method'],
-                        'amount' => $payment['amount'],
-                        'tip_amount' => $payment['tip_amount'] ?? 0,
+                        'transaction_id'     => $transaction->id,
+                        'method'             => $payment['method'],
+                        'amount'             => $payment['amount'],
+                        'tip_amount'         => $payment['tip_amount'] ?? 0,
                         'loyalty_points_used' => $payment['loyalty_points_used'] ?? 0,
                     ];
+
+                    // Normalise EdfaPay SoftPOS field names to our DB column names
+                    // (Flutter sends approval_code/rrn/card_scheme/masked_card)
+                    if (($payment['method'] ?? '') === 'soft_pos') {
+                        $payment['card_auth_code'] = $payment['approval_code']      ?? $payment['card_auth_code']  ?? null;
+                        $payment['card_reference'] = $payment['rrn']                ?? $payment['card_transaction_id'] ?? $payment['card_reference'] ?? null;
+                        $payment['card_brand']     = $payment['card_scheme']        ?? $payment['card_brand']      ?? null;
+                        // card_last_four is VARCHAR(4) — extract last 4 digits from masked card
+                        if (!empty($payment['masked_card'])) {
+                            $digits = preg_replace('/\D/', '', $payment['masked_card']);
+                            $payment['card_last_four'] = strlen($digits) >= 4 ? substr($digits, -4) : ($payment['card_last_four'] ?? null);
+                        } else {
+                            $payment['card_last_four'] = $payment['card_last_four'] ?? null;
+                        }
+                    }
 
                     // Only set nullable fields if provided
                     foreach (['cash_tendered', 'change_given', 'card_brand', 'card_last_four', 'card_auth_code', 'card_reference', 'gift_card_code', 'coupon_code'] as $field) {
@@ -232,6 +347,71 @@ class TransactionService
                     }
 
                     Payment::create($paymentData);
+                }
+            }
+
+            // Record SoftPOS transaction + calculate bilateral fees for revenue tracking
+            if ($isSale) {
+                $softPosPayment = collect($data['payments'] ?? [])
+                    ->first(fn ($p) => ($p['method'] ?? '') === 'soft_pos');
+                if ($softPosPayment) {
+                    try {
+                        $orgId  = $transaction->store->organization_id ?? null;
+                        $txnAmt = (float) ($softPosPayment['amount'] ?? 0);
+                        $scheme = $softPosPayment['card_scheme'] ?? $softPosPayment['card_brand'] ?? null;
+
+                        // ── Calculate bilateral fees from terminal config ──────
+                        $fees = ['platform_fee' => 0.0, 'gateway_fee' => 0.0, 'margin' => 0.0, 'fee_type' => 'percentage'];
+                        if ($transaction->register_id) {
+                            $register = Register::find($transaction->register_id);
+                            if ($register) {
+                                $fees = app(SoftPosFeeService::class)->calculateFromRegister(
+                                    amount:     $txnAmt,
+                                    cardScheme: $scheme,
+                                    register:   $register,
+                                );
+                            }
+                        }
+
+                        if ($orgId) {
+                            app(SoftPosService::class)->recordTransaction(
+                                organizationId: $orgId,
+                                amount:         $txnAmt,
+                                storeId:        $transaction->store_id,
+                                orderId:        $transaction->id,
+                                transactionRef: $softPosPayment['rrn'] ?? $softPosPayment['card_reference'] ?? null,
+                                paymentMethod:  $scheme,
+                                terminalId:     $transaction->register_id,
+                                metadata: [
+                                    'approval_code'  => $softPosPayment['approval_code']      ?? $softPosPayment['card_auth_code'] ?? null,
+                                    'masked_card'    => $softPosPayment['masked_card']         ?? $softPosPayment['card_last_four'] ?? null,
+                                    'transaction_id' => $softPosPayment['card_transaction_id'] ?? null,
+                                ],
+                                platformFee: $fees['platform_fee'],
+                                gatewayFee:  $fees['gateway_fee'],
+                                margin:      $fees['margin'],
+                                feeType:     $fees['fee_type'],
+                            );
+                        }
+
+                        // ── Push margin to platform_daily_stats ───────────────
+                        $today = now()->toDateString();
+                        PlatformDailyStat::firstOrCreate(['date' => $today]);
+                        PlatformDailyStat::where('date', $today)->update([
+                            'softpos_transaction_count' => DB::raw('softpos_transaction_count + 1'),
+                            'softpos_volume'            => DB::raw('softpos_volume + '         . $txnAmt),
+                            'softpos_platform_fees'     => DB::raw('softpos_platform_fees + '  . $fees['platform_fee']),
+                            'softpos_gateway_fees'      => DB::raw('softpos_gateway_fees + '   . $fees['gateway_fee']),
+                            'softpos_margin'            => DB::raw('softpos_margin + '          . $fees['margin']),
+                        ]);
+
+                    } catch (\Throwable $e) {
+                        // Non-critical: log but don't fail the transaction
+                        \Illuminate\Support\Facades\Log::warning('SoftPOS fee/counter update failed', [
+                            'transaction_id' => $transaction->id,
+                            'error'          => $e->getMessage(),
+                        ]);
+                    }
                 }
             }
 
@@ -295,8 +475,49 @@ class TransactionService
                 $this->refundLoyaltyPoints($transaction, $actor);
             }
 
+            // Auto-close any open tab linked to this completed sale, freeing
+            // the table and stamping the tab with the settling transaction.
+            // Skipped on returns/voids to keep the tab history accurate.
+            if ($isSale && !empty($transaction->tab_id)) {
+                $this->settleOpenTab($transaction);
+            }
+
             return $transaction->load(['transactionItems', 'payments']);
         });
+    }
+
+    /**
+     * Close an open tab once a sale has settled it. Idempotent: only acts
+     * on tabs currently in `open` status. Releases the table the tab was
+     * attached to (status -> available, current_order_id -> null).
+     */
+    private function settleOpenTab(Transaction $transaction): void
+    {
+        try {
+            $tab = \App\Domain\IndustryRestaurant\Models\OpenTab::where('store_id', $transaction->store_id)
+                ->where('id', $transaction->tab_id)
+                ->first();
+            if (!$tab || $tab->status === 'closed') {
+                return;
+            }
+            $tab->update([
+                'status' => 'closed',
+                'closed_at' => now(),
+                'transaction_id' => $transaction->id,
+                'running_total' => (float) $transaction->total_amount,
+            ]);
+            if ($tab->table_id) {
+                \App\Domain\IndustryRestaurant\Models\RestaurantTable::where('id', $tab->table_id)
+                    ->where('store_id', $transaction->store_id)
+                    ->update([
+                        'status' => 'available',
+                        'current_order_id' => null,
+                    ]);
+            }
+        } catch (\Throwable $e) {
+            // Tab tables are restaurant-only; silently no-op when migrations
+            // for the restaurant feature haven't been run on this tenant.
+        }
     }
 
     public function createReturn(array $data, User $actor): Transaction
@@ -487,7 +708,10 @@ class TransactionService
 
             if ($method === 'cash') {
                 $session->increment('total_cash_sales', $amount);
-            } elseif (str_starts_with($method, 'card') || $method === 'mada' || $method === 'apple_pay') {
+            } elseif ($method === 'soft_pos') {
+                $session->increment('total_card_sales', $amount);
+                $session->increment('total_softpos_sales', $amount);
+            } elseif (str_starts_with($method, 'card') || in_array($method, ['mada', 'apple_pay'])) {
                 $session->increment('total_card_sales', $amount);
             } else {
                 $session->increment('total_other_sales', $amount);
@@ -509,7 +733,10 @@ class TransactionService
 
             if ($method === 'cash') {
                 $session->decrement('total_cash_sales', $amount);
-            } elseif (str_starts_with($method, 'card') || $method === 'mada' || $method === 'apple_pay') {
+            } elseif ($method === 'soft_pos') {
+                $session->decrement('total_card_sales', $amount);
+                $session->decrement('total_softpos_sales', $amount);
+            } elseif (str_starts_with($method, 'card') || in_array($method, ['mada', 'apple_pay'])) {
                 $session->decrement('total_card_sales', $amount);
             } else {
                 $session->decrement('total_other_sales', $amount);
@@ -536,7 +763,7 @@ class TransactionService
             $method = $payment->method;
             if ($method === 'cash') {
                 $cashRevenue += $amount;
-            } elseif (in_array($method, ['card', 'mada', 'apple_pay', 'visa', 'mastercard'])) {
+            } elseif (in_array($method, ['card', 'mada', 'apple_pay', 'soft_pos', 'visa', 'mastercard'])) {
                 $cardRevenue += $amount;
             } else {
                 $otherRevenue += $amount;
@@ -639,7 +866,7 @@ class TransactionService
             $method = $payment->method;
             if ($method === 'cash') {
                 $cashRevenue += $amount;
-            } elseif (in_array($method, ['card', 'mada', 'apple_pay', 'visa', 'mastercard'])) {
+            } elseif (in_array($method, ['card', 'mada', 'apple_pay', 'soft_pos', 'visa', 'mastercard'])) {
                 $cardRevenue += $amount;
             } else {
                 $otherRevenue += $amount;

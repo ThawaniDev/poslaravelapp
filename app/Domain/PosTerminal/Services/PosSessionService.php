@@ -82,6 +82,7 @@ class PosSessionService
             'opening_cash' => $data['opening_cash'] ?? 0,
             'total_cash_sales' => 0,
             'total_card_sales' => 0,
+            'total_softpos_sales' => 0,
             'total_other_sales' => 0,
             'total_refunds' => 0,
             'total_voids' => 0,
@@ -199,6 +200,7 @@ class PosSessionService
                 'session_count' => $group->count(),
                 'total_cash_sales' => (float) $group->sum('total_cash_sales'),
                 'total_card_sales' => (float) $group->sum('total_card_sales'),
+                'total_softpos_sales' => (float) $group->sum('total_softpos_sales'),
                 'total_other_sales' => (float) $group->sum('total_other_sales'),
                 'total_refunds' => (float) $group->sum('total_refunds'),
                 'transaction_count' => (int) $group->sum('transaction_count'),
@@ -225,6 +227,7 @@ class PosSessionService
             'totals' => [
                 'cash_sales' => (float) $sessions->sum('total_cash_sales'),
                 'card_sales' => (float) $sessions->sum('total_card_sales'),
+                'softpos_sales' => (float) $sessions->sum('total_softpos_sales'),
                 'other_sales' => (float) $sessions->sum('total_other_sales'),
                 'refunds' => (float) $sessions->sum('total_refunds'),
                 'voids' => (float) $sessions->sum('total_voids'),
@@ -358,6 +361,7 @@ class PosSessionService
                 'net_sales' => (float) $sales->sum('total_amount') - (float) $returns->sum('total_amount'),
             ],
             'payment_breakdown' => $paymentBreakdown,
+            'softpos_sales' => (float) $session->total_softpos_sales,
             'cash_drawer' => [
                 'opening_cash' => (float) $session->opening_cash,
                 'cash_sales_net' => (float) $session->total_cash_sales,

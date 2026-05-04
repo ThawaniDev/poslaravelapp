@@ -133,6 +133,7 @@ class OnboardingController extends BaseApiController
 
         if ($dbSteps->isNotEmpty()) {
             $steps = $dbSteps->map(fn ($step) => [
+                'key'            => \Illuminate\Support\Str::slug($step->title, '_'),
                 'order'          => (int) $step->sort_order,
                 'step_number'    => (int) $step->step_number,
                 'label_en'       => $step->title,
@@ -144,6 +145,7 @@ class OnboardingController extends BaseApiController
         } else {
             // Fallback: use hardcoded STEP_ORDER if no DB records
             $steps = collect(OnboardingService::STEP_ORDER)->map(fn ($step, $i) => [
+                'key'            => $step,
                 'order'          => $i,
                 'step_number'    => $i + 1,
                 'label_en'       => $this->stepLabel($step, 'en'),

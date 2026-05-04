@@ -345,11 +345,13 @@ class IndustryWorkflowApiTest extends TestCase
             id VARCHAR(36) PRIMARY KEY,
             store_id VARCHAR(36) NOT NULL,
             order_id VARCHAR(36),
+            transaction_id VARCHAR(36),
             customer_name VARCHAR(255),
             table_id VARCHAR(36),
             opened_at TIMESTAMP,
             closed_at TIMESTAMP,
             status VARCHAR(10) NOT NULL DEFAULT \'open\',
+            running_total DECIMAL(12,2) NOT NULL DEFAULT 0,
             created_at TIMESTAMP,
             updated_at TIMESTAMP
         )');

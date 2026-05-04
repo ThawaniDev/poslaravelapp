@@ -13,6 +13,11 @@ class SoftPosService
 {
     /**
      * Record a SoftPOS transaction and check if the store qualifies for free subscription.
+     *
+     * @param  float  $platformFee   Amount charged to the merchant for this transaction.
+     * @param  float  $gatewayFee    Amount paid to the payment gateway.
+     * @param  float  $margin        Platform net margin (platformFee − gatewayFee).
+     * @param  string $feeType       'percentage' | 'fixed'
      */
     public function recordTransaction(
         string $organizationId,
@@ -23,20 +28,29 @@ class SoftPosService
         ?string $paymentMethod = null,
         ?string $terminalId = null,
         array $metadata = [],
+        float $platformFee = 0.0,
+        float $gatewayFee = 0.0,
+        float $margin = 0.0,
+        string $feeType = 'percentage',
     ): SoftPosTransaction {
         return DB::transaction(function () use (
-            $organizationId, $amount, $storeId, $orderId, $transactionRef, $paymentMethod, $terminalId, $metadata
+            $organizationId, $amount, $storeId, $orderId, $transactionRef, $paymentMethod, $terminalId, $metadata,
+            $platformFee, $gatewayFee, $margin, $feeType
         ) {
             $transaction = SoftPosTransaction::create([
                 'organization_id' => $organizationId,
-                'store_id' => $storeId,
-                'order_id' => $orderId,
-                'amount' => $amount,
+                'store_id'        => $storeId,
+                'order_id'        => $orderId,
+                'amount'          => $amount,
+                'platform_fee'    => $platformFee,
+                'gateway_fee'     => $gatewayFee,
+                'margin'          => $margin,
+                'fee_type'        => $feeType,
                 'transaction_ref' => $transactionRef,
-                'payment_method' => $paymentMethod,
-                'terminal_id' => $terminalId,
-                'status' => 'completed',
-                'metadata' => $metadata,
+                'payment_method'  => $paymentMethod,
+                'terminal_id'     => $terminalId,
+                'status'          => 'completed',
+                'metadata'        => $metadata,
             ]);
 
             // Increment the subscription's softPOS counter and check threshold

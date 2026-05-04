@@ -194,11 +194,86 @@ public function showSession(Request $request, string $session): JsonResponse
     public function voidTransaction(VoidTransactionRequest $request, string $transaction): JsonResponse
     {
         try {
-            $found = $this->transactionService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $transaction);
+            $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+            $found = $this->transactionService->find($storeId, $transaction);
+
+            // Manager-PIN gate: a void requires manager approval whenever
+            // store_settings.require_manager_for_refund is enabled. The PIN
+            // must have been pre-verified via /pos/auth/verify-pin with
+            // action='void' and the resulting token posted back here. We
+            // validate (peek) first, then consume on success so the token
+            // burns exactly once.
+            $settings = \App\Domain\Core\Models\StoreSettings::where('store_id', $storeId)->first();
+            if ($settings && $settings->require_manager_for_refund) {
+                $token = $request->validated('approval_token');
+                if (!$token) {
+                    return $this->error(__('pos.void_requires_manager_pin'), 422);
+                }
+                $approverId = \App\Domain\PosTerminal\Services\ManagerPinService::peek($token, 'void');
+                if (!$approverId) {
+                    return $this->error(__('pos.invalid_manager_pin_token'), 422);
+                }
+                // Burn the token now so it can't be replayed.
+                \App\Domain\PosTerminal\Services\ManagerPinService::consume($token, 'void');
+                $found->approver_id = $approverId;
+                $found->save();
+            }
+
             $voided = $this->transactionService->void($found, $request->user(), $request->validated('reason'));
             return $this->success(new TransactionResource($voided));
         } catch (\RuntimeException $e) {
             return $this->error($e->getMessage(), 422);
+        }
+    }
+
+    /**
+     * Suggested refund payment-method split based on the original sale's
+     * payments. The Flutter return dialog calls this to pre-fill the
+     * payments[] array proportionally to how the customer originally paid.
+     */
+    public function refundMethods(\Illuminate\Http\Request $request, string $transaction): JsonResponse
+    {
+        try {
+            $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+            $original = $this->transactionService->find($storeId, $transaction);
+
+            $totalPaid = (float) $original->payments->sum('amount');
+            // The refund total defaults to the original amount but the
+            // client may pass `?amount=` to compute a partial refund split.
+            $refundAmount = (float) $request->query('amount', (string) $original->total_amount);
+            if ($refundAmount <= 0) {
+                return $this->success(['suggested' => []]);
+            }
+
+            $suggested = [];
+            if ($totalPaid <= 0) {
+                $suggested[] = ['method' => 'cash', 'amount' => round($refundAmount, 3)];
+            } else {
+                $remaining = $refundAmount;
+                $payments = $original->payments->sortByDesc('amount')->values();
+                foreach ($payments as $i => $payment) {
+                    $share = (float) $payment->amount / $totalPaid;
+                    $isLast = $i === $payments->count() - 1;
+                    $alloc = $isLast ? $remaining : round($refundAmount * $share, 3);
+                    if ($alloc <= 0) continue;
+                    $suggested[] = [
+                        'method' => $payment->method,
+                        'amount' => $alloc,
+                        'card_last_four' => $payment->card_last_four,
+                        'gift_card_code' => $payment->gift_card_code,
+                    ];
+                    $remaining -= $alloc;
+                }
+            }
+
+            return $this->success([
+                'transaction_id' => $original->id,
+                'transaction_number' => $original->transaction_number,
+                'refund_amount' => round($refundAmount, 3),
+                'suggested' => $suggested,
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->notFound(__('pos.transaction_not_found'));
         }
     }
 
@@ -381,6 +456,108 @@ public function showSession(Request $request, string $session): JsonResponse
     {
         $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
         return $this->success($this->sessionService->zReport($found));
+    }
+
+    // ─── Customer-Facing Display ─────────────────────────────
+
+    /**
+     * Live state for the Customer-Facing Display (secondary screen attached
+     * to the POS register). Returns the active held cart for the session,
+     * the store's CFD theme/layout configuration, and (optionally) running
+     * promotions to surface in idle mode.
+     *
+     * The CFD device polls this endpoint every ~2 s, or subscribes via
+     * WebSocket when available, to mirror what the cashier sees.
+     */
+    public function cfdDisplay(Request $request, string $session): JsonResponse
+    {
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $found = $this->sessionService->find($session, $storeId);
+
+        $settings = \App\Domain\Core\Models\StoreSettings::where('store_id', $storeId)->first();
+
+        // The cashier-side cart is captured to held_carts on every change
+        // (debounced) so we can render an authoritative view here. We pick
+        // the most recently updated non-recalled cart for this register so
+        // the CFD shows the same lines the cashier is editing.
+        $heldCart = \App\Domain\PosTerminal\Models\HeldCart::query()
+            ->where('store_id', $storeId)
+            ->when($found->register_id, fn ($q) => $q->where('register_id', $found->register_id))
+            ->whereNull('recalled_at')
+            ->orderByDesc('held_at')
+            ->first();
+
+        // Most recently completed sale on the same session — useful so the
+        // CFD can show the change-due / receipt summary right after payment.
+        $lastTransaction = \App\Domain\PosTerminal\Models\Transaction::with(['transactionItems', 'payments'])
+            ->where('store_id', $storeId)
+            ->where('pos_session_id', $found->id)
+            ->where('status', \App\Domain\PosTerminal\Enums\TransactionStatus::Completed)
+            ->orderByDesc('created_at')
+            ->first();
+
+        $promotions = [];
+        if ($settings?->cfd_show_promotions) {
+            $promotions = \App\Domain\Promotion\Models\Promotion::query()
+                ->where('organization_id', $request->user()->organization_id)
+                ->where('is_active', true)
+                ->where(function ($q) {
+                    $q->whereNull('valid_from')->orWhereDate('valid_from', '<=', now());
+                })
+                ->where(function ($q) {
+                    $q->whereNull('valid_to')->orWhereDate('valid_to', '>=', now());
+                })
+                ->orderByDesc('created_at')
+                ->limit(5)
+                ->get(['id', 'name', 'description'])
+                ->map(fn ($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'description' => $p->description,
+                ])->all();
+        }
+
+        // Held-cart payload uses a single `cart_data` JSON blob containing
+        // the items + totals snapshot the cashier maintains client-side.
+        $cartPayload = null;
+        if ($heldCart) {
+            $cd = is_array($heldCart->cart_data) ? $heldCart->cart_data : [];
+            $cartPayload = [
+                'id' => $heldCart->id,
+                'items' => $cd['items'] ?? [],
+                'subtotal' => (float) ($cd['subtotal'] ?? 0),
+                'discount' => (float) ($cd['discount_total'] ?? $cd['discount'] ?? 0),
+                'tax' => (float) ($cd['tax_total'] ?? $cd['tax'] ?? 0),
+                'total' => (float) ($cd['total'] ?? 0),
+                'updated_at' => $heldCart->held_at?->toIso8601String(),
+            ];
+        }
+
+        return $this->success([
+            'session_id' => $found->id,
+            'register_id' => $found->register_id,
+            'config' => [
+                'enabled' => (bool) ($settings?->cfd_enabled ?? false),
+                'idle_layout' => $settings?->cfd_idle_layout ?? 'logo',
+                'cart_layout' => $settings?->cfd_cart_layout ?? 'list',
+                'welcome_message' => $settings?->cfd_welcome_message,
+                'welcome_message_ar' => $settings?->cfd_welcome_message_ar,
+                'logo_url' => $settings?->cfd_logo_url,
+                'show_promotions' => (bool) ($settings?->cfd_show_promotions ?? true),
+                'currency_code' => $settings?->currency_code ?? 'SAR',
+                'currency_symbol' => $settings?->currency_symbol,
+                'decimal_places' => (int) ($settings?->decimal_places ?? 3),
+            ],
+            'cart' => $cartPayload,
+            'last_transaction' => $lastTransaction ? [
+                'id' => $lastTransaction->id,
+                'transaction_number' => $lastTransaction->transaction_number,
+                'total_amount' => (float) $lastTransaction->total_amount,
+                'change_given' => (float) $lastTransaction->payments->sum('change_given'),
+                'created_at' => $lastTransaction->created_at?->toIso8601String(),
+            ] : null,
+            'promotions' => $promotions,
+        ]);
     }
 
     // ─── Products (POS catalog) ──────────────────────────────

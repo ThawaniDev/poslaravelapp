@@ -23,6 +23,7 @@ class PosSessionResource extends JsonResource
             'cash_difference' => $this->cash_difference !== null ? (float) $this->cash_difference : null,
             'total_cash_sales' => (float) $this->total_cash_sales,
             'total_card_sales' => (float) $this->total_card_sales,
+            'total_softpos_sales' => (float) ($this->total_softpos_sales ?? 0),
             'total_other_sales' => (float) $this->total_other_sales,
             'total_refunds' => (float) $this->total_refunds,
             'total_voids' => (float) $this->total_voids,

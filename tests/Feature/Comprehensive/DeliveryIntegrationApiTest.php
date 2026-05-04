@@ -72,9 +72,7 @@ class DeliveryIntegrationApiTest extends TestCase
 
     private function createConfig(string $platformSlug = 'hungerstation', bool $enabled = true): string
     {
-        $id = Str::uuid()->toString();
-        DB::table('delivery_platform_configs')->insert([
-            'id' => $id,
+        $config = \App\Domain\DeliveryIntegration\Models\DeliveryPlatformConfig::create([
             'store_id' => $this->store->id,
             'platform' => $platformSlug,
             'api_key' => 'test-api-key-123',
@@ -85,10 +83,8 @@ class DeliveryIntegrationApiTest extends TestCase
             'daily_order_count' => 0,
             'sync_menu_on_product_change' => true,
             'menu_sync_interval_hours' => 6,
-            'created_at' => now(),
-            'updated_at' => now(),
         ]);
-        return $id;
+        return $config->id;
     }
 
     private function createOrder(string $platform = 'hungerstation', string $status = 'pending'): string

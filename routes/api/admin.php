@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\AdminSoftPosController;
 use App\Http\Controllers\Api\Admin\AdminTerminalController;
 use App\Http\Controllers\Api\Admin\AnalyticsReportingController;
 use App\Http\Controllers\Api\Admin\BillingFinanceController;
@@ -225,6 +226,14 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
         Route::post('export/revenue', [AnalyticsReportingController::class, 'exportRevenue']);
         Route::post('export/subscriptions', [AnalyticsReportingController::class, 'exportSubscriptions']);
         Route::post('export/stores', [AnalyticsReportingController::class, 'exportStores']);
+
+        // SoftPOS analytics (dashboard) + financial management
+        Route::prefix('softpos')->name('softpos.')->group(function () {
+            Route::get('/',              [AnalyticsReportingController::class, 'softposDashboard']);
+            Route::get('transactions',   [AdminSoftPosController::class, 'transactions']);
+            Route::get('financials',     [AdminSoftPosController::class, 'financials']);
+            Route::get('terminal-rates', [AdminSoftPosController::class, 'terminalRates']);
+        });
     });
 
     // ─── Feature Flags & A/B Testing (P7) ───────────────────
@@ -696,6 +705,8 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
     // ─── POS Terminals (Admin) ───────────────────────────────
     Route::prefix('terminals')->group(function () {
         Route::get('stats', [AdminTerminalController::class, 'stats']);
+        Route::get('softpos-health', [AdminTerminalController::class, 'softposHealth']);
+        Route::patch('{register}/softpos-billing', [AdminTerminalController::class, 'updateSoftposBilling']);
         Route::get('/', [AdminTerminalController::class, 'index']);
         Route::post('/', [AdminTerminalController::class, 'store']);
         Route::get('{register}', [AdminTerminalController::class, 'show']);

@@ -761,4 +761,90 @@ class AnalyticsReportingController extends BaseApiController
             ]);
         }
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // SoftPOS Analytics Dashboard
+    // ═══════════════════════════════════════════════════════════
+
+    /**
+     * GET /admin/analytics/softpos
+     *
+     * Aggregates EdfaPay SoftPOS transaction data:
+     *   - daily volume & amount
+     *   - card scheme breakdown (mada / visa / mastercard / other)
+     *   - per-store totals
+     *   - top-line KPIs for the selected date range
+     *
+     * Query params:
+     *   date_from (default: 30 days ago)
+     *   date_to   (default: today)
+     *   store_id  (optional filter)
+     */
+    public function softposDashboard(Request $request): JsonResponse
+    {
+        $dateFrom = $request->query('date_from', now()->subDays(30)->toDateString());
+        $dateTo   = $request->query('date_to', now()->toDateString());
+        $storeId  = $request->query('store_id');
+
+        $base = \App\Domain\ProviderSubscription\Models\SoftPosTransaction::query()
+            ->whereBetween(\Illuminate\Support\Facades\DB::raw('DATE(created_at)'), [$dateFrom, $dateTo])
+            ->when($storeId, fn ($q) => $q->where('store_id', $storeId));
+
+        // ── KPIs ─────────────────────────────────────────────────
+        $totalTransactions = (clone $base)->count();
+        $totalAmount       = (float) (clone $base)->sum('amount');
+        $avgAmount         = $totalTransactions > 0 ? round($totalAmount / $totalTransactions, 3) : 0;
+
+        // ── Daily volume ─────────────────────────────────────────
+        $dailyVolume = (clone $base)
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as count, SUM(amount) as total_amount')
+            ->groupByRaw('DATE(created_at)')
+            ->orderByRaw('DATE(created_at)')
+            ->get()
+            ->map(fn ($row) => [
+                'date'         => $row->date,
+                'count'        => (int) $row->count,
+                'total_amount' => (float) $row->total_amount,
+            ]);
+
+        // ── Card scheme breakdown ────────────────────────────────
+        // payment_method stores the scheme (mada, visa, mastercard, etc.)
+        $schemeBreakdown = (clone $base)
+            ->selectRaw('LOWER(payment_method) as scheme, COUNT(*) as count, SUM(amount) as total_amount')
+            ->groupByRaw('LOWER(payment_method)')
+            ->orderByRaw('SUM(amount) DESC')
+            ->get()
+            ->map(fn ($row) => [
+                'scheme'       => $row->scheme ?? 'unknown',
+                'count'        => (int) $row->count,
+                'total_amount' => (float) $row->total_amount,
+            ]);
+
+        // ── Per-store stats ──────────────────────────────────────
+        $byStore = (clone $base)
+            ->join('stores', 'stores.id', '=', 'softpos_transactions.store_id')
+            ->selectRaw('softpos_transactions.store_id, stores.name as store_name, COUNT(*) as count, SUM(softpos_transactions.amount) as total_amount')
+            ->groupBy('softpos_transactions.store_id', 'stores.name')
+            ->orderByRaw('SUM(softpos_transactions.amount) DESC')
+            ->limit(50)
+            ->get()
+            ->map(fn ($row) => [
+                'store_id'     => $row->store_id,
+                'store_name'   => $row->store_name,
+                'count'        => (int) $row->count,
+                'total_amount' => (float) $row->total_amount,
+            ]);
+
+        return $this->success([
+            'kpis' => [
+                'total_transactions' => $totalTransactions,
+                'total_amount'       => $totalAmount,
+                'avg_transaction'    => $avgAmount,
+            ],
+            'daily_volume'     => $dailyVolume,
+            'scheme_breakdown' => $schemeBreakdown,
+            'by_store'         => $byStore,
+            'date_range'       => ['from' => $dateFrom, 'to' => $dateTo],
+        ]);
+    }
 }

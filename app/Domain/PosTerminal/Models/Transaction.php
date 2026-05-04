@@ -35,6 +35,7 @@ class Transaction extends Model
         'cashier_id',
         'customer_id',
         'transaction_number',
+        'idempotency_key',
         'type',
         'status',
         'subtotal',
@@ -55,6 +56,7 @@ class Transaction extends Model
         'sync_version',
         'approver_id',
         'void_reason',
+        'tab_id',
     ];
 
     protected $casts = [

@@ -45,7 +45,7 @@ class RestaurantApiTest extends TestCase
         DB::statement("CREATE TABLE table_reservations (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, table_id VARCHAR(36), customer_name VARCHAR(255) NOT NULL, customer_phone VARCHAR(20), party_size INTEGER NOT NULL, reservation_date DATE NOT NULL, reservation_time VARCHAR(10) NOT NULL, duration_minutes INTEGER, status VARCHAR(20) NOT NULL DEFAULT 'confirmed', notes TEXT, created_at TIMESTAMP, updated_at TIMESTAMP)");
 
         DB::statement('DROP TABLE IF EXISTS open_tabs CASCADE');
-        DB::statement("CREATE TABLE open_tabs (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, order_id VARCHAR(36), customer_name VARCHAR(255), table_id VARCHAR(36), opened_at TIMESTAMP, closed_at TIMESTAMP, status VARCHAR(10) NOT NULL DEFAULT 'open', created_at TIMESTAMP, updated_at TIMESTAMP)");
+        DB::statement("CREATE TABLE open_tabs (id VARCHAR(36) PRIMARY KEY, store_id VARCHAR(36) NOT NULL, order_id VARCHAR(36), transaction_id VARCHAR(36), customer_name VARCHAR(255), table_id VARCHAR(36), opened_at TIMESTAMP, closed_at TIMESTAMP, status VARCHAR(10) NOT NULL DEFAULT 'open', running_total DECIMAL(12,2) NOT NULL DEFAULT 0, created_at TIMESTAMP, updated_at TIMESTAMP)");
     }
 
     private function h(?string $token = null): array

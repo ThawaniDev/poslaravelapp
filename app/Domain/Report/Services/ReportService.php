@@ -415,8 +415,14 @@ class ReportService
         if (! empty($filters['date_to'])) {
             $hoursQuery->whereDate('clock_in_at', '<=', $filters['date_to']);
         }
+        $driver = DB::connection()->getDriverName();
+        $diffExpr = match ($driver) {
+            'pgsql' => 'EXTRACT(EPOCH FROM (clock_out_at - clock_in_at))',
+            'sqlite' => "(strftime('%s', clock_out_at) - strftime('%s', clock_in_at))",
+            default => 'TIMESTAMPDIFF(SECOND, clock_in_at, clock_out_at)',
+        };
         $hoursMap = $hoursQuery
-            ->select('staff_user_id', DB::raw('SUM(TIMESTAMPDIFF(SECOND, clock_in_at, clock_out_at)) as total_seconds'))
+            ->select('staff_user_id', DB::raw('SUM(' . $diffExpr . ') as total_seconds'))
             ->groupBy('staff_user_id')
             ->pluck('total_seconds', 'staff_user_id')
             ->toArray();
@@ -525,6 +531,8 @@ class ReportService
         ])
             ->groupBy('payments.method')
             ->orderByDesc('total_amount')
+            ->orderByDesc('transaction_count')
+            ->orderBy('payments.method')
             ->get()
             ->map(fn ($r) => [
                 'method' => $r->method,
@@ -874,7 +882,7 @@ class ReportService
         $dateFrom = $filters['date_from'] ?? now()->toDateString();
         $dateTo   = $filters['date_to']   ?? now()->addDays(90)->toDateString();
 
-        $items = DB::table('stock_levels as sl')
+        $items = DB::table('stock_batches as sl')
             ->join('products as p', 'p.id', '=', 'sl.product_id')
             ->select([
                 'p.id as product_id',
@@ -1107,7 +1115,21 @@ class ReportService
      */
     public function financialDeliveryCommission(string $storeId, array $filters): array
     {
-        [$dateFrom, $dateTo] = $this->resolveDateRange($filters);
+        $dateFrom = $filters['date_from'] ?? now()->subDays(30)->toDateString();
+        $dateTo   = $filters['date_to']   ?? now()->toDateString();
+
+        // If external_orders table doesn't exist, return zero-shape early.
+        if (! \Illuminate\Support\Facades\Schema::hasTable('external_orders')) {
+            return [
+                'totals' => [
+                    'total_orders'     => 0,
+                    'total_gross'      => 0.0,
+                    'total_fee'        => 0.0,
+                    'total_net'        => 0.0,
+                ],
+                'platforms' => [],
+            ];
+        }
 
         $rows = DB::table('orders as o')
             ->leftJoin('external_orders as eo', 'eo.order_id', '=', 'o.id')
@@ -1128,7 +1150,7 @@ class ReportService
         $totals = [
             'total_orders'     => $rows->sum('order_count'),
             'total_gross'      => round($rows->sum('gross_sales'), 2),
-            'total_commission' => round($rows->sum('total_commission'), 2),
+            'total_fee'        => round($rows->sum('total_commission'), 2),
             'total_net'        => round($rows->sum('net_settlement'), 2),
         ];
 
@@ -1225,11 +1247,11 @@ class ReportService
             ->where('organization_id', $orgId)
             ->sum('loyalty_points');
 
-        $loyaltyRedeemed = DB::table('orders')
-            ->join('stores', 'orders.store_id', '=', 'stores.id')
-            ->where('stores.organization_id', $orgId)
-            ->whereNotIn('orders.status', ['cancelled', 'voided'])
-            ->sum('orders.loyalty_points_used');
+        $loyaltyRedeemed = (int) abs((int) DB::table('loyalty_transactions')
+            ->join('customers', 'loyalty_transactions.customer_id', '=', 'customers.id')
+            ->where('customers.organization_id', $orgId)
+            ->where('loyalty_transactions.type', 'redeem')
+            ->sum('loyalty_transactions.points'));
 
         $returningCustomers = max(0, $activeCustomers30d - $newCustomers30d);
 
@@ -1401,6 +1423,7 @@ class ReportService
             'generated_at' => now()->toIso8601String(),
             'filters' => $filters,
             'data' => $data,
+            'url' => url("/api/v2/reports/exports/{$reportType}.{$format}?ts=" . now()->timestamp),
         ];
     }
 }

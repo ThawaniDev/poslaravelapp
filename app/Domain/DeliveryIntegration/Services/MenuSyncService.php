@@ -25,7 +25,7 @@ class MenuSyncService
 
         try {
             $result = $adapter->syncMenu($config->store_id, $products, $config->getCredentials());
-            $duration = round(microtime(true) - $startTime, 2);
+            $duration = (int) round(microtime(true) - $startTime);
 
             $log->update([
                 'status' => $result['success'] ? 'success' : 'failed',
@@ -37,7 +37,7 @@ class MenuSyncService
                 $config->update(['operating_hours_synced' => true]);
             }
         } catch (\Throwable $e) {
-            $duration = round(microtime(true) - $startTime, 2);
+            $duration = (int) round(microtime(true) - $startTime);
             Log::error('Menu sync failed', [
                 'store_id' => $config->store_id,
                 'platform' => $config->platform->value,

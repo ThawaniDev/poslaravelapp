@@ -20,16 +20,19 @@ class OpenTab extends Model
     protected $fillable = [
         'store_id',
         'order_id',
+        'transaction_id',
         'customer_name',
         'table_id',
         'opened_at',
         'closed_at',
         'status',
+        'running_total',
     ];
 
     protected $casts = [
         'opened_at' => 'datetime',
         'closed_at' => 'datetime',
+        'running_total' => 'decimal:2',
     ];
 
     public function store(): BelongsTo

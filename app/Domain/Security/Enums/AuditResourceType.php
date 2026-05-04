@@ -8,6 +8,7 @@ enum AuditResourceType: string
     case Product = 'product';
     case StaffUser = 'staff_user';
     case Settings = 'settings';
+    case Terminal = 'terminal';
 
     public function label(): string
     {
@@ -16,6 +17,7 @@ enum AuditResourceType: string
             self::Product => __('security.resource_product'),
             self::StaffUser => __('security.resource_staff_user'),
             self::Settings => __('security.resource_settings'),
+            self::Terminal => __('security.resource_terminal'),
         };
     }
 
@@ -26,6 +28,7 @@ enum AuditResourceType: string
             self::Product => 'success',
             self::StaffUser => 'warning',
             self::Settings => 'info',
+            self::Terminal => 'gray',
         };
     }
 }

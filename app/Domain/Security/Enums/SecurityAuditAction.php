@@ -10,6 +10,7 @@ enum SecurityAuditAction: string
     case FailedLogin = 'failed_login';
     case SettingsChange = 'settings_change';
     case RemoteWipe = 'remote_wipe';
+    case TerminalCredentialUpdate = 'terminal_credential_update';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum SecurityAuditAction: string
             self::FailedLogin => __('security.audit_action_failed_login'),
             self::SettingsChange => __('security.audit_action_settings_change'),
             self::RemoteWipe => __('security.audit_action_remote_wipe'),
+            self::TerminalCredentialUpdate => __('security.audit_action_terminal_credential_update'),
         };
     }
 
@@ -32,6 +34,7 @@ enum SecurityAuditAction: string
             self::FailedLogin => 'danger',
             self::SettingsChange => 'info',
             self::RemoteWipe => 'danger',
+            self::TerminalCredentialUpdate => 'warning',
         };
     }
 
@@ -44,6 +47,7 @@ enum SecurityAuditAction: string
             self::FailedLogin => 'heroicon-o-x-circle',
             self::SettingsChange => 'heroicon-o-cog-6-tooth',
             self::RemoteWipe => 'heroicon-o-trash',
+            self::TerminalCredentialUpdate => 'heroicon-o-device-phone-mobile',
         };
     }
 }

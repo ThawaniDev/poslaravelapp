@@ -21,6 +21,7 @@ enum PaymentMethodKey: string
     case Tamara = 'tamara';
     case MisPay = 'mispay';
     case Madfu = 'madfu';
+    case SoftPos = 'soft_pos';
 
     public function isInstallment(): bool
     {

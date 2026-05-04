@@ -450,7 +450,7 @@ class DeliveryApiTest extends TestCase
             ->assertJsonStructure([
                 'success',
                 'data' => [
-                    '*' => ['value', 'label', 'color'],
+                    '*' => ['id', 'name', 'slug'],
                 ],
             ]);
     }

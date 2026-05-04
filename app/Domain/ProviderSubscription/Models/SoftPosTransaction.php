@@ -3,6 +3,7 @@
 namespace App\Domain\ProviderSubscription\Models;
 
 use App\Domain\Core\Models\Organization;
+use App\Domain\Core\Models\Register;
 use App\Domain\Core\Models\Store;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -22,6 +23,12 @@ class SoftPosTransaction extends Model
         'order_id',
         'amount',
         'currency',
+        // Fee tracking (bilateral)
+        'platform_fee',
+        'gateway_fee',
+        'margin',
+        'fee_type',
+        // Transaction details
         'transaction_ref',
         'payment_method',
         'terminal_id',
@@ -30,8 +37,11 @@ class SoftPosTransaction extends Model
     ];
 
     protected $casts = [
-        'amount' => 'decimal:3',
-        'metadata' => 'array',
+        'amount'       => 'decimal:3',
+        'platform_fee' => 'decimal:3',
+        'gateway_fee'  => 'decimal:3',
+        'margin'       => 'decimal:3',
+        'metadata'     => 'array',
     ];
 
     public function organization(): BelongsTo
@@ -42,5 +52,10 @@ class SoftPosTransaction extends Model
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
+    }
+
+    public function terminal(): BelongsTo
+    {
+        return $this->belongsTo(Register::class, 'terminal_id');
     }
 }

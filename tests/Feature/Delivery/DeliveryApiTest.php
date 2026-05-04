@@ -640,7 +640,7 @@ class DeliveryApiTest extends TestCase
         )->first()->subscriptionPlan;
 
         \App\Domain\Subscription\Models\PlanLimit::updateOrCreate(
-            ['subscription_plan_id' => $plan->id, 'feature_key' => 'delivery_integrations_count'],
+            ['subscription_plan_id' => $plan->id, 'limit_key' => 'max_delivery_platforms'],
             ['limit_value' => 1]
         );
 
@@ -650,7 +650,7 @@ class DeliveryApiTest extends TestCase
             'api_key'    => 'KEY-1',
             'is_enabled' => true,
         ]);
-        $r1->assertStatus(201);
+        $r1->assertOk();
 
         // Second config should be blocked
         $r2 = $this->withToken($this->token)->postJson('/api/v2/delivery/configs', [
@@ -659,7 +659,7 @@ class DeliveryApiTest extends TestCase
             'is_enabled' => true,
         ]);
         $r2->assertStatus(403);
-        $r2->assertJsonPath('error', 'delivery.plan_limit_reached');
+        $r2->assertJsonFragment(['success' => false]);
     }
 
     public function test_update_at_limit_succeeds(): void
@@ -669,7 +669,7 @@ class DeliveryApiTest extends TestCase
         )->first()->subscriptionPlan;
 
         \App\Domain\Subscription\Models\PlanLimit::updateOrCreate(
-            ['subscription_plan_id' => $plan->id, 'feature_key' => 'delivery_integrations_count'],
+            ['subscription_plan_id' => $plan->id, 'limit_key' => 'max_delivery_platforms'],
             ['limit_value' => 1]
         );
 

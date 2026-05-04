@@ -96,10 +96,12 @@ class DeliveryService
     {
         $current = DeliveryPlatformConfig::where('store_id', $storeId)->count();
 
-        // Look up the plan limit
-        $limit = \App\Domain\Subscription\Models\PlanLimit::join('store_subscriptions', function ($j) use ($storeId) {
+        // Resolve organization for the store and look up plan limit by organization_id
+        $organizationId = \App\Domain\Core\Models\Store::where('id', $storeId)->value('organization_id');
+
+        $limit = \App\Domain\Subscription\Models\PlanLimit::join('store_subscriptions', function ($j) use ($organizationId) {
             $j->on('plan_limits.subscription_plan_id', '=', 'store_subscriptions.subscription_plan_id')
-              ->where('store_subscriptions.store_id', $storeId)
+              ->where('store_subscriptions.organization_id', $organizationId)
               ->where('store_subscriptions.status', 'active');
         })->where('plan_limits.limit_key', 'max_delivery_platforms')
           ->value('plan_limits.limit_value');
