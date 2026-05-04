@@ -22,7 +22,7 @@ class SoftPosTransactionResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return __('nav.group_subscription_billing');
+        return __('nav.group_core');
     }
 
     protected static ?string $navigationLabel = null;
@@ -68,6 +68,37 @@ class SoftPosTransactionResource extends Resource
     public static function canEdit($record): bool   { return false; }
     public static function canDelete($record): bool { return false; }
 
+    protected static function cardSchemeLabel(?string $state): string
+    {
+        return match (strtolower((string) $state)) {
+            'mada'       => __('softpos.card_scheme_mada'),
+            'visa'       => __('softpos.card_scheme_visa'),
+            'mastercard' => __('softpos.card_scheme_mastercard'),
+            'amex'       => __('softpos.card_scheme_amex'),
+            default      => __('softpos.card_scheme_unknown'),
+        };
+    }
+
+    protected static function feeTypeLabel(?string $state): string
+    {
+        return match ($state) {
+            'percentage' => __('softpos.fee_type_percentage'),
+            'fixed'      => __('softpos.fee_type_fixed'),
+            default      => __('softpos.not_available'),
+        };
+    }
+
+    protected static function statusLabel(?string $state): string
+    {
+        return match ($state) {
+            'completed' => __('softpos.status_completed'),
+            'pending'   => __('softpos.status_pending'),
+            'failed'    => __('softpos.status_failed'),
+            'refunded'  => __('softpos.status_refunded'),
+            default     => __('softpos.not_available'),
+        };
+    }
+
     // ── Form (view-only) ───────────────────────────────────────
 
     public static function form(Form $form): Form
@@ -77,7 +108,7 @@ class SoftPosTransactionResource extends Resource
                 Forms\Components\Section::make(__('softpos.transaction_details'))
                     ->schema([
                         Forms\Components\TextInput::make('id')
-                            ->label('ID')
+                            ->label(__('softpos.id'))
                             ->disabled(),
                         Forms\Components\TextInput::make('store.name')
                             ->label(__('softpos.store'))
@@ -87,9 +118,11 @@ class SoftPosTransactionResource extends Resource
                             ->disabled(),
                         Forms\Components\TextInput::make('payment_method')
                             ->label(__('softpos.card_scheme'))
+                            ->formatStateUsing(fn (?string $state) => static::cardSchemeLabel($state))
                             ->disabled(),
                         Forms\Components\TextInput::make('status')
                             ->label(__('softpos.status'))
+                            ->formatStateUsing(fn (?string $state) => static::statusLabel($state))
                             ->disabled(),
                     ])->columns(3),
 
@@ -113,6 +146,7 @@ class SoftPosTransactionResource extends Resource
                             ->numeric(),
                         Forms\Components\TextInput::make('fee_type')
                             ->label(__('softpos.fee_type'))
+                            ->formatStateUsing(fn (?string $state) => static::feeTypeLabel($state))
                             ->disabled(),
                     ])->columns(5),
 
@@ -170,7 +204,7 @@ class SoftPosTransactionResource extends Resource
                         'amex'       => 'danger',
                         default      => 'gray',
                     })
-                    ->formatStateUsing(fn (?string $state) => strtoupper($state ?? 'UNKNOWN')),
+                    ->formatStateUsing(fn (?string $state) => static::cardSchemeLabel($state)),
 
                 Tables\Columns\TextColumn::make('fee_type')
                     ->label(__('softpos.fee_type'))
@@ -179,7 +213,8 @@ class SoftPosTransactionResource extends Resource
                         'percentage' => 'info',
                         'fixed'      => 'warning',
                         default      => 'gray',
-                    }),
+                    })
+                    ->formatStateUsing(fn (?string $state) => static::feeTypeLabel($state)),
 
                 Tables\Columns\TextColumn::make('amount')
                     ->label(__('softpos.amount'))
@@ -233,7 +268,8 @@ class SoftPosTransactionResource extends Resource
                         'failed'    => 'danger',
                         'refunded'  => 'gray',
                         default     => 'gray',
-                    }),
+                    })
+                    ->formatStateUsing(fn (?string $state) => static::statusLabel($state)),
 
                 Tables\Columns\TextColumn::make('transaction_ref')
                     ->label(__('softpos.transaction_ref'))
@@ -266,10 +302,10 @@ class SoftPosTransactionResource extends Resource
                 SelectFilter::make('payment_method')
                     ->label(__('softpos.card_scheme'))
                     ->options([
-                        'mada'       => 'Mada',
-                        'visa'       => 'Visa',
-                        'mastercard' => 'Mastercard',
-                        'amex'       => 'Amex',
+                        'mada'       => __('softpos.card_scheme_mada'),
+                        'visa'       => __('softpos.card_scheme_visa'),
+                        'mastercard' => __('softpos.card_scheme_mastercard'),
+                        'amex'       => __('softpos.card_scheme_amex'),
                     ])
                     ->query(fn (Builder $query, array $data) => $query->when(
                         $data['value'],
@@ -279,17 +315,17 @@ class SoftPosTransactionResource extends Resource
                 SelectFilter::make('fee_type')
                     ->label(__('softpos.fee_type'))
                     ->options([
-                        'percentage' => 'Percentage (Mada)',
-                        'fixed'      => 'Fixed (Visa/MC)',
+                        'percentage' => __('softpos.fee_type_percentage'),
+                        'fixed'      => __('softpos.fee_type_fixed'),
                     ]),
 
                 SelectFilter::make('status')
                     ->label(__('softpos.status'))
                     ->options([
-                        'completed' => 'Completed',
-                        'pending'   => 'Pending',
-                        'failed'    => 'Failed',
-                        'refunded'  => 'Refunded',
+                        'completed' => __('softpos.status_completed'),
+                        'pending'   => __('softpos.status_pending'),
+                        'failed'    => __('softpos.status_failed'),
+                        'refunded'  => __('softpos.status_refunded'),
                     ]),
             ])
             ->filtersLayout(Tables\Enums\FiltersLayout::AboveContent)
