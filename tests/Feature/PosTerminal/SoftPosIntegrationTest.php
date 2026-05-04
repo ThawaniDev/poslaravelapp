@@ -117,10 +117,8 @@ class SoftPosIntegrationTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.edfapay_token', self::EDFAPAY_TOKEN);
 
-        $this->assertDatabaseHas('registers', [
-            'id'            => $this->register->id,
-            'edfapay_token' => self::EDFAPAY_TOKEN,
-        ]);
+        // edfapay_token is encrypted at rest — read through the model to decrypt
+        $this->assertSame(self::EDFAPAY_TOKEN, $this->register->fresh()->edfapay_token);
     }
 
     /** @test */
