@@ -191,6 +191,7 @@ class RegisterResource extends Resource
                                         ->suffix('%'),
                                     Forms\Components\TextInput::make('fee_flat_per_txn')
                                         ->label(__('terminals.fee_flat'))
+                                        ->helperText(__('terminals.fee_flat_helper'))
                                         ->numeric()
                                         ->step(0.01)
                                         ->suffix('SAR'),
