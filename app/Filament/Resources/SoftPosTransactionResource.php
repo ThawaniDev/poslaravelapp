@@ -165,7 +165,7 @@ class SoftPosTransactionResource extends Resource
                         Forms\Components\TextInput::make('created_at')
                             ->label(__('common.created_at'))
                             ->disabled()
-                            ->formatStateUsing(fn ($state) => $state?->format('Y-m-d H:i:s')),
+                            ->formatStateUsing(fn ($state) => $state ? \Carbon\Carbon::parse($state)->format('Y-m-d H:i:s') : null),
                     ])->columns(1)->collapsible(),
             ]);
     }

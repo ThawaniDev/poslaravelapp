@@ -22,6 +22,7 @@ enum AdminPermissionGroup: string
     case Security = 'security';
     case KnowledgeBase = 'kb';
     case WameedAI = 'wameed_ai';
+    case SoftPos = 'softpos';
 
     public function label(): string
     {
@@ -44,6 +45,7 @@ enum AdminPermissionGroup: string
             self::Security => 'Security',
             self::KnowledgeBase => 'Knowledge Base',
             self::WameedAI => 'Wameed AI',
+            self::SoftPos => 'SoftPOS',
         };
     }
 }
