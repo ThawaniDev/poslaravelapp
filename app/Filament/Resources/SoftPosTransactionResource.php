@@ -141,7 +141,7 @@ class SoftPosTransactionResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $q) => $q->with(['store:id,name', 'terminal:id,name,code']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['store:id,name', 'terminal:id,name,code']))
             ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
@@ -271,7 +271,7 @@ class SoftPosTransactionResource extends Resource
                         'mastercard' => 'Mastercard',
                         'amex'       => 'Amex',
                     ])
-                    ->query(fn (Builder $q, array $data) => $q->when(
+                    ->query(fn (Builder $query, array $data) => $query->when(
                         $data['value'],
                         fn ($q, $v) => $q->whereRaw('LOWER(payment_method) = ?', [strtolower($v)])
                     )),
