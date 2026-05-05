@@ -3,6 +3,7 @@
 namespace App\Domain\Support\Services;
 
 use App\Domain\AdminPanel\Models\AdminActivityLog;
+use App\Domain\Core\Models\Store;
 use App\Domain\Notification\Services\NotificationService;
 use App\Domain\Support\Enums\TicketPriority;
 use App\Domain\Support\Enums\TicketSenderType;
@@ -60,6 +61,11 @@ class SupportService
     {
         return DB::transaction(function () use ($userId, $storeId, $organizationId, $data) {
             $priority = TicketPriority::tryFrom($data['priority'] ?? 'medium') ?? TicketPriority::Medium;
+
+            // Fall back to the store's organization if none provided
+            if (!$organizationId) {
+                $organizationId = Store::find($storeId)?->organization_id;
+            }
 
             $ticket = SupportTicket::create([
                 'ticket_number'   => $this->generateTicketNumber(),
@@ -144,6 +150,7 @@ class SupportService
     {
         $ticket = SupportTicket::where('id', $ticketId)
             ->where(fn ($q) => $q->where('user_id', $userId)->orWhere('store_id', $storeId))
+            ->whereNot('status', TicketStatus::Closed)
             ->first();
 
         if (!$ticket) {

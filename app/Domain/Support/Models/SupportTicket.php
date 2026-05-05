@@ -43,6 +43,8 @@ class SupportTicket extends Model
         'satisfaction_comment',
     ];
 
+    protected $appends = ['sla_badge'];
+
     protected $casts = [
         'category' => TicketCategory::class,
         'priority' => TicketPriority::class,

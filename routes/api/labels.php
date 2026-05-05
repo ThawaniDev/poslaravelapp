@@ -17,5 +17,6 @@ Route::prefix('labels')->middleware(['auth:sanctum', 'plan.feature:barcode_label
 
     // Print history
     Route::get('/print-history', [LabelController::class, 'printHistory'])->middleware('permission:labels.view');
+    Route::get('/print-history/stats', [LabelController::class, 'printHistoryStats'])->middleware('permission:labels.view');
     Route::post('/print-history', [LabelController::class, 'recordPrint'])->middleware('permission:labels.print');
 });

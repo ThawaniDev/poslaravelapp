@@ -10,12 +10,27 @@ use Illuminate\Database\Eloquent\Collection;
 
 class LabelService
 {
-    public function listTemplates(string $orgId): Collection
+    public function listTemplates(string $orgId, array $filters = []): Collection
     {
-        return LabelTemplate::where('organization_id', $orgId)
-            ->orderByDesc('is_default')
-            ->orderBy('name')
-            ->get();
+        $query = LabelTemplate::where('organization_id', $orgId);
+
+        if (!empty($filters['search'])) {
+            $query->where('name', 'like', '%' . $filters['search'] . '%');
+        }
+
+        if (isset($filters['type'])) {
+            if ($filters['type'] === 'preset') {
+                $query->where('is_preset', true);
+            } elseif ($filters['type'] === 'custom') {
+                $query->where('is_preset', false);
+            }
+        }
+
+        if (isset($filters['is_default']) && $filters['is_default'] !== '') {
+            $query->where('is_default', (bool) $filters['is_default']);
+        }
+
+        return $query->orderByDesc('is_default')->orderBy('name')->get();
     }
 
     public function getPresets(?string $orgId = null): Collection
@@ -269,10 +284,40 @@ class LabelService
         return LabelPrintHistory::create($data);
     }
 
-    public function getPrintHistory(string $storeId, int $perPage = 20): LengthAwarePaginator
+    public function getPrintHistory(string $storeId, int $perPage = 20, array $filters = []): LengthAwarePaginator
     {
-        return LabelPrintHistory::where('store_id', $storeId)
-            ->orderByDesc('printed_at')
-            ->paginate($perPage);
+        $query = LabelPrintHistory::where('store_id', $storeId)
+            ->orderByDesc('printed_at');
+
+        if (!empty($filters['from'])) {
+            $query->where('printed_at', '>=', $filters['from']);
+        }
+        if (!empty($filters['to'])) {
+            $query->where('printed_at', '<=', $filters['to'] . ' 23:59:59');
+        }
+        if (!empty($filters['template_id'])) {
+            $query->where('template_id', $filters['template_id']);
+        }
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Summary stats for a store's print history (last 30 days).
+     */
+    public function printHistoryStats(string $storeId): array
+    {
+        $since = now()->subDays(30);
+
+        $row = LabelPrintHistory::where('store_id', $storeId)
+            ->where('printed_at', '>=', $since)
+            ->selectRaw('COUNT(*) as jobs, COALESCE(SUM(product_count), 0) as products, COALESCE(SUM(total_labels), 0) as labels')
+            ->first();
+
+        return [
+            'jobs_last_30_days'     => (int) ($row?->jobs ?? 0),
+            'products_last_30_days' => (int) ($row?->products ?? 0),
+            'labels_last_30_days'   => (int) ($row?->labels ?? 0),
+        ];
     }
 }

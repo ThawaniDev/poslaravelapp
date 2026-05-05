@@ -2588,6 +2588,9 @@ return new class extends Migration
             $table->integer('product_count')->default(0);
             $table->integer('total_labels')->default(0);
             $table->string('printer_name')->nullable();
+            $table->string('printer_language', 10)->nullable();
+            $table->unsignedSmallInteger('job_pages')->nullable();
+            $table->unsignedInteger('duration_ms')->nullable();
             $table->timestamp('printed_at')->nullable();
         });
 

@@ -201,4 +201,32 @@ return [
     'kb_article_deleted'         => 'Knowledge base article deleted.',
     'ticket_rated'               => 'Thank you for your feedback.',
     'ticket_already_rated'       => 'This ticket has already been rated.',
+
+    // ═══════════════════════════════════════════════════════════
+    //  Missing UI Keys
+    // ═══════════════════════════════════════════════════════════
+    'ticket_info'              => 'Ticket Information',
+    'ticket_details_desc'      => 'Fill in the details below to create or update a support ticket.',
+    'internal_note_help'       => 'Internal notes are only visible to support agents, not to the provider.',
+    'escalated_note'           => 'This ticket has been escalated to critical priority.',
+    'no_response_yet'          => 'No response yet',
+    'submitted_by'             => 'Submitted By',
+    'messages'                 => 'Messages',
+    'message'                  => 'Message',
+    'assign_to_agent'          => 'Assign to Agent',
+    'bulk_assign'              => 'Assign Selected',
+    'bulk_close'               => 'Close Selected',
+    'bulk_change_priority'     => 'Change Priority',
+    'close'                    => 'Close',
+    'unassigned'               => 'Unassigned',
+    'priority_updated'         => 'Priority updated successfully.',
+    'satisfaction_rating'      => 'Satisfaction Rating',
+    'satisfaction_comment'     => 'Satisfaction Comment',
+    'reply_sent'               => 'Reply sent successfully.',
+    'ticket_escalated'         => 'Ticket escalated to critical.',
+    'tickets_closed'           => 'Tickets closed successfully.',
+    'draft_articles'           => 'Draft articles',
+    'ticket_count'             => 'Ticket Count',
+    'resolution_time'          => 'Resolution Time',
+    'sla_compliance'           => 'SLA Compliance',
 ];

@@ -102,7 +102,7 @@ class SupportTicketController extends BaseApiController
             'organization:id,name',
             'store:id,name',
             'assignedTo:id,name',
-        ])->find($id);
+        ])->withCount('messages')->find($id);
 
         if (!$ticket) {
             return $this->notFound(__('support.ticket_not_found'));
@@ -146,8 +146,13 @@ class SupportTicketController extends BaseApiController
         }
 
         $request->validate([
-            'assigned_to' => 'required|uuid',
+            'assigned_to' => 'nullable|uuid',
         ]);
+
+        if ($request->has('assigned_to') && $request->assigned_to === null) {
+            $ticket->update(['assigned_to' => null]);
+            return $this->success($ticket->fresh(), __('support.ticket_unassigned'));
+        }
 
         $this->supportService->assignTicket($ticket, $request->assigned_to, $request->user()->id);
 
@@ -356,7 +361,7 @@ class SupportTicketController extends BaseApiController
         $request->validate([
             'title'    => 'required|string|max:255',
             'title_ar' => 'required|string|max:255',
-            'slug'     => 'required|string|max:100|unique:knowledge_base_articles,slug',
+            'slug'     => 'sometimes|string|max:100|unique:knowledge_base_articles,slug',
             'body'     => 'required|string',
             'body_ar'  => 'required|string',
             'category' => 'required|string|in:general,getting_started,pos_usage,inventory,delivery,billing,troubleshooting',
@@ -364,9 +369,17 @@ class SupportTicketController extends BaseApiController
             'sort_order'   => 'sometimes|integer|min:0',
         ]);
 
-        $article = KnowledgeBaseArticle::create($request->only([
-            'title', 'title_ar', 'slug', 'body', 'body_ar', 'category', 'is_published', 'sort_order',
-        ]));
+        $slug = $request->input('slug', Str::slug($request->title));
+        // Ensure slug uniqueness by appending random suffix if needed
+        $baseSlug = $slug;
+        $counter = 1;
+        while (KnowledgeBaseArticle::where('slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter++;
+        }
+
+        $article = KnowledgeBaseArticle::create(array_merge($request->only([
+            'title', 'title_ar', 'body', 'body_ar', 'category', 'is_published', 'sort_order',
+        ]), ['slug' => $slug]));
 
         Log::channel('daily')->info('Admin created KB article', [
             'article_id' => $article->id,

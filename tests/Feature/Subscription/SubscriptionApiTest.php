@@ -7,6 +7,7 @@ use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
 use App\Domain\ProviderSubscription\Models\StoreSubscription;
 use App\Domain\Subscription\Enums\SubscriptionStatus;
+use App\Domain\Subscription\Models\PlanAddOn;
 use App\Domain\Subscription\Models\PlanFeatureToggle;
 use App\Domain\Subscription\Models\PlanLimit;
 use App\Domain\Subscription\Models\SubscriptionPlan;
@@ -425,6 +426,72 @@ class SubscriptionApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.is_enabled', false);
+    }
+
+    public function test_list_plans_includes_localized_feature_and_limit_fields(): void
+    {
+        $this->starterPlan->update([
+            'name_ar' => 'الخطة الأساسية',
+            'description_ar' => 'وصف عربي للخطة الأساسية',
+        ]);
+
+        PlanFeatureToggle::create([
+            'subscription_plan_id' => $this->starterPlan->id,
+            'feature_key' => 'e_invoicing',
+            'name' => 'E-Invoicing',
+            'name_ar' => 'الفوترة الإلكترونية',
+            'is_enabled' => true,
+        ]);
+
+        PlanLimit::create([
+            'subscription_plan_id' => $this->starterPlan->id,
+            'limit_key' => 'transactions_per_month',
+            'limit_value' => 1000,
+        ]);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/subscription/plans');
+
+        $response->assertOk();
+
+        $plans = $response->json('data') ?? [];
+        $starter = collect($plans)->firstWhere('id', $this->starterPlan->id);
+
+        $this->assertNotNull($starter);
+        $this->assertEquals('الخطة الأساسية', $starter['name_ar']);
+        $this->assertEquals('وصف عربي للخطة الأساسية', $starter['description_ar']);
+        $this->assertIsArray($starter['features']);
+        $this->assertIsArray($starter['limits']);
+
+        $feature = collect($starter['features'])->firstWhere('feature_key', 'e_invoicing');
+        $this->assertNotNull($feature);
+        $this->assertEquals('الفوترة الإلكترونية', $feature['name_ar']);
+
+        $limit = collect($starter['limits'])->firstWhere('limit_key', 'transactions_per_month');
+        $this->assertNotNull($limit);
+        $this->assertEquals(1000, $limit['limit_value']);
+    }
+
+    public function test_list_add_ons_includes_name_ar_and_price_contract(): void
+    {
+        PlanAddOn::create([
+            'name' => 'SoftPOS',
+            'name_ar' => 'سوفت بوس',
+            'slug' => 'softpos',
+            'monthly_price' => 49.99,
+            'description' => 'NFC tap-to-pay',
+            'is_active' => true,
+        ]);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/subscription/add-ons');
+
+        $response->assertOk();
+
+        $addOns = $response->json('data') ?? [];
+        $softPos = collect($addOns)->firstWhere('slug', 'softpos');
+
+        $this->assertNotNull($softPos);
+        $this->assertEquals('سوفت بوس', $softPos['name_ar']);
+        $this->assertArrayHasKey('monthly_price', $softPos);
     }
 
     // ─── User without organization ──────────────────────────────

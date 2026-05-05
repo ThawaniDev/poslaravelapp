@@ -24,11 +24,18 @@ class LabelPrintHistory extends Model
         'product_count',
         'total_labels',
         'printer_name',
+        'printer_language',
+        'job_pages',
+        'duration_ms',
         'printed_at',
     ];
 
     protected $casts = [
-        'printed_at' => 'datetime',
+        'printed_at'   => 'datetime',
+        'product_count' => 'integer',
+        'total_labels'  => 'integer',
+        'job_pages'     => 'integer',
+        'duration_ms'   => 'integer',
     ];
 
     public function store(): BelongsTo

@@ -27,8 +27,12 @@ class UserManagementController extends BaseApiController
      * GET /admin/users/stats
      * Aggregate user statistics for KPI cards.
      */
-    public function stats(): JsonResponse
+    public function stats(Request $request): JsonResponse
     {
+        if (!$request->user()->hasAnyPermission(['users.view', 'users.manage', 'users.edit', 'admin_team.view', 'admin_team.manage'])) {
+            return $this->error('Forbidden', 403);
+        }
+
         $totalProviders = User::count();
         $activeProviders = User::where('is_active', true)->count();
         $inactiveProviders = User::where('is_active', false)->count();
