@@ -324,14 +324,18 @@ class RegisterResource extends Resource
                     ->searchable()
                     ->toggleable()
                     ->limit(20),
-                Tables\Columns\TextColumn::make('platform')
+                Tables\Columns\TextColumn::make('softpos_provider')
+                    ->label(__('terminals.softpos_provider'))
                     ->badge()
-                    ->color(fn ($state) => match ($state?->value ?? $state) {
-                        'android' => 'success',
-                        'ios'     => 'info',
-                        'windows' => 'primary',
-                        'macos'   => 'gray',
-                        default   => 'gray',
+                    ->color(fn ($state) => match ($state) {
+                        'nearpay'  => 'info',
+                        'edfapay'  => 'warning',
+                        default    => 'gray',
+                    })
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'nearpay'  => 'NearPay',
+                        'edfapay'  => 'EdfaPay',
+                        default    => '—',
                     })
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_active')

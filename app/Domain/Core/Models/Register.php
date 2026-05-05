@@ -116,12 +116,18 @@ class Register extends Model
 
     /**
      * Whether the terminal is ready for SoftPOS operations.
+     * Branches on softpos_provider: EdfaPay requires an encrypted token,
+     * NearPay requires a TID.
      */
     public function getIsSoftposReadyAttribute(): bool
     {
+        $hasCredentials = $this->softpos_provider === 'edfapay'
+            ? (bool) $this->edfapay_token
+            : (bool) $this->nearpay_tid;
+
         return $this->softpos_enabled
-            && $this->nearpay_tid
-            && $this->acquirer_source
+            && $hasCredentials
+            && (bool) $this->acquirer_source
             && $this->softpos_status === 'active';
     }
 

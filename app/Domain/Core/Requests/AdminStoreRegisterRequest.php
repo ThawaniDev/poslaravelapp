@@ -29,7 +29,7 @@ class AdminStoreRegisterRequest extends FormRequest
             'nearpay_tid'       => ['nullable', 'string', 'max:50'],
             'nearpay_mid'       => ['nullable', 'string', 'max:50'],
             'nearpay_auth_key'  => ['nullable', 'string', 'max:255'],
-            'edfapay_token'     => ['nullable', 'string', 'max:500'],
+            'edfapay_token'     => ['nullable', 'string', 'max:2048'],
 
             // Acquirer
             'acquirer_source'    => ['nullable', 'string', Rule::in(['hala', 'bank_rajhi', 'bank_snb', 'geidea', 'other'])],

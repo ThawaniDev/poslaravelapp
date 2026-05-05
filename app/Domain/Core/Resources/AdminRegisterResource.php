@@ -32,7 +32,6 @@ class AdminRegisterResource extends JsonResource
             'nearpay_tid'              => $this->nearpay_tid,
             'nearpay_mid'              => $this->nearpay_mid,
             'edfapay_token'            => $this->edfapay_token,
-            'edfapay_token_updated_at' => $this->edfapay_token_updated_at?->toISOString(),
             // nearpay_auth_key is hidden ($hidden on model) — never exposed
 
             // Acquirer
