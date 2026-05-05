@@ -183,4 +183,43 @@ return [
 
     // ── Placeholders ─────────────────────────────────────────────────
     'placeholder_restaurant_id' => 'Restaurant ID',
+
+    // ── Sync Health Dashboard ─────────────────────────────────────────
+    'sync_health_dashboard'       => 'Sync Health Dashboard',
+    'total_platforms'             => 'Total Platforms',
+    'active_of_total'             => 'Active of total',
+    'active_integrations'         => 'Active Integrations',
+    'enabled_store_integrations'  => 'Enabled store-platform configs',
+    'sync_error_rate_24h'         => 'Sync Error Rate (24h)',
+    'sync_error_rate_desc'        => ':failed failed of :total syncs',
+    'refresh'                     => 'Refresh',
+    'dashboard_refreshed'         => 'Dashboard refreshed.',
+    'platform_breakdown_24h'      => 'Platform Breakdown (24h)',
+    'top_error_messages'          => 'Top Error Messages',
+    'recent_failed_syncs'         => 'Recent Failed Syncs',
+    'last_50'                     => 'Last 50',
+    'retry_sync'                  => 'Retry Sync',
+    'retry_queued'                => 'Retry has been queued.',
+    'error_rate_per_platform'     => 'Error Rate per Platform',
+    'sync_failed_integrations'    => 'Failed Integrations',
+    'stores'                      => 'Stores',
+    'never'                       => 'Never',
+    'items_synced'                => 'Items Synced',
+    'items_failed'                => 'Items Failed',
+    'error_message'               => 'Error Message',
+    'triggered_by'                => 'Triggered By',
+    'started_at'                  => 'Started At',
+    'push_failures_24h'           => 'Push Failures (24h)',
+    'webhook_invalid_sig'         => 'webhook invalid signature',
+
+    // ── Provider Usage View ───────────────────────────────────────────
+    'providers_for_platform'      => 'Providers for :platform',
+    'view_providers'              => 'View Providers',
+    'store_name'                  => 'Store Name',
+    'organisation'                => 'Organisation',
+    'sync_status'                 => 'Sync Status',
+    'last_sync_at'                => 'Last Sync At',
+    'slug_hint'                   => 'Auto-generated from name. Must be unique.',
+    'is_active_hint'              => 'When disabled, this platform is hidden from all providers.',
+    'field_key_hint'              => 'Internal key (e.g. restaurant_id). Lowercase letters, numbers, underscores only.',
 ];

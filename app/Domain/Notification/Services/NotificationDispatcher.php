@@ -126,6 +126,7 @@ class NotificationDispatcher
         string $priority = 'normal',
     ): void {
         $userIds = \App\Domain\Auth\Models\User::where('store_id', $storeId)
+            ->where('is_active', true)
             ->pluck('id')
             ->toArray();
 
@@ -159,12 +160,15 @@ class NotificationDispatcher
         string $priority = 'normal',
     ): void {
         $owner = \App\Domain\Auth\Models\User::where('store_id', $storeId)
-            ->whereHas('roles', fn ($q) => $q->where('name', 'store_owner'))
+            ->where('role', 'owner')
+            ->where('is_active', true)
             ->first();
 
         if (! $owner) {
-            // Fallback: send to first user of the store
-            $owner = \App\Domain\Auth\Models\User::where('store_id', $storeId)->first();
+            // Fallback: first active user in the store
+            $owner = \App\Domain\Auth\Models\User::where('store_id', $storeId)
+                ->where('is_active', true)
+                ->first();
         }
 
         if ($owner) {

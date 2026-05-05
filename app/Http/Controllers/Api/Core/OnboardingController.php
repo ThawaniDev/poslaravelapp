@@ -133,7 +133,7 @@ class OnboardingController extends BaseApiController
 
         if ($dbSteps->isNotEmpty()) {
             $steps = $dbSteps->map(fn ($step) => [
-                'key'            => \Illuminate\Support\Str::slug($step->title, '_'),
+                'key'            => \Illuminate\Support\Str::slug($step->title),
                 'order'          => (int) $step->sort_order,
                 'step_number'    => (int) $step->step_number,
                 'label_en'       => $step->title,

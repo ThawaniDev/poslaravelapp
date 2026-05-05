@@ -405,6 +405,12 @@ class DeliveryPlatformResource extends Resource
                     ->label(__('delivery.is_active')),
             ])
             ->actions([
+                Tables\Actions\Action::make('viewProviders')
+                    ->label(__('delivery.view_providers'))
+                    ->icon('heroicon-o-building-storefront')
+                    ->color('gray')
+                    ->url(fn (DeliveryPlatform $record) => static::getUrl('providers', ['record' => $record])),
+
                 Tables\Actions\Action::make('testConnectivity')
                     ->label(__('delivery.test_connectivity'))
                     ->icon('heroicon-o-signal')
@@ -471,6 +477,7 @@ class DeliveryPlatformResource extends Resource
             'index' => DeliveryPlatformResource\Pages\ListDeliveryPlatforms::route('/'),
             'create' => DeliveryPlatformResource\Pages\CreateDeliveryPlatform::route('/create'),
             'edit' => DeliveryPlatformResource\Pages\EditDeliveryPlatform::route('/{record}/edit'),
+            'providers' => DeliveryPlatformResource\Pages\ListProvidersForPlatform::route('/{record}/providers'),
         ];
     }
 

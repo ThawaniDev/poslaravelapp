@@ -26,7 +26,9 @@ class AllPermissionsSyncSeeder extends Seeder
      * from permissions_seed.sql. Source: codebase audit.
      */
     private const ADMIN_EXTRA_PERMISSIONS = [
-        // ── Analytics dashboards (Filament) ─────────────────────
+        // ── Analytics dashboards (Filament + API) ────────────────
+        ['name' => 'analytics.view',            'group' => 'analytics', 'description' => 'View all analytics dashboards (super-permission)'],
+        ['name' => 'analytics.export',          'group' => 'analytics', 'description' => 'Export analytics data (revenue, subscriptions, stores)'],
         ['name' => 'analytics.features',        'group' => 'analytics', 'description' => 'View feature adoption analytics dashboard'],
         ['name' => 'analytics.notifications',   'group' => 'analytics', 'description' => 'View notification analytics dashboard'],
         ['name' => 'analytics.revenue',         'group' => 'analytics', 'description' => 'View revenue dashboard'],

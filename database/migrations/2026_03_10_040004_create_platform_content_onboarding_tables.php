@@ -20,8 +20,8 @@ return new class extends Migration
             \Illuminate\Support\Facades\Schema::create('pricing_page_content', function (\Illuminate\Database\Schema\Blueprint $table) {
                 $table->uuid('id')->primary();
                 $table->uuid('subscription_plan_id')->unique();
-                $table->json('feature_bullet_list')->default('[]');
-                $table->json('faq')->default('[]');
+                $table->json('feature_bullet_list')->nullable();
+                $table->json('faq')->nullable();
                 $table->timestamps();
 
                 $table->foreign('subscription_plan_id')->references('id')->on('subscription_plans')->cascadeOnDelete();
@@ -448,8 +448,8 @@ CREATE TABLE knowledge_base_articles (
 CREATE TABLE pricing_page_content (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     subscription_plan_id UUID NOT NULL UNIQUE REFERENCES subscription_plans(id),
-    feature_bullet_list JSONB NOT NULL DEFAULT '[]',
-    faq JSONB NOT NULL DEFAULT '[]',
+    feature_bullet_list JSONB DEFAULT '[]',
+    faq JSONB DEFAULT '[]',
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );

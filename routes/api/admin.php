@@ -205,27 +205,43 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
     // ─── Analytics & Reporting (P6) ─────────────────────────────
     Route::prefix('analytics')->group(function () {
 
-        // Dashboards
-        Route::get('dashboard', [AnalyticsReportingController::class, 'mainDashboard']);
-        Route::get('revenue', [AnalyticsReportingController::class, 'revenueDashboard']);
-        Route::get('subscriptions', [AnalyticsReportingController::class, 'subscriptionDashboard']);
-        Route::get('stores', [AnalyticsReportingController::class, 'storePerformanceDashboard']);
-        Route::get('features', [AnalyticsReportingController::class, 'featureAdoptionDashboard']);
-        Route::get('support', [AnalyticsReportingController::class, 'supportAnalyticsDashboard']);
-        Route::get('system-health', [AnalyticsReportingController::class, 'systemHealthDashboard']);
-        Route::get('health', [AnalyticsReportingController::class, 'systemHealthDashboard']);
-        Route::get('notifications', [AnalyticsReportingController::class, 'notificationAnalytics']);
+        // Dashboards — require analytics.view permission
+        Route::get('dashboard', [AnalyticsReportingController::class, 'mainDashboard'])
+            ->middleware('permission:analytics.view');
+        Route::get('revenue', [AnalyticsReportingController::class, 'revenueDashboard'])
+            ->middleware('permission:analytics.view,analytics.revenue');
+        Route::get('subscriptions', [AnalyticsReportingController::class, 'subscriptionDashboard'])
+            ->middleware('permission:analytics.view,analytics.subscriptions');
+        Route::get('stores', [AnalyticsReportingController::class, 'storePerformanceDashboard'])
+            ->middleware('permission:analytics.view,analytics.stores');
+        Route::get('features', [AnalyticsReportingController::class, 'featureAdoptionDashboard'])
+            ->middleware('permission:analytics.view,analytics.features');
+        Route::get('support', [AnalyticsReportingController::class, 'supportAnalyticsDashboard'])
+            ->middleware('permission:analytics.view,analytics.support');
+        Route::get('system-health', [AnalyticsReportingController::class, 'systemHealthDashboard'])
+            ->middleware('permission:analytics.view');
+        Route::get('health', [AnalyticsReportingController::class, 'systemHealthDashboard'])
+            ->middleware('permission:analytics.view');
+        Route::get('notifications', [AnalyticsReportingController::class, 'notificationAnalytics'])
+            ->middleware('permission:analytics.view,analytics.notifications');
 
-        // Raw data access
-        Route::get('daily-stats', [AnalyticsReportingController::class, 'listDailyStats']);
-        Route::get('plan-stats', [AnalyticsReportingController::class, 'listPlanStats']);
-        Route::get('feature-stats', [AnalyticsReportingController::class, 'listFeatureStats']);
-        Route::get('store-health', [AnalyticsReportingController::class, 'listStoreHealth']);
+        // Raw data access — require analytics.view
+        Route::get('daily-stats', [AnalyticsReportingController::class, 'listDailyStats'])
+            ->middleware('permission:analytics.view');
+        Route::get('plan-stats', [AnalyticsReportingController::class, 'listPlanStats'])
+            ->middleware('permission:analytics.view');
+        Route::get('feature-stats', [AnalyticsReportingController::class, 'listFeatureStats'])
+            ->middleware('permission:analytics.view');
+        Route::get('store-health', [AnalyticsReportingController::class, 'listStoreHealth'])
+            ->middleware('permission:analytics.view');
 
-        // Export
-        Route::post('export/revenue', [AnalyticsReportingController::class, 'exportRevenue']);
-        Route::post('export/subscriptions', [AnalyticsReportingController::class, 'exportSubscriptions']);
-        Route::post('export/stores', [AnalyticsReportingController::class, 'exportStores']);
+        // Export — require analytics.export permission
+        Route::post('export/revenue', [AnalyticsReportingController::class, 'exportRevenue'])
+            ->middleware('permission:analytics.export');
+        Route::post('export/subscriptions', [AnalyticsReportingController::class, 'exportSubscriptions'])
+            ->middleware('permission:analytics.export');
+        Route::post('export/stores', [AnalyticsReportingController::class, 'exportStores'])
+            ->middleware('permission:analytics.export');
 
         // SoftPOS analytics (dashboard) + financial management
         Route::prefix('softpos')->name('softpos.')->group(function () {
@@ -493,6 +509,7 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
         Route::prefix('alerts')->group(function () {
             Route::get('/', [SecurityCenterController::class, 'listAlerts']);
             Route::get('{alertId}', [SecurityCenterController::class, 'showAlert']);
+            Route::post('{alertId}/investigate', [SecurityCenterController::class, 'investigateAlert']);
             Route::post('{alertId}/resolve', [SecurityCenterController::class, 'resolveAlert']);
         });
 
@@ -500,6 +517,18 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
             Route::get('/', [SecurityCenterController::class, 'listSessions']);
             Route::get('{sessionId}', [SecurityCenterController::class, 'showSession']);
             Route::post('{sessionId}/revoke', [SecurityCenterController::class, 'revokeSession']);
+            Route::post('revoke-all', [SecurityCenterController::class, 'revokeAllSessions']);
+        });
+
+        Route::prefix('trusted-devices')->group(function () {
+            Route::get('/', [SecurityCenterController::class, 'listTrustedDevices']);
+            Route::get('{deviceId}', [SecurityCenterController::class, 'showTrustedDevice']);
+            Route::delete('{deviceId}', [SecurityCenterController::class, 'revokeTrust']);
+        });
+
+        Route::prefix('activity-logs')->group(function () {
+            Route::get('/', [SecurityCenterController::class, 'listActivityLogs']);
+            Route::get('{logId}', [SecurityCenterController::class, 'showActivityLog']);
         });
 
         Route::prefix('devices')->group(function () {

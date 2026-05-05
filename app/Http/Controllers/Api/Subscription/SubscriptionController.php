@@ -282,7 +282,7 @@ class SubscriptionController extends BaseApiController
 
         // Verify store belongs to user's organization
         if ($request->filled('store_id')) {
-            $store = \App\Domain\Store\Models\Store::where('id', $request->input('store_id'))
+            $store = \App\Domain\Core\Models\Store::where('id', $request->input('store_id'))
                 ->where('organization_id', $organizationId)
                 ->first();
             if (! $store) {
@@ -426,13 +426,18 @@ class SubscriptionController extends BaseApiController
         }
 
         if ($existing) {
-            // Reactivate
-            $existing->update([
-                'is_active' => true,
-                'activated_at' => now(),
-                'deactivated_at' => null,
-            ]);
-            $storeAddOn = $existing;
+            // Reactivate — use direct query because StoreAddOn has composite PK
+            \Illuminate\Support\Facades\DB::table('store_add_ons')
+                ->where('store_id', $storeId)
+                ->where('plan_add_on_id', $addOnId)
+                ->update([
+                    'is_active' => true,
+                    'activated_at' => now(),
+                    'deactivated_at' => null,
+                ]);
+            $storeAddOn = \App\Domain\ProviderSubscription\Models\StoreAddOn::where('store_id', $storeId)
+                ->where('plan_add_on_id', $addOnId)
+                ->first();
         } else {
             $storeAddOn = \App\Domain\ProviderSubscription\Models\StoreAddOn::create([
                 'store_id' => $storeId,
@@ -483,10 +488,14 @@ class SubscriptionController extends BaseApiController
             return $this->error(__('subscription.addon_already_deactivated'), 422);
         }
 
-        $storeAddOn->update([
-            'is_active' => false,
-            'deactivated_at' => now(),
-        ]);
+        // Use direct query because StoreAddOn has composite PK
+        \Illuminate\Support\Facades\DB::table('store_add_ons')
+            ->where('store_id', $storeId)
+            ->where('plan_add_on_id', $addOnId)
+            ->update([
+                'is_active' => false,
+                'deactivated_at' => now(),
+            ]);
 
         return $this->success(null, __('subscription.addon_removed'));
     }
@@ -536,7 +545,7 @@ class SubscriptionController extends BaseApiController
         }
 
         $originalPrice = $cycle === 'yearly'
-            ? (float) ($plan->yearly_price ?? ($plan->monthly_price * 12 * 0.8))
+            ? (float) ($plan->annual_price ?? ($plan->monthly_price * 12 * 0.8))
             : (float) $plan->monthly_price;
 
         /** @var \App\Domain\Promotion\Enums\DiscountType $type */

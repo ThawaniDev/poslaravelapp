@@ -58,22 +58,24 @@ class StaffUserController extends BaseApiController
 
     public function show(string $id, Request $request)
     {
-        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
-
-        if (!$this->canAccessStore($request, $staff->store_id)) {
-            return $this->notFound('Staff not found');
+        $storeIds = $this->resolvedStoreIds($request);
+        if (empty($storeIds) && $request->user()?->store_id) {
+            $storeIds = [$request->user()->store_id];
         }
+
+        $staff = $this->staffService->findInStores($storeIds, $id);
 
         return $this->success(new StaffUserResource($staff));
     }
 
     public function update(UpdateStaffRequest $request, string $id)
     {
-        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
-
-        if (!$this->canAccessStore($request, $staff->store_id)) {
-            return $this->notFound('Staff not found');
+        $storeIds = $this->resolvedStoreIds($request);
+        if (empty($storeIds) && $request->user()?->store_id) {
+            $storeIds = [$request->user()->store_id];
         }
+
+        $staff = $this->staffService->findInStores($storeIds, $id);
 
         $updated = $this->staffService->update($staff, $request->validated());
 
@@ -82,11 +84,12 @@ class StaffUserController extends BaseApiController
 
     public function destroy(string $id, Request $request)
     {
-        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
-
-        if (!$this->canAccessStore($request, $staff->store_id)) {
-            return $this->notFound('Staff not found');
+        $storeIds = $this->resolvedStoreIds($request);
+        if (empty($storeIds) && $request->user()?->store_id) {
+            $storeIds = [$request->user()->store_id];
         }
+
+        $staff = $this->staffService->findInStores($storeIds, $id);
 
         $this->staffService->delete($staff);
 
@@ -201,10 +204,10 @@ class StaffUserController extends BaseApiController
 
         try {
             $shifts = $this->staffService->bulkCreateShifts($data);
-            return $this->success(
-                ShiftScheduleResource::collection(
-                    collect($shifts)->load('staffUser', 'shiftTemplate')
-                ),
+            $eloquentCollection = new \Illuminate\Database\Eloquent\Collection($shifts);
+            $eloquentCollection->load('staffUser', 'shiftTemplate');
+            return $this->created(
+                ShiftScheduleResource::collection($eloquentCollection),
                 count($shifts) . ' shifts created'
             );
         } catch (\InvalidArgumentException $e) {
@@ -388,17 +391,23 @@ class StaffUserController extends BaseApiController
 
     public function assignBranch(string $id, Request $request)
     {
-        $staff = $this->staffService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $id);
-
-        if (!$this->canAccessStore($request, $staff->store_id)) {
-            return $this->notFound('Staff not found');
+        $storeIds = $this->resolvedStoreIds($request);
+        if (empty($storeIds) && $request->user()?->store_id) {
+            $storeIds = [$request->user()->store_id];
         }
+
+        $staff = $this->staffService->findInStores($storeIds, $id);
 
         $data = $request->validate([
             'branch_id'  => 'required|uuid|exists:stores,id',
             'role_id'    => 'nullable|integer|exists:roles,id',
             'is_primary' => 'nullable|boolean',
         ]);
+
+        // Ensure the branch_id belongs to the user's accessible stores (org isolation)
+        if (!$this->canAccessStore($request, $data['branch_id'])) {
+            return $this->error('Cannot assign staff to a branch outside your organization', 422);
+        }
 
         try {
             $assignment = $this->staffService->assignBranch($staff, $data);

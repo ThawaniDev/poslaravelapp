@@ -28,6 +28,9 @@ class ProviderRegistration extends Model
         'reviewed_by',
         'reviewed_at',
         'rejection_reason',
+        'internal_notes',
+        'source',
+        'plan_id',
     ];
 
     protected $casts = [

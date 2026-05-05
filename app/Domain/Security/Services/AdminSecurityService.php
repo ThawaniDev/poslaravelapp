@@ -392,11 +392,20 @@ class AdminSecurityService
         return $query->orderByDesc('created_at')->paginate($perPage);
     }
 
-    public function createAllowlistEntry(string $ipAddress, ?string $label, string $addedById): AdminIpAllowlist
-    {
+    public function createAllowlistEntry(
+        string $ipAddress,
+        ?string $label,
+        string $addedById,
+        bool $isCidr = false,
+        ?string $description = null,
+        ?\DateTimeInterface $expiresAt = null,
+    ): AdminIpAllowlist {
         $entry = AdminIpAllowlist::create([
             'ip_address' => $ipAddress,
+            'is_cidr' => $isCidr,
             'label' => $label,
+            'description' => $description,
+            'expires_at' => $expiresAt,
             'added_by' => $addedById,
             'created_at' => now(),
         ]);
@@ -406,7 +415,7 @@ class AdminSecurityService
             action: 'add_ip_allowlist',
             entityType: 'admin_ip_allowlist',
             entityId: $entry->id,
-            details: ['ip_address' => $ipAddress, 'label' => $label],
+            details: ['ip_address' => $ipAddress, 'label' => $label, 'is_cidr' => $isCidr],
         );
 
         return $entry;
@@ -448,9 +457,11 @@ class AdminSecurityService
         ?string $reason,
         string $blockedById,
         ?\DateTimeInterface $expiresAt = null,
+        bool $isCidr = false,
     ): AdminIpBlocklist {
         $entry = AdminIpBlocklist::create([
             'ip_address' => $ipAddress,
+            'is_cidr' => $isCidr,
             'reason' => $reason,
             'blocked_by' => $blockedById,
             'blocked_at' => now(),

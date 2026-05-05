@@ -128,25 +128,34 @@ class ProviderManagementController extends BaseApiController
     {
         $result = $this->service->createStoreManually(
             [
-                'name' => $request->input('organization_name'),
+                'name'          => $request->input('organization_name'),
                 'business_type' => $request->input('organization_business_type', 'grocery'),
-                'country' => $request->input('organization_country', 'OM'),
+                'country'       => $request->input('organization_country', 'SA'),
             ],
             [
-                'name' => $request->input('store_name'),
+                'name'          => $request->input('store_name'),
                 'business_type' => $request->input('store_business_type'),
-                'currency' => $request->input('store_currency', 'SAR'),
-                'is_active' => $request->input('store_is_active', true),
+                'currency'      => $request->input('store_currency', 'SAR'),
+                'is_active'     => $request->input('store_is_active', true),
+                'owner_name'    => $request->input('owner_name'),
+                'owner_email'   => $request->input('owner_email'),
+                'owner_phone'   => $request->input('owner_phone'),
             ],
             $request->user()->id
         );
 
         return $this->created([
             'organization' => [
-                'id' => $result['organization']->id,
+                'id'   => $result['organization']->id,
                 'name' => $result['organization']->name,
             ],
-            'store' => new StoreAdminResource($result['store']->load('organization')),
+            'store'         => new StoreAdminResource($result['store']->load('organization')),
+            'user'          => $result['user'] ? [
+                'id'    => $result['user']->id,
+                'email' => $result['user']->email,
+                'name'  => $result['user']->name,
+            ] : null,
+            'temp_password' => $result['temp_password'] ?? null,
         ], 'Store created successfully');
     }
 
@@ -201,6 +210,7 @@ class ProviderManagementController extends BaseApiController
                 'organization' => ['id' => $result['organization']->id, 'name' => $result['organization']->name],
                 'store'        => new StoreAdminResource($result['store']->load('organization')),
                 'user'         => ['id' => $result['user']->id, 'email' => $result['user']->email, 'name' => $result['user']->name],
+                'temp_password' => $result['temp_password'],
             ], 'Registration approved successfully');
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return $this->notFound('Registration not found');

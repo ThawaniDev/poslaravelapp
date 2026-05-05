@@ -145,6 +145,10 @@ class PlanEnforcementService
             'staff_members' => DB::table('users')
                 ->where('organization_id', $organizationId)
                 ->where('is_active', true)
+                ->count()
+                + DB::table('staff_users')
+                ->whereIn('store_id', $storeIds)
+                ->where('status', 'active')
                 ->count(),
 
             'cashier_terminals' => DB::table('registers')

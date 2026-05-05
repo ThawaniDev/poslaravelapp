@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\AdminPanel\Models\AdminUser;
 use App\Domain\Auth\Enums\UserRole;
 use App\Domain\StaffManagement\Services\RoleService;
 use Closure;
@@ -31,6 +32,29 @@ class CheckPermission
             ], 401);
         }
 
+        // Admin users (admin-api guard) use the AdminUser permission system,
+        // which is role-based without requiring a store context.
+        if ($user instanceof AdminUser) {
+            if ($user->isSuperAdmin()) {
+                return $next($request);
+            }
+
+            foreach ($permissions as $permission) {
+                if ($user->hasPermission($permission)) {
+                    return $next($request);
+                }
+            }
+
+            $permissionNames = implode(', ', $permissions);
+
+            return response()->json([
+                'success' => false,
+                'message' => "You do not have permission to perform this action. Required: {$permissionNames}",
+                'required_permissions' => $permissions,
+            ], 403);
+        }
+
+        // Store staff users — permission check requires a store context.
         $storeId = $this->resolveStoreId($request, $user);
 
         if (!$storeId) {

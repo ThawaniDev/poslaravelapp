@@ -355,7 +355,7 @@ class AnalyticsReportingController extends BaseApiController
             ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
             ->get(['created_at', 'first_response_at']);
         $avgFirstResponse = $ticketsWithResponse->count() > 0
-            ? $ticketsWithResponse->avg(fn ($t) => $t->first_response_at->diffInMinutes($t->created_at) / 60)
+            ? $ticketsWithResponse->avg(fn ($t) => $t->created_at->diffInMinutes($t->first_response_at) / 60)
             : 0;
 
         // Average resolution time (hours) — computed in PHP for SQLite/PG compat
@@ -363,7 +363,7 @@ class AnalyticsReportingController extends BaseApiController
             ->whereBetween('created_at', [$dateFrom, $dateTo . ' 23:59:59'])
             ->get(['created_at', 'resolved_at']);
         $avgResolution = $ticketsWithResolution->count() > 0
-            ? $ticketsWithResolution->avg(fn ($t) => $t->resolved_at->diffInMinutes($t->created_at) / 60)
+            ? $ticketsWithResolution->avg(fn ($t) => $t->created_at->diffInMinutes($t->resolved_at) / 60)
             : 0;
 
         // Tickets by category

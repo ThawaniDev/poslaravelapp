@@ -60,6 +60,24 @@ class StaffService
             ])->findOrFail($id);
     }
 
+    /**
+     * Find staff scoped to a list of accessible store IDs.
+     * Throws ModelNotFoundException (404) if staff is not in any of the given stores.
+     */
+    public function findInStores(array $storeIds, string $id): StaffUser
+    {
+        if (empty($storeIds)) {
+            throw (new \Illuminate\Database\Eloquent\ModelNotFoundException())->setModel(StaffUser::class, $id);
+        }
+
+        return StaffUser::whereIn('store_id', $storeIds)
+            ->with([
+                'staffBranchAssignments',
+                'commissionRules',
+                'user',
+            ])->findOrFail($id);
+    }
+
     public function create(array $data): StaffUser
     {
         return DB::transaction(function () use ($data) {
@@ -96,7 +114,7 @@ class StaffService
 
             $staff = StaffUser::create($data);
 
-            return $staff->load('user');
+            return $staff->refresh()->load('user');
         });
     }
 
@@ -120,6 +138,10 @@ class StaffService
 
     public function setPin(StaffUser $staff, string $pin): StaffUser
     {
+        if (strlen($pin) < 4) {
+            throw new \InvalidArgumentException('PIN must be at least 4 characters.');
+        }
+
         $staff->update(['pin_hash' => Hash::make($pin)]);
         return $staff->refresh();
     }
@@ -210,6 +232,7 @@ class StaffService
 
         $record->update([
             'clock_out_at'     => $clockOut,
+            'work_minutes'     => (int) $workMinutes,
             'break_minutes'    => (int) $breakMinutes,
             'overtime_minutes' => $overtime,
             'notes'            => $notes ?? $record->notes,
@@ -253,7 +276,18 @@ class StaffService
         }
 
         $breakRecord->update(['break_end' => now()]);
-        return $breakRecord->refresh();
+        $breakRecord->refresh();
+
+        // Recompute total break_minutes on the attendance record
+        $totalBreakMinutes = BreakRecord::where('attendance_record_id', $attendanceRecordId)
+            ->whereNotNull('break_end')
+            ->get()
+            ->sum(fn ($b) => (int) $b->break_start->diffInMinutes($b->break_end));
+
+        AttendanceRecord::where('id', $attendanceRecordId)
+            ->update(['break_minutes' => $totalBreakMinutes]);
+
+        return $breakRecord;
     }
 
     // ─── Shifts ─────────────────────────────────────────────
@@ -473,17 +507,23 @@ class StaffService
     public function setCommissionConfig(StaffUser $staff, array $data): CommissionRule
     {
         return DB::transaction(function () use ($staff, $data) {
-            // Deactivate existing rules if replacing
-            if (!empty($data['replace_existing'])) {
+            $replaceExisting = filter_var($data['replace_existing'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+            if ($replaceExisting) {
+                // Soft-replace: deactivate existing rules so history is preserved
                 CommissionRule::where('staff_user_id', $staff->id)
+                    ->where('is_active', true)
                     ->update(['is_active' => false]);
+            } else {
+                // Hard-replace: remove existing rules (default behaviour)
+                CommissionRule::where('staff_user_id', $staff->id)->delete();
             }
 
             return CommissionRule::create([
                 'store_id'            => $staff->store_id,
                 'staff_user_id'       => $staff->id,
                 'type'                => $data['type'],
-                'percentage'          => $data['percentage'],
+                'percentage'          => $data['percentage'] ?? null,
                 'tiers_json'          => $data['tiers_json'] ?? null,
                 'product_category_id' => $data['product_category_id'] ?? null,
                 'is_active'           => $data['is_active'] ?? true,

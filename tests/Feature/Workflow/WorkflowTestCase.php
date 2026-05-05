@@ -150,7 +150,7 @@ abstract class WorkflowTestCase extends TestCase
     {
         $this->assignStoreRole($user, 'branch_manager', $storeId, [
             'pos.sell', 'pos.return', 'pos.hold_recall', 'pos.shift_open', 'pos.shift_close',
-            'pos.view_sessions', 'pos.void_transaction', 'pos.manage_terminals',
+            'pos.view_sessions', 'pos.void_transaction', 'pos.manage_terminals', 'pos.discount',
             'orders.manage', 'orders.view', 'orders.update_status', 'orders.return', 'orders.void',
             'customers.view', 'customers.manage', 'customers.manage_loyalty',
             'customers.manage_credit', 'customers.manage_debits',

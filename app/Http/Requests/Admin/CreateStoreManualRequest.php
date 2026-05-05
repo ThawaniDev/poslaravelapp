@@ -14,13 +14,16 @@ class CreateStoreManualRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'organization_name' => ['required', 'string', 'max:255'],
+            'organization_name'          => ['required', 'string', 'max:255'],
             'organization_business_type' => ['nullable', 'string', 'max:50'],
-            'organization_country' => ['nullable', 'string', 'max:5'],
-            'store_name' => ['required', 'string', 'max:255'],
-            'store_business_type' => ['nullable', 'string', 'max:50'],
-            'store_currency' => ['nullable', 'string', 'max:5'],
-            'store_is_active' => ['nullable', 'boolean'],
+            'organization_country'       => ['nullable', 'string', 'max:5'],
+            'store_name'                 => ['required', 'string', 'max:255'],
+            'store_business_type'        => ['nullable', 'string', 'max:50'],
+            'store_currency'             => ['nullable', 'string', 'max:5'],
+            'store_is_active'            => ['nullable', 'boolean'],
+            'owner_name'                 => ['nullable', 'string', 'max:255'],
+            'owner_email'                => ['nullable', 'email', 'max:255'],
+            'owner_phone'                => ['nullable', 'string', 'max:30'],
         ];
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Domain\Core\Services;
 
 use App\Domain\Auth\Models\User;
+use App\Domain\ContentOnboarding\Models\BusinessType as BusinessTypeEntity;
+use App\Domain\ContentOnboarding\Services\BusinessTypeSeederService;
 use App\Domain\Core\Enums\BusinessType;
 use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Store;
@@ -149,6 +151,17 @@ class StoreService
 
             // Create default working hours (Sun–Sat, 9am–10pm, Fri off)
             $this->initDefaultWorkingHours($store);
+
+            // Seed business-type templates (one-time, Business Rule #8)
+            if (! empty($data['business_type_id'])) {
+                $businessTypeEntity = BusinessTypeEntity::where('id', $data['business_type_id'])
+                    ->where('is_active', true)
+                    ->first();
+
+                if ($businessTypeEntity) {
+                    app(BusinessTypeSeederService::class)->seed($store, $businessTypeEntity);
+                }
+            }
 
             return $store->load(self::DETAIL_RELATIONS)
                          ->loadCount(['users', 'registers']);

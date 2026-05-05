@@ -2,6 +2,8 @@
 
 namespace App\Domain\ProviderSubscription\Models;
 
+use App\Domain\Core\Models\Store;
+use App\Domain\Subscription\Models\PlanAddOn;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 

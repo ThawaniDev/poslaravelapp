@@ -166,7 +166,7 @@ class SoftPosFeeTest extends TestCase
         $svc = new SoftPosFeeService();
 
         foreach ([50.0, 500.0, 10000.0] as $amount) {
-            $result = $svc->calculate($amount, 'visa', 0.006, 0.004, 1.0, 0.5);
+            $result = $svc->calculate($amount, 'visa', 0.006, 0.004, 0.0, 0.0, 1.0, 0.5);
 
             $this->assertEqualsWithDelta(1.0, $result['platform_fee'], 0.001, "amount=$amount");
             $this->assertEqualsWithDelta(0.5, $result['gateway_fee'],  0.001, "amount=$amount");
@@ -179,7 +179,7 @@ class SoftPosFeeTest extends TestCase
     public function test_mastercard_uses_fixed_fee(): void
     {
         $svc    = new SoftPosFeeService();
-        $result = $svc->calculate(250.0, 'mastercard', 0.006, 0.004, 1.0, 0.5);
+        $result = $svc->calculate(250.0, 'mastercard', 0.006, 0.004, 0.0, 0.0, 1.0, 0.5);
 
         $this->assertSame('fixed', $result['fee_type']);
         $this->assertEqualsWithDelta(1.0, $result['platform_fee'], 0.001);
@@ -229,7 +229,7 @@ class SoftPosFeeTest extends TestCase
         }
 
         // Amex is classified as a card (same as Visa/MC) and returns fixed fee
-        $amexResult = $svc->calculate(1000.0, 'amex', 0.006, 0.004, 1.0, 0.5);
+        $amexResult = $svc->calculate(1000.0, 'amex', 0.006, 0.004, 0.0, 0.0, 1.0, 0.5);
         $this->assertSame('fixed', $amexResult['fee_type'], 'amex should use fixed fee like Visa/MC');
         $this->assertEqualsWithDelta(1.0, $amexResult['platform_fee'], 0.001);
     }

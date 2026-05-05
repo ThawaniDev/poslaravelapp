@@ -3,7 +3,7 @@
 namespace App\Domain\Security\Models;
 
 use App\Domain\Core\Models\Store;
-use App\Domain\Core\Models\User;
+use App\Domain\Auth\Models\User;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,6 +23,7 @@ class PinOverride extends Model
         'authorizing_user_id',
         'permission_code',
         'action_context',
+        'created_at',
     ];
 
     protected $casts = [

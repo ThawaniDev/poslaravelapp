@@ -13,12 +13,12 @@ class PinOverrideService
     /**
      * Maximum PIN attempts before lockout.
      */
-    private const MAX_ATTEMPTS = 5;
+    public const MAX_ATTEMPTS = 5;
 
     /**
      * Lockout duration in minutes after exceeding max attempts.
      */
-    private const LOCKOUT_MINUTES = 15;
+    public const LOCKOUT_MINUTES = 15;
 
     /**
      * Request a PIN override — validates the authorizing user's PIN

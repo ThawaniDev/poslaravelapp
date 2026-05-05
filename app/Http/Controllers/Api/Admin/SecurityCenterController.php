@@ -65,6 +65,20 @@ class SecurityCenterController extends BaseApiController
         }
     }
 
+    public function investigateAlert(string $id): JsonResponse
+    {
+        try {
+            $alert = $this->service->investigateAlert(
+                id: $id,
+                adminUserId: request()->user('admin-api')->id,
+            );
+
+            return $this->success($alert, __('security.alert_investigating'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.alert_not_found'));
+        }
+    }
+
     // ── Admin Sessions ───────────────────────────────────────
     public function listSessions(Request $request): JsonResponse
     {
@@ -101,6 +115,81 @@ class SecurityCenterController extends BaseApiController
             return $this->success($session, __('security.session_revoked'));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound(__('security.session_not_found'));
+        }
+    }
+
+    public function revokeAllSessions(Request $request): JsonResponse
+    {
+        $request->validate(['admin_user_id' => 'required|string|uuid']);
+
+        $count = $this->service->revokeAllSessionsForAdmin(
+            adminUserId: $request->input('admin_user_id'),
+            revokedById: $request->user('admin-api')->id,
+        );
+
+        return $this->success(['revoked_count' => $count], __('security.sessions_all_revoked'));
+    }
+
+    // ── Trusted Devices ──────────────────────────────────────
+    public function listTrustedDevices(Request $request): JsonResponse
+    {
+        return $this->success(
+            $this->service->listTrustedDevices(
+                adminUserId: $request->input('admin_user_id'),
+                perPage: (int) $request->input('per_page', 15),
+            ),
+            __('security.trusted_devices_fetched'),
+        );
+    }
+
+    public function showTrustedDevice(string $id): JsonResponse
+    {
+        try {
+            $device = \App\Domain\Security\Models\AdminTrustedDevice::with('adminUser')->findOrFail($id);
+
+            return $this->success($device, __('security.trusted_device_fetched'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.trusted_device_not_found'));
+        }
+    }
+
+    public function revokeTrust(string $id): JsonResponse
+    {
+        try {
+            $this->service->revokeTrust(
+                id: $id,
+                revokedById: request()->user('admin-api')->id,
+            );
+
+            return $this->success(null, __('security.trust_revoked'));
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.trusted_device_not_found'));
+        }
+    }
+
+    // ── Activity Logs ────────────────────────────────────────
+    public function listActivityLogs(Request $request): JsonResponse
+    {
+        return $this->success(
+            $this->service->listActivityLogs(
+                adminUserId: $request->input('admin_user_id'),
+                action: $request->input('action'),
+                entityType: $request->input('entity_type'),
+                perPage: (int) $request->input('per_page', 15),
+            ),
+            __('security.activity_logs_fetched'),
+        );
+    }
+
+    public function showActivityLog(string $id): JsonResponse
+    {
+        try {
+            return $this->success(
+                $this->service->showActivityLog($id),
+                __('security.activity_log_fetched'),
+            );
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+            return $this->notFound(__('security.activity_log_not_found'));
         }
     }
 
@@ -266,14 +355,25 @@ class SecurityCenterController extends BaseApiController
     public function createAllowlistEntry(Request $request): JsonResponse
     {
         $request->validate([
-            'ip_address' => 'required|ip|max:45',
+            'ip_address' => ['required', 'string', 'max:50', function ($attribute, $value, $fail) {
+                if (! filter_var($value, FILTER_VALIDATE_IP) && ! $this->isValidCidr($value)) {
+                    $fail(__('security.invalid_ip_or_cidr'));
+                }
+            }],
             'label' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:500',
+            'expires_at' => 'nullable|date|after:now',
         ]);
+
+        $isCidr = str_contains($request->input('ip_address'), '/');
 
         $entry = $this->service->createAllowlistEntry(
             ipAddress: $request->input('ip_address'),
             label: $request->input('label'),
             addedById: $request->user('admin-api')->id,
+            isCidr: $isCidr,
+            description: $request->input('description'),
+            expiresAt: $request->input('expires_at') ? new \DateTime($request->input('expires_at')) : null,
         );
 
         return $this->created($entry, __('security.allowlist_entry_created'));
@@ -308,16 +408,23 @@ class SecurityCenterController extends BaseApiController
     public function createBlocklistEntry(Request $request): JsonResponse
     {
         $request->validate([
-            'ip_address' => 'required|ip|max:45',
+            'ip_address' => ['required', 'string', 'max:50', function ($attribute, $value, $fail) {
+                if (! filter_var($value, FILTER_VALIDATE_IP) && ! $this->isValidCidr($value)) {
+                    $fail(__('security.invalid_ip_or_cidr'));
+                }
+            }],
             'reason' => 'nullable|string|max:500',
             'expires_at' => 'nullable|date|after:now',
         ]);
+
+        $isCidr = str_contains($request->input('ip_address'), '/');
 
         $entry = $this->service->createBlocklistEntry(
             ipAddress: $request->input('ip_address'),
             reason: $request->input('reason'),
             blockedById: $request->user('admin-api')->id,
             expiresAt: $request->input('expires_at') ? new \DateTime($request->input('expires_at')) : null,
+            isCidr: $isCidr,
         );
 
         return $this->created($entry, __('security.blocklist_entry_created'));
@@ -335,5 +442,32 @@ class SecurityCenterController extends BaseApiController
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
             return $this->notFound(__('security.entry_not_found'));
         }
+    }
+
+    // ─── Private Helpers ─────────────────────────────────────
+
+    private function isValidCidr(string $value): bool
+    {
+        if (! str_contains($value, '/')) {
+            return false;
+        }
+
+        [$ip, $prefix] = explode('/', $value, 2);
+
+        if (! is_numeric($prefix)) {
+            return false;
+        }
+
+        $prefix = (int) $prefix;
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return $prefix >= 0 && $prefix <= 32;
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return $prefix >= 0 && $prefix <= 128;
+        }
+
+        return false;
     }
 }

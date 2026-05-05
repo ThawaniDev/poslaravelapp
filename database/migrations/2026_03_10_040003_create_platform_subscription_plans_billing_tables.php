@@ -27,7 +27,7 @@ CREATE TABLE subscription_plans (
     name_ar VARCHAR(100) NOT NULL,
     slug VARCHAR(50) NOT NULL UNIQUE,
     monthly_price DECIMAL(10,2) NOT NULL,
-    annual_price DECIMAL(10,2) NOT NULL,
+    annual_price DECIMAL(10,2),
     trial_days INT DEFAULT 14,
     grace_period_days INT DEFAULT 7,
     is_active BOOLEAN DEFAULT TRUE,

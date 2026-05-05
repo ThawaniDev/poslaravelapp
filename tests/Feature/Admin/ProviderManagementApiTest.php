@@ -970,4 +970,400 @@ class ProviderManagementApiTest extends TestCase
                 ],
             ]);
     }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── New: suspend_reason + suspended_at Persistence ───────
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_suspend_store_saves_reason_and_timestamp(): void
+    {
+        $response = $this->postJson("/api/v2/admin/providers/stores/{$this->store->id}/suspend", [
+            'reason' => 'Fraudulent activity detected',
+        ]);
+
+        $response->assertOk()->assertJsonPath('success', true);
+
+        $this->store->refresh();
+        $this->assertFalse($this->store->is_active);
+        $this->assertEquals('Fraudulent activity detected', $this->store->suspend_reason);
+        $this->assertNotNull($this->store->suspended_at);
+    }
+
+    public function test_activate_clears_suspend_reason(): void
+    {
+        // Pre-suspend via DB
+        $this->store->update([
+            'is_active'      => false,
+            'suspend_reason' => 'Old reason',
+            'suspended_at'   => now()->subDay(),
+        ]);
+
+        $response = $this->postJson("/api/v2/admin/providers/stores/{$this->store->id}/activate");
+
+        $response->assertOk()->assertJsonPath('success', true);
+
+        $this->store->refresh();
+        $this->assertTrue($this->store->is_active);
+        $this->assertNull($this->store->suspend_reason);
+        $this->assertNull($this->store->suspended_at);
+    }
+
+    public function test_suspend_store_without_reason_is_allowed(): void
+    {
+        $response = $this->postJson("/api/v2/admin/providers/stores/{$this->store->id}/suspend", []);
+
+        $response->assertOk()->assertJsonPath('success', true);
+
+        $this->store->refresh();
+        $this->assertFalse($this->store->is_active);
+        $this->assertNull($this->store->suspend_reason);
+    }
+
+    public function test_store_detail_includes_suspend_reason_after_suspend(): void
+    {
+        $this->store->update([
+            'is_active'      => false,
+            'suspend_reason' => 'Billing overdue',
+            'suspended_at'   => now()->subHour(),
+        ]);
+
+        $response = $this->getJson("/api/v2/admin/providers/stores/{$this->store->id}");
+
+        $response->assertOk()
+            ->assertJsonPath('data.is_active', false)
+            ->assertJsonPath('data.suspend_reason', 'Billing overdue');
+
+        $this->assertNotNull($response->json('data.suspended_at'));
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── New: StoreAdminResource completeness ─────────────────
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_store_detail_includes_all_resource_fields(): void
+    {
+        $this->store->update([
+            'phone'      => '+966501234567',
+            'email'      => 'store@example.com',
+            'city'       => 'Riyadh',
+            'cr_number'  => 'CR123456',
+            'vat_number' => 'VAT987654',
+        ]);
+
+        $response = $this->getJson("/api/v2/admin/providers/stores/{$this->store->id}");
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'id', 'name', 'business_type', 'currency', 'is_active',
+                    'is_main_branch', 'suspend_reason', 'suspended_at',
+                    'city', 'phone', 'email', 'cr_number', 'vat_number',
+                    'organization', 'created_at', 'updated_at',
+                ],
+            ])
+            ->assertJsonPath('data.phone', '+966501234567')
+            ->assertJsonPath('data.email', 'store@example.com')
+            ->assertJsonPath('data.cr_number', 'CR123456')
+            ->assertJsonPath('data.vat_number', 'VAT987654')
+            ->assertJsonPath('data.city', 'Riyadh');
+    }
+
+    public function test_store_detail_includes_active_subscription(): void
+    {
+        $plan = SubscriptionPlan::create([
+            'name'          => 'Business',
+            'slug'          => 'business',
+            'monthly_price' => 49.99,
+            'annual_price'  => 499.99,
+            'is_active'     => true,
+        ]);
+
+        StoreSubscription::create([
+            'organization_id'      => $this->org->id,
+            'subscription_plan_id' => $plan->id,
+            'status'               => 'active',
+            'billing_cycle'        => 'monthly',
+            'current_period_start' => now(),
+            'current_period_end'   => now()->addMonth(),
+        ]);
+
+        $response = $this->getJson("/api/v2/admin/providers/stores/{$this->store->id}");
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'active_subscription' => ['plan_name', 'status', 'billing_cycle', 'current_period_end'],
+                ],
+            ])
+            ->assertJsonPath('data.active_subscription.plan_name', 'Business')
+            ->assertJsonPath('data.active_subscription.status', 'active');
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── New: create_store with owner creates user ─────────────
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_create_store_with_owner_fields_creates_user(): void
+    {
+        $response = $this->postJson('/api/v2/admin/providers/stores/create', [
+            'organization_name' => 'Owner Test Org',
+            'store_name'        => 'Owner Test Store',
+            'owner_name'        => 'Owner Person',
+            'owner_email'       => 'owner.person@ownertest.com',
+            'owner_phone'       => '+966501234568',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure([
+                'data' => ['organization', 'store', 'user', 'temp_password'],
+            ]);
+
+        $this->assertNotNull($response->json('data.temp_password'));
+        $this->assertEquals('owner.person@ownertest.com', $response->json('data.user.email'));
+
+        $this->assertDatabaseHas('users', [
+            'email' => 'owner.person@ownertest.com',
+            'name'  => 'Owner Person',
+        ]);
+    }
+
+    public function test_create_store_without_owner_returns_null_user(): void
+    {
+        $response = $this->postJson('/api/v2/admin/providers/stores/create', [
+            'organization_name' => 'No Owner Org',
+            'store_name'        => 'No Owner Store',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.user', null)
+            ->assertJsonPath('data.temp_password', null);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── New: approve registration returns temp_password ──────
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_approve_registration_returns_temp_password(): void
+    {
+        $reg = ProviderRegistration::forceCreate([
+            'organization_name' => 'TempPass Corp',
+            'owner_name'        => 'Pass Owner',
+            'owner_email'       => 'passowner@temppass.com',
+            'owner_phone'       => '+96812345690',
+            'status'            => 'pending',
+        ]);
+
+        $response = $this->postJson("/api/v2/admin/providers/registrations/{$reg->id}/approve");
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure(['data' => ['temp_password']]);
+
+        $tempPassword = $response->json('data.temp_password');
+        $this->assertNotNull($tempPassword);
+        $this->assertIsString($tempPassword);
+        $this->assertGreaterThanOrEqual(8, strlen($tempPassword));
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── New: Case-insensitive registration search ─────────────
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_registrations_search_is_case_insensitive(): void
+    {
+        ProviderRegistration::forceCreate([
+            'organization_name' => 'CaseSensitiveTest',
+            'owner_name'        => 'John Doe',
+            'owner_email'       => 'john.doe.case@test.com',
+            'owner_phone'       => '+96812345691',
+            'status'            => 'pending',
+        ]);
+
+        // Search with lowercase — should still find CaseSensitiveTest
+        $response = $this->getJson('/api/v2/admin/providers/registrations?search=casesensitivetest');
+
+        $response->assertOk();
+        $regs = collect($response->json('data.registrations'));
+        $this->assertTrue($regs->contains(fn ($r) => strtolower($r['organization_name']) === strtolower('CaseSensitiveTest')));
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── New: Limit override with past expiry is invalid ───────
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_set_limit_override_with_past_expiry_fails(): void
+    {
+        $response = $this->postJson("/api/v2/admin/providers/stores/{$this->store->id}/limits", [
+            'limit_key'      => 'max_products',
+            'override_value' => 100,
+            'expires_at'     => now()->subDay()->toIso8601String(),
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── New: Pagination edge cases ────────────────────────────
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_list_stores_pagination_defaults(): void
+    {
+        $response = $this->getJson('/api/v2/admin/providers/stores?per_page=5');
+
+        $response->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'pagination' => ['total', 'per_page', 'current_page', 'last_page'],
+                ],
+            ]);
+
+        $this->assertLessThanOrEqual(5, count($response->json('data.stores')));
+    }
+
+    public function test_list_stores_page_2_returns_correct_offset(): void
+    {
+        // Create 20 extra stores
+        for ($i = 1; $i <= 20; $i++) {
+            Store::create([
+                'organization_id' => $this->org->id,
+                'name'            => "Pagination Store {$i}",
+                'business_type'   => 'grocery',
+                'currency'        => 'SAR',
+                'is_active'       => true,
+                'is_main_branch'  => false,
+            ]);
+        }
+
+        $responsePage1 = $this->getJson('/api/v2/admin/providers/stores?per_page=10&page=1');
+        $responsePage2 = $this->getJson('/api/v2/admin/providers/stores?per_page=10&page=2');
+
+        $responsePage1->assertOk();
+        $responsePage2->assertOk();
+
+        $ids1 = collect($responsePage1->json('data.stores'))->pluck('id')->toArray();
+        $ids2 = collect($responsePage2->json('data.stores'))->pluck('id')->toArray();
+
+        // No overlap between pages
+        $this->assertEmpty(array_intersect($ids1, $ids2));
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── New: E2E Full Registration Workflow ───────────────────
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_full_registration_to_impersonation_e2e(): void
+    {
+        // 1. Submit registration
+        $reg = ProviderRegistration::forceCreate([
+            'organization_name' => 'E2E Corp',
+            'owner_name'        => 'E2E Owner',
+            'owner_email'       => 'e2e.owner@e2ecorp.com',
+            'owner_phone'       => '+96812345699',
+            'status'            => 'pending',
+        ]);
+
+        $this->assertDatabaseHas('provider_registrations', [
+            'organization_name' => 'E2E Corp',
+            'status'            => 'pending',
+        ]);
+
+        // 2. Approve registration → creates org + store + user + temp_password
+        $approveResp = $this->postJson("/api/v2/admin/providers/registrations/{$reg->id}/approve");
+
+        $approveResp->assertOk()->assertJsonPath('success', true);
+        $approvedOrgId = $approveResp->json('data.organization.id');
+        $storeId       = $approveResp->json('data.store.id');
+        $tempPassword  = $approveResp->json('data.temp_password');
+
+        $this->assertNotNull($storeId);
+        $this->assertNotNull($tempPassword);
+        $this->assertDatabaseHas('provider_registrations', ['id' => $reg->id, 'status' => 'approved']);
+        $this->assertDatabaseHas('organizations', ['id' => $approvedOrgId]);
+        $this->assertDatabaseHas('stores', ['id' => $storeId]);
+        $this->assertDatabaseHas('users', ['email' => 'e2e.owner@e2ecorp.com']);
+
+        // 3. Add an internal note
+        $noteResp = $this->postJson('/api/v2/admin/providers/notes', [
+            'organization_id' => $approvedOrgId,
+            'note_text'       => 'Approved after document verification.',
+        ]);
+        $noteResp->assertStatus(201);
+
+        // 4. Set a limit override
+        $limitResp = $this->postJson("/api/v2/admin/providers/stores/{$storeId}/limits", [
+            'limit_key'      => 'max_products',
+            'override_value' => 1000,
+            'reason'         => 'Large catalog expected',
+        ]);
+        $limitResp->assertOk();
+
+        // 5. View store detail — should include suspend_reason=null, organization, cr_number
+        $detailResp = $this->getJson("/api/v2/admin/providers/stores/{$storeId}");
+        $detailResp->assertOk()
+            ->assertJsonPath('data.is_active', true)
+            ->assertJsonPath('data.suspend_reason', null);
+
+        // 6. Get store metrics
+        $metricsResp = $this->getJson("/api/v2/admin/providers/stores/{$storeId}/metrics");
+        $metricsResp->assertOk()
+            ->assertJsonPath('data.store_id', $storeId)
+            ->assertJsonPath('data.active_overrides', 1);
+
+        // 7. Impersonate
+        $impersonateResp = $this->postJson("/api/v2/admin/providers/stores/{$storeId}/impersonate");
+        $impersonateResp->assertOk();
+        $token = $impersonateResp->json('data.token');
+        $this->assertNotNull($token);
+
+        // 8. End impersonation
+        $endResp = $this->postJson('/api/v2/admin/providers/impersonate/end', ['token' => $token]);
+        $endResp->assertOk()->assertJsonPath('success', true);
+
+        // 9. Suspend store
+        $suspendResp = $this->postJson("/api/v2/admin/providers/stores/{$storeId}/suspend", [
+            'reason' => 'Periodic suspension for compliance',
+        ]);
+        $suspendResp->assertOk()->assertJsonPath('data.is_active', false);
+
+        // Verify DB
+        $updatedStore = Store::find($storeId);
+        $this->assertFalse($updatedStore->is_active);
+        $this->assertEquals('Periodic suspension for compliance', $updatedStore->suspend_reason);
+        $this->assertNotNull($updatedStore->suspended_at);
+
+        // 10. Reactivate
+        $activateResp = $this->postJson("/api/v2/admin/providers/stores/{$storeId}/activate");
+        $activateResp->assertOk()->assertJsonPath('data.is_active', true);
+
+        $updatedStore->refresh();
+        $this->assertTrue($updatedStore->is_active);
+        $this->assertNull($updatedStore->suspend_reason);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ─── New: Unauthenticated access on all key endpoints ──────
+    // ═══════════════════════════════════════════════════════════
+
+    public function test_all_endpoints_require_authentication(): void
+    {
+        app('auth')->forgetGuards();
+
+        $endpoints = [
+            ['GET', "/api/v2/admin/providers/stores"],
+            ['GET', "/api/v2/admin/providers/stores/{$this->store->id}"],
+            ['GET', "/api/v2/admin/providers/stores/{$this->store->id}/metrics"],
+            ['POST', "/api/v2/admin/providers/stores/{$this->store->id}/suspend"],
+            ['POST', "/api/v2/admin/providers/stores/{$this->store->id}/activate"],
+            ['POST', "/api/v2/admin/providers/stores/create"],
+            ['GET', "/api/v2/admin/providers/registrations"],
+            ['POST', "/api/v2/admin/providers/notes"],
+        ];
+
+        foreach ($endpoints as [$method, $url]) {
+            $response = $this->json($method, $url);
+            $this->assertEquals(401, $response->getStatusCode(), "Expected 401 for {$method} {$url}");
+        }
+    }
 }

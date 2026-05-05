@@ -728,11 +728,17 @@ return new class extends Migration
             Schema::create('delivery_platforms', function (Blueprint $table) {
                 $table->uuid('id')->primary();
                 $table->string('name');
+                $table->string('name_ar')->nullable();
                 $table->string('slug', 50)->unique();
                 $table->string('logo_url')->nullable();
                 $table->text('description')->nullable();
+                $table->text('description_ar')->nullable();
                 $table->string('auth_method', 20)->default('api_key');
+                $table->string('api_type', 20)->default('rest');
                 $table->string('base_url')->nullable();
+                $table->string('documentation_url')->nullable();
+                $table->decimal('default_commission_percent', 5, 2)->default(0);
+                $table->json('supported_countries')->nullable();
                 $table->boolean('is_active')->default(true);
                 $table->integer('sort_order')->default(0);
                 $table->timestamps();
@@ -760,11 +766,30 @@ return new class extends Migration
                 $table->uuid('id')->primary();
                 $table->uuid('delivery_platform_id');
                 $table->string('operation', 50);
-                $table->string('http_method', 10);
-                $table->string('path');
+                $table->string('http_method', 10)->default('POST');
+                $table->string('path')->nullable();
+                $table->string('url_template')->nullable();
                 $table->json('headers')->nullable();
+                $table->json('request_mapping')->nullable();
                 $table->json('request_body_template')->nullable();
                 $table->json('response_mapping')->nullable();
+            });
+        }
+
+        // ─── Delivery: store_delivery_platforms ──────────────
+        if (!Schema::hasTable('store_delivery_platforms')) {
+            Schema::create('store_delivery_platforms', function (Blueprint $table) {
+                $table->uuid('id')->primary();
+                $table->uuid('store_id');
+                $table->uuid('delivery_platform_id');
+                $table->json('credentials')->default('{}');
+                $table->string('inbound_api_key', 48)->unique()->nullable();
+                $table->boolean('is_enabled')->default(false);
+                $table->string('sync_status', 10)->default('pending');
+                $table->timestamp('last_sync_at')->nullable();
+                $table->text('last_error')->nullable();
+                $table->timestamps();
+                $table->unique(['store_id', 'delivery_platform_id']);
             });
         }
 
@@ -1307,7 +1332,40 @@ return new class extends Migration
             $table->uuid('store_id');
             $table->uuid('plan_add_on_id');
             $table->timestamp('activated_at')->nullable();
+            $table->timestamp('deactivated_at')->nullable();
             $table->boolean('is_active')->default(true);
+        });
+
+        // ─── SoftPOS: softpos_transactions ───────────────────
+        // Model: App\Domain\ProviderSubscription\Models\SoftPosTransaction
+        Schema::create('softpos_transactions', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('store_id')->nullable();
+            $table->uuid('order_id')->nullable();
+            $table->decimal('amount', 12, 3);
+            $table->string('currency', 5)->default('SAR');
+            $table->decimal('platform_fee', 10, 3)->default(0.000);
+            $table->decimal('gateway_fee', 10, 3)->default(0.000);
+            $table->decimal('margin', 10, 3)->default(0.000);
+            $table->string('fee_type', 20)->default('percentage');
+            $table->string('transaction_ref')->nullable();
+            $table->string('payment_method', 50)->nullable();
+            $table->string('terminal_id')->nullable();
+            $table->string('status', 20)->default('completed');
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+        });
+
+        // ─── Subscription: plan_feature_route_mappings ───────
+        Schema::create('plan_feature_route_mappings', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('feature_key', 100);
+            $table->string('route_path', 200);
+            $table->string('sidebar_key', 100)->nullable();
+            $table->string('platform', 20)->default('both');
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
         });
 
         // ─── Content Onboarding: business_types ──────────────
@@ -4213,7 +4271,7 @@ return new class extends Migration
             'security_alerts', 'security_policies', 'security_audit_log', 'login_attempts', 'device_registrations',
             'admin_sessions', 'admin_trusted_devices', 'admin_ip_blocklist', 'admin_ip_allowlist',
             'app_update_stats', 'app_releases',
-            'delivery_platform_endpoints', 'delivery_platform_fields', 'delivery_platforms',
+            'store_delivery_platforms', 'delivery_platform_endpoints', 'delivery_platform_fields', 'delivery_platforms',
             'system_health_checks', 'platform_event_logs',
             'cms_pages', 'notification_templates',
             'feature_flags', 'ab_test_events', 'ab_test_variants', 'ab_tests',
@@ -4244,6 +4302,7 @@ return new class extends Migration
             // Original tables
             'audit_logs', 'role_audit_log', 'pin_overrides',
             'default_role_template_permissions', 'default_role_templates', 'provider_permissions',
+            'softpos_transactions', 'plan_feature_route_mappings',
             'store_add_ons', 'plan_add_ons', 'add_ons',
             'subscription_usage_snapshots', 'provider_limit_overrides',
             'invoice_line_items', 'invoices', 'store_subscriptions',

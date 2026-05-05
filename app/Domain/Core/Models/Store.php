@@ -92,6 +92,7 @@ use App\Domain\StaffManagement\Models\StaffActivityLog;
 use App\Domain\StaffManagement\Models\StaffBranchAssignment;
 use App\Domain\StaffManagement\Models\StaffUser;
 use App\Domain\StaffManagement\Models\TrainingSession;
+use App\Domain\ContentOnboarding\Models\BusinessType as BusinessTypeEntity;
 use App\Domain\Support\Models\SupportTicket;
 use App\Domain\SystemConfig\Models\TranslationOverride;
 use App\Domain\ThawaniIntegration\Models\ThawaniOrderMapping;
@@ -141,7 +142,10 @@ class Store extends Model
         'currency',
         'locale',
         'business_type',
+        'business_type_id',
         'is_active',
+        'suspend_reason',
+        'suspended_at',
         'is_main_branch',
         'is_warehouse',
         'accepts_online_orders',
@@ -207,6 +211,10 @@ class Store extends Model
     public function organization(): BelongsTo
     {
         return $this->belongsTo(Organization::class);
+    }
+    public function businessTypeEntity(): BelongsTo
+    {
+        return $this->belongsTo(BusinessTypeEntity::class, 'business_type_id');
     }
     public function manager(): BelongsTo
     {

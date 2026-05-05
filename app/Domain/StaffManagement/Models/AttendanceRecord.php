@@ -22,6 +22,7 @@ class AttendanceRecord extends Model
         'store_id',
         'clock_in_at',
         'clock_out_at',
+        'work_minutes',
         'break_minutes',
         'scheduled_shift_id',
         'overtime_minutes',

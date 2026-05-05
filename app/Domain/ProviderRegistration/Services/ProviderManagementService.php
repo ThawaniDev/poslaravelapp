@@ -10,6 +10,7 @@ use App\Domain\Core\Models\Organization;
 use App\Domain\Core\Models\Register;
 use App\Domain\Core\Models\Store;
 use App\Domain\ProviderRegistration\Enums\ProviderRegistrationStatus;
+use App\Domain\ProviderRegistration\Models\CancellationReason;
 use App\Domain\ProviderRegistration\Models\ImpersonationSession;
 use App\Domain\ProviderRegistration\Models\ProviderNote;
 use App\Domain\ProviderRegistration\Models\ProviderRegistration;
@@ -68,7 +69,7 @@ class ProviderManagementService
      */
     public function getStoreDetail(string $storeId): ?Store
     {
-        return Store::with(['organization', 'registers'])
+        return Store::with(['organization', 'organization.subscription', 'organization.subscription.subscriptionPlan', 'registers'])
             ->find($storeId);
     }
 
@@ -183,7 +184,11 @@ class ProviderManagementService
     {
         $store = Store::findOrFail($storeId);
 
-        $store->update(['is_active' => false]);
+        $store->update([
+            'is_active'      => false,
+            'suspend_reason' => $reason,
+            'suspended_at'   => now(),
+        ]);
 
         $this->logActivity($adminUserId, 'store.suspend', 'store', $storeId, [
             'reason' => $reason,
@@ -200,7 +205,11 @@ class ProviderManagementService
     {
         $store = Store::findOrFail($storeId);
 
-        $store->update(['is_active' => true]);
+        $store->update([
+            'is_active'      => true,
+            'suspend_reason' => null,
+            'suspended_at'   => null,
+        ]);
 
         $this->logActivity($adminUserId, 'store.activate', 'store', $storeId, [
             'previous_status' => false,
@@ -304,9 +313,9 @@ class ProviderManagementService
         if (!empty($filters['search'])) {
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
-                $q->where('organization_name', 'like', "%{$search}%")
-                    ->orWhere('owner_name', 'like', "%{$search}%")
-                    ->orWhere('owner_email', 'like', "%{$search}%");
+                $q->where('organization_name', 'ilike', "%{$search}%")
+                    ->orWhere('owner_name', 'ilike', "%{$search}%")
+                    ->orWhere('owner_email', 'ilike', "%{$search}%");
             });
         }
 
