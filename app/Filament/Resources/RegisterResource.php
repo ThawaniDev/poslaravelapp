@@ -115,12 +115,23 @@ class RegisterResource extends Resource
                         ->icon('heroicon-o-credit-card')
                         ->schema([
                             Forms\Components\Section::make(__('terminals.softpos'))
-                                ->description(__('NearPay SoftPOS configuration'))
+                                ->description(__('terminals.softpos_section_desc'))
                                 ->schema([
                                     Forms\Components\Toggle::make('softpos_enabled')
                                         ->label(__('terminals.softpos'))
                                         ->helperText(__('Enable SoftPOS tap-to-pay on this terminal'))
-                                        ->reactive(),
+                                        ->reactive()
+                                        ->columnSpanFull(),
+                                    Forms\Components\Select::make('softpos_provider')
+                                        ->label(__('terminals.softpos_provider'))
+                                        ->helperText(__('terminals.softpos_provider_helper'))
+                                        ->options([
+                                            'nearpay' => __('terminals.provider_nearpay'),
+                                            'edfapay' => __('terminals.provider_edfapay'),
+                                        ])
+                                        ->native(false)
+                                        ->reactive()
+                                        ->visible(fn ($get) => (bool) $get('softpos_enabled')),
                                     Forms\Components\Select::make('softpos_status')
                                         ->label(__('terminals.softpos_status'))
                                         ->options([
@@ -129,13 +140,30 @@ class RegisterResource extends Resource
                                             'suspended'   => __('terminals.status_suspended'),
                                             'deactivated' => __('terminals.status_deactivated'),
                                         ])
-                                        ->native(false),
+                                        ->native(false)
+                                        ->visible(fn ($get) => (bool) $get('softpos_enabled')),
+
+                                    // ── NearPay fields ──────────────────────
                                     Forms\Components\TextInput::make('nearpay_tid')
                                         ->label(__('terminals.nearpay_tid'))
-                                        ->maxLength(255),
+                                        ->helperText(__('terminals.nearpay_tid_helper'))
+                                        ->maxLength(255)
+                                        ->visible(fn ($get) => $get('softpos_provider') === 'nearpay'),
                                     Forms\Components\TextInput::make('nearpay_mid')
                                         ->label(__('terminals.nearpay_mid'))
-                                        ->maxLength(255),
+                                        ->helperText(__('terminals.nearpay_mid_helper'))
+                                        ->maxLength(255)
+                                        ->visible(fn ($get) => $get('softpos_provider') === 'nearpay'),
+
+                                    // ── EdfaPay fields ───────────────────────
+                                    Forms\Components\TextInput::make('edfapay_token')
+                                        ->label(__('terminals.edfapay_token'))
+                                        ->helperText(__('terminals.edfapay_token_helper'))
+                                        ->password()
+                                        ->revealable()
+                                        ->maxLength(2048)
+                                        ->visible(fn ($get) => $get('softpos_provider') === 'edfapay')
+                                        ->columnSpanFull(),
                                 ])
                                 ->columns(2),
 
@@ -469,7 +497,8 @@ class RegisterResource extends Resource
                         ->color('success')
                         ->requiresConfirmation()
                         ->visible(fn (Register $record) => $record->softpos_enabled && $record->softpos_status !== 'active'
-                            && $record->nearpay_tid && $record->acquirer_source
+                            && ($record->nearpay_tid || $record->edfapay_token)
+                            && $record->acquirer_source
                             && auth('admin')->user()?->hasPermission('terminals.edit'))
                         ->action(function (Register $record) {
                             $record->update([
@@ -586,6 +615,18 @@ class RegisterResource extends Resource
                             Infolists\Components\Section::make(__('terminals.softpos'))
                                 ->schema([
                                     Infolists\Components\IconEntry::make('softpos_enabled')->boolean()->label(__('terminals.softpos')),
+                                    Infolists\Components\TextEntry::make('softpos_provider')
+                                        ->label(__('terminals.softpos_provider'))
+                                        ->badge()
+                                        ->color(fn ($state) => match ($state) {
+                                            'nearpay' => 'info', 'edfapay' => 'warning',
+                                            default => 'gray',
+                                        })
+                                        ->formatStateUsing(fn ($state) => match ($state) {
+                                            'nearpay' => 'NearPay', 'edfapay' => 'EdfaPay',
+                                            default => __('N/A'),
+                                        })
+                                        ->placeholder(__('N/A')),
                                     Infolists\Components\TextEntry::make('softpos_status')
                                         ->label(__('terminals.softpos_status'))
                                         ->badge()
@@ -594,8 +635,27 @@ class RegisterResource extends Resource
                                             'suspended' => 'danger', 'deactivated' => 'gray',
                                             default => 'gray',
                                         }),
-                                    Infolists\Components\TextEntry::make('nearpay_tid')->label(__('terminals.nearpay_tid'))->copyable()->placeholder(__('N/A')),
-                                    Infolists\Components\TextEntry::make('nearpay_mid')->label(__('terminals.nearpay_mid'))->copyable()->placeholder(__('N/A')),
+                                    // NearPay fields
+                                    Infolists\Components\TextEntry::make('nearpay_tid')
+                                        ->label(__('terminals.nearpay_tid'))->copyable()->placeholder(__('N/A'))
+                                        ->visible(fn ($record) => $record?->softpos_provider === 'nearpay'),
+                                    Infolists\Components\TextEntry::make('nearpay_mid')
+                                        ->label(__('terminals.nearpay_mid'))->copyable()->placeholder(__('N/A'))
+                                        ->visible(fn ($record) => $record?->softpos_provider === 'nearpay'),
+                                    // EdfaPay fields
+                                    Infolists\Components\IconEntry::make('edfapay_token')
+                                        ->label(__('terminals.edfapay_token'))
+                                        ->boolean()
+                                        ->trueIcon('heroicon-o-key')
+                                        ->falseIcon('heroicon-o-x-circle')
+                                        ->trueColor('success')
+                                        ->falseColor('danger')
+                                        ->getStateUsing(fn ($record) => $record?->edfapay_token !== null)
+                                        ->visible(fn ($record) => $record?->softpos_provider === 'edfapay'),
+                                    Infolists\Components\TextEntry::make('edfapay_token_updated_at')
+                                        ->label(__('terminals.edfapay_token_updated_at'))
+                                        ->dateTime()->placeholder(__('Never'))
+                                        ->visible(fn ($record) => $record?->softpos_provider === 'edfapay'),
                                     Infolists\Components\TextEntry::make('softpos_activated_at')->label(__('terminals.softpos_activated_at'))->dateTime()->placeholder(__('Not activated')),
                                     Infolists\Components\TextEntry::make('last_transaction_at')->label(__('terminals.last_transaction_at'))->dateTime()->placeholder(__('N/A')),
                                 ])

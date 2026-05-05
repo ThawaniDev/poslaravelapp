@@ -28,6 +28,7 @@ class Register extends Model
         'is_active',
         // SoftPOS
         'softpos_enabled',
+        'softpos_provider',
         'nearpay_tid',
         'nearpay_mid',
         'nearpay_auth_key',

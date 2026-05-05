@@ -27,4 +27,12 @@ Route::middleware(['web', 'auth:admin'])->group(function () {
     Route::get('admin/documents/zatca-store-setup-guide', function () {
         return view('documents.zatca-store-setup-guide');
     })->name('admin.documents.zatca-store-setup-guide');
+
+    Route::get('admin/documents/nearpay-terminal-setup-guide', function () {
+        return view('documents.nearpay-terminal-setup-guide');
+    })->name('admin.documents.nearpay-terminal-setup-guide');
+
+    Route::get('admin/documents/edfapay-terminal-setup-guide', function () {
+        return view('documents.edfapay-terminal-setup-guide');
+    })->name('admin.documents.edfapay-terminal-setup-guide');
 });

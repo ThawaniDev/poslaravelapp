@@ -80,4 +80,6 @@ return [
     'ai_billing'                  => 'فواتير الذكاء الاصطناعي',
     'ai_chats'                    => 'محادثات الذكاء الاصطناعي',
     'ai_store_intelligence'       => 'ذكاء المتجر الاصطناعي',
+    'nearpay_setup_guide'         => 'دليل إعداد NearPay',
+    'edfapay_setup_guide'         => 'دليل إعداد EdfaPay',
 ];

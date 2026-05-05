@@ -28,6 +28,7 @@ class AdminRegisterResource extends JsonResource
 
             // SoftPOS core
             'softpos_enabled'          => (bool) $this->softpos_enabled,
+            'softpos_provider'         => $this->softpos_provider,
             'nearpay_tid'              => $this->nearpay_tid,
             'nearpay_mid'              => $this->nearpay_mid,
             'edfapay_token'            => $this->edfapay_token,

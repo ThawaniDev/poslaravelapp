@@ -145,8 +145,17 @@ class AdminTerminalController extends BaseApiController
     {
         $found = Register::findOrFail($register);
 
-        if (!$found->nearpay_tid) {
-            return $this->error(__('terminals.softpos_no_tid'), 422);
+        // Provider-specific credential checks
+        if ($found->softpos_provider === 'edfapay') {
+            // EdfaPay: must have a token already stored OR be supplying one now
+            if (! $found->edfapay_token && ! $request->filled('edfapay_token')) {
+                return $this->error(__('terminals.softpos_no_edfapay_token'), 422);
+            }
+        } else {
+            // NearPay (default): requires TID
+            if (! $found->nearpay_tid) {
+                return $this->error(__('terminals.softpos_no_tid'), 422);
+            }
         }
 
         if (!$found->acquirer_source) {

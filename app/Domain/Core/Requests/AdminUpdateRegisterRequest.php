@@ -27,6 +27,7 @@ class AdminUpdateRegisterRequest extends FormRequest
 
             // SoftPOS
             'softpos_enabled'   => ['sometimes', 'boolean'],
+            'softpos_provider'  => ['nullable', 'string', 'in:nearpay,edfapay'],
             'nearpay_tid'       => ['nullable', 'string', 'max:50'],
             'nearpay_mid'       => ['nullable', 'string', 'max:50'],
             'nearpay_auth_key'  => ['nullable', 'string', 'max:255'],

@@ -80,4 +80,6 @@ return [
     'ai_billing'                  => 'AI Billing',
     'ai_chats'                    => 'AI Chats',
     'ai_store_intelligence'       => 'Store AI Intelligence',
+    'nearpay_setup_guide'         => 'NearPay Setup Guide',
+    'edfapay_setup_guide'         => 'EdfaPay Setup Guide',
 ];

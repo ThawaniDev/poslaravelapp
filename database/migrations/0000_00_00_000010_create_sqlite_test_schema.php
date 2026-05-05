@@ -84,6 +84,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             // SoftPOS
             $table->boolean('softpos_enabled')->default(false);
+            $table->string('softpos_provider', 20)->nullable();
             $table->string('nearpay_tid', 50)->nullable();
             $table->string('nearpay_mid', 50)->nullable();
             $table->string('nearpay_auth_key', 255)->nullable();
