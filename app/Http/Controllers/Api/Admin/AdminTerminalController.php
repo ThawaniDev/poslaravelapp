@@ -252,10 +252,13 @@ class AdminTerminalController extends BaseApiController
      * Body (all optional — only supplied fields are updated):
      *   mada_merchant_rate  — Percentage rate charged to merchant for Mada  (e.g. 0.006 = 0.6%)
      *   mada_gateway_rate   — Percentage rate paid to EdfaPay for Mada      (e.g. 0.004 = 0.4%)
+     *   card_merchant_rate  — Percentage rate charged to merchant for Visa/MC (e.g. 0.025 = 2.5%)
+     *   card_gateway_rate   — Percentage rate paid to gateway for Visa/MC    (e.g. 0.020 = 2.0%)
      *   card_merchant_fee   — Fixed SAR fee charged to merchant per Visa/MC  (e.g. 1.000)
      *   card_gateway_fee    — Fixed SAR fee paid to gateway per Visa/MC       (e.g. 0.500)
      *
      * Rule: mada_merchant_rate MUST be >= mada_gateway_rate (otherwise we make a loss).
+     *       card_merchant_rate MUST be >= card_gateway_rate.
      *       card_merchant_fee  MUST be >= card_gateway_fee.
      */
     public function updateSoftposBilling(Request $request, string $register): JsonResponse
@@ -265,18 +268,25 @@ class AdminTerminalController extends BaseApiController
         $validated = $request->validate([
             'mada_merchant_rate' => ['sometimes', 'numeric', 'min:0', 'max:1'],
             'mada_gateway_rate'  => ['sometimes', 'numeric', 'min:0', 'max:1'],
+            'card_merchant_rate' => ['sometimes', 'numeric', 'min:0', 'max:1'],
+            'card_gateway_rate'  => ['sometimes', 'numeric', 'min:0', 'max:1'],
             'card_merchant_fee'  => ['sometimes', 'numeric', 'min:0', 'max:1000'],
             'card_gateway_fee'   => ['sometimes', 'numeric', 'min:0', 'max:1000'],
         ]);
 
-        // Business rules: merchant rate must be >= gateway rate (no loss)
-        $madaMerchant = $validated['mada_merchant_rate'] ?? (float) ($found->softpos_mada_merchant_rate ?? 0.006);
-        $madaGateway  = $validated['mada_gateway_rate']  ?? (float) ($found->softpos_mada_gateway_rate  ?? 0.004);
-        $cardMerchant = $validated['card_merchant_fee']  ?? (float) ($found->softpos_card_merchant_fee  ?? 1.000);
-        $cardGateway  = $validated['card_gateway_fee']   ?? (float) ($found->softpos_card_gateway_fee   ?? 0.500);
+        // Business rules: merchant rate/fee must be >= gateway rate/fee (no loss)
+        $madaMerchant    = $validated['mada_merchant_rate'] ?? (float) ($found->softpos_mada_merchant_rate  ?? 0.006);
+        $madaGateway     = $validated['mada_gateway_rate']  ?? (float) ($found->softpos_mada_gateway_rate   ?? 0.004);
+        $cardMerchantPct = $validated['card_merchant_rate'] ?? (float) ($found->softpos_card_merchant_rate  ?? 0.0);
+        $cardGatewayPct  = $validated['card_gateway_rate']  ?? (float) ($found->softpos_card_gateway_rate   ?? 0.0);
+        $cardMerchant    = $validated['card_merchant_fee']  ?? (float) ($found->softpos_card_merchant_fee   ?? 1.000);
+        $cardGateway     = $validated['card_gateway_fee']   ?? (float) ($found->softpos_card_gateway_fee    ?? 0.500);
 
         if ($madaMerchant < $madaGateway) {
             return $this->error('mada_merchant_rate cannot be less than mada_gateway_rate (platform would make a loss).', 422);
+        }
+        if ($cardMerchantPct < $cardGatewayPct) {
+            return $this->error('card_merchant_rate cannot be less than card_gateway_rate (platform would make a loss).', 422);
         }
         if ($cardMerchant < $cardGateway) {
             return $this->error('card_merchant_fee cannot be less than card_gateway_fee (platform would make a loss).', 422);
@@ -288,6 +298,12 @@ class AdminTerminalController extends BaseApiController
         }
         if (array_key_exists('mada_gateway_rate', $validated)) {
             $payload['softpos_mada_gateway_rate'] = $validated['mada_gateway_rate'];
+        }
+        if (array_key_exists('card_merchant_rate', $validated)) {
+            $payload['softpos_card_merchant_rate'] = $validated['card_merchant_rate'];
+        }
+        if (array_key_exists('card_gateway_rate', $validated)) {
+            $payload['softpos_card_gateway_rate'] = $validated['card_gateway_rate'];
         }
         if (array_key_exists('card_merchant_fee', $validated)) {
             $payload['softpos_card_merchant_fee'] = $validated['card_merchant_fee'];

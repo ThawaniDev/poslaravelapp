@@ -19,10 +19,13 @@ use App\Domain\Core\Models\Register;
  *  │             │    gateway_fee  = amount × gateway_rate              │
  *  │             │    margin       = platform_fee − gateway_fee          │
  *  ├─────────────┼──────────────────────────────────────────────────────┤
- *  │  Visa /     │  Fixed SAR amount per transaction                    │
- *  │  Mastercard │    platform_fee = card_merchant_fee                  │
- *  │             │    gateway_fee  = card_gateway_fee                   │
+ *  │  Visa /     │  Mixed: percentage + fixed SAR per transaction        │
+ *  │  Mastercard │    platform_fee = (amount × card_merchant_rate)       │
+ *  │             │                 + card_merchant_fee                  │
+ *  │             │    gateway_fee  = (amount × card_gateway_rate)        │
+ *  │             │                 + card_gateway_fee                   │
  *  │             │    margin       = platform_fee − gateway_fee          │
+ *  │             │  When both rates = 0, degrades to fixed-only.         │
  *  └─────────────┴──────────────────────────────────────────────────────┘
  *
  * The merchant only sees `platform_fee` (what they are charged).
@@ -93,10 +96,12 @@ class SoftPosFeeService
         return $this->calculate(
             amount:            $amount,
             cardScheme:        $cardScheme,
-            madaMerchantRate:  (float) ($register->softpos_mada_merchant_rate ?? 0.006),
-            madaGatewayRate:   (float) ($register->softpos_mada_gateway_rate  ?? 0.004),
-            cardMerchantFee:   (float) ($register->softpos_card_merchant_fee  ?? 1.000),
-            cardGatewayFee:    (float) ($register->softpos_card_gateway_fee   ?? 0.500),
+            madaMerchantRate:  (float) ($register->softpos_mada_merchant_rate  ?? 0.006),
+            madaGatewayRate:   (float) ($register->softpos_mada_gateway_rate   ?? 0.004),
+            cardMerchantRate:  (float) ($register->softpos_card_merchant_rate  ?? 0.0),
+            cardGatewayRate:   (float) ($register->softpos_card_gateway_rate   ?? 0.0),
+            cardMerchantFee:   (float) ($register->softpos_card_merchant_fee   ?? 1.000),
+            cardGatewayFee:    (float) ($register->softpos_card_gateway_fee    ?? 0.500),
         );
     }
 
@@ -116,8 +121,10 @@ class SoftPosFeeService
         ?string $cardScheme,
         float  $madaMerchantRate,
         float  $madaGatewayRate,
-        float  $cardMerchantFee,
-        float  $cardGatewayFee,
+        float  $cardMerchantRate = 0.0,
+        float  $cardGatewayRate  = 0.0,
+        float  $cardMerchantFee  = 1.000,
+        float  $cardGatewayFee   = 0.500,
     ): array {
         $scheme = $this->normaliseScheme($cardScheme);
 
@@ -126,9 +133,9 @@ class SoftPosFeeService
             $gatewayFee  = round($amount * $madaGatewayRate, 3);
             $feeType     = 'percentage';
         } elseif ($this->isCard($scheme)) {
-            $platformFee = round($cardMerchantFee, 3);
-            $gatewayFee  = round($cardGatewayFee, 3);
-            $feeType     = 'fixed';
+            $platformFee = round(($amount * $cardMerchantRate) + $cardMerchantFee, 3);
+            $gatewayFee  = round(($amount * $cardGatewayRate)  + $cardGatewayFee, 3);
+            $feeType     = $cardMerchantRate > 0 ? 'mixed' : 'fixed';
         } else {
             // Unknown scheme — apply Mada rates as conservative default
             $platformFee = round($amount * $madaMerchantRate, 3);
@@ -152,15 +159,22 @@ class SoftPosFeeService
      *
      * Examples:
      *   "0.6% per Mada transaction"
+     *   "2.5% + 1.000 SAR per Visa/MC transaction"
      *   "1.000 SAR per Visa/MC transaction"
      */
     public function merchantFeeDescription(
         ?string $cardScheme,
         float   $madaMerchantRate,
-        float   $cardMerchantFee,
+        float   $cardMerchantRate = 0.0,
+        float   $cardMerchantFee  = 1.000,
     ): string {
         if ($this->isMada($cardScheme)) {
             return round($madaMerchantRate * 100, 4) . '% per Mada transaction';
+        }
+
+        if ($cardMerchantRate > 0) {
+            $pct = round($cardMerchantRate * 100, 4);
+            return "{$pct}% + " . number_format($cardMerchantFee, 3) . ' SAR per Visa/MC transaction';
         }
 
         return number_format($cardMerchantFee, 3) . ' SAR per Visa/MC transaction';
@@ -169,20 +183,29 @@ class SoftPosFeeService
     /**
      * Build a short internal description for admin use.
      *
-     * Example: "Rate: 0.6% / 0.4% — margin 0.2% (Mada)"
+     * Example: "Merchant 0.6% / Gateway 0.4% / Margin 0.2% (Mada)"
+     *          "Merchant 2.5%+1.000 SAR / Gateway 2.0%+0.500 SAR / Margin 0.5%+0.500 SAR (Visa/MC)"
      */
     public function adminFeeDescription(
         ?string $cardScheme,
         float   $madaMerchantRate,
         float   $madaGatewayRate,
-        float   $cardMerchantFee,
-        float   $cardGatewayFee,
+        float   $cardMerchantRate = 0.0,
+        float   $cardGatewayRate  = 0.0,
+        float   $cardMerchantFee  = 1.000,
+        float   $cardGatewayFee   = 0.500,
     ): string {
         if ($this->isMada($cardScheme)) {
             $merchant = round($madaMerchantRate * 100, 4);
             $gateway  = round($madaGatewayRate * 100, 4);
             $margin   = round(($madaMerchantRate - $madaGatewayRate) * 100, 4);
             return "Merchant {$merchant}% / Gateway {$gateway}% / Margin {$margin}% (Mada)";
+        }
+
+        if ($cardMerchantRate > 0) {
+            $mPct = round($cardMerchantRate * 100, 4);
+            $gPct = round($cardGatewayRate * 100, 4);
+            return "Merchant {$mPct}%+{$cardMerchantFee} SAR / Gateway {$gPct}%+{$cardGatewayFee} SAR (Visa/MC)";
         }
 
         $margin = round($cardMerchantFee - $cardGatewayFee, 3);

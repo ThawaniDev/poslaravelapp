@@ -201,7 +201,8 @@ class RegisterResource extends Resource
                                         ->step(0.0001)
                                         ->suffix('%'),
                                 ])
-                                ->columns(2),
+                                ->columns(2)
+                                ->hidden(),
 
                             Forms\Components\Section::make(__('SoftPOS Bilateral Billing'))
                                 ->description(__('Per-terminal bilateral fee rates. Merchant rate ≥ Gateway rate (platform margin = difference).'))
@@ -215,12 +216,20 @@ class RegisterResource extends Resource
                                         ->label(__('Mada – Gateway Rate'))
                                         ->helperText(__('Paid to gateway. Must be ≤ merchant rate.'))
                                         ->numeric()->step(0.000001)->suffix('%'),
+                                    Forms\Components\TextInput::make('softpos_card_merchant_rate')
+                                        ->label(__('Visa/MC/Amex – Merchant Rate (%)'))
+                                        ->helperText(__('e.g. 0.025 = 2.5%. Leave 0 for fixed-only.'))
+                                        ->numeric()->step(0.000001)->suffix('%'),
+                                    Forms\Components\TextInput::make('softpos_card_gateway_rate')
+                                        ->label(__('Visa/MC/Amex – Gateway Rate (%)'))
+                                        ->helperText(__('e.g. 0.020 = 2.0%. Must be ≤ merchant rate.'))
+                                        ->numeric()->step(0.000001)->suffix('%'),
                                     Forms\Components\TextInput::make('softpos_card_merchant_fee')
-                                        ->label(__('Visa/MC/Amex – Merchant Fee'))
+                                        ->label(__('Visa/MC/Amex – Merchant Fee (SAR)'))
                                         ->helperText(__('Fixed SAR per transaction charged to merchant.'))
                                         ->numeric()->step(0.001)->suffix('SAR'),
                                     Forms\Components\TextInput::make('softpos_card_gateway_fee')
-                                        ->label(__('Visa/MC/Amex – Gateway Fee'))
+                                        ->label(__('Visa/MC/Amex – Gateway Fee (SAR)'))
                                         ->helperText(__('Fixed SAR per transaction paid to gateway.'))
                                         ->numeric()->step(0.001)->suffix('SAR'),
                                 ])
@@ -626,7 +635,8 @@ class RegisterResource extends Resource
                                         ->label(__('terminals.wameed_margin'))
                                         ->formatStateUsing(fn ($state) => $state ? number_format((float) $state * 100, 2) . '%' : 'N/A'),
                                 ])
-                                ->columns(3),
+                                ->columns(3)
+                                ->hidden(),
 
                             Infolists\Components\Section::make(__('SoftPOS Bilateral Billing'))
                                 ->description(__('Per-terminal bilateral fee rates. Margin = merchant rate − gateway rate.'))
@@ -644,17 +654,26 @@ class RegisterResource extends Resource
                                             number_format(((float) $record->softpos_mada_merchant_rate - (float) $record->softpos_mada_gateway_rate) * 100, 4) . '%'
                                         )
                                         ->badge()->color('success'),
+                                    Infolists\Components\TextEntry::make('softpos_card_merchant_rate')
+                                        ->label(__('Card Merchant Rate (%)'))
+                                        ->formatStateUsing(fn ($state) => (float) $state > 0 ? number_format((float) $state * 100, 4) . '%' : '—'),
+                                    Infolists\Components\TextEntry::make('softpos_card_gateway_rate')
+                                        ->label(__('Card Gateway Rate (%)'))
+                                        ->formatStateUsing(fn ($state) => (float) $state > 0 ? number_format((float) $state * 100, 4) . '%' : '—'),
                                     Infolists\Components\TextEntry::make('softpos_card_merchant_fee')
-                                        ->label(__('Card Merchant Fee'))
+                                        ->label(__('Card Merchant Fee (SAR)'))
                                         ->formatStateUsing(fn ($state) => number_format((float) $state, 3) . ' SAR'),
                                     Infolists\Components\TextEntry::make('softpos_card_gateway_fee')
-                                        ->label(__('Card Gateway Fee'))
+                                        ->label(__('Card Gateway Fee (SAR)'))
                                         ->formatStateUsing(fn ($state) => number_format((float) $state, 3) . ' SAR'),
                                     Infolists\Components\TextEntry::make('softpos_card_merchant_fee')
                                         ->label(__('Card Margin'))
-                                        ->formatStateUsing(fn ($state, $record) =>
-                                            number_format((float) $record->softpos_card_merchant_fee - (float) $record->softpos_card_gateway_fee, 3) . ' SAR'
-                                        )
+                                        ->formatStateUsing(fn ($state, $record) => number_format(
+                                            ((float) $record->softpos_card_merchant_rate - (float) $record->softpos_card_gateway_rate) * 100 > 0
+                                                ? 0.0  // shown separately in rate rows
+                                                : (float) $record->softpos_card_merchant_fee - (float) $record->softpos_card_gateway_fee,
+                                            3
+                                        ) . ' SAR')
                                         ->badge()->color('success'),
                                 ])
                                 ->columns(3)

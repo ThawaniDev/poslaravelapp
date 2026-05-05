@@ -30,6 +30,7 @@ return [
     'fee_type'              => 'Fee Type',
     'fee_type_percentage'   => 'Percentage (Mada)',
     'fee_type_fixed'        => 'Fixed (Visa/MC/Amex)',
+    'fee_type_mixed'        => 'Mixed % + Fixed (Visa/MC/Amex)',
     'amount'                => 'Amount',
     'platform_fee'          => 'Platform Fee',
     'gateway_fee'           => 'Gateway Fee',

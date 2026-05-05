@@ -102,6 +102,13 @@ return new class extends Migration
             $table->decimal('fee_visa_mc_percentage', 5, 4)->default(0.0200);
             $table->decimal('fee_flat_per_txn', 8, 2)->default(0.00);
             $table->decimal('wameed_margin_percentage', 5, 4)->default(0.0040);
+            // SoftPOS bilateral billing rates
+            $table->decimal('softpos_mada_merchant_rate', 8, 6)->default(0.006000);
+            $table->decimal('softpos_mada_gateway_rate', 8, 6)->default(0.004000);
+            $table->decimal('softpos_card_merchant_rate', 8, 6)->default(0.000000);
+            $table->decimal('softpos_card_gateway_rate', 8, 6)->default(0.000000);
+            $table->decimal('softpos_card_merchant_fee', 10, 3)->default(1.000);
+            $table->decimal('softpos_card_gateway_fee', 10, 3)->default(0.500);
             // Settlement
             $table->string('settlement_cycle', 10)->default('T+1');
             $table->string('settlement_bank_name', 100)->nullable();

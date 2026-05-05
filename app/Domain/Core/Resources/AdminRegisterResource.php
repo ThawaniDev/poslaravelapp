@@ -69,7 +69,11 @@ class AdminRegisterResource extends JsonResource
                     (float) ($this->softpos_mada_merchant_rate ?? 0.006) -
                     (float) ($this->softpos_mada_gateway_rate  ?? 0.004)
                 ) * 100, 4),
-                // Visa / Mastercard — fixed per transaction
+                // Visa / Mastercard — percentage + fixed per transaction
+                'card_merchant_rate'      => (float) ($this->softpos_card_merchant_rate ?? 0.0),
+                'card_gateway_rate'       => (float) ($this->softpos_card_gateway_rate  ?? 0.0),
+                'card_merchant_rate_pct'  => round((float) ($this->softpos_card_merchant_rate ?? 0.0) * 100, 4),
+                'card_gateway_rate_pct'   => round((float) ($this->softpos_card_gateway_rate  ?? 0.0) * 100, 4),
                 'card_merchant_fee'       => (float) ($this->softpos_card_merchant_fee ?? 1.000),
                 'card_gateway_fee'        => (float) ($this->softpos_card_gateway_fee  ?? 0.500),
                 'card_margin_fee'         => round(

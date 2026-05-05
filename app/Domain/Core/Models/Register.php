@@ -51,6 +51,8 @@ class Register extends Model
         // SoftPOS billing rates (bilateral: merchant-facing + gateway-facing)
         'softpos_mada_merchant_rate',
         'softpos_mada_gateway_rate',
+        'softpos_card_merchant_rate',
+        'softpos_card_gateway_rate',
         'softpos_card_merchant_fee',
         'softpos_card_gateway_fee',
         // Settlement
@@ -77,6 +79,8 @@ class Register extends Model
         'wameed_margin_percentage' => 'decimal:4',
         'softpos_mada_merchant_rate' => 'decimal:6',
         'softpos_mada_gateway_rate'  => 'decimal:6',
+        'softpos_card_merchant_rate' => 'decimal:6',
+        'softpos_card_gateway_rate'  => 'decimal:6',
         'softpos_card_merchant_fee'  => 'decimal:3',
         'softpos_card_gateway_fee'   => 'decimal:3',
         'softpos_activated_at'      => 'datetime',
