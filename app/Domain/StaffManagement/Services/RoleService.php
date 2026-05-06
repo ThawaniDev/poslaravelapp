@@ -205,6 +205,14 @@ class RoleService
             ->where('model_type', get_class($user))
             ->pluck('role_id');
 
+        // Fallback: if no explicit Spatie role assigned, resolve via the user's role enum
+        if ($roleIds->isEmpty() && $user->role) {
+            $roleIds = DB::table('roles')
+                ->where('store_id', $storeId)
+                ->whereRaw('lower(name) = ?', [strtolower($user->role->value)])
+                ->pluck('id');
+        }
+
         return Permission::whereHas('roles', function ($q) use ($roleIds, $storeId) {
             $q->whereIn('roles.id', $roleIds)
               ->where('roles.store_id', $storeId);

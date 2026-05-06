@@ -109,6 +109,23 @@ class StaffService
                     'is_active'       => true,
                 ]);
 
+                // Auto-assign the matching Spatie role for this store so permission
+                // checks via model_has_roles work immediately upon login.
+                $roleEnum = $userRole instanceof \App\Domain\Auth\Enums\UserRole
+                    ? $userRole->value
+                    : (string) $userRole;
+                $spatieRole = \DB::table('roles')
+                    ->where('store_id', $data['store_id'])
+                    ->whereRaw('lower(name) = ?', [strtolower($roleEnum)])
+                    ->first();
+                if ($spatieRole) {
+                    \DB::table('model_has_roles')->updateOrInsert([
+                        'role_id'    => $spatieRole->id,
+                        'model_id'   => $user->id,
+                        'model_type' => get_class($user),
+                    ]);
+                }
+
                 $data['user_id'] = $user->id;
             }
 
