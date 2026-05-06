@@ -3,6 +3,7 @@
 namespace App\Domain\ProviderPayment\Controllers\Api;
 
 use App\Domain\ProviderPayment\Enums\PaymentPurpose;
+use App\Domain\Subscription\Enums\BillingCycle;
 use App\Domain\ProviderPayment\Resources\ProviderPaymentResource;
 use App\Domain\ProviderPayment\Services\ProviderPaymentService;
 use App\Http\Controllers\Api\BaseApiController;
@@ -74,6 +75,8 @@ class ProviderPaymentController extends BaseApiController
             'currency' => 'sometimes|string|in:SAR,USD',
             'purpose_reference_id' => 'sometimes|nullable|uuid',
             'invoice_id' => 'sometimes|nullable|uuid',
+            'billing_cycle' => 'sometimes|nullable|string|in:monthly,yearly',
+            'discount_code' => 'sometimes|nullable|string|max:100',
             'return_url' => 'sometimes|nullable|url|max:500',
             'notes' => 'sometimes|nullable|string|max:1000',
             'customer_name' => 'sometimes|string|max:200',
@@ -100,19 +103,27 @@ class ProviderPaymentController extends BaseApiController
 
         $returnUrl = $validated['return_url'] ?? url('/payment/result');
 
-        $result = $this->paymentService->initiatePayment(
-            organizationId: $user->organization_id,
-            purpose: PaymentPurpose::from($validated['purpose']),
-            purposeLabel: $validated['purpose_label'],
-            amount: (float) $validated['amount'],
-            customerDetails: $customerDetails,
-            returnUrl: $returnUrl,
-            purposeReferenceId: $validated['purpose_reference_id'] ?? null,
-            invoiceId: $validated['invoice_id'] ?? null,
-            initiatedBy: $user->id,
-            notes: $validated['notes'] ?? null,
-            currency: $validated['currency'] ?? 'SAR',
-        );
+        try {
+            $result = $this->paymentService->initiatePayment(
+                organizationId: $user->organization_id,
+                purpose: PaymentPurpose::from($validated['purpose']),
+                purposeLabel: $validated['purpose_label'],
+                amount: (float) $validated['amount'],
+                customerDetails: $customerDetails,
+                returnUrl: $returnUrl,
+                purposeReferenceId: $validated['purpose_reference_id'] ?? null,
+                invoiceId: $validated['invoice_id'] ?? null,
+                initiatedBy: $user->id,
+                notes: $validated['notes'] ?? null,
+                currency: $validated['currency'] ?? 'SAR',
+                paymentContext: array_filter([
+                    'billing_cycle' => $validated['billing_cycle'] ?? BillingCycle::Monthly->value,
+                    'discount_code' => $validated['discount_code'] ?? null,
+                ], fn ($value) => $value !== null && $value !== ''),
+            );
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
 
         if (! $result['success']) {
             return $this->error($result['error'] ?? 'Failed to initiate payment.', 422);

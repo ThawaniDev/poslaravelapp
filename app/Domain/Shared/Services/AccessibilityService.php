@@ -36,12 +36,19 @@ class AccessibilityService
 
     public function updatePreferences(string $userId, array $data): array
     {
-        $pref = UserPreference::updateOrCreate(
+        // Fetch existing record to MERGE (not replace) partial updates.
+        // This ensures that updating only font_scale does not wipe high_contrast, etc.
+        $existing = UserPreference::where('user_id', $userId)->value('accessibility_json') ?? [];
+
+        // Merge: new data overrides existing fields; defaults fill any gaps.
+        $merged = array_merge($existing, $data);
+
+        UserPreference::updateOrCreate(
             ['user_id' => $userId],
-            ['accessibility_json' => $data],
+            ['accessibility_json' => $merged],
         );
 
-        return array_merge(self::DEFAULTS, $pref->accessibility_json ?? []);
+        return array_merge(self::DEFAULTS, $merged);
     }
 
     public function resetPreferences(string $userId): array

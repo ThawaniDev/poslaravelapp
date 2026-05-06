@@ -6,6 +6,7 @@ use App\Domain\Billing\Models\HardwareSale;
 use App\Domain\Billing\Models\ImplementationFee;
 use App\Domain\Billing\Models\PaymentRetryRule;
 use App\Domain\Core\Models\Store;
+use App\Domain\ProviderRegistration\Models\CancellationReason;
 use App\Domain\ProviderSubscription\Models\Invoice;
 use App\Domain\ProviderSubscription\Models\InvoiceLineItem;
 use App\Domain\ProviderSubscription\Models\ProviderLimitOverride;
@@ -189,7 +190,7 @@ class BillingService
     /**
      * Cancel a subscription (enters grace period if applicable).
      */
-    public function cancelSubscription(string $organizationId, ?string $reason = null): StoreSubscription
+    public function cancelSubscription(string $organizationId, ?string $reason = null, ?string $reasonCategory = null): StoreSubscription
     {
         $subscription = StoreSubscription::where('organization_id', $organizationId)
             ->whereIn('status', [
@@ -212,6 +213,16 @@ class BillingService
         } else {
             $subscription->update([
                 'status' => SubscriptionStatus::Cancelled,
+                'cancelled_at' => $now,
+            ]);
+        }
+
+        // Record cancellation reason for churn analytics
+        if ($reason || $reasonCategory) {
+            CancellationReason::create([
+                'store_subscription_id' => $subscription->id,
+                'reason_category' => $reasonCategory ?? 'other',
+                'reason_text' => $reason,
                 'cancelled_at' => $now,
             ]);
         }
@@ -533,7 +544,6 @@ class BillingService
             // For now, mark as pending for manual processing
             $invoice->update([
                 'status' => 'pending',
-                'updated_at' => now(),
             ]);
 
             $results[] = [

@@ -75,11 +75,13 @@ class ConfigController extends BaseApiController
                 ->toArray();
         });
 
+        // Field names match Flutter MaintenanceStatus.fromJson expectations.
         return $this->success([
-            'is_enabled' => filter_var($settings['maintenance_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
-            'banner_message_en' => $settings['maintenance_banner_en'] ?? null,
-            'banner_message_ar' => $settings['maintenance_banner_ar'] ?? null,
-            'expected_end_time' => $settings['maintenance_expected_end'] ?? null,
+            'is_active'   => filter_var($settings['maintenance_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            'message'     => $settings['maintenance_banner_en'] ?? null,
+            'message_ar'  => $settings['maintenance_banner_ar'] ?? null,
+            'ends_at'     => $settings['maintenance_expected_end'] ?? null,
+            'allowed_ips' => $settings['maintenance_allowed_ips'] ?? null,
         ]);
     }
 
@@ -104,8 +106,9 @@ class ConfigController extends BaseApiController
         });
 
         return $this->success([
-            'vat_rate' => (float) ($vatSettings['vat_rate'] ?? 15),
-            'vat_registration_number' => $vatSettings['vat_registration_number'] ?? null,
+            'vat_rate'       => (float) ($vatSettings['vat_rate'] ?? 15),
+            'vat_enabled'    => filter_var($vatSettings['vat_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            'vat_number'     => $vatSettings['vat_registration_number'] ?? null,  // Matches Flutter TaxConfig.fromJson key
             'exemption_types' => $exemptions,
         ]);
     }

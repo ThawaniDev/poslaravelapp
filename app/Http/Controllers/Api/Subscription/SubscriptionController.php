@@ -117,6 +117,7 @@ class SubscriptionController extends BaseApiController
             $subscription = $this->billingService->cancelSubscription(
                 organizationId: $organizationId,
                 reason: $request->input('reason'),
+                reasonCategory: $request->input('reason_category'),
             );
 
             return $this->success(new StoreSubscriptionResource($subscription), __('subscription.subscription_cancelled'));

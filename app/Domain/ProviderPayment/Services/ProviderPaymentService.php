@@ -2,13 +2,22 @@
 
 namespace App\Domain\ProviderPayment\Services;
 
+use App\Domain\ContentOnboarding\Models\MarketplacePurchaseInvoice;
 use App\Domain\ProviderPayment\Enums\PaymentPurpose;
 use App\Domain\ProviderPayment\Enums\ProviderPaymentStatus;
 use App\Domain\ProviderPayment\Models\ProviderPayment;
 use App\Domain\ProviderSubscription\Models\Invoice;
 use App\Domain\ProviderSubscription\Models\InvoiceLineItem;
+use App\Domain\ProviderSubscription\Models\StoreAddOn;
 use App\Domain\ProviderSubscription\Models\StoreSubscription;
+use App\Domain\ProviderSubscription\Services\BillingService;
+use App\Domain\Subscription\Enums\BillingCycle;
+use App\Domain\Subscription\Enums\SubscriptionStatus;
+use App\Domain\Subscription\Models\PlanAddOn;
+use App\Domain\Subscription\Models\SubscriptionPlan;
 use App\Domain\SystemConfig\Models\SystemSetting;
+use App\Domain\WameedAI\Models\AIBillingInvoice;
+use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -19,13 +28,9 @@ class ProviderPaymentService
     public function __construct(
         private PayTabsService $payTabsService,
         private PaymentEmailService $emailService,
+        private BillingService $billingService,
     ) {}
 
-    // ─── Query ──────────────────────────────────────────────
-
-    /**
-     * List provider payments for an organization with filters.
-     */
     public function listForOrganization(
         string $organizationId,
         array $filters = [],
@@ -54,38 +59,22 @@ class ProviderPaymentService
         return $query->paginate($perPage);
     }
 
-    /**
-     * Get a single provider payment by ID.
-     */
     public function find(string $paymentId): ProviderPayment
     {
         return ProviderPayment::with(['invoice.invoiceLineItems', 'emailLogs', 'organization'])
             ->findOrFail($paymentId);
     }
 
-    /**
-     * Find a payment by its PayTabs transaction reference.
-     */
     public function findByTranRef(string $tranRef): ?ProviderPayment
     {
         return ProviderPayment::where('tran_ref', $tranRef)->first();
     }
 
-    /**
-     * Find a payment by cart ID.
-     */
     public function findByCartId(string $cartId): ?ProviderPayment
     {
         return ProviderPayment::where('cart_id', $cartId)->first();
     }
 
-    // ─── Initiate Payment ───────────────────────────────────
-
-    /**
-     * Initiate a payment for a subscription, add-on, AI billing, etc.
-     *
-     * Returns array with redirect_url for PayTabs payment page.
-     */
     public function initiatePayment(
         string $organizationId,
         PaymentPurpose $purpose,
@@ -99,8 +88,16 @@ class ProviderPaymentService
         ?string $notes = null,
         float $taxRate = 15.0,
         string $currency = 'SAR',
+        array $paymentContext = [],
     ): array {
-        // ─── USD→SAR Conversion ─────────────────────────────
+        $paymentContext = $this->validatePaymentTargets(
+            organizationId: $organizationId,
+            purpose: $purpose,
+            purposeReferenceId: $purposeReferenceId,
+            invoiceId: $invoiceId,
+            paymentContext: $paymentContext,
+        );
+
         $originalCurrency = null;
         $originalAmount = null;
         $exchangeRateUsed = null;
@@ -116,7 +113,6 @@ class ProviderPaymentService
         $taxAmount = round($amount * ($taxRate / 100), 2);
         $totalAmount = round($amount + $taxAmount, 2);
         $cartId = 'WP-' . strtoupper(Str::random(8)) . '-' . time();
-
         $callbackUrl = url('/api/v2/provider-payments/ipn');
 
         $payment = ProviderPayment::create([
@@ -137,6 +133,7 @@ class ProviderPaymentService
             'cart_id' => $cartId,
             'status' => ProviderPaymentStatus::Pending,
             'customer_details' => $customerDetails,
+            'payment_context' => $paymentContext,
             'initiated_by' => $initiatedBy,
             'notes' => $notes,
         ]);
@@ -165,18 +162,13 @@ class ProviderPaymentService
         ];
     }
 
-    // ─── IPN Handler ────────────────────────────────────────
-
-    /**
-     * Handle IPN (Instant Payment Notification) from PayTabs.
-     */
     public function handleIpn(array $data, string $rawBody, string $signature): bool
     {
-        // Validate signature
         if (! $this->payTabsService->validateIpnSignature($rawBody, $signature)) {
             Log::channel('PayTabs')->warning('Invalid IPN signature', [
                 'tran_ref' => $data['tran_ref'] ?? 'unknown',
             ]);
+
             return false;
         }
 
@@ -187,10 +179,10 @@ class ProviderPaymentService
 
         if (! $tranRef) {
             Log::channel('PayTabs')->error('IPN missing tran_ref');
+
             return false;
         }
 
-        // For refunds, look up by previous_tran_ref or cart_id
         if ($tranType === 'refund' && $previousTranRef) {
             $payment = $this->findByTranRef($previousTranRef) ?? $this->findByCartId($cartId);
         } else {
@@ -203,20 +195,20 @@ class ProviderPaymentService
                 'cart_id' => $cartId,
                 'tran_type' => $tranType,
             ]);
+
             return false;
         }
 
-        // Handle refund IPN for completed payments
         if ($tranType === 'refund' && $payment->status === ProviderPaymentStatus::Completed) {
             return $this->handleRefundIpn($payment, $data, $tranRef);
         }
 
-        // If already processed terminal state, skip
         if ($payment->status->isTerminal()) {
             Log::channel('PayTabs')->info('IPN for already-terminal payment, skipping', [
                 'payment_id' => $payment->id,
                 'status' => $payment->status->value,
             ]);
+
             return true;
         }
 
@@ -241,26 +233,20 @@ class ProviderPaymentService
             ]);
 
             if ($responseStatus === 'A') {
-                // Approved
                 return $this->handlePaymentSuccess($payment);
-            } elseif ($responseStatus === 'H') {
-                // Hold on reject
+            }
+
+            if ($responseStatus === 'H') {
                 $payment->update(['status' => ProviderPaymentStatus::Processing]);
                 Log::channel('PayTabs')->info('Payment on hold', ['payment_id' => $payment->id]);
+
                 return true;
-            } else {
-                // Declined or Error
-                return $this->handlePaymentFailure($payment);
             }
+
+            return $this->handlePaymentFailure($payment);
         });
     }
 
-    // ─── Payment Return (from redirect) ─────────────────────
-
-    /**
-     * Handle the payment return URL from PayTabs redirect.
-     * The user is redirected here after payment. We verify the transaction.
-     */
     public function handlePaymentReturn(string $tranRef): ProviderPayment
     {
         $payment = $this->findByTranRef($tranRef);
@@ -269,14 +255,12 @@ class ProviderPaymentService
             throw new \RuntimeException('Payment not found for transaction: ' . $tranRef);
         }
 
-        // Query PayTabs to verify the transaction status
         $txnData = $this->payTabsService->queryTransaction($tranRef);
 
         if ($txnData) {
             $responseStatus = $txnData['payment_result']['response_status'] ?? null;
 
             if ($responseStatus === 'A' && ! $payment->isSuccessful()) {
-                // If IPN hasn't arrived yet, process it now
                 $this->handlePaymentSuccess($payment);
             }
 
@@ -288,11 +272,6 @@ class ProviderPaymentService
         return $payment->fresh(['invoice', 'emailLogs', 'organization']);
     }
 
-    // ─── Refund ─────────────────────────────────────────────
-
-    /**
-     * Process a refund for a provider payment.
-     */
     public function processRefund(string $paymentId, float $amount, string $reason): ProviderPayment
     {
         $payment = $this->find($paymentId);
@@ -312,37 +291,31 @@ class ProviderPaymentService
             $reason,
         );
 
-        if ($refundResult) {
-            $refundStatus = $refundResult['payment_result']['response_status'] ?? null;
-
-            $payment->update([
-                'status' => $refundStatus === 'A' ? ProviderPaymentStatus::Refunded : $payment->status,
-                'refund_amount' => $amount,
-                'refund_tran_ref' => $refundResult['tran_ref'] ?? null,
-                'refunded_at' => $refundStatus === 'A' ? now() : null,
-                'refund_reason' => $reason,
-            ]);
-
-            // Update invoice if linked
-            if ($payment->invoice_id) {
-                $payment->invoice->update(['status' => 'refunded']);
-            }
-
-            // Send refund email
-            if ($refundStatus === 'A') {
-                $this->emailService->sendRefundConfirmation($payment);
-            }
-        } else {
+        if (! $refundResult) {
             throw new \RuntimeException('Refund request to payment gateway failed.');
+        }
+
+        $refundStatus = $refundResult['payment_result']['response_status'] ?? null;
+
+        $payment->update([
+            'status' => $refundStatus === 'A' ? ProviderPaymentStatus::Refunded : $payment->status,
+            'refund_amount' => $amount,
+            'refund_tran_ref' => $refundResult['tran_ref'] ?? null,
+            'refunded_at' => $refundStatus === 'A' ? now() : null,
+            'refund_reason' => $reason,
+        ]);
+
+        if ($payment->invoice_id) {
+            $payment->invoice->update(['status' => 'refunded']);
+        }
+
+        if ($refundStatus === 'A') {
+            $this->emailService->sendRefundConfirmation($payment);
         }
 
         return $payment->fresh();
     }
 
-    /**
-     * Sync a payment's status from PayTabs gateway.
-     * Useful for detecting refunds made from the PayTabs dashboard.
-     */
     public function syncFromGateway(string $paymentId): ProviderPayment
     {
         $payment = $this->find($paymentId);
@@ -359,12 +332,8 @@ class ProviderPaymentService
 
         $payment->update(['gateway_response' => $txnData]);
 
-        // Check if the transaction has been refunded by looking for refund info
-        // PayTabs query returns the original transaction — we need to check transaction history
-        // If the payment is completed but PayTabs shows a different status, update accordingly
         $responseStatus = $txnData['payment_result']['response_status'] ?? null;
 
-        // If the gateway no longer shows 'A' (approved) and payment is completed, it may have been voided
         if ($responseStatus !== 'A' && $payment->status === ProviderPaymentStatus::Completed) {
             $payment->update([
                 'status' => ProviderPaymentStatus::Voided,
@@ -381,11 +350,6 @@ class ProviderPaymentService
         return $payment->fresh();
     }
 
-    // ─── Statistics ─────────────────────────────────────────
-
-    /**
-     * Get payment statistics for an organization.
-     */
     public function getStatistics(string $organizationId): array
     {
         $payments = ProviderPayment::where('organization_id', $organizationId);
@@ -401,36 +365,31 @@ class ProviderPaymentService
         ];
     }
 
-    // ─── Internal ───────────────────────────────────────────
-
     private function handlePaymentSuccess(ProviderPayment $payment): bool
     {
         $payment->update(['status' => ProviderPaymentStatus::Completed]);
 
-        // Generate invoice if not already linked
-        if (! $payment->invoice_id) {
-            $this->generateInvoiceForPayment($payment);
-        } else {
-            // Mark existing invoice as paid
-            $payment->invoice->update([
+        if ($payment->invoice_id) {
+            $payment->invoice?->update([
                 'status' => 'paid',
                 'paid_at' => now(),
                 'payment_gateway' => 'paytabs',
                 'gateway_tran_ref' => $payment->tran_ref,
                 'provider_payment_id' => $payment->id,
             ]);
+        } elseif ($this->shouldGenerateGenericInvoice($payment)) {
+            $this->generateInvoiceForPayment($payment);
         }
 
-        // Activate the purpose (subscription, addon, etc.)
         $this->activatePurpose($payment);
 
-        // Send confirmation email
         $this->emailService->sendPaymentConfirmation($payment);
 
-        // Send invoice email
         if ($payment->invoice_id) {
-            $invoice = $payment->invoice->fresh();
-            $this->emailService->sendInvoiceEmail($invoice, $payment);
+            $invoice = $payment->invoice?->fresh();
+            if ($invoice) {
+                $this->emailService->sendInvoiceEmail($invoice, $payment);
+            }
         }
 
         Log::channel('PayTabs')->info('Payment completed successfully', [
@@ -445,12 +404,10 @@ class ProviderPaymentService
     {
         $payment->update(['status' => ProviderPaymentStatus::Failed]);
 
-        // Update linked invoice
         if ($payment->invoice_id) {
             $payment->invoice->update(['status' => 'failed']);
         }
 
-        // Send failure email
         $this->emailService->sendPaymentFailedEmail($payment);
 
         Log::channel('PayTabs')->info('Payment failed', [
@@ -461,9 +418,6 @@ class ProviderPaymentService
         return true;
     }
 
-    /**
-     * Handle a refund IPN from PayTabs (dashboard or API refund).
-     */
     private function handleRefundIpn(ProviderPayment $payment, array $data, string $refundTranRef): bool
     {
         $paymentResult = $data['payment_result'] ?? [];
@@ -481,12 +435,10 @@ class ProviderPaymentService
                     'gateway_response' => $data,
                 ]);
 
-                // Update linked invoice
                 if ($payment->invoice_id) {
                     $payment->invoice->update(['status' => 'refunded']);
                 }
 
-                // Send refund email
                 $this->emailService->sendRefundConfirmation($payment);
 
                 Log::channel('PayTabs')->info('Refund IPN processed successfully', [
@@ -508,7 +460,6 @@ class ProviderPaymentService
 
     private function generateInvoiceForPayment(ProviderPayment $payment): void
     {
-        // Find the store subscription for this organization
         $subscription = StoreSubscription::where('organization_id', $payment->organization_id)->first();
 
         if (! $subscription) {
@@ -516,6 +467,7 @@ class ProviderPaymentService
                 'payment_id' => $payment->id,
                 'organization_id' => $payment->organization_id,
             ]);
+
             return;
         }
 
@@ -557,7 +509,7 @@ class ProviderPaymentService
             PaymentPurpose::PlanAddon => $this->activateAddon($payment),
             PaymentPurpose::MarketplacePurchase => $this->activateMarketplacePurchase($payment),
             PaymentPurpose::AiBilling => $this->activateAiBillingPayment($payment),
-            default => null, // Other purposes don't need activation
+            default => null,
         };
     }
 
@@ -567,10 +519,36 @@ class ProviderPaymentService
             return;
         }
 
-        $subscription = StoreSubscription::find($payment->purpose_reference_id);
+        $billingCycle = BillingCycle::tryFrom($payment->payment_context['billing_cycle'] ?? '') ?? BillingCycle::Monthly;
+        $discountCode = $payment->payment_context['discount_code'] ?? null;
 
-        if ($subscription && $subscription->status->value !== 'active') {
-            $subscription->update(['status' => 'active']);
+        $existingSubscription = StoreSubscription::where('organization_id', $payment->organization_id)
+            ->whereIn('status', [
+                SubscriptionStatus::Active->value,
+                SubscriptionStatus::Trial->value,
+                SubscriptionStatus::Grace->value,
+            ])
+            ->first();
+
+        $subscription = $existingSubscription
+            ? $this->billingService->changePlan($payment->organization_id, $payment->purpose_reference_id, $billingCycle)
+            : $this->billingService->subscribe($payment->organization_id, $payment->purpose_reference_id, $billingCycle, 'paytabs', $discountCode);
+
+        $invoice = $subscription->invoices()->latest('created_at')->first();
+        if ($invoice) {
+            $invoice->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+                'provider_payment_id' => $payment->id,
+                'payment_gateway' => 'paytabs',
+                'gateway_tran_ref' => $payment->tran_ref,
+            ]);
+
+            $payment->update([
+                'invoice_id' => $invoice->id,
+                'invoice_generated' => true,
+                'invoice_generated_at' => now(),
+            ]);
         }
     }
 
@@ -580,9 +558,43 @@ class ProviderPaymentService
             return;
         }
 
-        DB::table('store_add_ons')
-            ->where('id', $payment->purpose_reference_id)
-            ->update(['is_active' => true, 'activated_at' => now()]);
+        $user = $payment->initiated_by ? User::find($payment->initiated_by) : null;
+        $storeId = $user?->store_id;
+
+        if (! $storeId) {
+            Log::warning('Unable to activate add-on payment without initiating user store.', [
+                'payment_id' => $payment->id,
+                'initiated_by' => $payment->initiated_by,
+            ]);
+
+            return;
+        }
+
+        $existing = StoreAddOn::query()
+            ->where('store_id', $storeId)
+            ->where('plan_add_on_id', $payment->purpose_reference_id)
+            ->first();
+
+        if ($existing) {
+            DB::table('store_add_ons')
+                ->where('store_id', $storeId)
+                ->where('plan_add_on_id', $payment->purpose_reference_id)
+                ->update([
+                    'is_active' => true,
+                    'activated_at' => now(),
+                    'deactivated_at' => null,
+                ]);
+
+            return;
+        }
+
+        DB::table('store_add_ons')->insert([
+            'store_id' => $storeId,
+            'plan_add_on_id' => $payment->purpose_reference_id,
+            'is_active' => true,
+            'activated_at' => now(),
+            'deactivated_at' => null,
+        ]);
     }
 
     private function activateMarketplacePurchase(ProviderPayment $payment): void
@@ -598,7 +610,6 @@ class ProviderPaymentService
         }
 
         try {
-            // original_amount is in USD when currency was converted from USD→SAR
             $amountUsd = $payment->original_currency === 'USD'
                 ? (float) $payment->original_amount
                 : (float) $payment->amount;
@@ -618,5 +629,82 @@ class ProviderPaymentService
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    private function validatePaymentTargets(
+        string $organizationId,
+        PaymentPurpose $purpose,
+        ?string $purposeReferenceId,
+        ?string $invoiceId,
+        array $paymentContext,
+    ): array {
+        if ($invoiceId && ! Invoice::query()
+            ->whereKey($invoiceId)
+            ->whereHas('storeSubscription', fn ($query) => $query->where('organization_id', $organizationId))
+            ->exists()) {
+            throw new \RuntimeException('Invoice not found for this organization.');
+        }
+
+        match ($purpose) {
+            PaymentPurpose::Subscription => $this->assertSubscriptionPlanTarget($purposeReferenceId),
+            PaymentPurpose::PlanAddon => $this->assertPlanAddonTarget($purposeReferenceId),
+            PaymentPurpose::AiBilling => $this->assertAiBillingTarget($organizationId, $purposeReferenceId),
+            PaymentPurpose::MarketplacePurchase => $this->assertMarketplaceTarget($organizationId, $purposeReferenceId),
+            default => null,
+        };
+
+        return array_filter($paymentContext, fn ($value) => $value !== null && $value !== '');
+    }
+
+    private function assertSubscriptionPlanTarget(?string $purposeReferenceId): void
+    {
+        if (! $purposeReferenceId) {
+            throw new \RuntimeException('A subscription plan reference is required.');
+        }
+
+        if (! SubscriptionPlan::query()->whereKey($purposeReferenceId)->where('is_active', true)->exists()) {
+            throw new \RuntimeException('Subscription plan not found or inactive.');
+        }
+    }
+
+    private function assertPlanAddonTarget(?string $purposeReferenceId): void
+    {
+        if (! $purposeReferenceId) {
+            throw new \RuntimeException('A plan add-on reference is required.');
+        }
+
+        if (! PlanAddOn::query()->whereKey($purposeReferenceId)->where('is_active', true)->exists()) {
+            throw new \RuntimeException('Plan add-on not found or inactive.');
+        }
+    }
+
+    private function assertAiBillingTarget(string $organizationId, ?string $purposeReferenceId): void
+    {
+        if (! $purposeReferenceId) {
+            throw new \RuntimeException('An AI billing invoice reference is required.');
+        }
+
+        if (! AIBillingInvoice::query()->whereKey($purposeReferenceId)->where('organization_id', $organizationId)->exists()) {
+            throw new \RuntimeException('AI billing invoice not found for this organization.');
+        }
+    }
+
+    private function assertMarketplaceTarget(string $organizationId, ?string $purposeReferenceId): void
+    {
+        if (! $purposeReferenceId) {
+            throw new \RuntimeException('A marketplace purchase invoice reference is required.');
+        }
+
+        if (! MarketplacePurchaseInvoice::query()
+            ->whereKey($purposeReferenceId)
+            ->whereHas('store', fn ($query) => $query->where('organization_id', $organizationId))
+            ->exists()) {
+            throw new \RuntimeException('Marketplace purchase invoice not found for this organization.');
+        }
+    }
+
+    private function shouldGenerateGenericInvoice(ProviderPayment $payment): bool
+    {
+        return $payment->purpose !== PaymentPurpose::Subscription;
     }
 }

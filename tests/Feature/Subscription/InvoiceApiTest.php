@@ -303,4 +303,190 @@ class InvoiceApiTest extends TestCase
         $response = $this->getJson('/api/v2/subscription/invoices/some-id');
         $response->assertUnauthorized();
     }
+
+    // ─── Cross-Org Isolation ─────────────────────────────────────
+
+    public function test_cannot_view_another_organizations_invoice(): void
+    {
+        // Create another org + subscription + invoice
+        $otherOrg = Organization::create([
+            'name' => 'Other Org Invoice',
+            'business_type' => 'grocery',
+            'country' => 'SA',
+        ]);
+        $otherStore = Store::create([
+            'organization_id' => $otherOrg->id,
+            'name' => 'Other',
+            'business_type' => 'grocery',
+            'currency' => 'SAR',
+            'is_active' => true,
+            'is_main_branch' => true,
+        ]);
+        $otherSub = StoreSubscription::create([
+            'organization_id' => $otherOrg->id,
+            'subscription_plan_id' => $this->plan->id,
+            'status' => 'active',
+            'billing_cycle' => 'monthly',
+            'current_period_start' => now(),
+            'current_period_end' => now()->addMonth(),
+        ]);
+        $otherInvoice = Invoice::create([
+            'store_subscription_id' => $otherSub->id,
+            'invoice_number' => 'INV-XORG',
+            'amount' => 29.99,
+            'tax' => 4.50,
+            'total' => 34.49,
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        $response = $this->withToken($this->token)->getJson("/api/v2/subscription/invoices/{$otherInvoice->id}");
+
+        $response->assertForbidden();
+    }
+
+    public function test_invoice_list_only_shows_own_org_invoices(): void
+    {
+        // Create invoice for our org
+        Invoice::create([
+            'store_subscription_id' => $this->subscription->id,
+            'invoice_number' => 'INV-MINE',
+            'amount' => 29.99,
+            'tax' => 4.50,
+            'total' => 34.49,
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        // Create another org's subscription and invoice
+        $otherOrg = Organization::create([
+            'name' => 'Other Org List',
+            'business_type' => 'grocery',
+            'country' => 'SA',
+        ]);
+        $otherSub = StoreSubscription::create([
+            'organization_id' => $otherOrg->id,
+            'subscription_plan_id' => $this->plan->id,
+            'status' => 'active',
+            'billing_cycle' => 'monthly',
+            'current_period_start' => now(),
+            'current_period_end' => now()->addMonth(),
+        ]);
+        Invoice::create([
+            'store_subscription_id' => $otherSub->id,
+            'invoice_number' => 'INV-THEIRS',
+            'amount' => 29.99,
+            'tax' => 4.50,
+            'total' => 34.49,
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/subscription/invoices');
+
+        $response->assertOk();
+        $this->assertSame(1, $response->json('data.meta.total'));
+        $this->assertSame('INV-MINE', $response->json('data.data.0.invoice_number'));
+    }
+
+    // ─── PDF Download Endpoint ───────────────────────────────────
+
+    public function test_invoice_with_pdf_url_returns_url_on_pdf_endpoint(): void
+    {
+        $invoice = Invoice::create([
+            'store_subscription_id' => $this->subscription->id,
+            'invoice_number' => 'INV-PDF-STORED',
+            'amount' => 29.99,
+            'tax' => 4.50,
+            'total' => 34.49,
+            'status' => 'paid',
+            'paid_at' => now(),
+            'pdf_url' => 'https://storage.test/invoices/INV-PDF-STORED.pdf',
+        ]);
+
+        $response = $this->withToken($this->token)->getJson("/api/v2/subscription/invoices/{$invoice->id}/pdf");
+
+        $response->assertOk();
+        $response->assertJsonPath('data.pdf_url', 'https://storage.test/invoices/INV-PDF-STORED.pdf');
+        $response->assertJsonPath('data.invoice_number', 'INV-PDF-STORED');
+    }
+
+    public function test_pdf_endpoint_returns_404_for_nonexistent_invoice(): void
+    {
+        $fakeId = \Illuminate\Support\Str::uuid()->toString();
+
+        $response = $this->withToken($this->token)->getJson("/api/v2/subscription/invoices/{$fakeId}/pdf");
+
+        $response->assertNotFound();
+    }
+
+    public function test_cannot_download_pdf_of_another_orgs_invoice(): void
+    {
+        $otherOrg = Organization::create([
+            'name' => 'PDF Other Org',
+            'business_type' => 'grocery',
+            'country' => 'SA',
+        ]);
+        $otherSub = StoreSubscription::create([
+            'organization_id' => $otherOrg->id,
+            'subscription_plan_id' => $this->plan->id,
+            'status' => 'active',
+            'billing_cycle' => 'monthly',
+            'current_period_start' => now(),
+            'current_period_end' => now()->addMonth(),
+        ]);
+        $otherInvoice = Invoice::create([
+            'store_subscription_id' => $otherSub->id,
+            'invoice_number' => 'INV-PDFATHER',
+            'amount' => 29.99,
+            'tax' => 4.50,
+            'total' => 34.49,
+            'status' => 'paid',
+            'paid_at' => now(),
+            'pdf_url' => 'https://example.com/other.pdf',
+        ]);
+
+        $response = $this->withToken($this->token)->getJson("/api/v2/subscription/invoices/{$otherInvoice->id}/pdf");
+
+        $response->assertForbidden();
+    }
+
+    public function test_unauthenticated_cannot_download_invoice_pdf(): void
+    {
+        $invoice = Invoice::create([
+            'store_subscription_id' => $this->subscription->id,
+            'invoice_number' => 'INV-NOAUTH-PDF',
+            'amount' => 29.99,
+            'tax' => 4.50,
+            'total' => 34.49,
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        $response = $this->getJson("/api/v2/subscription/invoices/{$invoice->id}/pdf");
+
+        $response->assertUnauthorized();
+    }
+
+    // ─── Invoice Amount Precision ────────────────────────────────
+
+    public function test_invoice_amounts_are_returned_as_floats(): void
+    {
+        $invoice = Invoice::create([
+            'store_subscription_id' => $this->subscription->id,
+            'invoice_number' => 'INV-FLOAT',
+            'amount' => 29.99,
+            'tax' => 4.50,
+            'total' => 34.49,
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        $response = $this->withToken($this->token)->getJson("/api/v2/subscription/invoices/{$invoice->id}");
+
+        $response->assertOk();
+        $this->assertIsFloat($response->json('data.amount'));
+        $this->assertIsFloat($response->json('data.tax'));
+        $this->assertIsFloat($response->json('data.total'));
+    }
 }

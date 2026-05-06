@@ -47,6 +47,7 @@ class ProviderPaymentResource extends JsonResource
             'refund_tran_ref' => $this->refund_tran_ref,
             'refunded_at' => $this->refunded_at?->toIso8601String(),
             'refund_reason' => $this->refund_reason,
+            'payment_context' => $this->payment_context,
             'notes' => $this->notes,
             'invoice' => $this->whenLoaded('invoice', function () {
                 return [

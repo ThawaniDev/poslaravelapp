@@ -59,6 +59,7 @@ class ProviderPayment extends Model
         'refunded_at',
         'refund_reason',
         'gateway_response',
+        'payment_context',
         'customer_details',
         'notes',
         'initiated_by',
@@ -82,6 +83,7 @@ class ProviderPayment extends Model
         'ipn_payload' => 'array',
         'refunded_at' => 'datetime',
         'gateway_response' => 'array',
+        'payment_context' => 'array',
         'customer_details' => 'array',
     ];
 

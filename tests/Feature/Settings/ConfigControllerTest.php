@@ -150,14 +150,15 @@ class ConfigControllerTest extends TestCase
     {
         $this->getJson('/api/v2/config/maintenance')
             ->assertOk()
-            ->assertJsonStructure(['data' => ['is_enabled']]);
+            ->assertJsonStructure(['data' => ['is_active', 'message', 'message_ar', 'ends_at', 'allowed_ips']]);
     }
 
     public function test_maintenance_returns_false_when_no_settings(): void
     {
         $this->getJson('/api/v2/config/maintenance')
             ->assertOk()
-            ->assertJsonPath('data.is_enabled', false);
+            ->assertJsonPath('data.is_active', false)
+            ->assertJsonPath('data.message', null);
     }
 
     // ─── Tax ────────────────────────────────────────────────────────────────
@@ -172,7 +173,7 @@ class ConfigControllerTest extends TestCase
         $this->withToken($this->token)
             ->getJson('/api/v2/config/tax')
             ->assertOk()
-            ->assertJsonStructure(['data' => ['vat_rate', 'exemption_types']]);
+            ->assertJsonStructure(['data' => ['vat_rate', 'vat_enabled', 'vat_number', 'exemption_types']]);
     }
 
     public function test_tax_vat_rate_is_numeric(): void
