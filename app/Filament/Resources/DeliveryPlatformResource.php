@@ -337,19 +337,20 @@ class DeliveryPlatformResource extends Resource
                 Tables\Columns\TextColumn::make('auth_method')
                     ->label(__('delivery.auth_method'))
                     ->badge()
-                    ->color(fn ($state) => match ((string) $state) {
+                    ->getStateUsing(fn ($record) => $record->auth_method instanceof \BackedEnum ? $record->auth_method->value : (string) $record->auth_method)
+                    ->color(fn (string $state) => match ($state) {
                         'bearer' => 'success',
                         'api_key' => 'info',
                         'basic' => 'warning',
                         'oauth2' => 'danger',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn ($state) => strtoupper((string) $state)),
+                    ->formatStateUsing(fn (string $state) => strtoupper($state)),
 
                 Tables\Columns\TextColumn::make('api_type')
                     ->label(__('delivery.api_type'))
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn ($state): string => match ((string) $state) {
                         'rest' => 'success',
                         'webhook' => 'info',
                         'polling' => 'warning',
