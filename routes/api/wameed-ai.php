@@ -117,7 +117,7 @@ Route::prefix('wameed-ai')->middleware(['auth:sanctum', 'plan.feature:wameed_ai'
 });
 
 // ─── Admin Routes ────────────────────────────────────────────
-Route::prefix('admin/wameed-ai')->middleware(['auth:sanctum'])->group(function () {
+Route::prefix('admin/wameed-ai')->middleware(['auth:admin-api'])->group(function () {
     Route::get('/providers', [WameedAIAdminController::class, 'providerConfigs'])->middleware('permission:admin.wameed_ai.manage');
     Route::post('/providers', [WameedAIAdminController::class, 'updateProviderConfig'])->middleware('permission:admin.wameed_ai.manage');
     Route::put('/providers/{id}', [WameedAIAdminController::class, 'updateProviderConfig'])->middleware('permission:admin.wameed_ai.manage');

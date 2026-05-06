@@ -49,6 +49,12 @@ class PlanController extends BaseApiController
             return $this->success(new SubscriptionPlanResource($plan));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return $this->notFound('Subscription plan not found.');
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('PlanController@show failed', [
+                'plan_id' => $planId,
+                'error' => $e->getMessage(),
+            ]);
+            return $this->notFound('Subscription plan not found.');
         }
     }
 
@@ -62,6 +68,12 @@ class PlanController extends BaseApiController
 
             return $this->success(new SubscriptionPlanResource($plan));
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->notFound("No plan found with slug '{$slug}'.");
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('PlanController@showBySlug failed', [
+                'slug' => $slug,
+                'error' => $e->getMessage(),
+            ]);
             return $this->notFound("No plan found with slug '{$slug}'.");
         }
     }

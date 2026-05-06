@@ -25,54 +25,64 @@ class DeliveryWebhookController extends BaseApiController
      */
     public function handle(Request $request, string $platform, string $storeId): JsonResponse
     {
-        $config = DeliveryPlatformConfig::where('store_id', $storeId)
-            ->where('platform', $platform)
-            ->first();
-
-        if (! $config) {
-            Log::warning('Webhook: unknown config', [
-                'platform' => $platform,
-                'store_id' => $storeId,
-            ]);
-
-            return $this->notFound('Unknown platform configuration');
-        }
-
-        $eventType = $request->header('X-Event-Type')
-            ?? $request->input('event')
-            ?? $request->input('event_type')
-            ?? 'unknown';
-
-        $verified = $this->webhookService->verify($request, $config);
-        $log = $this->webhookService->logWebhook($request, $platform, $storeId, $verified, $eventType);
-
-        if (! $verified) {
-            Log::warning('Webhook: signature verification failed', [
-                'platform' => $platform,
-                'store_id' => $storeId,
-                'log_id' => $log->id,
-            ]);
-
-            $this->webhookService->markProcessed($log, false, 'Signature verification failed');
-
-            return $this->error('Invalid webhook signature', 401);
-        }
-
         try {
-            $this->processWebhook($platform, $storeId, $eventType, $request->all());
-            $this->webhookService->markProcessed($log, true);
+            $config = DeliveryPlatformConfig::where('store_id', $storeId)
+                ->where('platform', $platform)
+                ->first();
 
-            return $this->success(null, 'Webhook processed');
+            if (! $config) {
+                Log::warning('Webhook: unknown config', [
+                    'platform' => $platform,
+                    'store_id' => $storeId,
+                ]);
+
+                return $this->notFound('Unknown platform configuration');
+            }
+
+            $eventType = $request->header('X-Event-Type')
+                ?? $request->input('event')
+                ?? $request->input('event_type')
+                ?? 'unknown';
+
+            $verified = $this->webhookService->verify($request, $config);
+            $log = $this->webhookService->logWebhook($request, $platform, $storeId, $verified, $eventType);
+
+            if (! $verified) {
+                Log::warning('Webhook: signature verification failed', [
+                    'platform' => $platform,
+                    'store_id' => $storeId,
+                    'log_id' => $log->id,
+                ]);
+
+                $this->webhookService->markProcessed($log, false, 'Signature verification failed');
+
+                return $this->error('Invalid webhook signature', 401);
+            }
+
+            try {
+                $this->processWebhook($platform, $storeId, $eventType, $request->all());
+                $this->webhookService->markProcessed($log, true);
+
+                return $this->success(null, 'Webhook processed');
+            } catch (\Throwable $e) {
+                Log::error('Webhook processing failed', [
+                    'platform' => $platform,
+                    'store_id' => $storeId,
+                    'error' => $e->getMessage(),
+                ]);
+
+                $this->webhookService->markProcessed($log, false, $e->getMessage());
+
+                return $this->error('Webhook processing failed', 422);
+            }
         } catch (\Throwable $e) {
-            Log::error('Webhook processing failed', [
+            Log::error('Webhook handler crashed before processing', [
                 'platform' => $platform,
                 'store_id' => $storeId,
                 'error' => $e->getMessage(),
             ]);
 
-            $this->webhookService->markProcessed($log, false, $e->getMessage());
-
-            return $this->error('Webhook processing failed', 500);
+            return $this->error('Webhook could not be accepted', 422);
         }
     }
 
