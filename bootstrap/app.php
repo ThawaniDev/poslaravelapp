@@ -46,4 +46,23 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(function (Request $request, \Throwable $e): bool {
             return $request->is('api/*') || $request->expectsJson();
         });
+
+        // Convert PostgreSQL "invalid input syntax for type uuid" (SQLSTATE 22P02)
+        // into a clean 404 instead of leaking a 500 when callers pass a malformed
+        // UUID in a route parameter (e.g. /cash-sessions/1 against a uuid PK).
+        $exceptions->render(function (\Illuminate\Database\QueryException $e, Request $request) {
+            if (! ($request->is('api/*') || $request->expectsJson())) {
+                return null;
+            }
+            $sqlState = $e->errorInfo[0] ?? null;
+            $message = $e->getMessage();
+            if ($sqlState === '22P02' || str_contains($message, 'invalid input syntax for type uuid')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Resource not found.',
+                    'errors' => null,
+                ], 404);
+            }
+            return null;
+        });
     })->create();
