@@ -792,56 +792,27 @@ class ComprehensiveTestDataSeeder extends Seeder
     {
         $this->command->info('Seeding staff & roles...');
 
-        // Store-level Permissions
-        $perms = [
-            ['name' => 'pos.sell', 'display_name' => 'POS Sell', 'module' => 'pos', 'guard_name' => 'web', 'requires_pin' => false],
-            ['name' => 'pos.refund', 'display_name' => 'POS Refund', 'module' => 'pos', 'guard_name' => 'web', 'requires_pin' => true],
-            ['name' => 'pos.discount', 'display_name' => 'POS Discount', 'module' => 'pos', 'guard_name' => 'web', 'requires_pin' => true],
-            ['name' => 'pos.void', 'display_name' => 'POS Void', 'module' => 'pos', 'guard_name' => 'web', 'requires_pin' => true],
-            ['name' => 'inventory.view', 'display_name' => 'View Inventory', 'module' => 'inventory', 'guard_name' => 'web', 'requires_pin' => false],
-            ['name' => 'inventory.adjust', 'display_name' => 'Adjust Inventory', 'module' => 'inventory', 'guard_name' => 'web', 'requires_pin' => false],
-            ['name' => 'reports.view', 'display_name' => 'View Reports', 'module' => 'reports', 'guard_name' => 'web', 'requires_pin' => false],
-            ['name' => 'staff.manage', 'display_name' => 'Manage Staff', 'module' => 'staff', 'guard_name' => 'web', 'requires_pin' => false],
-            ['name' => 'settings.manage', 'display_name' => 'Manage Settings', 'module' => 'settings', 'guard_name' => 'web', 'requires_pin' => true],
-            ['name' => 'customers.view', 'display_name' => 'View Customers', 'module' => 'customers', 'guard_name' => 'web', 'requires_pin' => false],
-            ['name' => 'customers.manage', 'display_name' => 'Manage Customers', 'module' => 'customers', 'guard_name' => 'web', 'requires_pin' => false],
-            ['name' => 'customers.manage_loyalty', 'display_name' => 'Manage Loyalty', 'module' => 'customers', 'guard_name' => 'web', 'requires_pin' => true],
-            ['name' => 'customers.manage_credit', 'display_name' => 'Manage Store Credit', 'module' => 'customers', 'guard_name' => 'web', 'requires_pin' => true],
-            ['name' => 'delivery.view', 'display_name' => 'View Delivery', 'module' => 'delivery', 'guard_name' => 'web', 'requires_pin' => false],
-            ['name' => 'delivery.manage', 'display_name' => 'Manage Delivery', 'module' => 'delivery', 'guard_name' => 'web', 'requires_pin' => false],
-        ];
-        foreach ($perms as $p) {
-            DB::table('permissions')->insertOrIgnore(array_merge($p, ['created_at' => now(), 'updated_at' => now()]));
-        }
+        // Materialize the canonical predefined roles (cashier, manager, …) for
+        // this store using the same code path the real provisioning flow uses.
+        // This avoids creating duplicate "Cashier" / "Manager" roles in the
+        // wrong (web) guard with an incomplete permission set, which previously
+        // shadowed the canonical staff-guard roles and caused 403s on shift
+        // open and other cashier endpoints.
+        app(\App\Domain\StaffManagement\Services\RoleService::class)
+            ->syncDefaultTemplates($this->storeId);
 
-        // Store-level Roles
-        $cashierRole = DB::table('roles')->where('store_id', $this->storeId)->where('name', 'Cashier')->where('guard_name', 'web')->value('id');
-        if (!$cashierRole) {
-            $cashierRole = DB::table('roles')->insertGetId([
-                'store_id' => $this->storeId, 'name' => 'Cashier', 'display_name' => 'Cashier',
-                'guard_name' => 'web', 'is_predefined' => true,
-                'created_at' => now(), 'updated_at' => now(),
-            ]);
-        }
-        $managerRole = DB::table('roles')->where('store_id', $this->storeId)->where('name', 'Manager')->where('guard_name', 'web')->value('id');
-        if (!$managerRole) {
-            $managerRole = DB::table('roles')->insertGetId([
-                'store_id' => $this->storeId, 'name' => 'Manager', 'display_name' => 'Manager',
-                'guard_name' => 'web', 'is_predefined' => true,
-                'created_at' => now(), 'updated_at' => now(),
-            ]);
-        }
+        $cashierRole = DB::table('roles')
+            ->where('store_id', $this->storeId)
+            ->whereRaw("lower(name) = 'cashier'")
+            ->where('guard_name', 'staff')
+            ->value('id');
 
-        // Assign permissions to roles
-        $allPermIds = DB::table('permissions')->pluck('id')->toArray();
-        $cashierPerms = DB::table('permissions')->whereIn('name', ['pos.sell', 'inventory.view', 'customers.manage'])->pluck('id')->toArray();
-
-        foreach ($allPermIds as $pid) {
-            DB::table('role_has_permissions')->insertOrIgnore(['role_id' => $managerRole, 'permission_id' => $pid]);
-        }
-        foreach ($cashierPerms as $pid) {
-            DB::table('role_has_permissions')->insertOrIgnore(['role_id' => $cashierRole, 'permission_id' => $pid]);
-        }
+        $managerRole = DB::table('roles')
+            ->where('store_id', $this->storeId)
+            ->whereRaw("lower(name) in ('manager', 'branch_manager')")
+            ->where('guard_name', 'staff')
+            ->orderByRaw("case when lower(name) = 'manager' then 0 else 1 end")
+            ->value('id');
 
         // Staff Users
         $staffCashier = DB::table('staff_users')->insertGetId([
