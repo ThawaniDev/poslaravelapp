@@ -1,0 +1,20 @@
+{
+  "status": "commited",
+  "type": "backend",
+  "scope": "codebase",
+  "localEndpoint": "http://localhost:8000",
+  "backendAuthType": "Bearer token",
+  "backendCredential": "3|8y2OsN3PQyRE0kp067IDr15anDvhDQXtjULJa4Dvb82b5967",
+  "executionArgs": {
+    "projectName": "poslaravelapp",
+    "projectPath": "/Users/dogorshom/Desktop/Thawani/thawani/POS/poslaravelapp",
+    "testIds": [],
+    "additionalInstruction": "Backend Laravel 12 + Sanctum at http://localhost:8000. ALL API endpoints are prefixed with /api/v2/ (NOT /api/). For example login is POST /api/v2/auth/login. Provider endpoints require a Sanctum bearer token obtained from /api/v2/auth/login (response shape: {user, token, token_type:'Bearer'}). Send Authorization: Bearer <token> header. Generate comprehensive coverage across all features in the test plan; if a test depends on a created entity (e.g. customer, product) make sure to create it first within the same test. Use unique email/phone values per test to avoid uniqueness conflicts.",
+    "serverMode": "development",
+    "envs": {
+      "API_KEY": "sk-user-P8ntlXSBl6faYGv-c7XCfWQkYXG5sQcj_f0n5cPk06GZdzvVhkUGPl3Rm_tNIG0pIpGWMs1Apicq_mmHAwtTHCS1Dcxn_x95B-nSXkatAOXUnKQqGvG9DmC-IIuY65xBZQg"
+    }
+  },
+  "serverPort": 54055,
+  "proxy": "http://83006ba1-9de1-4c66-8089-fdb73c348974:4lrB64b8uhbklWTsTbwFIHfgaOlebGtv@tun.testsprite.com:8080"
+}

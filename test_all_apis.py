@@ -27,7 +27,7 @@ DEFAULT_BASE_URL = "http://127.0.0.1:8001/api/v2"
 
 # Provider (owner) credentials
 PROVIDER_EMAIL = "owner@ostora.sa"
-PROVIDER_PASSWORD = "password"
+PROVIDER_PASSWORD = "Owner@2026"
 
 # Admin credentials
 ADMIN_EMAIL = "dev@wameedpos.com"

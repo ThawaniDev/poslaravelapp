@@ -1,0 +1,500 @@
+version: "2"
+type: backend
+tech_stack:
+  - PHP 8.2
+  - Laravel 12
+  - Laravel Sanctum
+  - Filament 3
+  - Spatie Permission / Activity Log / Media Library / Backup
+  - Laravel Horizon
+  - PostgreSQL 15 (Supabase compatible)
+  - Redis
+  - Firebase (FCM)
+  - PayTabs / Thawani
+  - ZATCA
+  - PHPUnit 11
+
+base_url: http://localhost:8000
+api_prefix: /api/v2
+
+# AUTH GUIDANCE FOR TESTSPRITE
+# All protected endpoints require: Authorization: Bearer <token>
+# Token comes from POST /api/v2/auth/login -> response.data.token
+# All responses use envelope: { success: bool, message: string, data: object|array, errors?: object }
+#
+# SEEDED CREDENTIALS (already in DB):
+#   owner@testsprite.local      / Password123!  PIN 1111  Owner
+#   manager@testsprite.local    / Password123!  PIN 2222  BranchManager
+#   cashier@testsprite.local    / Password123!  PIN 3333  Cashier
+#   inventory@testsprite.local  / Password123!  PIN 4444  InventoryClerk
+#   accountant@testsprite.local / Password123!  PIN 5555  Accountant
+
+global_response_envelope:
+  success: boolean
+  message: string
+  data: object|array|null
+  errors: object|null
+
+features:
+
+  - name: Authentication
+    description: Login (email+password and PIN), registration, OTP, profile, token refresh, logout, multi-device session control via Sanctum.
+    files: [routes/api/auth.php, app/Http/Controllers/Api/Auth/LoginController.php, app/Http/Controllers/Api/Auth/RegisterController.php, app/Http/Controllers/Api/Auth/OtpController.php, app/Http/Controllers/Api/Auth/ProfileController.php]
+    endpoints:
+      - { method: POST, path: "/api/v2/auth/login", description: "Login with email+password. Body {email,password}. Returns 200 + data.token on success, 401 on bad creds, 422 on validation error.", auth_required: false }
+      - { method: POST, path: "/api/v2/auth/login/pin", description: "PIN login. Body {email,pin}. Returns token.", auth_required: false }
+      - { method: POST, path: "/api/v2/auth/logout", description: "Revoke current token.", auth_required: true }
+      - { method: POST, path: "/api/v2/auth/logout-all", description: "Revoke all user tokens.", auth_required: true }
+      - { method: POST, path: "/api/v2/auth/register", description: "Register new account. Body {email,password,phone,organization_name,country}. 201 success, 422 duplicate.", auth_required: false }
+      - { method: POST, path: "/api/v2/auth/otp/send", description: "Send OTP to phone/email.", auth_required: false }
+      - { method: POST, path: "/api/v2/auth/otp/verify", description: "Verify OTP code.", auth_required: false }
+      - { method: GET,  path: "/api/v2/auth/me", description: "Current user. 200 with user object, 401 without token.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/auth/profile", description: "Update name/phone/locale.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/auth/password", description: "Change password. Body {current_password,new_password}.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/auth/pin", description: "Change PIN.", auth_required: true }
+      - { method: POST, path: "/api/v2/auth/refresh", description: "Rotate access token.", auth_required: true }
+
+  - name: Core - Stores and Onboarding
+    description: Store CRUD, settings, working hours, business types, onboarding wizard.
+    files: [routes/api/core.php, routes/api/onboarding.php]
+    endpoints:
+      - { method: GET,  path: "/api/v2/core/stores/mine", description: "Stores in current org.", auth_required: true }
+      - { method: GET,  path: "/api/v2/core/stores", description: "List stores.", auth_required: true }
+      - { method: GET,  path: "/api/v2/core/stores/{id}", description: "Show store.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/core/stores/{id}", description: "Update store.", auth_required: true }
+      - { method: GET,  path: "/api/v2/core/stores/{id}/settings", description: "Get store settings.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/core/stores/{id}/settings", description: "Update store settings.", auth_required: true }
+      - { method: GET,  path: "/api/v2/core/stores/{id}/working-hours", description: "Get working hours.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/core/stores/{id}/working-hours", description: "Update working hours.", auth_required: true }
+      - { method: GET,  path: "/api/v2/core/business-types", description: "List business types (grocery|restaurant|pharmacy|bakery|electronics|florist|jewelry|fashion).", auth_required: true }
+      - { method: POST, path: "/api/v2/core/stores/{id}/business-type", description: "Apply business type template.", auth_required: true }
+      - { method: GET,  path: "/api/v2/core/onboarding/steps", description: "List onboarding steps.", auth_required: true }
+      - { method: GET,  path: "/api/v2/core/onboarding/progress", description: "Get progress.", auth_required: true }
+      - { method: POST, path: "/api/v2/core/onboarding/complete-step", description: "Mark step complete.", auth_required: true }
+      - { method: POST, path: "/api/v2/core/onboarding/skip", description: "Skip wizard.", auth_required: true }
+      - { method: POST, path: "/api/v2/core/onboarding/checklist", description: "Update checklist.", auth_required: true }
+      - { method: POST, path: "/api/v2/core/onboarding/dismiss-checklist", description: "Dismiss checklist.", auth_required: true }
+      - { method: POST, path: "/api/v2/core/onboarding/reset", description: "Reset onboarding.", auth_required: true }
+
+  - name: Catalog
+    description: Products (variants, modifiers), categories tree, suppliers, barcode generation, change feed.
+    files: [routes/api/catalog.php]
+    endpoints:
+      - { method: GET,    path: "/api/v2/catalog/products", description: "List products.", auth_required: true }
+      - { method: POST,   path: "/api/v2/catalog/products", description: "Create product. Body {sku,name,sell_price,cost_price,category_id,unit,tax_rate,is_active}. 201 valid, 422 invalid.", auth_required: true }
+      - { method: GET,    path: "/api/v2/catalog/products/{id}", description: "Show product.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/catalog/products/{id}", description: "Update product.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/catalog/products/{id}", description: "Delete product.", auth_required: true }
+      - { method: GET,    path: "/api/v2/catalog/products/catalog", description: "Catalog snapshot for sync.", auth_required: true }
+      - { method: GET,    path: "/api/v2/catalog/products/changes", description: "Catalog changes since timestamp.", auth_required: true }
+      - { method: POST,   path: "/api/v2/catalog/products/{id}/barcode", description: "Generate barcode.", auth_required: true }
+      - { method: GET,    path: "/api/v2/catalog/products/{id}/variants", description: "List variants.", auth_required: true }
+      - { method: POST,   path: "/api/v2/catalog/products/{id}/variants/sync", description: "Sync variants array.", auth_required: true }
+      - { method: GET,    path: "/api/v2/catalog/products/{id}/modifiers", description: "List modifier groups.", auth_required: true }
+      - { method: POST,   path: "/api/v2/catalog/products/{id}/modifiers/sync", description: "Sync modifier attachments.", auth_required: true }
+      - { method: GET,    path: "/api/v2/catalog/categories", description: "Category tree.", auth_required: true }
+      - { method: POST,   path: "/api/v2/catalog/categories", description: "Create category {name,parent_id?}.", auth_required: true }
+      - { method: GET,    path: "/api/v2/catalog/categories/{id}", description: "Show category.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/catalog/categories/{id}", description: "Update category.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/catalog/categories/{id}", description: "Delete category.", auth_required: true }
+      - { method: GET,    path: "/api/v2/catalog/suppliers", description: "List suppliers.", auth_required: true }
+      - { method: POST,   path: "/api/v2/catalog/suppliers", description: "Create supplier.", auth_required: true }
+      - { method: GET,    path: "/api/v2/catalog/suppliers/{id}", description: "Show supplier.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/catalog/suppliers/{id}", description: "Update supplier.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/catalog/suppliers/{id}", description: "Delete supplier.", auth_required: true }
+
+  - name: Inventory
+    description: Purchase orders, stock levels and movements, adjustments, transfers, goods receipts, recipes (BOM).
+    files: [routes/api/inventory.php]
+    endpoints:
+      - { method: GET,  path: "/api/v2/inventory/purchase-orders", description: "List POs.", auth_required: true }
+      - { method: POST, path: "/api/v2/inventory/purchase-orders", description: "Create PO.", auth_required: true }
+      - { method: GET,  path: "/api/v2/inventory/purchase-orders/{id}", description: "Show PO.", auth_required: true }
+      - { method: POST, path: "/api/v2/inventory/purchase-orders/{id}/send", description: "Send PO.", auth_required: true }
+      - { method: POST, path: "/api/v2/inventory/purchase-orders/{id}/receive", description: "Receive PO.", auth_required: true }
+      - { method: POST, path: "/api/v2/inventory/purchase-orders/{id}/cancel", description: "Cancel PO.", auth_required: true }
+      - { method: GET,  path: "/api/v2/inventory/stock-levels", description: "Stock levels per product/store.", auth_required: true }
+      - { method: GET,  path: "/api/v2/inventory/stock-movements", description: "Movement history.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/inventory/stock-levels/{id}/reorder-point", description: "Set reorder threshold.", auth_required: true }
+      - { method: GET,  path: "/api/v2/inventory/stock-adjustments", description: "List adjustments.", auth_required: true }
+      - { method: POST, path: "/api/v2/inventory/stock-adjustments", description: "Create adjustment (waste/count/correction).", auth_required: true }
+      - { method: GET,  path: "/api/v2/inventory/stock-adjustments/{id}", description: "Show adjustment.", auth_required: true }
+      - { method: GET,  path: "/api/v2/inventory/stock-transfers", description: "List transfers.", auth_required: true }
+      - { method: POST, path: "/api/v2/inventory/stock-transfers", description: "Create transfer.", auth_required: true }
+      - { method: POST, path: "/api/v2/inventory/stock-transfers/{id}/approve", description: "Approve transfer.", auth_required: true }
+      - { method: POST, path: "/api/v2/inventory/stock-transfers/{id}/receive", description: "Receive transferred stock.", auth_required: true }
+      - { method: GET,  path: "/api/v2/inventory/goods-receipts", description: "List goods receipts.", auth_required: true }
+      - { method: POST, path: "/api/v2/inventory/goods-receipts", description: "Create goods receipt.", auth_required: true }
+      - { method: GET,  path: "/api/v2/inventory/recipes", description: "List recipes/BOMs.", auth_required: true }
+      - { method: POST, path: "/api/v2/inventory/recipes", description: "Create recipe (output product + ingredients).", auth_required: true }
+
+  - name: POS Terminal
+    description: Cashier sessions, POS transactions, void, held carts.
+    files: [routes/api/pos.php]
+    endpoints:
+      - { method: GET,    path: "/api/v2/pos/sessions", description: "List sessions.", auth_required: true }
+      - { method: POST,   path: "/api/v2/pos/sessions", description: "Open session {terminal_id,opening_cash}.", auth_required: true }
+      - { method: GET,    path: "/api/v2/pos/sessions/{id}", description: "Show session totals.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/pos/sessions/{id}/close", description: "Close session {counted_cash}.", auth_required: true }
+      - { method: GET,    path: "/api/v2/pos/transactions", description: "List transactions.", auth_required: true }
+      - { method: POST,   path: "/api/v2/pos/transactions", description: "Create transaction (items, payment, customer, discount).", auth_required: true }
+      - { method: GET,    path: "/api/v2/pos/transactions/{id}", description: "Show transaction.", auth_required: true }
+      - { method: POST,   path: "/api/v2/pos/transactions/{id}/void", description: "Void transaction.", auth_required: true }
+      - { method: GET,    path: "/api/v2/pos/held-carts", description: "List held carts.", auth_required: true }
+      - { method: POST,   path: "/api/v2/pos/held-carts", description: "Hold cart.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/pos/held-carts/{id}/recall", description: "Recall held cart.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/pos/held-carts/{id}", description: "Delete held cart.", auth_required: true }
+
+  - name: Orders and Returns
+    description: Order CRUD, status transitions, voids and returns.
+    files: [routes/api/orders.php]
+    endpoints:
+      - { method: GET,  path: "/api/v2/orders", description: "List orders.", auth_required: true }
+      - { method: POST, path: "/api/v2/orders", description: "Create order.", auth_required: true }
+      - { method: GET,  path: "/api/v2/orders/{id}", description: "Show order with items.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/orders/{id}/status", description: "Update order status.", auth_required: true }
+      - { method: POST, path: "/api/v2/orders/{id}/void", description: "Void order.", auth_required: true }
+      - { method: POST, path: "/api/v2/orders/{id}/return", description: "Process return.", auth_required: true }
+      - { method: GET,  path: "/api/v2/orders/returns/list", description: "List returns.", auth_required: true }
+      - { method: GET,  path: "/api/v2/orders/returns/{id}", description: "Show single return.", auth_required: true }
+
+  - name: Payments and Cash
+    description: Payments, cash sessions and events, expenses.
+    files: [routes/api/payments.php]
+    endpoints:
+      - { method: GET,  path: "/api/v2/payments/payments", description: "List payments.", auth_required: true }
+      - { method: POST, path: "/api/v2/payments/payments", description: "Create payment {order_id,method,amount}.", auth_required: true }
+      - { method: GET,  path: "/api/v2/payments/cash-sessions", description: "List cash sessions.", auth_required: true }
+      - { method: POST, path: "/api/v2/payments/cash-sessions", description: "Open cash session.", auth_required: true }
+      - { method: GET,  path: "/api/v2/payments/cash-sessions/{id}", description: "Show cash session.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/payments/cash-sessions/{id}/close", description: "Close cash session.", auth_required: true }
+      - { method: POST, path: "/api/v2/payments/cash-events", description: "Record drop / pay-in / pay-out.", auth_required: true }
+      - { method: GET,  path: "/api/v2/payments/expenses", description: "List expenses.", auth_required: true }
+      - { method: POST, path: "/api/v2/payments/expenses", description: "Record expense.", auth_required: true }
+
+  - name: Staff Management
+    description: Permissions, roles, staff users, attendance, shifts, activity log, PIN override.
+    files: [routes/api/staff.php]
+    endpoints:
+      - { method: GET,    path: "/api/v2/staff/permissions", description: "List permissions.", auth_required: true }
+      - { method: GET,    path: "/api/v2/staff/permissions/grouped", description: "Permissions grouped by module.", auth_required: true }
+      - { method: GET,    path: "/api/v2/staff/roles", description: "List roles.", auth_required: true }
+      - { method: POST,   path: "/api/v2/staff/roles", description: "Create role.", auth_required: true }
+      - { method: GET,    path: "/api/v2/staff/roles/{id}", description: "Show role.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/staff/roles/{id}", description: "Update role.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/staff/roles/{id}", description: "Delete role.", auth_required: true }
+      - { method: POST,   path: "/api/v2/staff/roles/{id}/assign", description: "Assign role to user.", auth_required: true }
+      - { method: GET,    path: "/api/v2/staff/users", description: "List staff users.", auth_required: true }
+      - { method: POST,   path: "/api/v2/staff/users", description: "Create staff user.", auth_required: true }
+      - { method: GET,    path: "/api/v2/staff/users/{id}", description: "Show staff user.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/staff/users/{id}", description: "Update staff user.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/staff/users/{id}", description: "Delete staff user.", auth_required: true }
+      - { method: GET,    path: "/api/v2/staff/attendance", description: "List attendance.", auth_required: true }
+      - { method: POST,   path: "/api/v2/staff/attendance/clock", description: "Clock in/out.", auth_required: true }
+      - { method: GET,    path: "/api/v2/staff/shifts", description: "List shifts.", auth_required: true }
+      - { method: POST,   path: "/api/v2/staff/shifts", description: "Create shift.", auth_required: true }
+      - { method: GET,    path: "/api/v2/staff/activity-log", description: "Activity log.", auth_required: true }
+      - { method: POST,   path: "/api/v2/staff/pin-override/authorize", description: "Authorize manager PIN override.", auth_required: true }
+
+  - name: Customers and Loyalty
+    description: Customer CRUD, customer groups, loyalty config and transactions, store credit.
+    files: [routes/api/customers.php]
+    endpoints:
+      - { method: GET,    path: "/api/v2/customers", description: "List customers.", auth_required: true }
+      - { method: POST,   path: "/api/v2/customers", description: "Create customer {name,phone,email}.", auth_required: true }
+      - { method: GET,    path: "/api/v2/customers/{id}", description: "Show customer.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/customers/{id}", description: "Update customer.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/customers/{id}", description: "Delete customer.", auth_required: true }
+      - { method: GET,    path: "/api/v2/customers/groups", description: "List customer groups.", auth_required: true }
+      - { method: POST,   path: "/api/v2/customers/groups", description: "Create customer group.", auth_required: true }
+      - { method: GET,    path: "/api/v2/customers/loyalty/config", description: "Get loyalty config.", auth_required: true }
+      - { method: POST,   path: "/api/v2/customers/loyalty/config", description: "Save loyalty config.", auth_required: true }
+      - { method: GET,    path: "/api/v2/customers/loyalty/transactions", description: "Loyalty transactions.", auth_required: true }
+      - { method: POST,   path: "/api/v2/customers/loyalty/adjust", description: "Adjust loyalty points.", auth_required: true }
+      - { method: GET,    path: "/api/v2/customers/store-credit/log", description: "Store credit log.", auth_required: true }
+      - { method: POST,   path: "/api/v2/customers/store-credit/topup", description: "Top up store credit.", auth_required: true }
+
+  - name: Subscription and Billing
+    description: Plans, subscription management, invoices, feature/limit checks.
+    files: [routes/api/subscription.php]
+    endpoints:
+      - { method: GET,  path: "/api/v2/subscription/current", description: "Current subscription.", auth_required: true }
+      - { method: POST, path: "/api/v2/subscription/subscribe", description: "Subscribe to plan.", auth_required: true }
+      - { method: POST, path: "/api/v2/subscription/change-plan", description: "Change plan.", auth_required: true }
+      - { method: POST, path: "/api/v2/subscription/cancel", description: "Cancel subscription.", auth_required: true }
+      - { method: POST, path: "/api/v2/subscription/resume", description: "Resume subscription.", auth_required: true }
+      - { method: GET,  path: "/api/v2/subscription/usage", description: "Usage stats.", auth_required: true }
+      - { method: GET,  path: "/api/v2/subscription/check-feature", description: "Check feature access.", auth_required: true }
+      - { method: GET,  path: "/api/v2/subscription/check-limit", description: "Check resource limit.", auth_required: true }
+      - { method: GET,  path: "/api/v2/plans", description: "List plans.", auth_required: false }
+      - { method: GET,  path: "/api/v2/plans/{id}", description: "Show plan by id.", auth_required: false }
+      - { method: GET,  path: "/api/v2/plans/compare", description: "Compare plans.", auth_required: false }
+      - { method: GET,  path: "/api/v2/plans/add-ons", description: "List add-ons.", auth_required: false }
+      - { method: GET,  path: "/api/v2/subscription/invoices", description: "List invoices.", auth_required: true }
+      - { method: GET,  path: "/api/v2/subscription/invoices/{id}", description: "Show invoice.", auth_required: true }
+
+  - name: Settings and Localization
+    description: Locales, translations, overrides, publishing.
+    files: [routes/api/settings.php]
+    endpoints:
+      - { method: GET,    path: "/api/v2/settings/locales", description: "List locales.", auth_required: true }
+      - { method: POST,   path: "/api/v2/settings/locales", description: "Add locale.", auth_required: true }
+      - { method: GET,    path: "/api/v2/settings/translations", description: "List translations.", auth_required: true }
+      - { method: POST,   path: "/api/v2/settings/translations", description: "Create translation.", auth_required: true }
+      - { method: POST,   path: "/api/v2/settings/translations/bulk-import", description: "Bulk import.", auth_required: true }
+      - { method: GET,    path: "/api/v2/settings/translation-overrides", description: "List overrides.", auth_required: true }
+      - { method: POST,   path: "/api/v2/settings/translation-overrides", description: "Create override.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/settings/translation-overrides/{id}", description: "Delete override.", auth_required: true }
+      - { method: POST,   path: "/api/v2/settings/publish-translations", description: "Publish translations.", auth_required: true }
+      - { method: GET,    path: "/api/v2/settings/translation-versions", description: "List versions.", auth_required: true }
+      - { method: GET,    path: "/api/v2/settings/export-translations", description: "Export.", auth_required: true }
+
+  - name: Notifications
+    description: In-app notifications, preferences, FCM tokens.
+    files: [routes/api/notifications.php]
+    endpoints:
+      - { method: GET,    path: "/api/v2/notifications", description: "List notifications.", auth_required: true }
+      - { method: POST,   path: "/api/v2/notifications", description: "Create notification.", auth_required: true }
+      - { method: GET,    path: "/api/v2/notifications/unread-count", description: "Unread count.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/notifications/{id}/read", description: "Mark read.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/notifications/read-all", description: "Mark all read.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/notifications/{id}", description: "Delete.", auth_required: true }
+      - { method: GET,    path: "/api/v2/notifications/preferences", description: "Get preferences.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/notifications/preferences", description: "Update preferences.", auth_required: true }
+      - { method: POST,   path: "/api/v2/notifications/fcm-tokens", description: "Register FCM token.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/notifications/fcm-tokens", description: "Unregister FCM token.", auth_required: true }
+
+  - name: Security
+    description: Security policies, audit logs, devices, login attempts.
+    files: [routes/api/security.php]
+    endpoints:
+      - { method: GET,  path: "/api/v2/security/policy", description: "Get policy.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/security/policy", description: "Update policy.", auth_required: true }
+      - { method: GET,  path: "/api/v2/security/audit-logs", description: "List audit logs.", auth_required: true }
+      - { method: POST, path: "/api/v2/security/audit-logs", description: "Create audit log.", auth_required: true }
+      - { method: GET,  path: "/api/v2/security/devices", description: "List devices.", auth_required: true }
+      - { method: POST, path: "/api/v2/security/devices", description: "Register device.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/security/devices/{id}/deactivate", description: "Deactivate device.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/security/devices/{id}/remote-wipe", description: "Remote wipe.", auth_required: true }
+      - { method: GET,  path: "/api/v2/security/login-attempts", description: "List login attempts.", auth_required: true }
+      - { method: POST, path: "/api/v2/security/login-attempts", description: "Record attempt.", auth_required: true }
+      - { method: GET,  path: "/api/v2/security/login-attempts/failed-count", description: "Failed login count.", auth_required: true }
+
+  - name: Promotions and Coupons
+    description: Promotion management, coupon generation, validation, redemption, analytics.
+    files: [routes/api/promotions.php]
+    endpoints:
+      - { method: GET,    path: "/api/v2/promotions", description: "List promotions.", auth_required: true }
+      - { method: POST,   path: "/api/v2/promotions", description: "Create promotion.", auth_required: true }
+      - { method: GET,    path: "/api/v2/promotions/{id}", description: "Show promotion.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/promotions/{id}", description: "Update promotion.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/promotions/{id}", description: "Delete promotion.", auth_required: true }
+      - { method: POST,   path: "/api/v2/promotions/{id}/toggle", description: "Toggle active.", auth_required: true }
+      - { method: POST,   path: "/api/v2/promotions/{id}/generate-coupons", description: "Generate coupon codes.", auth_required: true }
+      - { method: GET,    path: "/api/v2/promotions/{id}/analytics", description: "Promotion analytics.", auth_required: true }
+      - { method: POST,   path: "/api/v2/coupons/validate", description: "Validate coupon.", auth_required: true }
+      - { method: POST,   path: "/api/v2/coupons/redeem", description: "Redeem coupon.", auth_required: true }
+
+  - name: Accounting Integration
+    description: External accounting (Xero/QuickBooks), mappings, exports.
+    files: [routes/api/accounting.php]
+    endpoints:
+      - { method: GET,    path: "/api/v2/accounting/status", description: "Status.", auth_required: true }
+      - { method: POST,   path: "/api/v2/accounting/connect", description: "Connect provider.", auth_required: true }
+      - { method: POST,   path: "/api/v2/accounting/disconnect", description: "Disconnect.", auth_required: true }
+      - { method: POST,   path: "/api/v2/accounting/refresh-token", description: "Refresh OAuth token.", auth_required: true }
+      - { method: GET,    path: "/api/v2/accounting/mapping", description: "Get mappings.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/accounting/mapping", description: "Update mappings.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/accounting/mapping/{id}", description: "Delete mapping.", auth_required: true }
+      - { method: POST,   path: "/api/v2/accounting/exports", description: "Trigger export.", auth_required: true }
+      - { method: GET,    path: "/api/v2/accounting/exports", description: "List exports.", auth_required: true }
+      - { method: GET,    path: "/api/v2/accounting/exports/{id}", description: "Show export.", auth_required: true }
+      - { method: POST,   path: "/api/v2/accounting/exports/{id}/retry", description: "Retry failed export.", auth_required: true }
+      - { method: GET,    path: "/api/v2/accounting/auto-export", description: "Get auto-export config.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/accounting/auto-export", description: "Update auto-export.", auth_required: true }
+      - { method: GET,    path: "/api/v2/accounting/pos-account-keys", description: "POS account keys.", auth_required: true }
+
+  - name: Reports
+    description: Sales summary, product/category/staff performance, hourly sales.
+    files: [routes/api/reports.php]
+    endpoints:
+      - { method: GET, path: "/api/v2/reports/sales-summary", description: "Sales summary.", auth_required: true }
+      - { method: GET, path: "/api/v2/reports/product-performance", description: "Product perf.", auth_required: true }
+      - { method: GET, path: "/api/v2/reports/category-breakdown", description: "Category breakdown.", auth_required: true }
+      - { method: GET, path: "/api/v2/reports/staff-performance", description: "Staff perf.", auth_required: true }
+      - { method: GET, path: "/api/v2/reports/hourly-sales", description: "Hourly sales.", auth_required: true }
+      - { method: GET, path: "/api/v2/reports/payment-methods", description: "Payment methods.", auth_required: true }
+      - { method: GET, path: "/api/v2/reports/dashboard", description: "Dashboard.", auth_required: true }
+
+  - name: Owner Dashboard
+    description: Owner KPIs, sales trend, top products, low stock.
+    files: [routes/api/owner-dashboard.php]
+    endpoints:
+      - { method: GET, path: "/api/v2/owner-dashboard/stats", description: "Stats.", auth_required: true }
+      - { method: GET, path: "/api/v2/owner-dashboard/sales-trend", description: "Sales trend.", auth_required: true }
+      - { method: GET, path: "/api/v2/owner-dashboard/top-products", description: "Top products.", auth_required: true }
+      - { method: GET, path: "/api/v2/owner-dashboard/low-stock", description: "Low stock.", auth_required: true }
+      - { method: GET, path: "/api/v2/owner-dashboard/active-cashiers", description: "Active cashiers.", auth_required: true }
+      - { method: GET, path: "/api/v2/owner-dashboard/recent-orders", description: "Recent orders.", auth_required: true }
+      - { method: GET, path: "/api/v2/owner-dashboard/financial-summary", description: "Financial summary.", auth_required: true }
+      - { method: GET, path: "/api/v2/owner-dashboard/hourly-sales", description: "Hourly chart.", auth_required: true }
+      - { method: GET, path: "/api/v2/owner-dashboard/branches", description: "Branches.", auth_required: true }
+      - { method: GET, path: "/api/v2/owner-dashboard/staff-performance", description: "Staff perf.", auth_required: true }
+
+  - name: Labels and Customization
+    description: Label templates, print history, receipt customization, quick access.
+    files: [routes/api/labels.php, routes/api/customization.php]
+    endpoints:
+      - { method: GET,    path: "/api/v2/labels/templates", description: "List templates.", auth_required: true }
+      - { method: GET,    path: "/api/v2/labels/templates/presets", description: "Preset templates.", auth_required: true }
+      - { method: POST,   path: "/api/v2/labels/templates", description: "Create template.", auth_required: true }
+      - { method: GET,    path: "/api/v2/labels/templates/{id}", description: "Show template.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/labels/templates/{id}", description: "Update template.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/labels/templates/{id}", description: "Delete template.", auth_required: true }
+      - { method: GET,    path: "/api/v2/labels/print-history", description: "Print history.", auth_required: true }
+      - { method: POST,   path: "/api/v2/labels/print-history", description: "Record print.", auth_required: true }
+      - { method: GET,    path: "/api/v2/customization/settings", description: "Get settings.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/customization/settings", description: "Update settings.", auth_required: true }
+      - { method: GET,    path: "/api/v2/customization/receipt", description: "Receipt template.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/customization/receipt", description: "Update receipt.", auth_required: true }
+      - { method: GET,    path: "/api/v2/customization/quick-access", description: "Quick access shortcuts.", auth_required: true }
+      - { method: PUT,    path: "/api/v2/customization/quick-access", description: "Update quick access.", auth_required: true }
+
+  - name: Sync and Backup
+    description: Offline sync push/pull/conflict resolution, backups, restore.
+    files: [routes/api/sync.php, routes/api/backup.php]
+    endpoints:
+      - { method: POST, path: "/api/v2/sync/push", description: "Push offline changes.", auth_required: true }
+      - { method: GET,  path: "/api/v2/sync/pull", description: "Pull server changes.", auth_required: true }
+      - { method: GET,  path: "/api/v2/sync/full", description: "Full snapshot.", auth_required: true }
+      - { method: GET,  path: "/api/v2/sync/status", description: "Sync status.", auth_required: true }
+      - { method: GET,  path: "/api/v2/sync/conflicts", description: "List conflicts.", auth_required: true }
+      - { method: POST, path: "/api/v2/sync/heartbeat", description: "Heartbeat ping.", auth_required: true }
+      - { method: POST, path: "/api/v2/backup/create", description: "Create backup.", auth_required: true }
+      - { method: GET,  path: "/api/v2/backup/list", description: "List backups.", auth_required: true }
+      - { method: GET,  path: "/api/v2/backup/{id}", description: "Show backup.", auth_required: true }
+      - { method: POST, path: "/api/v2/backup/{id}/restore", description: "Restore backup.", auth_required: true }
+      - { method: POST, path: "/api/v2/backup/{id}/verify", description: "Verify integrity.", auth_required: true }
+      - { method: GET,  path: "/api/v2/backup/schedule", description: "Get schedule.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/backup/schedule", description: "Update schedule.", auth_required: true }
+
+  - name: ZATCA E-Invoicing
+    description: Saudi ZATCA Phase 2 enrollment, invoice submission, VAT report.
+    files: [routes/api/zatca.php]
+    endpoints:
+      - { method: POST, path: "/api/v2/zatca/enroll", description: "Enroll device.", auth_required: true }
+      - { method: POST, path: "/api/v2/zatca/renew", description: "Renew CSID.", auth_required: true }
+      - { method: POST, path: "/api/v2/zatca/submit-invoice", description: "Submit invoice.", auth_required: true }
+      - { method: POST, path: "/api/v2/zatca/submit-batch", description: "Submit batch.", auth_required: true }
+      - { method: GET,  path: "/api/v2/zatca/invoices", description: "List submissions.", auth_required: true }
+      - { method: GET,  path: "/api/v2/zatca/invoices/{id}/xml", description: "Get invoice XML.", auth_required: true }
+      - { method: GET,  path: "/api/v2/zatca/compliance-summary", description: "Compliance summary.", auth_required: true }
+      - { method: GET,  path: "/api/v2/zatca/vat-report", description: "VAT report.", auth_required: true }
+
+  - name: Industry Restaurant
+    description: Tables, kitchen tickets, reservations, tabs.
+    files: [routes/api/industry.php]
+    endpoints:
+      - { method: GET,   path: "/api/v2/industry/restaurant/tables", description: "List tables.", auth_required: true }
+      - { method: POST,  path: "/api/v2/industry/restaurant/tables", description: "Create table.", auth_required: true }
+      - { method: PUT,   path: "/api/v2/industry/restaurant/tables/{id}", description: "Update table.", auth_required: true }
+      - { method: PATCH, path: "/api/v2/industry/restaurant/tables/{id}/status", description: "Update table status.", auth_required: true }
+      - { method: GET,   path: "/api/v2/industry/restaurant/kitchen-tickets", description: "List tickets.", auth_required: true }
+      - { method: POST,  path: "/api/v2/industry/restaurant/kitchen-tickets", description: "Create ticket.", auth_required: true }
+      - { method: PATCH, path: "/api/v2/industry/restaurant/kitchen-tickets/{id}/status", description: "Update ticket status.", auth_required: true }
+      - { method: GET,   path: "/api/v2/industry/restaurant/reservations", description: "List reservations.", auth_required: true }
+      - { method: POST,  path: "/api/v2/industry/restaurant/reservations", description: "Create reservation.", auth_required: true }
+      - { method: GET,   path: "/api/v2/industry/restaurant/tabs", description: "List tabs.", auth_required: true }
+      - { method: POST,  path: "/api/v2/industry/restaurant/tabs", description: "Create tab.", auth_required: true }
+
+  - name: Industry Verticals (Pharmacy, Bakery, Electronics, Florist, Jewelry)
+    description: Pharmacy prescriptions; Bakery production batches; Electronics IMEI/repair/trade-ins; Florist arrangements; Jewelry items (weight, purity).
+    files: [routes/api/industry.php]
+    endpoints:
+      - { method: GET,  path: "/api/v2/industry/pharmacy/prescriptions", description: "List prescriptions.", auth_required: true }
+      - { method: POST, path: "/api/v2/industry/pharmacy/prescriptions", description: "Create prescription.", auth_required: true }
+      - { method: GET,  path: "/api/v2/industry/bakery/production-batches", description: "List batches.", auth_required: true }
+      - { method: POST, path: "/api/v2/industry/bakery/production-batches", description: "Create batch.", auth_required: true }
+      - { method: GET,  path: "/api/v2/industry/electronics/imei", description: "List IMEI records.", auth_required: true }
+      - { method: POST, path: "/api/v2/industry/electronics/imei", description: "Register IMEI.", auth_required: true }
+      - { method: GET,  path: "/api/v2/industry/electronics/repair-jobs", description: "List repair jobs.", auth_required: true }
+      - { method: POST, path: "/api/v2/industry/electronics/repair-jobs", description: "Create repair job.", auth_required: true }
+      - { method: GET,  path: "/api/v2/industry/electronics/trade-ins", description: "List trade-ins.", auth_required: true }
+      - { method: POST, path: "/api/v2/industry/electronics/trade-ins", description: "Create trade-in.", auth_required: true }
+      - { method: GET,  path: "/api/v2/industry/florist/arrangements", description: "List florist arrangements.", auth_required: true }
+      - { method: POST, path: "/api/v2/industry/florist/arrangements", description: "Create arrangement.", auth_required: true }
+      - { method: GET,  path: "/api/v2/industry/jewelry/items", description: "List jewelry items.", auth_required: true }
+      - { method: POST, path: "/api/v2/industry/jewelry/items", description: "Create jewelry item.", auth_required: true }
+
+  - name: Hardware
+    description: Hardware (printer/scanner/scale) configuration and event log.
+    files: [routes/api/hardware.php]
+    endpoints:
+      - { method: GET,    path: "/api/v2/hardware/config", description: "Get config.", auth_required: true }
+      - { method: POST,   path: "/api/v2/hardware/config", description: "Save config.", auth_required: true }
+      - { method: DELETE, path: "/api/v2/hardware/config/{id}", description: "Delete config.", auth_required: true }
+      - { method: GET,    path: "/api/v2/hardware/supported-models", description: "List supported hardware.", auth_required: true }
+      - { method: POST,   path: "/api/v2/hardware/test", description: "Test connection.", auth_required: true }
+      - { method: POST,   path: "/api/v2/hardware/event-log", description: "Record event.", auth_required: true }
+      - { method: GET,    path: "/api/v2/hardware/event-logs", description: "List events.", auth_required: true }
+
+  - name: Companion App
+    description: Mobile companion quick stats, sessions, preferences, quick actions.
+    files: [routes/api/companion.php]
+    endpoints:
+      - { method: GET,  path: "/api/v2/companion/quick-stats", description: "Quick stats.", auth_required: true }
+      - { method: GET,  path: "/api/v2/companion/summary", description: "Summary.", auth_required: true }
+      - { method: POST, path: "/api/v2/companion/sessions", description: "Start session.", auth_required: true }
+      - { method: GET,  path: "/api/v2/companion/sessions", description: "List sessions.", auth_required: true }
+      - { method: GET,  path: "/api/v2/companion/preferences", description: "Get preferences.", auth_required: true }
+      - { method: PUT,  path: "/api/v2/companion/preferences", description: "Update preferences.", auth_required: true }
+      - { method: GET,  path: "/api/v2/companion/quick-actions", description: "List quick actions.", auth_required: true }
+
+  - name: Auto-Update and Accessibility
+    description: App version checks; accessibility preferences and shortcuts.
+    files: [routes/api/auto-update.php, routes/api/accessibility.php]
+    endpoints:
+      - { method: POST, path: "/api/v2/auto-update/check", description: "Check for updates.", auth_required: true }
+      - { method: POST, path: "/api/v2/auto-update/report-status", description: "Report status.", auth_required: true }
+      - { method: GET,  path: "/api/v2/auto-update/changelog", description: "Changelog.", auth_required: true }
+      - { method: GET,  path: "/api/v2/auto-update/history", description: "History.", auth_required: true }
+      - { method: GET,  path: "/api/v2/auto-update/current-version", description: "Current version.", auth_required: true }
+      - { method: GET,  path: "/api/v2/accessibility/preferences", description: "Preferences.", auth_required: false }
+      - { method: PUT,  path: "/api/v2/accessibility/preferences", description: "Update preferences.", auth_required: false }
+      - { method: GET,  path: "/api/v2/accessibility/shortcuts", description: "Shortcuts.", auth_required: false }
+      - { method: PUT,  path: "/api/v2/accessibility/shortcuts", description: "Update shortcuts.", auth_required: false }
+
+  - name: Nice-to-Have Features
+    description: Wishlist, appointments, CFD config, gift registry, digital signage, gamification.
+    files: [routes/api/nice-to-have.php]
+    endpoints:
+      - { method: GET,  path: "/api/v2/nice-to-have/wishlist", description: "List wishlist.", auth_required: true }
+      - { method: POST, path: "/api/v2/nice-to-have/wishlist", description: "Add wishlist item.", auth_required: true }
+      - { method: GET,  path: "/api/v2/nice-to-have/appointments", description: "List appointments.", auth_required: true }
+      - { method: POST, path: "/api/v2/nice-to-have/appointments", description: "Create appointment.", auth_required: true }
+      - { method: GET,  path: "/api/v2/nice-to-have/cfd-config", description: "Get CFD config.", auth_required: true }
+      - { method: GET,  path: "/api/v2/nice-to-have/gift-registry", description: "List registries.", auth_required: true }
+      - { method: POST, path: "/api/v2/nice-to-have/gift-registry", description: "Create registry.", auth_required: true }
+      - { method: GET,  path: "/api/v2/nice-to-have/digital-signage", description: "List signage.", auth_required: true }
+      - { method: GET,  path: "/api/v2/nice-to-have/gamification", description: "Gamification data.", auth_required: true }
+
+  - name: Platform Admin
+    description: Platform-side admin endpoints (analytics, billing, content, deployment, feature flags, infrastructure, marketplace, packages, platform roles, provider mgmt, security center, support, user mgmt). Uses admin-api guard, NOT Sanctum. Provider-side test users will receive 401 here — this is expected and a successful test asserts 401.
+    files: [routes/api/admin.php]
+    endpoints:
+      - { method: GET, path: "/api/v2/admin/analytics/overview", description: "Analytics. Expects 401 with provider Sanctum token.", auth_required: true }
+      - { method: GET, path: "/api/v2/admin/providers", description: "Providers list. Expects 401 with provider token.", auth_required: true }
+      - { method: GET, path: "/api/v2/admin/users", description: "Platform users. Expects 401.", auth_required: true }
+      - { method: GET, path: "/api/v2/admin/feature-flags", description: "Feature flags. Expects 401.", auth_required: true }
+      - { method: GET, path: "/api/v2/admin/support/tickets", description: "Support tickets. Expects 401.", auth_required: true }
+
+known_limitations:
+  - issue: Platform admin endpoints use admin-api guard. Provider-side test users will receive 401 (expected behavior; tests should assert 401).
+    location: routes/api/admin.php
+    impact: Admin tests must use a separate admin token; with provider creds they should expect 401.
+  - issue: Restaurant kitchen-ticket creation lacks items_json array validation.
+    location: app/Http/Controllers/Api/Industry/RestaurantController.php
+    impact: Malformed item payloads may be persisted.
+  - issue: Electronics repair jobs and trade-ins declare staff_user_id nullable in validation but column is NOT NULL in DB.
+    location: app/Http/Controllers/Api/Industry/ElectronicsController.php
+    impact: Inserts can fail at DB level when staff_user_id omitted.

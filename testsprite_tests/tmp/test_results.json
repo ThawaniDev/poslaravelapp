@@ -1,0 +1,72 @@
+[
+  {
+    "projectId": "eea159ec-01ad-406a-a1ac-efe633421373",
+    "testId": "51e837be-9138-4e51-820c-b372dd1d3182",
+    "userId": "3438c488-2021-70e8-cfb1-2f1161bab423",
+    "title": "TC001-Auth login valid credentials",
+    "description": "POST /api/v2/auth/login with body {email: 'owner@testsprite.local', password: 'Password123!'} returns 200 and response.data.token is a non-empty string. Response envelope is {success:true, message, data:{user, token, token_type:'Bearer'}}.",
+    "code": "import requests\n\ndef test_auth_login_valid_credentials():\n    base_url = \"http://localhost:8000\"\n    login_url = f\"{base_url}/api/v2/auth/login\"\n    payload = {\n        \"email\": \"owner@testsprite.local\",\n        \"password\": \"Password123!\"\n    }\n    headers = {\n        \"Content-Type\": \"application/json\",\n        \"Accept\": \"application/json\"\n    }\n    try:\n        response = requests.post(login_url, json=payload, headers=headers, timeout=30)\n    except requests.RequestException as e:\n        assert False, f\"Request to login endpoint failed: {e}\"\n\n    assert response.status_code == 200, f\"Expected status code 200, got {response.status_code}\"\n    try:\n        resp_json = response.json()\n    except ValueError:\n        assert False, \"Response is not a valid JSON\"\n\n    # Validate global response envelope\n    assert \"success\" in resp_json, \"'success' key missing in response\"\n    assert resp_json[\"success\"] is True, \"Expected success to be True\"\n    assert \"message\" in resp_json and isinstance(resp_json[\"message\"], str), \"'message' key missing or not string\"\n    assert \"data\" in resp_json and isinstance(resp_json[\"data\"], dict), \"'data' key missing or not an object\"\n\n    # errors key might be missing or null or object\n    if \"errors\" in resp_json:\n        assert resp_json[\"errors\"] is None or isinstance(resp_json[\"errors\"], dict), \"'errors' key is not null or object\"\n\n    data = resp_json[\"data\"]\n    # Data should contain user, token and token_type 'Bearer'\n    assert \"user\" in data and isinstance(data[\"user\"], dict), \"'user' key missing or not an object in data\"\n    assert \"token\" in data and isinstance(data[\"token\"], str), \"'token' key missing or not a string in data\"\n    assert data[\"token\"].strip() != \"\", \"Token string is empty\"\n    assert \"token_type\" in data and data[\"token_type\"] == \"Bearer\", f\"token_type is not 'Bearer', got {data.get('token_type')}\"\n\ntest_auth_login_valid_credentials()",
+    "testStatus": "PASSED",
+    "testError": "",
+    "testType": "BACKEND",
+    "createFrom": "mcp",
+    "created": "2026-05-06T08:07:50.942Z",
+    "modified": "2026-05-06T08:08:43.431Z"
+  },
+  {
+    "projectId": "eea159ec-01ad-406a-a1ac-efe633421373",
+    "testId": "c46eefb0-09dd-4f99-b2a9-d88477923171",
+    "userId": "3438c488-2021-70e8-cfb1-2f1161bab423",
+    "title": "TC002-Auth me with bearer token",
+    "description": "First POST /api/v2/auth/login with owner@testsprite.local/Password123! to get token from response.data.token. Then GET /api/v2/auth/me with header Authorization: Bearer <token>. Expect 200 and data.email == owner@testsprite.local.",
+    "code": "import requests\n\nBASE_URL = \"http://localhost:8000\"\nAPI_PREFIX = \"/api/v2\"\nLOGIN_ENDPOINT = f\"{BASE_URL}{API_PREFIX}/auth/login\"\nME_ENDPOINT = f\"{BASE_URL}{API_PREFIX}/auth/me\"\nTIMEOUT = 30\n\ndef test_auth_me_with_bearer_token():\n    login_payload = {\n        \"email\": \"owner@testsprite.local\",\n        \"password\": \"Password123!\"\n    }\n    try:\n        login_resp = requests.post(\n            LOGIN_ENDPOINT,\n            json=login_payload,\n            timeout=TIMEOUT\n        )\n        assert login_resp.status_code == 200, f\"Login failed with status {login_resp.status_code}\"\n        login_json = login_resp.json()\n        assert login_json.get(\"success\") is True, f\"Login response success false: {login_json}\"\n        data = login_json.get(\"data\")\n        assert data is not None, \"Login response missing data\"\n        token = data.get(\"token\")\n        token_type = data.get(\"token_type\")\n        assert isinstance(token, str) and token, \"Token missing or empty\"\n        assert token_type == \"Bearer\", f\"Unexpected token_type: {token_type}\"\n\n        headers = {\"Authorization\": f\"Bearer {token}\"}\n        me_resp = requests.get(\n            ME_ENDPOINT,\n            headers=headers,\n            timeout=TIMEOUT\n        )\n        assert me_resp.status_code == 200, f\"Auth me failed with status {me_resp.status_code}\"\n        me_json = me_resp.json()\n        assert me_json.get(\"success\") is True, f\"Auth me response success false: {me_json}\"\n        me_data = me_json.get(\"data\")\n        assert me_data is not None, \"Auth me response missing data\"\n        email = me_data.get(\"email\")\n        assert email == \"owner@testsprite.local\", f\"Email mismatch: expected owner@testsprite.local but got {email}\"\n    except requests.RequestException as e:\n        assert False, f\"Request failed: {e}\"\n\ntest_auth_me_with_bearer_token()",
+    "testStatus": "PASSED",
+    "testError": "",
+    "testType": "BACKEND",
+    "createFrom": "mcp",
+    "created": "2026-05-06T08:07:50.947Z",
+    "modified": "2026-05-06T08:08:12.747Z"
+  },
+  {
+    "projectId": "eea159ec-01ad-406a-a1ac-efe633421373",
+    "testId": "868cac5d-3bb2-4dba-a6ce-6ca8261430fd",
+    "userId": "3438c488-2021-70e8-cfb1-2f1161bab423",
+    "title": "TC003-Auth me without token returns 401",
+    "description": "GET /api/v2/auth/me without any Authorization header. Expect HTTP 401.",
+    "code": "import requests\n\ndef test_auth_me_without_token_returns_401():\n    base_url = \"http://localhost:8000\"\n    url = f\"{base_url}/api/v2/auth/me\"\n    headers = {\n        # No Authorization header included intentionally\n        \"Accept\": \"application/json\"\n    }\n    try:\n        response = requests.get(url, headers=headers, timeout=30)\n    except requests.RequestException as e:\n        assert False, f\"Request failed: {e}\"\n\n    # Assert status code 401 Unauthorized\n    assert response.status_code == 401, f\"Expected status code 401, got {response.status_code}\"\n\ntest_auth_me_without_token_returns_401()",
+    "testStatus": "PASSED",
+    "testError": "",
+    "testType": "BACKEND",
+    "createFrom": "mcp",
+    "created": "2026-05-06T08:07:50.952Z",
+    "modified": "2026-05-06T08:08:32.134Z"
+  },
+  {
+    "projectId": "eea159ec-01ad-406a-a1ac-efe633421373",
+    "testId": "ae17266f-1919-4e34-8697-af609f3a0aa5",
+    "userId": "3438c488-2021-70e8-cfb1-2f1161bab423",
+    "title": "TC004-Catalog list products requires auth",
+    "description": "GET /api/v2/catalog/products without Authorization. Expect 401. Then login with owner@testsprite.local/Password123! and call again with Bearer token; expect 200 and response.data is a list/array (may be paginated under data.data).",
+    "code": "import requests\n\nBASE_URL = \"http://localhost:8000\"\nAPI_PREFIX = \"/api/v2\"\nLOGIN_ENDPOINT = f\"{BASE_URL}{API_PREFIX}/auth/login\"\nCATALOG_PRODUCTS_ENDPOINT = f\"{BASE_URL}{API_PREFIX}/catalog/products\"\nTIMEOUT = 30\n\ndef test_catalog_list_products_requires_auth():\n    # First try to get catalog products without any Authorization header\n    try:\n        resp = requests.get(CATALOG_PRODUCTS_ENDPOINT, timeout=TIMEOUT)\n    except requests.RequestException as e:\n        assert False, f\"Request without auth failed unexpectedly: {e}\"\n    assert resp.status_code == 401, f\"Expected 401 Unauthorized without auth, got {resp.status_code}\"\n\n    # Login with valid credentials to get Bearer token\n    login_payload = {\n        \"email\": \"owner@testsprite.local\",\n        \"password\": \"Password123!\"\n    }\n    headers = {'Content-Type': 'application/json'}\n    try:\n        login_resp = requests.post(LOGIN_ENDPOINT, json=login_payload, headers=headers, timeout=TIMEOUT)\n    except requests.RequestException as e:\n        assert False, f\"Login request failed unexpectedly: {e}\"\n    assert login_resp.status_code == 200, f\"Login failed with status {login_resp.status_code}\"\n    login_json = login_resp.json()\n    assert login_json.get(\"success\") is True, \"Login success flag not True\"\n    data = login_json.get(\"data\")\n    assert isinstance(data, dict), \"Login response data is not a dict\"\n    token = data.get(\"token\")\n    token_type = data.get(\"token_type\")\n    assert token_type == \"Bearer\", f\"Token type is not 'Bearer', got {token_type}\"\n    assert isinstance(token, str) and token.strip() != \"\", \"Token is empty or missing\"\n\n    # Call GET /catalog/products with Authorization header\n    auth_headers = {\n        \"Authorization\": f\"Bearer {token}\"\n    }\n    try:\n        catalog_resp = requests.get(CATALOG_PRODUCTS_ENDPOINT, headers=auth_headers, timeout=TIMEOUT)\n    except requests.RequestException as e:\n        assert False, f\"Authenticated request failed unexpectedly: {e}\"\n\n    assert catalog_resp.status_code == 200, f\"Expected 200 OK with auth, got {catalog_resp.status_code}\"\n    catalog_json = catalog_resp.json()\n\n    assert catalog_json.get(\"success\") is True, \"Catalog response success flag not True\"\n    catalog_data = catalog_json.get(\"data\")\n    # Data may be a list or paginated object containing 'data' list\n    assert catalog_data is not None, \"Catalog response data is None\"\n\n    # Determine if data is a list or an object with 'data' key containing list\n    if isinstance(catalog_data, dict) and \"data\" in catalog_data:\n        product_list = catalog_data.get(\"data\")\n        assert isinstance(product_list, list), \"Inner 'data' field is not a list\"\n    else:\n        product_list = catalog_data\n        assert isinstance(product_list, list), \"Data field is not a list\"\n\ntest_catalog_list_products_requires_auth()",
+    "testStatus": "PASSED",
+    "testError": "",
+    "testType": "BACKEND",
+    "createFrom": "mcp",
+    "created": "2026-05-06T08:07:50.957Z",
+    "modified": "2026-05-06T08:08:22.060Z"
+  },
+  {
+    "projectId": "eea159ec-01ad-406a-a1ac-efe633421373",
+    "testId": "d4b39e5f-6ca8-4fda-9d36-89d99fc28dec",
+    "userId": "3438c488-2021-70e8-cfb1-2f1161bab423",
+    "title": "TC005-Plans list public",
+    "description": "GET /api/v2/plans without auth. Expect 200 and a JSON envelope with data being an array of plan objects.",
+    "code": "import requests\n\ndef test_plans_list_public():\n    base_url = \"http://localhost:8000\"\n    url = f\"{base_url}/api/v2/plans\"\n    headers = {\n        \"Accept\": \"application/json\",\n    }\n    try:\n        response = requests.get(url, headers=headers, timeout=30)\n        response.raise_for_status()\n    except requests.exceptions.RequestException as e:\n        assert False, f\"Request failed: {e}\"\n\n    assert response.status_code == 200, f\"Expected status 200, got {response.status_code}\"\n\n    try:\n        json_resp = response.json()\n    except ValueError:\n        assert False, \"Response is not a valid JSON\"\n\n    # Validate global response envelope keys\n    for key in (\"success\", \"message\", \"data\", \"errors\"):\n        assert key in json_resp, f\"Missing key '{key}' in response JSON\"\n\n    assert isinstance(json_resp[\"success\"], bool), \"'success' field should be boolean\"\n    assert isinstance(json_resp[\"message\"], str), \"'message' field should be string\"\n\n    # \"data\" should be an array of plan objects (array != None and is list)\n    data = json_resp[\"data\"]\n    assert data is not None, \"'data' field should not be null\"\n    assert isinstance(data, list), \"'data' field should be a list (array of plan objects)\"\n\n    # Optionally check that each item in data is a dict (object)\n    for plan in data:\n        assert isinstance(plan, dict), \"Each plan in data should be an object\"\n\n    # errors should be null or an object, but for a successful call should be None\n    errors = json_resp.get(\"errors\")\n    assert errors is None or isinstance(errors, dict), \"'errors' field should be null or an object\"\n\ntest_plans_list_public()",
+    "testStatus": "FAILED",
+    "testError": "Traceback (most recent call last):\n  File \"<string>\", line 11, in test_plans_list_public\n  File \"/var/lang/lib/python3.12/site-packages/requests/models.py\", line 1024, in raise_for_status\n    raise HTTPError(http_error_msg, response=self)\nrequests.exceptions.HTTPError: 404 Client Error: Not Found for url: http://localhost:8000/api/v2/plans\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/var/task/handler.py\", line 258, in run_with_retry\n    exec(code, exec_env)\n  File \"<string>\", line 42, in <module>\n  File \"<string>\", line 13, in test_plans_list_public\nAssertionError: Request failed: 404 Client Error: Not Found for url: http://localhost:8000/api/v2/plans\n",
+    "testType": "BACKEND",
+    "createFrom": "mcp",
+    "created": "2026-05-06T08:07:50.962Z",
+    "modified": "2026-05-06T08:08:28.151Z"
+  }
+]
