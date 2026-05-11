@@ -50,9 +50,9 @@ class RegisterController extends BaseApiController
             ->where('is_active', true)
             ->orderBy('name');
 
-        $registers = $query->get(['id', 'store_id', 'name', 'device_id', 'platform', 'is_online']);
+        $registers = $query->get();
 
-        return $this->success($registers);
+        return $this->success(RegisterResource::collection($registers)->resolve());
     }
 
     /**
