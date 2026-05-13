@@ -355,6 +355,21 @@ class TransactionService
                 $softPosPayment = collect($data['payments'] ?? [])
                     ->first(fn ($p) => ($p['method'] ?? '') === 'soft_pos');
                 if ($softPosPayment) {
+                    \Illuminate\Support\Facades\Log::debug('[SoftPOS] softPosPayment keys received from Flutter', [
+                        'keys'             => array_keys($softPosPayment),
+                        'method'           => $softPosPayment['method'] ?? null,
+                        'amount'           => $softPosPayment['amount'] ?? null,
+                        'approval_code'    => $softPosPayment['approval_code'] ?? null,
+                        'rrn'              => $softPosPayment['rrn'] ?? null,
+                        'card_scheme'      => $softPosPayment['card_scheme'] ?? null,
+                        'masked_card'      => $softPosPayment['masked_card'] ?? null,
+                        'card_transaction_id' => $softPosPayment['card_transaction_id'] ?? null,
+                        'cardholder_name'  => $softPosPayment['cardholder_name'] ?? null,
+                        'stan'             => $softPosPayment['stan'] ?? null,
+                        'acquirer_bank'    => $softPosPayment['acquirer_bank'] ?? null,
+                        'application_id'   => $softPosPayment['application_id'] ?? null,
+                        'sdk_raw_response_present' => isset($softPosPayment['sdk_raw_response']),
+                    ]);
                     try {
                         $orgId  = $transaction->store->organization_id ?? null;
                         $txnAmt = (float) ($softPosPayment['amount'] ?? 0);
