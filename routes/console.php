@@ -51,9 +51,11 @@ Schedule::job(new ExpireSubscriptionsJob)
     ->withoutOverlapping()
     ->onOneServer();
 
-// Reset SoftPOS transaction counters on the 1st of each month
+// Reset SoftPOS transaction counters when a period boundary is crossed.
+// Runs daily so quarterly and annual plans are caught at the right boundary;
+// the service itself checks whether the period has actually elapsed before resetting.
 Schedule::job(new ResetSoftPosCountersJob)
-    ->monthlyOn(1, '00:30')
+    ->dailyAt('00:30')
     ->withoutOverlapping()
     ->onOneServer();
 

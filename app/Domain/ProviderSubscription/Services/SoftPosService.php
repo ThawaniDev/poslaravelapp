@@ -184,16 +184,30 @@ class SoftPosService
      */
     public function resetPeriodCounters(): int
     {
+        $now = now();
+
         $subscriptions = StoreSubscription::whereHas('subscriptionPlan', function ($q) {
             $q->where('softpos_free_eligible', true)
-                ->where('softpos_free_threshold_period', 'monthly');
+                ->whereNotNull('softpos_free_threshold_period');
         })
             ->where('status', SubscriptionStatus::Active->value)
-            ->where(function ($q) {
-                $q->whereNull('softpos_count_reset_at')
-                    ->orWhere('softpos_count_reset_at', '<', now()->startOfMonth());
-            })
-            ->get();
+            ->with('subscriptionPlan')
+            ->get()
+            ->filter(function (StoreSubscription $sub) use ($now) {
+                $period = $sub->subscriptionPlan?->softpos_free_threshold_period ?? 'monthly';
+                $lastReset = $sub->softpos_count_reset_at;
+
+                if (is_null($lastReset)) {
+                    return true;
+                }
+
+                return match ($period) {
+                    'monthly'    => $lastReset->lt($now->copy()->startOfMonth()),
+                    'quarterly'  => $lastReset->lt($now->copy()->firstOfQuarter()),
+                    'annually'   => $lastReset->lt($now->copy()->startOfYear()),
+                    default      => $lastReset->lt($now->copy()->startOfMonth()),
+                };
+            });
 
         $count = 0;
         foreach ($subscriptions as $subscription) {
