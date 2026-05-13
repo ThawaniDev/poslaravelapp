@@ -3,6 +3,8 @@
 namespace App\Domain\PosTerminal\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Contracts\Validation\Validator as ValidatorContract;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Validation\Validator;
 
 class CreateTransactionRequest extends FormRequest
@@ -92,10 +94,22 @@ class CreateTransactionRequest extends FormRequest
         ];
     }
 
+    protected function failedValidation(ValidatorContract $validator): void
+    {
+        \Illuminate\Support\Facades\Log::warning('[CreateTransaction] Validation failed', [
+            'errors' => $validator->errors()->toArray(),
+            'input_keys' => array_keys($this->all()),
+            'payments_count' => count($this->input('payments', [])),
+            'payment_methods' => collect($this->input('payments', []))->pluck('method')->toArray(),
+            'payment_amounts' => collect($this->input('payments', []))->pluck('amount')->toArray(),
+        ]);
+
+        parent::failedValidation($validator);
+    }
+
     public function withValidator(Validator $validator): void
     {
-        $validator->after(function (Validator $validator) {
-            $totalAmount = (float) ($this->input('total_amount', 0));
+        $validator->after(function (Validator $validator) {            $totalAmount = (float) ($this->input('total_amount', 0));
             $paymentSum = collect($this->input('payments', []))
                 ->sum(fn ($p) => (float) ($p['amount'] ?? 0));
 
