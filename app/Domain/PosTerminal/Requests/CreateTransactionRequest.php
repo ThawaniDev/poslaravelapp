@@ -82,6 +82,13 @@ class CreateTransactionRequest extends FormRequest
             'payments.*.card_scheme' => ['nullable', 'string'],
             'payments.*.masked_card' => ['nullable', 'string'],
             'payments.*.card_transaction_id' => ['nullable', 'string'],
+            // Extended EdfaPay card detail fields
+            'payments.*.cardholder_name' => ['nullable', 'string', 'max:100'],
+            'payments.*.card_expiry' => ['nullable', 'string', 'max:10'],
+            'payments.*.stan' => ['nullable', 'string', 'max:20'],
+            'payments.*.acquirer_bank' => ['nullable', 'string', 'max:50'],
+            'payments.*.application_id' => ['nullable', 'string', 'max:50'],
+            'payments.*.sdk_raw_response' => ['nullable', 'array'],
         ];
     }
 
