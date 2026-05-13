@@ -28,20 +28,31 @@ class SoftPosTransaction extends Model
         'gateway_fee',
         'margin',
         'fee_type',
-        // Transaction details
+        // Transaction identifiers
         'transaction_ref',
+        'edfapay_transaction_id',
         'payment_method',
         'terminal_id',
         'status',
+        // Card / payment details from EdfaPay SDK
+        'approval_code',
+        'masked_card',
+        'cardholder_name',
+        'card_expiry',
+        'stan',
+        'acquirer_bank',
+        'application_id',
+        'sdk_raw_response',
         'metadata',
     ];
 
     protected $casts = [
-        'amount'       => 'decimal:3',
-        'platform_fee' => 'decimal:3',
-        'gateway_fee'  => 'decimal:3',
-        'margin'       => 'decimal:3',
-        'metadata'     => 'array',
+        'amount'          => 'decimal:3',
+        'platform_fee'    => 'decimal:3',
+        'gateway_fee'     => 'decimal:3',
+        'margin'          => 'decimal:3',
+        'sdk_raw_response' => 'array',
+        'metadata'        => 'array',
     ];
 
     public function organization(): BelongsTo

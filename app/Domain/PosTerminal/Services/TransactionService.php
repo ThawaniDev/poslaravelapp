@@ -375,22 +375,32 @@ class TransactionService
 
                         if ($orgId) {
                             app(SoftPosService::class)->recordTransaction(
-                                organizationId: $orgId,
-                                amount:         $txnAmt,
-                                storeId:        $transaction->store_id,
-                                orderId:        $transaction->id,
-                                transactionRef: $softPosPayment['rrn'] ?? $softPosPayment['card_reference'] ?? null,
-                                paymentMethod:  $scheme,
-                                terminalId:     $transaction->register_id,
+                                organizationId:        $orgId,
+                                amount:                $txnAmt,
+                                storeId:               $transaction->store_id,
+                                orderId:               $transaction->id,
+                                transactionRef:        $softPosPayment['rrn'] ?? $softPosPayment['card_reference'] ?? null,
+                                paymentMethod:         $scheme,
+                                terminalId:            $transaction->register_id,
                                 metadata: [
                                     'approval_code'  => $softPosPayment['approval_code']      ?? $softPosPayment['card_auth_code'] ?? null,
                                     'masked_card'    => $softPosPayment['masked_card']         ?? $softPosPayment['card_last_four'] ?? null,
                                     'transaction_id' => $softPosPayment['card_transaction_id'] ?? null,
                                 ],
-                                platformFee: $fees['platform_fee'],
-                                gatewayFee:  $fees['gateway_fee'],
-                                margin:      $fees['margin'],
-                                feeType:     $fees['fee_type'],
+                                platformFee:           $fees['platform_fee'],
+                                gatewayFee:            $fees['gateway_fee'],
+                                margin:                $fees['margin'],
+                                feeType:               $fees['fee_type'],
+                                // EdfaPay card detail fields sent by Flutter
+                                approvalCode:          $softPosPayment['approval_code']          ?? $softPosPayment['card_auth_code']     ?? null,
+                                maskedCard:            $softPosPayment['masked_card']             ?? null,
+                                cardholderName:        $softPosPayment['cardholder_name']         ?? null,
+                                cardExpiry:            $softPosPayment['card_expiry']             ?? null,
+                                stan:                  $softPosPayment['stan']                    ?? null,
+                                acquirerBank:          $softPosPayment['acquirer_bank']            ?? null,
+                                applicationId:         $softPosPayment['application_id']          ?? null,
+                                edfapayTransactionId:  $softPosPayment['card_transaction_id']     ?? null,
+                                sdkRawResponse:        $softPosPayment['sdk_raw_response'] ?? null,
                             );
                         }
 

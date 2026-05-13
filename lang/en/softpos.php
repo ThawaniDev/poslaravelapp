@@ -38,6 +38,18 @@ return [
     'transaction_ref'       => 'Transaction Ref',
     'order_id'              => 'Order ID',
 
+    // Card detail fields
+    'card_details'          => 'Card Details',
+    'masked_card'           => 'Masked Card',
+    'cardholder_name'       => 'Cardholder Name',
+    'card_expiry'           => 'Card Expiry (YYMM)',
+    'approval_code'         => 'Approval Code',
+    'stan'                  => 'STAN',
+    'acquirer_bank'         => 'Acquirer Bank',
+    'application_id'        => 'Application ID (AID)',
+    'edfapay_transaction_id' => 'EdfaPay Transaction ID',
+    'sdk_raw_response'      => 'SDK Raw Response',
+
     // Summarizer labels
     'total_volume'          => 'Total Volume',
     'total_platform_fee'    => 'Total Platform Fee',

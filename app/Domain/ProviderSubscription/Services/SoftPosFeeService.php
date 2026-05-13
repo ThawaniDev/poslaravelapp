@@ -45,10 +45,8 @@ class SoftPosFeeService
     {
         $v = strtolower(trim($raw ?? ''));
 
-        if (in_array($v, self::MADA_SCHEMES, true)) {
-            return 'mada';
-        }
-        if (str_contains($v, 'mada')) {
+        // Human-readable names
+        if (in_array($v, self::MADA_SCHEMES, true) || str_contains($v, 'mada')) {
             return 'mada';
         }
         if (str_contains($v, 'visa')) {
@@ -58,6 +56,17 @@ class SoftPosFeeService
             return 'mastercard';
         }
         if (str_contains($v, 'amex') || str_contains($v, 'american express')) {
+            return 'amex';
+        }
+
+        // EdfaPay / EMV short codes returned by the SoftPOS SDK
+        if ($v === 'p1') {             // mada (Proprietary 1, AID A0000002281010)
+            return 'mada';
+        }
+        if ($v === 'vi') {             // Visa
+            return 'visa';
+        }
+        if ($v === 'ax' || $v === 'ae') { // American Express
             return 'amex';
         }
 

@@ -160,6 +160,43 @@ class SoftPosTransactionResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
+                Forms\Components\Section::make(__('softpos.card_details'))
+                    ->schema([
+                        Forms\Components\TextInput::make('masked_card')
+                            ->label(__('softpos.masked_card'))
+                            ->disabled(),
+                        Forms\Components\TextInput::make('cardholder_name')
+                            ->label(__('softpos.cardholder_name'))
+                            ->disabled(),
+                        Forms\Components\TextInput::make('card_expiry')
+                            ->label(__('softpos.card_expiry'))
+                            ->disabled(),
+                        Forms\Components\TextInput::make('approval_code')
+                            ->label(__('softpos.approval_code'))
+                            ->disabled(),
+                        Forms\Components\TextInput::make('stan')
+                            ->label(__('softpos.stan'))
+                            ->disabled(),
+                        Forms\Components\TextInput::make('acquirer_bank')
+                            ->label(__('softpos.acquirer_bank'))
+                            ->disabled(),
+                        Forms\Components\TextInput::make('application_id')
+                            ->label(__('softpos.application_id'))
+                            ->disabled(),
+                        Forms\Components\TextInput::make('edfapay_transaction_id')
+                            ->label(__('softpos.edfapay_transaction_id'))
+                            ->disabled()
+                            ->columnSpanFull(),
+                    ])->columns(4)->collapsible(),
+
+                Forms\Components\Section::make(__('softpos.sdk_raw_response'))
+                    ->schema([
+                        Forms\Components\KeyValue::make('sdk_raw_response')
+                            ->label(__('softpos.sdk_raw_response'))
+                            ->disabled()
+                            ->columnSpanFull(),
+                    ])->collapsible()->collapsed(),
+
                 Forms\Components\Section::make(__('common.timestamps'))
                     ->schema([
                         Forms\Components\TextInput::make('created_at')
@@ -274,6 +311,22 @@ class SoftPosTransactionResource extends Resource
                 Tables\Columns\TextColumn::make('transaction_ref')
                     ->label(__('softpos.transaction_ref'))
                     ->limit(16)
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('masked_card')
+                    ->label(__('softpos.masked_card'))
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('cardholder_name')
+                    ->label(__('softpos.cardholder_name'))
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('approval_code')
+                    ->label(__('softpos.approval_code'))
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('acquirer_bank')
+                    ->label(__('softpos.acquirer_bank'))
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

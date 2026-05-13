@@ -33,10 +33,22 @@ class SoftPosService
         float $gatewayFee = 0.0,
         float $margin = 0.0,
         string $feeType = 'percentage',
+        // EdfaPay card / payment detail fields
+        ?string $approvalCode = null,
+        ?string $maskedCard = null,
+        ?string $cardholderName = null,
+        ?string $cardExpiry = null,
+        ?string $stan = null,
+        ?string $acquirerBank = null,
+        ?string $applicationId = null,
+        ?string $edfapayTransactionId = null,
+        ?array $sdkRawResponse = null,
     ): SoftPosTransaction {
         return DB::transaction(function () use (
             $organizationId, $amount, $storeId, $orderId, $transactionRef, $paymentMethod, $terminalId, $metadata,
-            $platformFee, $gatewayFee, $margin, $feeType
+            $platformFee, $gatewayFee, $margin, $feeType,
+            $approvalCode, $maskedCard, $cardholderName, $cardExpiry, $stan,
+            $acquirerBank, $applicationId, $edfapayTransactionId, $sdkRawResponse
         ) {
             // Idempotency guard: if transaction_ref is provided, return the existing record instead of inserting a duplicate
             if ($transactionRef) {
@@ -50,19 +62,29 @@ class SoftPosService
             }
 
             $transaction = SoftPosTransaction::create([
-                'organization_id' => $organizationId,
-                'store_id'        => $storeId,
-                'order_id'        => $orderId,
-                'amount'          => $amount,
-                'platform_fee'    => $platformFee,
-                'gateway_fee'     => $gatewayFee,
-                'margin'          => $margin,
-                'fee_type'        => $feeType,
-                'transaction_ref' => $transactionRef,
-                'payment_method'  => $paymentMethod,
-                'terminal_id'     => $terminalId,
-                'status'          => 'completed',
-                'metadata'        => $metadata,
+                'organization_id'        => $organizationId,
+                'store_id'               => $storeId,
+                'order_id'               => $orderId,
+                'amount'                 => $amount,
+                'platform_fee'           => $platformFee,
+                'gateway_fee'            => $gatewayFee,
+                'margin'                 => $margin,
+                'fee_type'               => $feeType,
+                'transaction_ref'        => $transactionRef,
+                'payment_method'         => $paymentMethod,
+                'terminal_id'            => $terminalId,
+                'status'                 => 'completed',
+                // Card / payment details from EdfaPay SDK
+                'approval_code'          => $approvalCode,
+                'masked_card'            => $maskedCard,
+                'cardholder_name'        => $cardholderName,
+                'card_expiry'            => $cardExpiry,
+                'stan'                   => $stan,
+                'acquirer_bank'          => $acquirerBank,
+                'application_id'         => $applicationId,
+                'edfapay_transaction_id' => $edfapayTransactionId,
+                'sdk_raw_response'       => $sdkRawResponse,
+                'metadata'               => $metadata,
             ]);
 
             // Increment the subscription's softPOS counter and check threshold

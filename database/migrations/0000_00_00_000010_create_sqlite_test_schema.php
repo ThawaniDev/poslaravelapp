@@ -1353,6 +1353,16 @@ return new class extends Migration
             $table->string('payment_method', 50)->nullable();
             $table->string('terminal_id')->nullable();
             $table->string('status', 20)->default('completed');
+            // EdfaPay card / payment detail fields
+            $table->string('approval_code', 30)->nullable();
+            $table->string('masked_card', 30)->nullable();
+            $table->string('cardholder_name', 100)->nullable();
+            $table->string('card_expiry', 10)->nullable();
+            $table->string('stan', 20)->nullable();
+            $table->string('acquirer_bank', 50)->nullable();
+            $table->string('application_id', 50)->nullable();
+            $table->string('edfapay_transaction_id', 100)->nullable();
+            $table->json('sdk_raw_response')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
         });
