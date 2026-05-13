@@ -95,6 +95,26 @@ class Register extends Model
         'edfapay_token',
     ];
 
+    protected static function booted(): void
+    {
+        static::updating(function (Register $register) {
+            // Auto-stamp token updated time whenever the EdfaPay token is changed
+            if ($register->isDirty('edfapay_token') && ! $register->isDirty('edfapay_token_updated_at')) {
+                $register->edfapay_token_updated_at = now();
+            }
+
+            // Auto-stamp activation time the first time softpos_status becomes 'active'
+            if (
+                $register->isDirty('softpos_status')
+                && $register->softpos_status === 'active'
+                && is_null($register->getOriginal('softpos_activated_at'))
+                && ! $register->isDirty('softpos_activated_at')
+            ) {
+                $register->softpos_activated_at = now();
+            }
+        });
+    }
+
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);

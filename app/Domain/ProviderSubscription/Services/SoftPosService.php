@@ -2,6 +2,7 @@
 
 namespace App\Domain\ProviderSubscription\Services;
 
+use App\Domain\Core\Models\Register;
 use App\Domain\ProviderSubscription\Models\SoftPosTransaction;
 use App\Domain\ProviderSubscription\Models\StoreSubscription;
 use App\Domain\Subscription\Enums\SubscriptionStatus;
@@ -55,6 +56,12 @@ class SoftPosService
 
             // Increment the subscription's softPOS counter and check threshold
             $this->incrementAndCheckThreshold($organizationId, $amount);
+
+            // Stamp the register's last transaction time
+            if ($terminalId) {
+                Register::where('id', $terminalId)
+                    ->update(['last_transaction_at' => now()]);
+            }
 
             return $transaction;
         });
