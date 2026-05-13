@@ -52,6 +52,7 @@ class AdminSoftPosController extends BaseApiController
 
         $query = SoftPosTransaction::with(['store:id,name', 'terminal:id,name,code'])
             ->whereBetween(DB::raw('DATE(softpos_transactions.created_at)'), [$dateFrom, $dateTo])
+            ->when($storeId,    fn ($q) => $q->where('store_id', $storeId))
             ->when($terminalId, fn ($q) => $q->where('terminal_id', $terminalId))
             ->when($scheme,     fn ($q) => $q->whereRaw('LOWER(payment_method) = ?', [strtolower($scheme)]))
             ->when($feeType,    fn ($q) => $q->where('fee_type', $feeType))

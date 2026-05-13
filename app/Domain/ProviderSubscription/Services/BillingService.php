@@ -300,12 +300,10 @@ class BillingService
             : null;
         $thresholdCount = $plan->softpos_free_threshold ? (int) $plan->softpos_free_threshold : null;
 
-        $meetsThreshold = ($thresholdAmount !== null && (float) ($subscription->softpos_sales_total ?? 0) >= $thresholdAmount)
-            || ($thresholdAmount === null && $thresholdCount !== null && (int) ($subscription->softpos_transaction_count ?? 0) >= $thresholdCount);
-
-        $isSoftPosFree = $subscription->is_softpos_free
-            && $plan->softpos_free_eligible
-            && $meetsThreshold;
+        // is_softpos_free is the authoritative flag set at threshold-crossing time.
+        // Do NOT re-check live counters: resetPeriodCounters() may already have zeroed them
+        // by the time this invoice is generated (counter reset runs at 00:30, invoices at 06:00).
+        $isSoftPosFree = $subscription->is_softpos_free && $plan->softpos_free_eligible;
 
         $lineItems[] = [
             'description' => $description ?? "{$plan->name} — {$billingCycle->value} subscription",
@@ -626,7 +624,14 @@ class BillingService
 
             $subscription->update([
                 'current_period_start' => now(),
-                'current_period_end' => $newEnd,
+                'current_period_end'   => $newEnd,
+                // Clear the SoftPOS free-tier flag so the new period starts fresh.
+                // This is the authoritative reset point; the period counter reset job
+                // at 00:30 intentionally leaves this flag intact so invoices at 06:00
+                // can still honour free-tier earned in the closing period.
+                'is_softpos_free'      => false,
+                'original_amount'      => null,
+                'discount_reason'      => null,
             ]);
 
             $renewed++;

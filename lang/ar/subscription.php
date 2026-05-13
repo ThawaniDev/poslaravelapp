@@ -25,6 +25,7 @@ return [
     'softpos_not_available'               => 'مستوى SoftPOS المجاني غير متوفر لخطتك الحالية.',
     'softpos_transaction_recorded'        => 'تم تسجيل معاملة SoftPOS.',
     'store_not_in_organization'           => 'المتجر لا ينتمي إلى منظمتك.',
+    'terminal_not_in_organization'        => 'الجهاز لا ينتمي إلى منظمتك.',
 
     // ── Add-ons ───────────────────────────────────────────────────────────────
     'addon_not_found'                     => 'الإضافة غير موجودة لهذا المتجر.',

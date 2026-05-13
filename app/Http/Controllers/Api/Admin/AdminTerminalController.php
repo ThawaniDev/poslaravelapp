@@ -145,6 +145,11 @@ class AdminTerminalController extends BaseApiController
     {
         $found = Register::findOrFail($register);
 
+        // Validate input first before any control-flow checks
+        $request->validate([
+            'edfapay_token' => ['nullable', 'string', 'max:2048'],
+        ]);
+
         // Provider-specific credential checks
         if ($found->softpos_provider === 'edfapay') {
             // EdfaPay: must have a token already stored OR be supplying one now
@@ -161,10 +166,6 @@ class AdminTerminalController extends BaseApiController
         if (!$found->acquirer_source) {
             return $this->error(__('terminals.softpos_no_acquirer'), 422);
         }
-
-        $request->validate([
-            'edfapay_token' => ['nullable', 'string', 'max:2048'],
-        ]);
 
         $payload = [
             'softpos_enabled'      => true,

@@ -126,6 +126,11 @@ class SoftPosFeeService
         float  $cardMerchantFee  = 1.000,
         float  $cardGatewayFee   = 0.500,
     ): array {
+        // Guard: negative/zero amounts (e.g. refunds) must not produce negative fees
+        if ($amount <= 0) {
+            return ['platform_fee' => 0.0, 'gateway_fee' => 0.0, 'margin' => 0.0, 'fee_type' => 'unknown', 'scheme' => $this->normaliseScheme($cardScheme)];
+        }
+
         $scheme = $this->normaliseScheme($cardScheme);
 
         if ($this->isMada($scheme)) {

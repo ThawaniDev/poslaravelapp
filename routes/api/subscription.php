@@ -48,7 +48,8 @@ Route::prefix('subscription')->group(function () {
             Route::get('info', [SubscriptionController::class, 'softPosInfo']);
             Route::get('statistics', [SubscriptionController::class, 'softPosStatistics']);
             Route::get('transactions', [SubscriptionController::class, 'softPosTransactions']);
-            Route::post('record', [SubscriptionController::class, 'recordSoftPosTransaction'])->middleware('permission:subscription.manage');
+            Route::post('record', [SubscriptionController::class, 'recordSoftPosTransaction'])
+                ->middleware(['permission:subscription.manage', 'throttle:60,1']);
         });
 
         // Invoices

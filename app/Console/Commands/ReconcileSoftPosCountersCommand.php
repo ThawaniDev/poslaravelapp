@@ -59,6 +59,7 @@ class ReconcileSoftPosCountersCommand extends Command
         }
 
         $fixed   = 0;
+        $drifted = 0;
         $skipped = 0;
         $errors  = 0;
 
@@ -68,6 +69,8 @@ class ReconcileSoftPosCountersCommand extends Command
 
                 if ($result === 'fixed') {
                     $fixed++;
+                } elseif ($result === 'drifted') {
+                    $drifted++;
                 } else {
                     $skipped++;
                 }
@@ -82,7 +85,11 @@ class ReconcileSoftPosCountersCommand extends Command
         }
 
         $mode = $dryRun ? '[DRY RUN] ' : '';
-        $this->info("{$mode}Done. Fixed: {$fixed} | Correct: {$skipped} | Errors: {$errors}");
+        if ($dryRun) {
+            $this->info("{$mode}Done. Drifted: {$drifted} | Correct: {$skipped} | Errors: {$errors}");
+        } else {
+            $this->info("{$mode}Done. Fixed: {$fixed} | Correct: {$skipped} | Errors: {$errors}");
+        }
 
         if ($fixed > 0) {
             Log::info('SoftPOS counter reconciliation complete', compact('fixed', 'skipped', 'errors', 'dryRun'));
@@ -130,7 +137,7 @@ class ReconcileSoftPosCountersCommand extends Command
         ));
 
         if ($dryRun) {
-            return 'fixed';
+            return 'drifted';
         }
 
         DB::transaction(function () use ($subscription, $plan, $realCount, $realSalesTotal) {

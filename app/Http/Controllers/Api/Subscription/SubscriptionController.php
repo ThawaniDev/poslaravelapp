@@ -269,9 +269,9 @@ class SubscriptionController extends BaseApiController
             'amount' => 'required|numeric|min:0.001',
             'store_id' => 'nullable|uuid|exists:stores,id',
             'order_id' => 'nullable|uuid',
-            'transaction_ref' => 'nullable|string|max:255',
+            'transaction_ref' => 'required|string|min:1|max:255',
             'payment_method' => 'nullable|string|max:50',
-            'terminal_id' => 'nullable|string|max:100',
+            'terminal_id' => 'nullable|uuid|exists:registers,id',
             'metadata' => 'nullable|array',
         ]);
 
@@ -288,6 +288,16 @@ class SubscriptionController extends BaseApiController
                 ->first();
             if (! $store) {
                 return $this->error(__('subscription.store_not_in_organization'), 403);
+            }
+        }
+
+        // Verify terminal belongs to user's organization (via its store)
+        if ($request->filled('terminal_id')) {
+            $terminal = \App\Domain\Core\Models\Register::where('id', $request->input('terminal_id'))
+                ->whereHas('store', fn ($q) => $q->where('organization_id', $organizationId))
+                ->first();
+            if (! $terminal) {
+                return $this->error(__('subscription.terminal_not_in_organization'), 403);
             }
         }
 
@@ -317,6 +327,12 @@ class SubscriptionController extends BaseApiController
      */
     public function softPosTransactions(Request $request): JsonResponse
     {
+        $request->validate([
+            'start_date' => 'nullable|date_format:Y-m-d',
+            'end_date'   => 'nullable|date_format:Y-m-d|after_or_equal:start_date',
+            'per_page'   => 'nullable|integer|min:1|max:100',
+        ]);
+
         $organizationId = $request->user()->organization_id;
 
         if (! $organizationId) {

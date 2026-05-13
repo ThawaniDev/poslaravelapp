@@ -163,7 +163,10 @@ class RegisterResource extends Resource
                                         ->revealable()
                                         ->maxLength(2048)
                                         ->visible(fn ($get) => $get('softpos_provider') === 'edfapay')
-                                        ->columnSpanFull(),
+                                        ->columnSpanFull()
+                                        // Never pre-fill the token on edit — display-only masked value
+                                        ->formatStateUsing(fn ($state, $record) => $record?->edfapay_token ? '••••••••' : null)
+                                        ->dehydrated(fn ($state) => filled($state) && $state !== '••••••••'),
                                 ])
                                 ->columns(2),
 

@@ -399,10 +399,10 @@ class TransactionService
                         PlatformDailyStat::firstOrCreate(['date' => $today]);
                         PlatformDailyStat::where('date', $today)->update([
                             'softpos_transaction_count' => DB::raw('softpos_transaction_count + 1'),
-                            'softpos_volume'            => DB::raw('softpos_volume + '         . $txnAmt),
-                            'softpos_platform_fees'     => DB::raw('softpos_platform_fees + '  . $fees['platform_fee']),
-                            'softpos_gateway_fees'      => DB::raw('softpos_gateway_fees + '   . $fees['gateway_fee']),
-                            'softpos_margin'            => DB::raw('softpos_margin + '          . $fees['margin']),
+                            'softpos_volume'            => DB::raw('softpos_volume + '         . number_format((float) $txnAmt, 3, '.', '')),
+                            'softpos_platform_fees'     => DB::raw('softpos_platform_fees + '  . number_format((float) $fees['platform_fee'], 3, '.', '')),
+                            'softpos_gateway_fees'      => DB::raw('softpos_gateway_fees + '   . number_format((float) $fees['gateway_fee'], 3, '.', '')),
+                            'softpos_margin'            => DB::raw('softpos_margin + '          . number_format((float) $fees['margin'], 3, '.', '')),
                         ]);
 
                     } catch (\Throwable $e) {

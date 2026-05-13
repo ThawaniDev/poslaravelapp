@@ -25,6 +25,7 @@ return [
     'softpos_not_available'               => 'SoftPOS free tier is not available for your current plan.',
     'softpos_transaction_recorded'        => 'SoftPOS transaction recorded.',
     'store_not_in_organization'           => 'Store does not belong to your organization.',
+    'terminal_not_in_organization'        => 'Terminal does not belong to your organization.',
 
     // ── Add-ons ───────────────────────────────────────────────────────────────
     'addon_not_found'                     => 'Add-on not found for this store.',

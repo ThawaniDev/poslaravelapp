@@ -38,6 +38,17 @@ class SoftPosService
             $organizationId, $amount, $storeId, $orderId, $transactionRef, $paymentMethod, $terminalId, $metadata,
             $platformFee, $gatewayFee, $margin, $feeType
         ) {
+            // Idempotency guard: if transaction_ref is provided, return the existing record instead of inserting a duplicate
+            if ($transactionRef) {
+                $existing = SoftPosTransaction::where('organization_id', $organizationId)
+                    ->where('transaction_ref', $transactionRef)
+                    ->first();
+
+                if ($existing) {
+                    return $existing;
+                }
+            }
+
             $transaction = SoftPosTransaction::create([
                 'organization_id' => $organizationId,
                 'store_id'        => $storeId,
@@ -72,52 +83,56 @@ class SoftPosService
      */
     public function incrementAndCheckThreshold(string $organizationId, float $amount = 0.0): void
     {
-        $subscription = StoreSubscription::where('organization_id', $organizationId)
-            ->whereIn('status', [
-                SubscriptionStatus::Active->value,
-                SubscriptionStatus::Trial->value,
-                SubscriptionStatus::Grace->value,
-            ])
-            ->first();
+        DB::transaction(function () use ($organizationId, $amount) {
+            $subscription = StoreSubscription::where('organization_id', $organizationId)
+                ->whereIn('status', [
+                    SubscriptionStatus::Active->value,
+                    SubscriptionStatus::Trial->value,
+                    SubscriptionStatus::Grace->value,
+                ])
+                ->lockForUpdate()
+                ->first();
 
-        if (! $subscription) {
-            return;
-        }
+            if (! $subscription) {
+                return;
+            }
 
-        $plan = $subscription->subscriptionPlan;
-        if (! $plan || ! $plan->softpos_free_eligible) {
-            return;
-        }
+            $plan = $subscription->subscriptionPlan;
+            if (! $plan || ! $plan->softpos_free_eligible) {
+                return;
+            }
 
-        // Always increment transaction count (useful for analytics)
-        $subscription->increment('softpos_transaction_count');
+            // Already free — nothing more to do
+            if ($subscription->is_softpos_free) {
+                return;
+            }
 
-        // Accumulate sales total for amount-based threshold
-        if ($amount > 0) {
-            $subscription->increment('softpos_sales_total', $amount);
-        }
+            // Always increment transaction count (useful for analytics)
+            $subscription->increment('softpos_transaction_count');
 
-        $subscription->refresh();
+            // Accumulate sales total for amount-based threshold
+            if ($amount > 0) {
+                $subscription->increment('softpos_sales_total', $amount);
+            }
 
-        // Check if threshold is reached — amount-based takes priority over count-based
-        if ($subscription->is_softpos_free) {
-            return;
-        }
+            $subscription->refresh();
 
-        $thresholdAmount = $plan->softpos_free_threshold_amount
-            ? (float) $plan->softpos_free_threshold_amount
-            : null;
+            // Check if threshold is reached — amount-based takes priority over count-based
+            $thresholdAmount = $plan->softpos_free_threshold_amount
+                ? (float) $plan->softpos_free_threshold_amount
+                : null;
 
-        $thresholdCount = $plan->softpos_free_threshold
-            ? (int) $plan->softpos_free_threshold
-            : null;
+            $thresholdCount = $plan->softpos_free_threshold
+                ? (int) $plan->softpos_free_threshold
+                : null;
 
-        $reached = ($thresholdAmount !== null && $subscription->softpos_sales_total >= $thresholdAmount)
-            || ($thresholdAmount === null && $thresholdCount !== null && $subscription->softpos_transaction_count >= $thresholdCount);
+            $reached = ($thresholdAmount !== null && $thresholdAmount > 0 && $subscription->softpos_sales_total >= $thresholdAmount)
+                || ($thresholdAmount === null && $thresholdCount !== null && $thresholdCount > 0 && $subscription->softpos_transaction_count >= $thresholdCount);
 
-        if ($reached) {
-            $this->activateSoftPosFree($subscription, $plan);
-        }
+            if ($reached) {
+                $this->activateSoftPosFree($subscription, $plan);
+            }
+        });
     }
 
     /**
@@ -232,7 +247,11 @@ class SoftPosService
             $q->where('softpos_free_eligible', true)
                 ->whereNotNull('softpos_free_threshold_period');
         })
-            ->where('status', SubscriptionStatus::Active->value)
+            ->whereIn('status', [
+                SubscriptionStatus::Active->value,
+                SubscriptionStatus::Trial->value,
+                SubscriptionStatus::Grace->value,
+            ])
             ->with('subscriptionPlan')
             ->get()
             ->filter(function (StoreSubscription $sub) use ($now) {
@@ -256,7 +275,11 @@ class SoftPosService
             $subscription->update([
                 'softpos_transaction_count' => 0,
                 'softpos_sales_total'       => 0,
-                'is_softpos_free' => false,
+                // is_softpos_free is intentionally NOT cleared here.
+                // generateInvoice() may run after this job but before renewPaidSubscriptions();
+                // clearing the flag here would strip the free-tier discount from the period invoice.
+                // The flag is cleared in BillingService::renewPaidSubscriptions() when the new
+                // billing period actually starts.
                 'softpos_count_reset_at' => now(),
                 'original_amount' => null,
                 'discount_reason' => null,

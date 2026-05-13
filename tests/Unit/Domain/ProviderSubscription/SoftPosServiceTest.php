@@ -110,7 +110,7 @@ class SoftPosServiceTest extends TestCase
             storeId: $this->store->id,
             transactionRef: 'TXN-001',
             paymentMethod: 'mada',
-            terminalId: 'TERM-01',
+            terminalId: null, // UUID not required at service level; terminal stamping tested separately
             metadata: ['source' => 'softpos'],
             platformFee: 1.500,
             gatewayFee: 0.750,
@@ -121,7 +121,7 @@ class SoftPosServiceTest extends TestCase
         $this->assertEquals($this->store->id, $txn->store_id);
         $this->assertEquals('TXN-001', $txn->transaction_ref);
         $this->assertEquals('mada', $txn->payment_method);
-        $this->assertEquals('TERM-01', $txn->terminal_id);
+        $this->assertNull($txn->terminal_id);
         $this->assertEquals('completed', $txn->status);
     }
 
@@ -177,11 +177,12 @@ class SoftPosServiceTest extends TestCase
             'softpos_transaction_count' => 5,
         ]);
 
-        // Another transaction — should NOT trigger activateSoftPosFree again
+        // Another transaction — early-return guard fires because is_softpos_free=true,
+        // so the counter is NOT incremented (idempotent once free).
         $this->softPos->recordTransaction($this->org->id, 100.000);
 
-        // Still 1 transaction added (count = 6), but no error
-        $this->assertEquals(6, $this->subscription->fresh()->softpos_transaction_count);
+        // Count stays at 5 — the guard prevented another increment
+        $this->assertEquals(5, $this->subscription->fresh()->softpos_transaction_count);
         $this->assertTrue((bool) $this->subscription->fresh()->is_softpos_free);
     }
 
@@ -196,6 +197,50 @@ class SoftPosServiceTest extends TestCase
 
         // Counter should stay at 0 — plan not eligible
         $this->assertEquals(0, $this->subscription->fresh()->softpos_transaction_count);
+    }
+
+    public function test_amount_threshold_activates_softpos_free(): void
+    {
+        $this->eligiblePlan->update([
+            'softpos_free_threshold'        => null,
+            'softpos_free_threshold_amount' => 500.000, // 500 SAR threshold
+        ]);
+
+        // 4 transactions × 100 SAR = 400 SAR — below threshold
+        for ($i = 0; $i < 4; $i++) {
+            $this->softPos->recordTransaction($this->org->id, 100.000);
+        }
+        $this->assertFalse((bool) $this->subscription->fresh()->is_softpos_free);
+
+        // One more × 100 SAR = 500 SAR — at threshold
+        $this->softPos->recordTransaction($this->org->id, 100.000);
+
+        $this->assertTrue((bool) $this->subscription->fresh()->is_softpos_free);
+    }
+
+    public function test_zero_amount_threshold_does_not_activate_free(): void
+    {
+        $this->eligiblePlan->update([
+            'softpos_free_threshold'        => null,
+            'softpos_free_threshold_amount' => 0.000, // zero — must never trigger
+        ]);
+
+        // Any transaction should NOT activate free tier when threshold is 0
+        $this->softPos->recordTransaction($this->org->id, 100.000);
+
+        $this->assertFalse((bool) $this->subscription->fresh()->is_softpos_free);
+    }
+
+    public function test_zero_count_threshold_does_not_activate_free(): void
+    {
+        $this->eligiblePlan->update([
+            'softpos_free_threshold'        => 0, // zero count — must never trigger
+            'softpos_free_threshold_amount' => null,
+        ]);
+
+        $this->softPos->recordTransaction($this->org->id, 100.000);
+
+        $this->assertFalse((bool) $this->subscription->fresh()->is_softpos_free);
     }
 
     public function test_no_subscription_does_not_error(): void
@@ -328,7 +373,10 @@ class SoftPosServiceTest extends TestCase
 
         $sub = $this->subscription->fresh();
         $this->assertEquals(0, $sub->softpos_transaction_count);
-        $this->assertFalse((bool) $sub->is_softpos_free);
+        // is_softpos_free is intentionally preserved by resetPeriodCounters() —
+        // it is cleared by BillingService::renewPaidSubscriptions() to avoid
+        // stripping the free-tier discount from the period invoice.
+        $this->assertTrue((bool) $sub->is_softpos_free);
         $this->assertNull($sub->discount_reason);
     }
 
@@ -342,6 +390,34 @@ class SoftPosServiceTest extends TestCase
         $count = $this->softPos->resetPeriodCounters();
 
         $this->assertEquals(0, $count);
+    }
+
+    public function test_reset_period_counters_includes_trial_subscriptions(): void
+    {
+        $this->subscription->update([
+            'status' => SubscriptionStatus::Trial,
+            'softpos_transaction_count' => 3,
+            'softpos_count_reset_at' => now()->subMonth(),
+        ]);
+
+        $count = $this->softPos->resetPeriodCounters();
+
+        $this->assertEquals(1, $count);
+        $this->assertEquals(0, $this->subscription->fresh()->softpos_transaction_count);
+    }
+
+    public function test_reset_period_counters_includes_grace_subscriptions(): void
+    {
+        $this->subscription->update([
+            'status' => SubscriptionStatus::Grace,
+            'softpos_transaction_count' => 7,
+            'softpos_count_reset_at' => now()->subMonth(),
+        ]);
+
+        $count = $this->softPos->resetPeriodCounters();
+
+        $this->assertEquals(1, $count);
+        $this->assertEquals(0, $this->subscription->fresh()->softpos_transaction_count);
     }
 
     // ─── getTransactionHistory ────────────────────────────────────

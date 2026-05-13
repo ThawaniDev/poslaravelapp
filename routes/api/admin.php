@@ -244,7 +244,7 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
             ->middleware('permission:analytics.export');
 
         // SoftPOS analytics (dashboard) + financial management
-        Route::prefix('softpos')->name('softpos.')->group(function () {
+        Route::prefix('softpos')->name('softpos.')->middleware('permission:analytics.view')->group(function () {
             Route::get('/',              [AnalyticsReportingController::class, 'softposDashboard']);
             Route::get('transactions',   [AdminSoftPosController::class, 'transactions']);
             Route::get('financials',     [AdminSoftPosController::class, 'financials']);
@@ -734,17 +734,17 @@ Route::prefix('admin')->middleware('auth:admin-api')->group(function () {
     // ─── POS Terminals (Admin) ───────────────────────────────
     Route::prefix('terminals')->group(function () {
         Route::get('stats', [AdminTerminalController::class, 'stats']);
-        Route::get('softpos-health', [AdminTerminalController::class, 'softposHealth']);
-        Route::patch('{register}/softpos-billing', [AdminTerminalController::class, 'updateSoftposBilling']);
+        Route::get('softpos-health', [AdminTerminalController::class, 'softposHealth'])->middleware('permission:terminals.manage');
+        Route::patch('{register}/softpos-billing', [AdminTerminalController::class, 'updateSoftposBilling'])->middleware('permission:terminals.manage');
         Route::get('/', [AdminTerminalController::class, 'index']);
         Route::post('/', [AdminTerminalController::class, 'store']);
         Route::get('{register}', [AdminTerminalController::class, 'show']);
         Route::put('{register}', [AdminTerminalController::class, 'update']);
         Route::delete('{register}', [AdminTerminalController::class, 'destroy']);
         Route::post('{register}/toggle-status', [AdminTerminalController::class, 'toggleStatus']);
-        Route::post('{register}/activate-softpos', [AdminTerminalController::class, 'activateSoftpos']);
-        Route::post('{register}/suspend-softpos', [AdminTerminalController::class, 'suspendSoftpos']);
-        Route::post('{register}/deactivate-softpos', [AdminTerminalController::class, 'deactivateSoftpos']);
+        Route::post('{register}/activate-softpos', [AdminTerminalController::class, 'activateSoftpos'])->middleware('permission:terminals.manage');
+        Route::post('{register}/suspend-softpos', [AdminTerminalController::class, 'suspendSoftpos'])->middleware('permission:terminals.manage');
+        Route::post('{register}/deactivate-softpos', [AdminTerminalController::class, 'deactivateSoftpos'])->middleware('permission:terminals.manage');
         Route::put('{register}/fees', [AdminTerminalController::class, 'updateFees']);
     });
 });
