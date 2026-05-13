@@ -395,14 +395,35 @@ class PlanEnforcementService
         // SoftPOS info
         $softposInfo = null;
         if ($plan->softpos_free_eligible) {
+            $thresholdCount      = (int) ($plan->softpos_free_threshold ?? 0);
+            $thresholdAmount     = $plan->softpos_free_threshold_amount !== null
+                ? (float) $plan->softpos_free_threshold_amount
+                : null;
+            $currentCount        = (int) $subscription->softpos_transaction_count;
+            $currentSalesTotal   = (float) ($subscription->softpos_sales_total ?? 0);
+
+            // Prefer amount-based progress when an amount threshold is configured.
+            if ($thresholdAmount !== null && $thresholdAmount > 0) {
+                $remaining  = max(0, $thresholdAmount - $currentSalesTotal);
+                $percentage = round(($currentSalesTotal / $thresholdAmount) * 100, 1);
+            } else {
+                $remaining  = max(0, $thresholdCount - $currentCount);
+                $percentage = $thresholdCount > 0
+                    ? round(($currentCount / $thresholdCount) * 100, 1)
+                    : 0;
+            }
+
             $softposInfo = [
-                'is_eligible' => true,
-                'threshold' => $plan->softpos_free_threshold,
-                'threshold_period' => $plan->softpos_free_threshold_period,
-                'current_count' => $subscription->softpos_transaction_count,
-                'remaining' => max(0, ($plan->softpos_free_threshold ?? 0) - $subscription->softpos_transaction_count),
-                'is_free' => $subscription->is_softpos_free,
-                'savings_amount' => $subscription->is_softpos_free ? ($subscription->original_amount ?? 0) : 0,
+                'is_eligible'         => true,
+                'threshold'           => $thresholdCount,
+                'threshold_amount'    => $thresholdAmount,
+                'threshold_period'    => $plan->softpos_free_threshold_period,
+                'current_count'       => $currentCount,
+                'current_sales_total' => $currentSalesTotal,
+                'remaining'           => $remaining,
+                'percentage'          => min(100, $percentage),
+                'is_free'             => $subscription->is_softpos_free,
+                'savings_amount'      => $subscription->is_softpos_free ? ($subscription->original_amount ?? 0) : 0,
             ];
         }
 

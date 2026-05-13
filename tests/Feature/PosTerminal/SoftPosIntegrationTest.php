@@ -516,6 +516,8 @@ class SoftPosIntegrationTest extends TestCase
 
         $subscription->refresh();
         $this->assertEquals(1, $subscription->softpos_transaction_count);
+        $this->assertEquals(50.0, (float) $subscription->softpos_sales_total,
+            'softpos_sales_total should accumulate the sale amount');
     }
 
     /** @test */
@@ -564,6 +566,8 @@ class SoftPosIntegrationTest extends TestCase
         $subscription->refresh();
 
         $this->assertEquals(2,    $subscription->softpos_transaction_count);
+        $this->assertEquals(30.0, (float) $subscription->softpos_sales_total,
+            'softpos_sales_total should accumulate the triggering sale amount');
         $this->assertTrue($subscription->is_softpos_free,
             'Subscription should be marked free after reaching threshold');
         $this->assertEquals(200.00, (float) $subscription->original_amount,

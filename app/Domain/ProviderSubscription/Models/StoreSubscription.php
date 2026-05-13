@@ -33,6 +33,7 @@ class StoreSubscription extends Model
         'cancelled_at',
         'is_softpos_free',
         'softpos_transaction_count',
+        'softpos_sales_total',
         'softpos_count_reset_at',
         'original_amount',
         'discount_reason',
@@ -48,6 +49,7 @@ class StoreSubscription extends Model
         'cancelled_at' => 'datetime',
         'is_softpos_free' => 'boolean',
         'softpos_transaction_count' => 'integer',
+        'softpos_sales_total' => 'decimal:3',
         'softpos_count_reset_at' => 'datetime',
         'original_amount' => 'decimal:2',
     ];

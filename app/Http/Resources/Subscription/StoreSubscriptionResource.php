@@ -31,6 +31,7 @@ class StoreSubscriptionResource extends JsonResource
             'payment_method' => $this->payment_method,
             'is_softpos_free' => (bool) $this->is_softpos_free,
             'softpos_transaction_count' => (int) ($this->softpos_transaction_count ?? 0),
+            'softpos_sales_total' => (float) ($this->softpos_sales_total ?? 0),
 
             'plan' => $this->whenLoaded('subscriptionPlan', fn () =>
                 new SubscriptionPlanResource($this->subscriptionPlan)

@@ -59,6 +59,14 @@ Schedule::job(new ResetSoftPosCountersJob)
     ->withoutOverlapping()
     ->onOneServer();
 
+// Reconcile the denormalized softpos_transaction_count against the actual
+// softpos_transactions table. Corrects any drift from silent counter failures
+// without blocking payments at runtime.
+Schedule::command('pos:reconcile-softpos-counters')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->onOneServer();
+
 // ─── Platform Analytics Schedules ────────────────────────────
 
 // Aggregate daily platform statistics (daily at 1 AM)

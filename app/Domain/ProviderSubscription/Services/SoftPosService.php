@@ -54,7 +54,7 @@ class SoftPosService
             ]);
 
             // Increment the subscription's softPOS counter and check threshold
-            $this->incrementAndCheckThreshold($organizationId);
+            $this->incrementAndCheckThreshold($organizationId, $amount);
 
             return $transaction;
         });
@@ -63,7 +63,7 @@ class SoftPosService
     /**
      * Increment the softPOS counter on the subscription and check if threshold is reached.
      */
-    public function incrementAndCheckThreshold(string $organizationId): void
+    public function incrementAndCheckThreshold(string $organizationId, float $amount = 0.0): void
     {
         $subscription = StoreSubscription::where('organization_id', $organizationId)
             ->whereIn('status', [
@@ -78,15 +78,37 @@ class SoftPosService
         }
 
         $plan = $subscription->subscriptionPlan;
-        if (! $plan || ! $plan->softpos_free_eligible || ! $plan->softpos_free_threshold) {
+        if (! $plan || ! $plan->softpos_free_eligible) {
             return;
         }
 
-        // Increment counter
+        // Always increment transaction count (useful for analytics)
         $subscription->increment('softpos_transaction_count');
 
-        // Check if threshold is reached
-        if ($subscription->softpos_transaction_count >= $plan->softpos_free_threshold && ! $subscription->is_softpos_free) {
+        // Accumulate sales total for amount-based threshold
+        if ($amount > 0) {
+            $subscription->increment('softpos_sales_total', $amount);
+        }
+
+        $subscription->refresh();
+
+        // Check if threshold is reached — amount-based takes priority over count-based
+        if ($subscription->is_softpos_free) {
+            return;
+        }
+
+        $thresholdAmount = $plan->softpos_free_threshold_amount
+            ? (float) $plan->softpos_free_threshold_amount
+            : null;
+
+        $thresholdCount = $plan->softpos_free_threshold
+            ? (int) $plan->softpos_free_threshold
+            : null;
+
+        $reached = ($thresholdAmount !== null && $subscription->softpos_sales_total >= $thresholdAmount)
+            || ($thresholdAmount === null && $thresholdCount !== null && $subscription->softpos_transaction_count >= $thresholdCount);
+
+        if ($reached) {
             $this->activateSoftPosFree($subscription, $plan);
         }
     }
@@ -108,10 +130,12 @@ class SoftPosService
         ]);
 
         Log::info('SoftPOS free subscription activated', [
-            'organization_id' => $subscription->organization_id,
-            'softpos_count' => $subscription->softpos_transaction_count,
-            'threshold' => $plan->softpos_free_threshold,
-            'original_amount' => $originalAmount,
+            'organization_id'    => $subscription->organization_id,
+            'softpos_count'      => $subscription->softpos_transaction_count,
+            'softpos_sales_total'=> (float) $subscription->softpos_sales_total,
+            'threshold_amount'   => $plan->softpos_free_threshold_amount ? (float) $plan->softpos_free_threshold_amount : null,
+            'threshold_count'    => $plan->softpos_free_threshold,
+            'original_amount'    => $originalAmount,
         ]);
     }
 
@@ -155,9 +179,18 @@ class SoftPosService
         }
 
         $threshold = $plan->softpos_free_threshold ?? 0;
+        $thresholdAmount = $plan->softpos_free_threshold_amount ? (float) $plan->softpos_free_threshold_amount : null;
         $currentCount = $subscription->softpos_transaction_count;
-        $remaining = max(0, $threshold - $currentCount);
-        $percentage = $threshold > 0 ? round(($currentCount / $threshold) * 100, 1) : 0;
+        $currentSalesTotal = (float) ($subscription->softpos_sales_total ?? 0);
+
+        // Use amount-based progress when an amount threshold is configured
+        if ($thresholdAmount !== null && $thresholdAmount > 0) {
+            $remaining   = max(0, $thresholdAmount - $currentSalesTotal);
+            $percentage  = round(($currentSalesTotal / $thresholdAmount) * 100, 1);
+        } else {
+            $remaining   = max(0, $threshold - $currentCount);
+            $percentage  = $threshold > 0 ? round(($currentCount / $threshold) * 100, 1) : 0;
+        }
 
         $billingCycle = $subscription->billing_cycle?->value ?? 'monthly';
         $subscriptionAmount = $billingCycle === 'yearly'
@@ -165,16 +198,18 @@ class SoftPosService
             : (float) $plan->monthly_price;
 
         return [
-            'is_eligible' => true,
-            'threshold' => $threshold,
-            'threshold_period' => $plan->softpos_free_threshold_period,
-            'current_count' => $currentCount,
-            'remaining' => $remaining,
-            'percentage' => min(100, $percentage),
-            'is_free' => $subscription->is_softpos_free,
-            'subscription_amount' => $subscriptionAmount,
-            'savings_amount' => $subscription->is_softpos_free ? $subscriptionAmount : 0,
-            'reset_at' => $subscription->softpos_count_reset_at?->toIso8601String(),
+            'is_eligible'            => true,
+            'threshold'              => $threshold,
+            'threshold_amount'       => $thresholdAmount,
+            'threshold_period'       => $plan->softpos_free_threshold_period,
+            'current_count'          => $currentCount,
+            'current_sales_total'    => $currentSalesTotal,
+            'remaining'              => $remaining,
+            'percentage'             => min(100, $percentage),
+            'is_free'                => $subscription->is_softpos_free,
+            'subscription_amount'    => $subscriptionAmount,
+            'savings_amount'         => $subscription->is_softpos_free ? $subscriptionAmount : 0,
+            'reset_at'               => $subscription->softpos_count_reset_at?->toIso8601String(),
         ];
     }
 
@@ -213,6 +248,7 @@ class SoftPosService
         foreach ($subscriptions as $subscription) {
             $subscription->update([
                 'softpos_transaction_count' => 0,
+                'softpos_sales_total'       => 0,
                 'is_softpos_free' => false,
                 'softpos_count_reset_at' => now(),
                 'original_amount' => null,

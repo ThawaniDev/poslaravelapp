@@ -335,7 +335,7 @@ class SoftPosApiTest extends TestCase
 
     public function test_softpos_free_activated_when_threshold_reached(): void
     {
-        // Record 3 transactions (threshold = 3)
+        // Record 3 transactions (threshold = 3 count, no amount threshold)
         for ($i = 0; $i < 3; $i++) {
             $this->withToken($this->token)->postJson('/api/v2/subscription/softpos/record', [
                 'amount' => 100.000,
@@ -345,12 +345,38 @@ class SoftPosApiTest extends TestCase
         $this->subscription->refresh();
         $this->assertTrue((bool) $this->subscription->is_softpos_free);
         $this->assertEquals('softpos_threshold_reached', $this->subscription->discount_reason);
+        $this->assertEquals(300.0, (float) $this->subscription->softpos_sales_total,
+            'Sales total should accumulate even when using count-based threshold');
 
         // Verify the info endpoint reflects this
         $response = $this->withToken($this->token)->getJson('/api/v2/subscription/softpos/info');
         $response->assertOk()
             ->assertJsonPath('data.is_free', true);
         $this->assertEquals(100.0, (float) $response->json('data.percentage'));
+    }
+
+    public function test_softpos_free_activated_by_amount_threshold(): void
+    {
+        // Switch plan to amount-based threshold (no count threshold)
+        $this->eligiblePlan->update([
+            'softpos_free_threshold'        => null,
+            'softpos_free_threshold_amount' => 250.000, // 250 SAR threshold
+        ]);
+
+        // Record two sales totalling 200 SAR — below threshold
+        $this->withToken($this->token)->postJson('/api/v2/subscription/softpos/record', ['amount' => 100.000]);
+        $this->withToken($this->token)->postJson('/api/v2/subscription/softpos/record', ['amount' => 100.000]);
+
+        $this->subscription->refresh();
+        $this->assertFalse((bool) $this->subscription->is_softpos_free, 'Should not be free below amount threshold');
+
+        // One more sale pushes total to 250 SAR — hits threshold
+        $this->withToken($this->token)->postJson('/api/v2/subscription/softpos/record', ['amount' => 50.000]);
+
+        $this->subscription->refresh();
+        $this->assertTrue((bool) $this->subscription->is_softpos_free, 'Should be free after hitting amount threshold');
+        $this->assertEquals(250.0, (float) $this->subscription->softpos_sales_total);
+        $this->assertEquals('softpos_threshold_reached', $this->subscription->discount_reason);
     }
 
     public function test_softpos_free_not_activated_below_threshold(): void

@@ -295,9 +295,17 @@ class BillingService
             : (float) $plan->monthly_price;
 
         // Check if subscription is free due to SoftPOS threshold
+        $thresholdAmount = $plan->softpos_free_threshold_amount
+            ? (float) $plan->softpos_free_threshold_amount
+            : null;
+        $thresholdCount = $plan->softpos_free_threshold ? (int) $plan->softpos_free_threshold : null;
+
+        $meetsThreshold = ($thresholdAmount !== null && (float) ($subscription->softpos_sales_total ?? 0) >= $thresholdAmount)
+            || ($thresholdAmount === null && $thresholdCount !== null && (int) ($subscription->softpos_transaction_count ?? 0) >= $thresholdCount);
+
         $isSoftPosFree = $subscription->is_softpos_free
             && $plan->softpos_free_eligible
-            && $subscription->softpos_transaction_count >= ($plan->softpos_free_threshold ?? 0);
+            && $meetsThreshold;
 
         $lineItems[] = [
             'description' => $description ?? "{$plan->name} — {$billingCycle->value} subscription",
@@ -308,11 +316,16 @@ class BillingService
 
         // Apply SoftPOS free discount
         if ($isSoftPosFree && $planAmount > 0) {
+            if ($thresholdAmount !== null) {
+                $desc = "SoftPOS Free Tier Discount (Reached {$subscription->softpos_sales_total}/{$plan->softpos_free_threshold_amount} in sales)";
+            } else {
+                $desc = "SoftPOS Free Tier Discount (Reached {$subscription->softpos_transaction_count}/{$plan->softpos_free_threshold} transactions)";
+            }
             $lineItems[] = [
-                'description' => "SoftPOS Free Tier Discount (Reached {$subscription->softpos_transaction_count}/{$plan->softpos_free_threshold} transactions)",
-                'quantity' => 1,
-                'unit_price' => -$planAmount,
-                'total' => -$planAmount,
+                'description' => $desc,
+                'quantity'    => 1,
+                'unit_price'  => -$planAmount,
+                'total'       => -$planAmount,
             ];
         }
 

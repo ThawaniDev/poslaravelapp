@@ -29,7 +29,8 @@ class CreatePlanRequest extends FormRequest
 
             // SoftPOS free tier
             'softpos_free_eligible' => ['sometimes', 'boolean'],
-            'softpos_free_threshold' => ['nullable', 'integer', 'min:1', 'required_if:softpos_free_eligible,true'],
+            'softpos_free_threshold' => ['nullable', 'integer', 'min:1'],
+            'softpos_free_threshold_amount' => ['nullable', 'numeric', 'min:0.001', 'required_if:softpos_free_eligible,true'],
             'softpos_free_threshold_period' => ['nullable', 'string', 'in:monthly,quarterly,annually', 'required_if:softpos_free_eligible,true'],
 
             // Feature toggles

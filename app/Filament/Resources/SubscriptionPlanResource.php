@@ -155,14 +155,26 @@ class SubscriptionPlanResource extends Resource
                                     ->helperText(__('subscription_plans.field_softpos_free_eligible_helper'))
                                     ->default(false)
                                     ->live(),
-                                Forms\Components\Grid::make(2)->schema([
+                                Forms\Components\Grid::make(3)->schema([
+                                    Forms\Components\TextInput::make('softpos_free_threshold_amount')
+                                        ->label(__('subscription_plans.field_softpos_free_threshold_amount'))
+                                        ->numeric()
+                                        ->prefix('SAR')
+                                        ->minValue(0.001)
+                                        ->step(0.001)
+                                        ->helperText(__('subscription_plans.field_softpos_free_threshold_amount_helper'))
+                                        ->visible(fn (Forms\Get $get): bool => (bool) $get('softpos_free_eligible'))
+                                        ->live(),
                                     Forms\Components\TextInput::make('softpos_free_threshold')
                                         ->label(__('subscription_plans.field_softpos_free_threshold'))
                                         ->numeric()
                                         ->minValue(1)
                                         ->helperText(__('subscription_plans.field_softpos_free_threshold_helper'))
                                         ->visible(fn (Forms\Get $get): bool => (bool) $get('softpos_free_eligible'))
-                                        ->required(fn (Forms\Get $get): bool => (bool) $get('softpos_free_eligible')),
+                                        ->required(fn (Forms\Get $get): bool =>
+                                            (bool) $get('softpos_free_eligible')
+                                            && ! filled($get('softpos_free_threshold_amount'))
+                                        ),
                                     Forms\Components\Select::make('softpos_free_threshold_period')
                                         ->label(__('subscription_plans.field_softpos_free_threshold_period'))
                                         ->options([
@@ -191,6 +203,7 @@ class SubscriptionPlanResource extends Resource
                                     ->schema([
                                         Forms\Components\Select::make('feature_key')
                                             ->label(__('subscription_plans.field_feature_key'))
+                                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                             ->options([
                                                 'pos'                   => __('subscription_plans.feature_pos'),
                                                 'zatca_phase2'          => __('subscription_plans.feature_zatca_phase2'),
@@ -286,6 +299,7 @@ class SubscriptionPlanResource extends Resource
                                         Forms\Components\Grid::make(3)->schema([
                                             Forms\Components\Select::make('limit_key')
                                                 ->label(__('subscription_plans.field_limit_key'))
+                                                ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                                 ->options([
                                                     'products'              => __('subscription_plans.limit_products'),
                                                     'staff_members'         => __('subscription_plans.limit_staff_members'),
@@ -458,10 +472,14 @@ class SubscriptionPlanResource extends Resource
                 ]),
             Infolists\Components\Section::make(__('subscription_plans.section_softpos_free'))
                 ->schema([
-                    Infolists\Components\Grid::make(3)->schema([
+                    Infolists\Components\Grid::make(4)->schema([
                         Infolists\Components\IconEntry::make('softpos_free_eligible')
                             ->label(__('subscription_plans.field_softpos_free_eligible'))
                             ->boolean(),
+                        Infolists\Components\TextEntry::make('softpos_free_threshold_amount')
+                            ->label(__('subscription_plans.field_softpos_free_threshold_amount'))
+                            ->money('SAR')
+                            ->placeholder('—'),
                         Infolists\Components\TextEntry::make('softpos_free_threshold')
                             ->label(__('subscription_plans.field_softpos_free_threshold'))
                             ->placeholder('—'),

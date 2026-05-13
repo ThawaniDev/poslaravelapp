@@ -69,8 +69,9 @@ class SubscriptionPlanSeeder extends Seeder
                 'grace_period_days' => 3,
                 'is_active'         => true,
                 'is_highlighted'    => false,
-                'softpos_free_eligible'       => true,
-                'softpos_free_threshold'      => 500,
+                'softpos_free_eligible'         => true,
+                'softpos_free_threshold'        => null,
+                'softpos_free_threshold_amount' => 5000.000, // 5,000 SAR in monthly SoftPOS sales
                 'softpos_free_threshold_period' => 'monthly',
                 'sort_order'        => 1,
                 'features' => [
@@ -146,8 +147,9 @@ class SubscriptionPlanSeeder extends Seeder
                 'grace_period_days' => 7,
                 'is_active'         => true,
                 'is_highlighted'    => true,
-                'softpos_free_eligible'       => true,
-                'softpos_free_threshold'      => 300,
+                'softpos_free_eligible'         => true,
+                'softpos_free_threshold'        => null,
+                'softpos_free_threshold_amount' => 10000.000, // 10,000 SAR in monthly SoftPOS sales
                 'softpos_free_threshold_period' => 'monthly',
                 'sort_order'        => 2,
                 'features' => [
@@ -223,8 +225,9 @@ class SubscriptionPlanSeeder extends Seeder
                 'grace_period_days' => 14,
                 'is_active'         => true,
                 'is_highlighted'    => false,
-                'softpos_free_eligible'       => true,
-                'softpos_free_threshold'      => 200,
+                'softpos_free_eligible'         => true,
+                'softpos_free_threshold'        => null,
+                'softpos_free_threshold_amount' => 20000.000, // 20,000 SAR in monthly SoftPOS sales
                 'softpos_free_threshold_period' => 'monthly',
                 'sort_order'        => 3,
                 'features' => [

@@ -26,6 +26,7 @@ class SubscriptionPlanResource extends JsonResource
             'business_type' => $this->business_type,
             'softpos_free_eligible' => (bool) $this->softpos_free_eligible,
             'softpos_free_threshold' => $this->softpos_free_threshold ? (int) $this->softpos_free_threshold : null,
+            'softpos_free_threshold_amount' => $this->softpos_free_threshold_amount ? (float) $this->softpos_free_threshold_amount : null,
             'softpos_free_threshold_period' => $this->softpos_free_threshold_period,
 
             'features' => $this->whenLoaded('planFeatureToggles', fn () =>
