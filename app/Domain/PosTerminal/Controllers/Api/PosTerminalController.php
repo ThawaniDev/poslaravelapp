@@ -168,7 +168,20 @@ public function showSession(Request $request, string $session): JsonResponse
 
             return $this->created(new TransactionResource($transaction));
         } catch (\RuntimeException $e) {
+            \Illuminate\Support\Facades\Log::error('[CreateTransaction] RuntimeException', [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
             return $this->error($e->getMessage(), 422);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('[CreateTransaction] Unexpected exception', [
+                'class'   => get_class($e),
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
+            throw $e;
         }
     }
 
