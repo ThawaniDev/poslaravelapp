@@ -187,7 +187,11 @@ class StoreSubscriptionResource extends Resource
                         ])
                         ->action(function (StoreSubscription $record, array $data) {
                             $billing = app(BillingService::class);
-                            $billing->changePlan($record->organization_id, $data['new_plan_id'], $data['billing_cycle']);
+                            $billing->changePlan(
+                                $record->organization_id,
+                                $data['new_plan_id'],
+                                \App\Domain\Subscription\Enums\BillingCycle::from($data['billing_cycle']),
+                            );
                             Notification::make()->title(__('Plan changed successfully'))->success()->send();
                         }),
                     Tables\Actions\Action::make('apply_credit')
