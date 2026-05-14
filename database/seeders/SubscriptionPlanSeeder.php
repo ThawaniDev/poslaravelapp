@@ -188,7 +188,7 @@ class SubscriptionPlanSeeder extends Seeder
                     ['feature_key' => 'supplier_management',    'name' => 'Supplier Management',         'name_ar' => 'إدارة الموردين',                  'is_enabled' => true],
                     ['feature_key' => 'product_variants',       'name' => 'Product Variants',            'name_ar' => 'متغيرات المنتج',                  'is_enabled' => true],
                     ['feature_key' => 'combo_products',         'name' => 'Combo Products',              'name_ar' => 'منتجات الكومبو',                  'is_enabled' => true],
-                    ['feature_key' => 'bulk_import',            'name' => 'Bulk CSV Import',             'name_ar' => 'استيراد CSV الجماعي',            'is_enabled' => true],
+                    ['feature_key' => 'bulk_import',            'name' => 'Bulk CSV Import',             'name_ar' => 'استيراد CSV الجماعي',            'is_enabled' => false],
                     ['feature_key' => 'barcode_label_printing', 'name' => 'Barcode Label Printing',     'name_ar' => 'طباعة ملصقات الباركود',           'is_enabled' => true],
                     // Promotions & marketing
                     ['feature_key' => 'promotions_coupons',     'name' => 'Promotions & Coupons',        'name_ar' => 'العروض والقسائم',                 'is_enabled' => true],

@@ -450,6 +450,8 @@ class PlanEnforcementService
             'limits' => $limits,
             'softpos' => $softposInfo,
             'is_softpos_free' => $subscription->is_softpos_free,
+            'hide_from_public' => (bool) $plan->hide_from_public,
+            'hide_unselected_features' => (bool) $plan->hide_unselected_features,
             // Nested objects consumed by the Flutter FeatureGateService cache.
             'subscription' => [
                 'id' => $subscription->id,
@@ -471,6 +473,8 @@ class PlanEnforcementService
                 'tier' => $plan->tier?->value,
                 'monthly_price' => $plan->monthly_price,
                 'annual_price' => $plan->annual_price,
+                'hide_from_public' => (bool) $plan->hide_from_public,
+                'hide_unselected_features' => (bool) $plan->hide_unselected_features,
                 'softpos_free_eligible' => (bool) $plan->softpos_free_eligible,
             ],
         ];
@@ -505,7 +509,7 @@ class PlanEnforcementService
             // Core features (always enabled on all plans)
             'pos' => ['/pos', '/pos/terminals', '/pos/sessions', '/orders', '/transactions'],
             'zatca_phase2' => ['/zatca'],
-            'inventory' => ['/inventory', '/products', '/categories', '/suppliers', '/labels', '/predefined-catalog'],
+            'inventory' => ['/inventory', '/products', '/categories'],
             'reports_basic' => ['/reports', '/reports/sales-summary', '/reports/hourly-sales', '/reports/product-performance', '/reports/category-breakdown', '/reports/payment-methods'],
             'barcode_scanning' => [],
             'cash_drawer' => ['/cash-management'],
@@ -513,12 +517,18 @@ class PlanEnforcementService
             'receipt_printing' => [],
             'offline_mode' => [],
             'mada_payments' => [],
+            'supplier_management' => ['/suppliers'],
+            'barcode_label_printing' => ['/labels'],
+            'bulk_import' => ['/predefined-catalog'],
 
             // Advanced features (plan-gated)
             'reports_advanced' => ['/reports/staff-performance', '/reports/inventory', '/reports/financial', '/reports/customers'],
             'multi_branch' => ['/branches'],
             'delivery_integration' => ['/delivery'],
-            'customer_loyalty' => ['/promotions'],
+            'customer_management' => ['/customers', '/debits', '/receivables'],
+            'customer_loyalty' => [],
+            'promotions_coupons' => ['/promotions'],
+            'promotions_advanced' => [],
             'api_access' => [],
             'white_label' => [],
             'priority_support' => [],
