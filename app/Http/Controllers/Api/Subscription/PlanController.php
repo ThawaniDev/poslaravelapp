@@ -22,6 +22,7 @@ class PlanController extends BaseApiController
     /**
      * GET /subscription/plans — List available plans.
      * Authenticated users see plans filtered by their organization's business_type.
+     * Public (unauthenticated) callers only see plans not flagged as hide_from_public.
      */
     public function index(ListPlansRequest $request): JsonResponse
     {
@@ -33,7 +34,11 @@ class PlanController extends BaseApiController
             $businessType = $request->user()->organization->business_type?->value;
         }
 
-        $plans = $this->subscriptionService->listPlans($activeOnly, $businessType);
+        // Authenticated users (e.g. checking plans during upgrade) can see hidden plans.
+        // Public / unauthenticated requests (pricing page) must not see hide_from_public plans.
+        $publicOnly = $request->user() === null;
+
+        $plans = $this->subscriptionService->listPlans($activeOnly, $businessType, $publicOnly);
 
         return $this->success(SubscriptionPlanResource::collection($plans));
     }

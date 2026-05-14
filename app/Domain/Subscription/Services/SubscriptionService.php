@@ -15,10 +15,15 @@ class SubscriptionService
     // ─── Plan Queries ────────────────────────────────────────────
 
     /**
-     * List all active subscription plans with their features and limits.
-     * Optionally filter by business_type (returns plans matching the type + plans with no type set).
+     * List subscription plans.
+     *
+     * @param bool        $activeOnly      Only return is_active plans.
+     * @param string|null $businessType    Filter to this business_type (+ null-typed plans).
+     * @param bool        $publicOnly      When true (default), exclude plans marked hide_from_public.
+     *                                     Pass false for admin / authenticated contexts that should
+     *                                     be able to see all plans (e.g. admin panel, upgrade flows).
      */
-    public function listPlans(bool $activeOnly = true, ?string $businessType = null): Collection
+    public function listPlans(bool $activeOnly = true, ?string $businessType = null, bool $publicOnly = true): Collection
     {
         $query = SubscriptionPlan::with(['planFeatureToggles', 'planLimits', 'pricingPageContent'])
             ->orderBy('sort_order')
@@ -26,6 +31,13 @@ class SubscriptionService
 
         if ($activeOnly) {
             $query->where('is_active', true);
+        }
+
+        // Hide plans flagged as hide_from_public when listing for public/website contexts.
+        if ($publicOnly) {
+            $query->where(function ($q) {
+                $q->where('hide_from_public', false)->orWhereNull('hide_from_public');
+            });
         }
 
         if ($businessType) {

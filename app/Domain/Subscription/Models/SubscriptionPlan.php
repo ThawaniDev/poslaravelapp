@@ -29,6 +29,8 @@ class SubscriptionPlan extends Model
         'grace_period_days',
         'is_active',
         'is_highlighted',
+        'hide_from_public',
+        'hide_unselected_features',
         'softpos_free_eligible',
         'softpos_free_threshold',
         'softpos_free_threshold_amount',
@@ -41,6 +43,8 @@ class SubscriptionPlan extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_highlighted' => 'boolean',
+        'hide_from_public' => 'boolean',
+        'hide_unselected_features' => 'boolean',
         'softpos_free_eligible' => 'boolean',
         'softpos_free_threshold' => 'integer',
         'softpos_free_threshold_amount' => 'decimal:3',

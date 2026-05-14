@@ -22,6 +22,8 @@ class SubscriptionPlanResource extends JsonResource
             'grace_period_days' => $this->grace_period_days,
             'is_active' => (bool) $this->is_active,
             'is_highlighted' => (bool) $this->is_highlighted,
+            'hide_from_public' => (bool) $this->hide_from_public,
+            'hide_unselected_features' => (bool) $this->hide_unselected_features,
             'sort_order' => $this->sort_order,
             'business_type' => $this->business_type,
             'softpos_free_eligible' => (bool) $this->softpos_free_eligible,

@@ -36,7 +36,8 @@ class PackageSubscriptionController extends BaseApiController
     public function listPlans(Request $request): JsonResponse
     {
         $activeOnly = $request->boolean('active_only', false);
-        $plans = $this->subscriptionService->listPlans($activeOnly);
+        // Admin always sees all plans, including those hidden from the public website.
+        $plans = $this->subscriptionService->listPlans($activeOnly, null, false);
 
         return $this->success(
             SubscriptionPlanResource::collection($plans)->resolve(),
