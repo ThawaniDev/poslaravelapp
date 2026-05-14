@@ -173,6 +173,12 @@ class StoreSubscriptionResource extends Resource
                         ->icon('heroicon-o-arrow-path')
                         ->color('primary')
                         ->visible(fn () => auth('admin')->user()?->hasPermission('billing.edit'))
+                        ->requiresConfirmation()
+                        ->modalHeading(fn (StoreSubscription $record) => __('Change Plan — :org', ['org' => $record->organization?->name ?? $record->organization_id]))
+                        ->modalDescription(fn (StoreSubscription $record) => __('Current plan: :plan (:cycle). Select the new plan below. A prorated invoice will be generated immediately.', [
+                            'plan'  => $record->subscriptionPlan?->name ?? '—',
+                            'cycle' => $record->billing_cycle?->value ?? '—',
+                        ]))
                         ->form([
                             Forms\Components\Select::make('new_plan_id')
                                 ->label(__('New Plan'))
@@ -181,18 +187,23 @@ class StoreSubscriptionResource extends Resource
                                 ->preload()
                                 ->required(),
                             Forms\Components\Select::make('billing_cycle')
-                                ->options(['monthly' => __('Monthly'), 'yearly' => 'Yearly'])
+                                ->options(['monthly' => __('Monthly'), 'yearly' => __('Yearly')])
                                 ->default('monthly')
                                 ->required(),
                         ])
                         ->action(function (StoreSubscription $record, array $data) {
-                            $billing = app(BillingService::class);
-                            $billing->changePlan(
-                                $record->organization_id,
-                                $data['new_plan_id'],
-                                \App\Domain\Subscription\Enums\BillingCycle::from($data['billing_cycle']),
-                            );
-                            Notification::make()->title(__('Plan changed successfully'))->success()->send();
+                            try {
+                                app(BillingService::class)->changePlan(
+                                    $record->organization_id,
+                                    $data['new_plan_id'],
+                                    \App\Domain\Subscription\Enums\BillingCycle::from($data['billing_cycle']),
+                                );
+                                Notification::make()->title(__('Plan changed successfully'))->success()->send();
+                            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException) {
+                                Notification::make()->title(__('No active subscription found for this organization.'))->danger()->send();
+                            } catch (\RuntimeException $e) {
+                                Notification::make()->title($e->getMessage())->danger()->send();
+                            }
                         }),
                     Tables\Actions\Action::make('apply_credit')
                         ->label(__('Apply Credit'))

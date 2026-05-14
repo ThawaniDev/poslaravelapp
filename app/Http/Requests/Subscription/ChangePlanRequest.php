@@ -16,7 +16,11 @@ class ChangePlanRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'plan_id' => ['required', 'uuid', 'exists:subscription_plans,id'],
+            'plan_id' => [
+                'required',
+                'uuid',
+                Rule::exists('subscription_plans', 'id')->where('is_active', true),
+            ],
             'billing_cycle' => ['sometimes', Rule::enum(BillingCycle::class)],
         ];
     }
@@ -24,7 +28,7 @@ class ChangePlanRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'plan_id.exists' => 'The selected subscription plan does not exist.',
+            'plan_id.exists' => 'The selected subscription plan does not exist or is no longer available.',
         ];
     }
 }

@@ -168,7 +168,9 @@ class BillingService
                 throw new \RuntimeException('Organization is already on this plan.');
             }
 
+            $previousPlanName = $subscription->subscriptionPlan?->name ?? $subscription->subscription_plan_id;
             $now = now();
+
             $subscription->update([
                 'subscription_plan_id' => $newPlan->id,
                 'billing_cycle' => $billingCycle,
@@ -182,6 +184,15 @@ class BillingService
 
             // Generate prorated invoice for plan change
             $this->generateInvoice($subscription, 'Plan change to ' . $newPlan->name);
+
+            Log::info('[BillingService] Plan changed', [
+                'organization_id' => $organizationId,
+                'subscription_id' => $subscription->id,
+                'from_plan'       => $previousPlanName,
+                'to_plan'         => $newPlan->name,
+                'billing_cycle'   => $billingCycle->value,
+                'changed_at'      => $now->toIso8601String(),
+            ]);
 
             return $subscription->fresh(['subscriptionPlan.planFeatureToggles', 'subscriptionPlan.planLimits']);
         });
