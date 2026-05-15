@@ -275,7 +275,7 @@ class ReportService
 
         $sortBy = match ($filters['sort_by'] ?? 'revenue') {
             'quantity' => 'total_quantity',
-            'profit' => DB::raw('(SUM(product_sales_summary.revenue) - SUM(product_sales_summary.cost))'),
+            'profit' => DB::raw('(SUM(product_sales_summary.revenue) - SUM(COALESCE(NULLIF(product_sales_summary.cost, 0), product_sales_summary.quantity_sold * COALESCE(products.cost_price, 0))))'),
             'name' => 'products.name',
             default => 'total_revenue',
         };
@@ -289,7 +289,7 @@ class ReportService
             'products.category_id',
             DB::raw('SUM(product_sales_summary.quantity_sold) as total_quantity'),
             DB::raw('SUM(product_sales_summary.revenue) as total_revenue'),
-            DB::raw('SUM(product_sales_summary.cost) as total_cost'),
+            DB::raw('SUM(COALESCE(NULLIF(product_sales_summary.cost, 0), product_sales_summary.quantity_sold * COALESCE(products.cost_price, 0))) as total_cost'),
             DB::raw('SUM(product_sales_summary.discount_amount) as total_discount'),
             DB::raw('SUM(product_sales_summary.return_quantity) as total_returns'),
             DB::raw('SUM(product_sales_summary.return_amount) as total_return_amount'),
@@ -342,7 +342,7 @@ class ReportService
             'categories.name_ar as category_name_ar',
             DB::raw('SUM(product_sales_summary.quantity_sold) as total_quantity'),
             DB::raw('SUM(product_sales_summary.revenue) as total_revenue'),
-            DB::raw('SUM(product_sales_summary.cost) as total_cost'),
+            DB::raw('SUM(COALESCE(NULLIF(product_sales_summary.cost, 0), product_sales_summary.quantity_sold * COALESCE(products.cost_price, 0))) as total_cost'),
             DB::raw('COUNT(DISTINCT product_sales_summary.product_id) as product_count'),
         ])
             ->groupBy('categories.id', 'categories.name', 'categories.name_ar')
@@ -692,7 +692,7 @@ class ReportService
             'products.name as product_name',
             'products.sku',
             DB::raw('SUM(product_sales_summary.revenue) as total_revenue'),
-            DB::raw('SUM(product_sales_summary.cost) as total_cost'),
+            DB::raw('SUM(COALESCE(NULLIF(product_sales_summary.cost, 0), product_sales_summary.quantity_sold * COALESCE(products.cost_price, 0))) as total_cost'),
             DB::raw('SUM(product_sales_summary.quantity_sold) as total_quantity'),
         ])
             ->groupBy('product_sales_summary.product_id', 'products.name', 'products.sku')
@@ -770,7 +770,7 @@ class ReportService
                 'product_sales_summary.product_id',
                 'products.name as product_name',
                 'products.sku',
-                DB::raw('SUM(product_sales_summary.cost) as total_cost'),
+                DB::raw('SUM(COALESCE(NULLIF(product_sales_summary.cost, 0), product_sales_summary.quantity_sold * COALESCE(products.cost_price, 0))) as total_cost'),
                 DB::raw('SUM(product_sales_summary.quantity_sold) as total_sold'),
             ])
             ->groupBy('product_sales_summary.product_id', 'products.name', 'products.sku')
