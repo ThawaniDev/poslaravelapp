@@ -3,6 +3,7 @@
 namespace App\Domain\PosTerminal\Services;
 
 use App\Domain\Auth\Models\User;
+use App\Domain\Catalog\Models\Product;
 use App\Domain\Core\Models\StoreSettings;
 use App\Domain\Customer\Enums\LoyaltyTransactionType;
 use App\Domain\Customer\Models\Customer;
@@ -247,6 +248,13 @@ class TransactionService
             // Create transaction items
             $isExempt = (bool) ($data['is_tax_exempt'] ?? false);
             if (!empty($data['items'])) {
+                // Pre-load authoritative cost prices from the DB so reports are
+                // always correct, regardless of what the client sent (cost_price
+                // is permission-gated in the product API and may be null/0).
+                $productIds = array_filter(array_column($data['items'], 'product_id'));
+                $productCosts = Product::whereIn('id', $productIds)
+                    ->pluck('cost_price', 'id');
+
                 foreach ($data['items'] as $item) {
                     $ageVerified = (bool) ($item['age_verified'] ?? false);
                     // Compute total price impact of selected modifiers (sum of
@@ -270,7 +278,7 @@ class TransactionService
                         'product_name_ar' => $item['product_name_ar'] ?? null,
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['unit_price'],
-                        'cost_price' => $item['cost_price'] ?? 0,
+                        'cost_price' => (float) ($productCosts[$item['product_id'] ?? null] ?? $item['cost_price'] ?? 0),
                         'discount_amount' => $item['discount_amount'] ?? 0,
                         // When the parent transaction is tax-exempt, every line
                         // is forced to a 0% rate / 0 tax regardless of what the
