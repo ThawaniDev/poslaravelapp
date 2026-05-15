@@ -2,6 +2,7 @@
 
 namespace App\Domain\Notification\Services;
 
+use App\Domain\Auth\Models\User;
 use App\Domain\Notification\Enums\NotificationChannel;
 use App\Domain\Notification\Mail\NotificationMail;
 use App\Domain\Notification\Models\NotificationCustom;
@@ -13,6 +14,9 @@ use Illuminate\Support\Facades\Log;
  *
  * Call this service from observers, listeners, or controllers to trigger
  * notifications. It creates an in-app notification AND sends an FCM push.
+ *
+ * Locale is resolved automatically from `users.locale`. Callers can still
+ * override by passing `$locale` explicitly.
  */
 class NotificationDispatcher
 {
@@ -21,12 +25,33 @@ class NotificationDispatcher
         private readonly NotificationTemplateService $templates,
     ) {}
 
+    // ─── Locale Resolution ───────────────────────────────
+
+    /**
+     * Supported locale codes. Any unsupported value falls back to 'ar'.
+     */
+    private const SUPPORTED_LOCALES = ['ar', 'en', 'ur', 'bn'];
+
+    /**
+     * Resolve the display locale for a user.
+     *
+     * Reads `users.locale` and normalises to a supported code, defaulting
+     * to 'ar' (most users are Arabic-speaking).
+     */
+    private function localeForUser(string $userId): string
+    {
+        $raw = User::where('id', $userId)->value('locale') ?? 'ar';
+        $code = strtolower(substr($raw, 0, 2)); // 'ar', 'en', 'ur', 'bn'
+        return in_array($code, self::SUPPORTED_LOCALES, true) ? $code : 'ar';
+    }
+
     // ─── Dispatch to User ────────────────────────────────
 
     /**
      * Send a notification to a single user by event key.
      *
      * Creates an in-app notification and sends a push notification.
+     * Locale is auto-resolved from the user record unless explicitly provided.
      */
     public function toUser(
         string $userId,
@@ -35,18 +60,21 @@ class NotificationDispatcher
         ?string $category = null,
         ?string $referenceId = null,
         ?string $referenceType = null,
-        string $locale = 'en',
+        ?string $locale = null,   // null → auto-resolve from users.locale
         string $priority = 'normal',
         bool $alsoEmail = false,
     ): void {
-        $rendered = $this->templates->render($eventKey, NotificationChannel::Push, $variables, $locale);
+        $resolvedLocale = $locale ?? $this->localeForUser($userId);
+
+        $rendered = $this->templates->render($eventKey, NotificationChannel::Push, $variables, $resolvedLocale);
 
         if (! $rendered) {
-            // No template — use event catalog defaults
+            // No template — use event catalog fallback text (locale-aware)
             $events = NotificationTemplateService::allEvents();
             $meta = $events[$eventKey] ?? null;
+            $descKey = ($resolvedLocale === 'ar') ? 'description_ar' : 'description';
             $rendered = [
-                'title' => $meta['description'] ?? $eventKey,
+                'title' => ($meta[$descKey] ?? $meta['description'] ?? $eventKey),
                 'body' => collect($variables)->map(fn ($v, $k) => "{$k}: {$v}")->join(', '),
             ];
         }
@@ -93,7 +121,7 @@ class NotificationDispatcher
     private function sendEmailToUser(string $userId, string $title, string $body): void
     {
         try {
-            $email = \App\Domain\Auth\Models\User::where('id', $userId)->value('email');
+            $email = User::where('id', $userId)->value('email');
 
             if ($email) {
                 EmailService::queue($email, new NotificationMail(
@@ -114,6 +142,7 @@ class NotificationDispatcher
 
     /**
      * Send a notification to all users in a store.
+     * Each user's locale is resolved individually from their profile.
      */
     public function toStore(
         string $storeId,
@@ -122,10 +151,10 @@ class NotificationDispatcher
         ?string $category = null,
         ?string $referenceId = null,
         ?string $referenceType = null,
-        string $locale = 'en',
+        ?string $locale = null,   // null → auto-resolve per user
         string $priority = 'normal',
     ): void {
-        $userIds = \App\Domain\Auth\Models\User::where('store_id', $storeId)
+        $userIds = User::where('store_id', $storeId)
             ->where('is_active', true)
             ->pluck('id')
             ->toArray();
@@ -138,7 +167,7 @@ class NotificationDispatcher
                 category: $category,
                 referenceId: $referenceId,
                 referenceType: $referenceType,
-                locale: $locale,
+                locale: $locale, // null → each toUser() call resolves its own locale
                 priority: $priority,
             );
         }
@@ -148,6 +177,7 @@ class NotificationDispatcher
 
     /**
      * Send a notification to the store owner only.
+     * Owner's locale is resolved from their profile.
      */
     public function toStoreOwner(
         string $storeId,
@@ -156,17 +186,17 @@ class NotificationDispatcher
         ?string $category = null,
         ?string $referenceId = null,
         ?string $referenceType = null,
-        string $locale = 'en',
+        ?string $locale = null,   // null → auto-resolve from owner's profile
         string $priority = 'normal',
     ): void {
-        $owner = \App\Domain\Auth\Models\User::where('store_id', $storeId)
+        $owner = User::where('store_id', $storeId)
             ->where('role', 'owner')
             ->where('is_active', true)
             ->first();
 
         if (! $owner) {
             // Fallback: first active user in the store
-            $owner = \App\Domain\Auth\Models\User::where('store_id', $storeId)
+            $owner = User::where('store_id', $storeId)
                 ->where('is_active', true)
                 ->first();
         }
@@ -232,7 +262,7 @@ class NotificationDispatcher
         array $data = [],
     ): NotificationCustom {
         // Resolve store_id from the user so store-scoped queries work
-        $storeId = \App\Domain\Auth\Models\User::where('id', $userId)->value('store_id');
+        $storeId = User::where('id', $userId)->value('store_id');
 
         return NotificationCustom::create([
             'user_id' => $userId,

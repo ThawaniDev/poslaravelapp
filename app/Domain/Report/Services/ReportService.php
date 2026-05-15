@@ -127,9 +127,22 @@ class ReportService
         $totals = [
             'total_transactions' => (int) $rows->sum('total_transactions'),
             'total_revenue' => (float) $rows->sum('total_revenue'),
+            'total_cost' => 0.0,
             'total_discount' => (float) $rows->sum('total_discount'),
+            'total_tax' => 0.0,
+            'total_refunds' => 0.0,
             'net_revenue' => (float) $rows->sum('total_revenue') - (float) $rows->sum('total_discount'),
+            'cash_revenue' => 0.0,
+            'card_revenue' => 0.0,
+            'other_revenue' => 0.0,
+            'avg_basket_size' => 0.0,
+            'unique_customers' => 0,
         ];
+
+        $totalTx = $totals['total_transactions'];
+        if ($totalTx > 0) {
+            $totals['avg_basket_size'] = round($totals['total_revenue'] / $totalTx, 2);
+        }
 
         return [
             'totals' => $totals,
@@ -139,6 +152,7 @@ class ReportService
                 'total_transactions' => (int) $r->total_transactions,
                 'total_revenue' => (float) $r->total_revenue,
                 'total_discount' => (float) $r->total_discount,
+                'net_revenue' => (float) $r->total_revenue - (float) $r->total_discount,
             ])->values()->toArray(),
         ];
     }
@@ -613,7 +627,11 @@ class ReportService
     public function slowMovers(string $storeId, array $filters): array
     {
         $query = ProductSalesSummary::where('product_sales_summary.store_id', $storeId)
-            ->join('products', 'product_sales_summary.product_id', '=', 'products.id');
+            ->join('products', 'product_sales_summary.product_id', '=', 'products.id')
+            ->leftJoin('stock_levels', function ($join) use ($storeId) {
+                $join->on('stock_levels.product_id', '=', 'product_sales_summary.product_id')
+                    ->where('stock_levels.store_id', '=', $storeId);
+            });
 
         if (! empty($filters['date_from'])) {
             $query->whereDate('product_sales_summary.date', '>=', $filters['date_from']);
@@ -622,6 +640,8 @@ class ReportService
             $query->whereDate('product_sales_summary.date', '<=', $filters['date_to']);
         }
 
+        $today = now()->toDateString();
+
         return $query->select([
             'product_sales_summary.product_id',
             'products.name as product_name',
@@ -629,6 +649,8 @@ class ReportService
             'products.sku',
             DB::raw('SUM(product_sales_summary.quantity_sold) as total_quantity'),
             DB::raw('SUM(product_sales_summary.revenue) as total_revenue'),
+            DB::raw('MAX(product_sales_summary.date) as last_sale_date'),
+            DB::raw('MAX(stock_levels.quantity) as current_stock'),
         ])
             ->groupBy('product_sales_summary.product_id', 'products.name', 'products.name_ar', 'products.sku')
             ->orderBy('total_quantity')
@@ -641,6 +663,10 @@ class ReportService
                 'sku' => $r->sku,
                 'total_quantity' => (float) $r->total_quantity,
                 'total_revenue' => (float) $r->total_revenue,
+                'days_since_last_sale' => $r->last_sale_date
+                    ? (int) now()->diffInDays(\Carbon\Carbon::parse($r->last_sale_date))
+                    : null,
+                'current_stock' => $r->current_stock !== null ? (int) $r->current_stock : null,
             ])->toArray();
     }
 
@@ -1268,6 +1294,9 @@ class ReportService
             'avg_spend' => round((float) ($avgSpend ?? 0), 2),
             'total_loyalty_points' => (int) $loyaltyIssued,
             'loyalty_points_redeemed' => (int) $loyaltyRedeemed,
+            'avg_loyalty_points' => $totalCustomers > 0
+                ? round((float) $loyaltyIssued / $totalCustomers, 0)
+                : 0,
         ];
     }
 
