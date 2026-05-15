@@ -66,12 +66,14 @@ class NotificationDispatcher
     ): void {
         $resolvedLocale = $locale ?? $this->localeForUser($userId);
 
+        // ── Render primary locale (user's language) ─────────────────────
         $rendered = $this->templates->render($eventKey, NotificationChannel::Push, $variables, $resolvedLocale);
+
+        $events = NotificationTemplateService::allEvents();
+        $meta = $events[$eventKey] ?? null;
 
         if (! $rendered) {
             // No template — use event catalog fallback text (locale-aware)
-            $events = NotificationTemplateService::allEvents();
-            $meta = $events[$eventKey] ?? null;
             $descKey = ($resolvedLocale === 'ar') ? 'description_ar' : 'description';
             $rendered = [
                 'title' => ($meta[$descKey] ?? $meta['description'] ?? $eventKey),
@@ -79,21 +81,42 @@ class NotificationDispatcher
             ];
         }
 
+        // ── Render secondary locale (the other language) ─────────────────
+        // Always store both EN and AR so the app can display the right one
+        // regardless of what language the user's device switches to later.
+        $secondaryLocale = ($resolvedLocale === 'ar') ? 'en' : 'ar';
+        $renderedSecondary = $this->templates->render($eventKey, NotificationChannel::Push, $variables, $secondaryLocale);
+
+        if (! $renderedSecondary) {
+            $descKeySecondary = ($secondaryLocale === 'ar') ? 'description_ar' : 'description';
+            $renderedSecondary = [
+                'title' => ($meta[$descKeySecondary] ?? $meta['description'] ?? $eventKey),
+                'body' => collect($variables)->map(fn ($v, $k) => "{$k}: {$v}")->join(', '),
+            ];
+        }
+
+        // Map both renders to named keys so createInAppNotification can store them
+        [$titleEn, $bodyEn, $titleAr, $bodyAr] = $resolvedLocale === 'ar'
+            ? [$renderedSecondary['title'], $renderedSecondary['body'], $rendered['title'], $rendered['body']]
+            : [$rendered['title'], $rendered['body'], $renderedSecondary['title'], $renderedSecondary['body']];
+
+        // Primary title/body used for the FCM push payload (user's own language)
         $title = $rendered['title'];
         $body = $rendered['body'];
         $resolvedCategory = $category ?? explode('.', $eventKey)[0] ?? 'system';
 
         // Auto-enable email for critical events
-        $events = NotificationTemplateService::allEvents();
-        $isCritical = $events[$eventKey]['is_critical'] ?? false;
+        $isCritical = $meta['is_critical'] ?? false;
         $shouldEmail = $alsoEmail || $isCritical;
 
-        // 1. Create in-app notification
+        // 1. Create in-app notification (bilingual)
         $this->createInAppNotification(
             userId: $userId,
             category: $resolvedCategory,
-            title: $title,
-            body: $body,
+            title: $titleEn,
+            body: $bodyEn,
+            titleAr: $titleAr,
+            bodyAr: $bodyAr,
             eventKey: $eventKey,
             referenceId: $referenceId,
             referenceType: $referenceType,
@@ -101,7 +124,7 @@ class NotificationDispatcher
             data: $variables,
         );
 
-        // 2. Send FCM push
+        // 2. Send FCM push (user's own language)
         $this->fcm->sendToUser($userId, $title, $body, [
             'event_key' => $eventKey,
             'category' => $resolvedCategory,
@@ -260,6 +283,8 @@ class NotificationDispatcher
         ?string $referenceType,
         string $priority = 'normal',
         array $data = [],
+        string $titleAr = '',
+        string $bodyAr = '',
     ): NotificationCustom {
         // Resolve store_id from the user so store-scoped queries work
         $storeId = User::where('id', $userId)->value('store_id');
@@ -277,7 +302,10 @@ class NotificationDispatcher
                 'event_key' => $eventKey,
                 'reference_id' => $referenceId,
                 'reference_type' => $referenceType,
-                'variables' => $data,
+                'variables' => $data ?: null,
+                // Bilingual content — Arabic version stored for locale-aware serving
+                'title_ar' => $titleAr ?: null,
+                'body_ar' => $bodyAr ?: null,
             ]),
         ]);
     }

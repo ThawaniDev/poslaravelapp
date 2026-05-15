@@ -10,13 +10,24 @@ class NotificationResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        // Serve title/message in the requesting user's preferred locale.
+        // Arabic content is stored in metadata.title_ar / metadata.body_ar.
+        // Old notifications without these keys fall back to the stored title/message (English).
+        $userLocale = $request->user()?->locale ?? 'ar';
+        $isArabic = str_starts_with(strtolower($userLocale), 'ar');
+
+        $meta = is_array($this->metadata) ? $this->metadata : [];
+
+        $title   = ($isArabic && !empty($meta['title_ar'])) ? $meta['title_ar'] : $this->title;
+        $message = ($isArabic && !empty($meta['body_ar']))  ? $meta['body_ar']  : $this->message;
+
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
             'store_id' => $this->store_id,
             'category' => $this->category,
-            'title' => $this->title,
-            'message' => $this->message,
+            'title' => $title,
+            'message' => $message,
             'action_url' => $this->action_url,
             'reference_type' => $this->reference_type,
             'reference_id' => $this->reference_id,
