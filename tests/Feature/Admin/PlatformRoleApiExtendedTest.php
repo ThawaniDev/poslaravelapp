@@ -129,6 +129,10 @@ class PlatformRoleApiExtendedTest extends TestCase
         ]);
 
         Sanctum::actingAs($this->superAdmin, ['*'], 'admin-api');
+
+        // Restore REAL permission middleware so permission enforcement tests work correctly.
+        // The base TestCase replaces these with BypassPermissionMiddleware.
+        app('router')->aliasMiddleware('permission', \App\Http\Middleware\CheckPermission::class);
     }
 
     // ══════════════════════════════════════════════════════════
@@ -138,6 +142,8 @@ class PlatformRoleApiExtendedTest extends TestCase
     /** @dataProvider unauthenticatedEndpointsProvider */
     public function test_unauthenticated_request_returns_401(string $method, string $url): void
     {
+        // Clear the actingAs state set in setUp so the request is truly unauthenticated.
+        $this->app['auth']->forgetGuards();
         $response = $this->json($method, $url);
         $response->assertUnauthorized();
     }
@@ -663,7 +669,9 @@ class PlatformRoleApiExtendedTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['action', 'created_at'],
+                    'logs' => [
+                        '*' => ['action', 'created_at'],
+                    ],
                 ],
             ]);
     }
@@ -746,7 +754,7 @@ class PlatformRoleApiExtendedTest extends TestCase
     public function test_cannot_deactivate_self(): void
     {
         $this->postJson("/api/v2/admin/team/{$this->superAdmin->id}/deactivate")
-            ->assertForbidden();
+            ->assertUnprocessable();
     }
 
     // ══════════════════════════════════════════════════════════

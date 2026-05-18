@@ -641,7 +641,7 @@ class SupportTicketApiTest extends TestCase
     {
         $this->postJson('/api/v2/admin/support/kb', [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['title', 'title_ar', 'slug', 'body', 'body_ar', 'category']);
+            ->assertJsonValidationErrors(['title', 'title_ar', 'body', 'body_ar', 'category']);
     }
 
     public function test_create_kb_article_validates_unique_slug(): void

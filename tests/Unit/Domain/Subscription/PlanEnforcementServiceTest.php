@@ -343,7 +343,7 @@ class PlanEnforcementServiceTest extends TestCase
 
         $snapshot = $this->service->trackUsage($this->org->id, 'products', 45);
 
-        $this->assertSame('products', $snapshot->resource_type);
+        $this->assertSame('products', $snapshot->resource_type instanceof \BackedEnum ? $snapshot->resource_type->value : $snapshot->resource_type);
         $this->assertSame(45, (int) $snapshot->current_count);
     }
 

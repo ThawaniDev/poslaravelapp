@@ -146,10 +146,10 @@ class SupportTicketController extends BaseApiController
         }
 
         $request->validate([
-            'assigned_to' => 'nullable|uuid',
+            'assigned_to' => 'present|nullable|uuid',
         ]);
 
-        if ($request->has('assigned_to') && $request->assigned_to === null) {
+        if ($request->assigned_to === null) {
             $ticket->update(['assigned_to' => null]);
             return $this->success($ticket->fresh(), __('support.ticket_unassigned'));
         }

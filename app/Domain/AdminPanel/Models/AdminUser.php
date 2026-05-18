@@ -109,6 +109,12 @@ class AdminUser extends Authenticatable implements FilamentUser
     public $incrementing = false;
     protected $keyType = 'string';
 
+    /** PHP-level defaults so new instances have sensible values before a DB read. */
+    protected $attributes = [
+        'two_factor_enabled' => false,
+        'is_active' => true,
+    ];
+
     protected $fillable = [
         'name',
         'email',

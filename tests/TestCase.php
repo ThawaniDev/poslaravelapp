@@ -31,6 +31,39 @@ abstract class TestCase extends BaseTestCase
             }
         }
 
+        // Clear Sanctum guard user-cache when a DIFFERENT bearer token is bound.
+        // RequestGuard::setRequest() updates $this->request but NOT $this->user,
+        // so successive requests with different Bearer tokens would return the first
+        // user for all subsequent requests.
+        // We track the last-seen token: only clear when the token actually changes,
+        // so that actingAs() + leftover withToken() header does not override the user
+        // explicitly set by actingAs().
+        $lastToken = null;
+        $this->app->rebinding('request', function ($app, $newRequest) use (&$lastToken) {
+            $newToken = $newRequest->bearerToken();
+            // Token unchanged (or no token) — nothing to do.
+            if (!$newToken || $newToken === $lastToken) {
+                return;
+            }
+            // Token changed — record it. Only clear the cached guard user if auth has
+            // already been resolved (i.e., a guard instance exists to clear).
+            $lastToken = $newToken;
+            if (!$app->resolved('auth')) {
+                return;
+            }
+            $auth = $app->make('auth');
+            foreach (['sanctum', 'admin-api'] as $guardName) {
+                try {
+                    $guard = $auth->guard($guardName);
+                    $prop = (new \ReflectionObject($guard))->getProperty('user');
+                    $prop->setAccessible(true);
+                    $prop->setValue($guard, null);
+                } catch (\Throwable) {
+                    // guard may not exist or property inaccessible — skip
+                }
+            }
+        });
+
         // Register PostgreSQL functions for SQLite test database
         if (DB::connection()->getDriverName() === 'sqlite') {
             /** @var \PDO $pdo */

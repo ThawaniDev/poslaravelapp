@@ -107,6 +107,11 @@ class UserManagementController extends BaseApiController
             $query->where('is_active', filter_var($request->get('is_active'), FILTER_VALIDATE_BOOLEAN));
         }
 
+        // Filter by must_change_password
+        if ($request->has('must_change_password')) {
+            $query->where('must_change_password', filter_var($request->get('must_change_password'), FILTER_VALIDATE_BOOLEAN));
+        }
+
         $users = $query->orderBy('created_at', 'desc')
                        ->paginate((int) $request->get('per_page', 15));
 
@@ -250,13 +255,9 @@ class UserManagementController extends BaseApiController
 
         return $this->success([
             'user_id' => $userId,
-            'logs' => ActivityLogResource::collection($logs),
+            'logs'    => ActivityLogResource::collection($logs)->values(),
         ]);
     }
-
-    // ═══════════════════════════════════════════════════════════════
-    // Admin Users (Platform Team)
-    // ═══════════════════════════════════════════════════════════════
 
     /**
      * GET /admin/users/admins
@@ -457,7 +458,7 @@ class UserManagementController extends BaseApiController
 
         return $this->success([
             'admin_user_id' => $userId,
-            'logs' => ActivityLogResource::collection($logs),
+            'logs'          => ActivityLogResource::collection($logs)->values(),
         ]);
     }
 

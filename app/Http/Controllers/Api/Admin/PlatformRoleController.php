@@ -65,7 +65,7 @@ class PlatformRoleController extends BaseApiController
      */
     public function createRole(CreateAdminRoleRequest $request): JsonResponse
     {
-        if (!$request->user()->hasPermission('admin_team.roles')) {
+        if (!$request->user()->hasPermission('admin_team.roles_manage')) {
             return $this->error('Forbidden', 403);
         }
 
@@ -84,7 +84,7 @@ class PlatformRoleController extends BaseApiController
      */
     public function updateRole(UpdateAdminRoleRequest $request, string $roleId): JsonResponse
     {
-        if (!$request->user()->hasPermission('admin_team.roles')) {
+        if (!$request->user()->hasPermission('admin_team.roles_manage')) {
             return $this->error('Forbidden', 403);
         }
 
@@ -114,7 +114,7 @@ class PlatformRoleController extends BaseApiController
      */
     public function deleteRole(Request $request, string $roleId): JsonResponse
     {
-        if (!$request->user()->hasPermission('admin_team.roles')) {
+        if (!$request->user()->hasPermission('admin_team.roles_manage')) {
             return $this->error('Forbidden', 403);
         }
 

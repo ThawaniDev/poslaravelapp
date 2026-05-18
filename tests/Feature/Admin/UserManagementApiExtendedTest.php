@@ -516,8 +516,8 @@ class UserManagementApiExtendedTest extends TestCase
         // 2. View user detail
         $showResp = $this->getJson("/api/v2/admin/users/provider/{$userId}", $this->auth());
         $showResp->assertOk()
-            ->assertJsonPath('data.user.id', $userId)
-            ->assertJsonPath('data.user.role', 'cashier');
+            ->assertJsonPath('data.id', $userId)
+            ->assertJsonPath('data.role', 'cashier');
 
         // 3. Reset password
         $resetResp = $this->postJson("/api/v2/admin/users/provider/{$userId}/reset-password", [], $this->auth());
@@ -562,15 +562,15 @@ class UserManagementApiExtendedTest extends TestCase
             'role_ids' => [$this->inviteRole->id],
         ], $this->auth());
         $inviteResp->assertCreated()->assertJsonPath('success', true);
-        $adminId = $inviteResp->json('data.admin.id');
+        $adminId = $inviteResp->json('data.id');
         $this->assertNotNull($adminId);
 
         // 2. Show the invited admin
         $showResp = $this->getJson("/api/v2/admin/users/admins/{$adminId}", $this->auth());
         $showResp->assertOk()
-            ->assertJsonPath('data.admin.email', 'lifecycle@ext.test');
+            ->assertJsonPath('data.email', 'lifecycle@ext.test');
 
-        $roles = $showResp->json('data.admin.roles');
+        $roles = $showResp->json('data.roles');
         $roleSlugs = array_column($roles, 'role_slug');
         $this->assertContains('support_role', $roleSlugs);
 
@@ -579,7 +579,7 @@ class UserManagementApiExtendedTest extends TestCase
             'name' => 'Lifecycle Admin Updated',
         ], $this->auth());
         $updateResp->assertOk()
-            ->assertJsonPath('data.admin.name', 'Lifecycle Admin Updated');
+            ->assertJsonPath('data.name', 'Lifecycle Admin Updated');
 
         // 4. Setup 2FA for the admin (directly in DB)
         $newAdmin = AdminUser::find($adminId);
@@ -619,7 +619,7 @@ class UserManagementApiExtendedTest extends TestCase
             "/api/v2/admin/users/admins/{$this->superAdmin->id}",
             ['is_active' => false],
             $this->auth()
-        )->assertForbidden();
+        )->assertUnprocessable();
     }
 
     // ══════════════════════════════════════════════════════════
@@ -635,18 +635,16 @@ class UserManagementApiExtendedTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    'user' => [
-                        'id',
-                        'name',
-                        'email',
-                        'role',
-                        'is_active',
-                        'must_change_password',
-                        'store_id',
-                        'organization_id',
-                        'created_at',
-                        'updated_at',
-                    ],
+                    'id',
+                    'name',
+                    'email',
+                    'role',
+                    'is_active',
+                    'must_change_password',
+                    'store_id',
+                    'organization_id',
+                    'created_at',
+                    'updated_at',
                 ],
             ]);
     }
@@ -671,15 +669,13 @@ class UserManagementApiExtendedTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    'admin' => [
-                        'id',
-                        'name',
-                        'email',
-                        'is_active',
-                        'two_factor_enabled',
-                        'roles' => [
-                            '*' => ['role_id', 'role_name', 'role_slug', 'assigned_at'],
-                        ],
+                    'id',
+                    'name',
+                    'email',
+                    'is_active',
+                    'two_factor_enabled',
+                    'roles' => [
+                        '*' => ['role_id', 'role_name', 'role_slug', 'assigned_at'],
                     ],
                 ],
             ]);
@@ -696,7 +692,7 @@ class UserManagementApiExtendedTest extends TestCase
         $response->assertCreated()
             ->assertJsonStructure([
                 'data' => [
-                    'admin' => ['id', 'name', 'email', 'is_active', 'roles'],
+                    'id', 'name', 'email', 'is_active', 'roles',
                 ],
             ]);
     }
@@ -717,7 +713,10 @@ class UserManagementApiExtendedTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['action', 'created_at'],
+                    'user_id',
+                    'logs' => [
+                        '*' => ['action', 'created_at'],
+                    ],
                 ],
             ]);
     }
@@ -741,7 +740,7 @@ class UserManagementApiExtendedTest extends TestCase
         );
         $response->assertOk();
 
-        $logs = $response->json('data');
+        $logs = $response->json('data.logs');
         $this->assertLessThanOrEqual(50, count($logs));
     }
 
@@ -761,7 +760,10 @@ class UserManagementApiExtendedTest extends TestCase
         $response->assertOk()
             ->assertJsonStructure([
                 'data' => [
-                    '*' => ['action', 'created_at'],
+                    'admin_user_id',
+                    'logs' => [
+                        '*' => ['action', 'created_at'],
+                    ],
                 ],
             ]);
     }

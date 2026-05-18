@@ -27,6 +27,10 @@ class PlatformRoleService
 
     public function getRole(string $roleId): ?AdminRole
     {
+        if (!preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $roleId)) {
+            return null;
+        }
+
         return AdminRole::query()
             ->with(['adminRolePermissions.adminPermission'])
             ->withCount(['adminUserRoles', 'adminRolePermissions'])

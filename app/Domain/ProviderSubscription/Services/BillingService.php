@@ -316,6 +316,15 @@ class BillingService
         // by the time this invoice is generated (counter reset runs at 00:30, invoices at 06:00).
         $isSoftPosFree = $subscription->is_softpos_free && $plan->softpos_free_eligible;
 
+        // Re-validate that the threshold is actually reached (guards against stale flag).
+        if ($isSoftPosFree) {
+            if ($thresholdCount !== null && (int) $subscription->softpos_transaction_count < $thresholdCount) {
+                $isSoftPosFree = false;
+            } elseif ($thresholdAmount !== null && (float) $subscription->softpos_sales_total < $thresholdAmount) {
+                $isSoftPosFree = false;
+            }
+        }
+
         $lineItems[] = [
             'description' => $description ?? "{$plan->name} — {$billingCycle->value} subscription",
             'quantity' => 1,

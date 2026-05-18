@@ -65,4 +65,16 @@ return Application::configure(basePath: dirname(__DIR__))
             }
             return null;
         });
+
+        // Return a consistent JSON structure for validation errors on API requests.
+        $exceptions->render(function (\Illuminate\Validation\ValidationException $e, Request $request) {
+            if (!($request->is('api/*') || $request->expectsJson())) {
+                return null;
+            }
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'errors'  => $e->errors(),
+            ], 422);
+        });
     })->create();

@@ -90,8 +90,8 @@ class SoftPosService
             // Increment the subscription's softPOS counter and check threshold
             $this->incrementAndCheckThreshold($organizationId, $amount);
 
-            // Stamp the register's last transaction time
-            if ($terminalId) {
+            // Stamp the register's last transaction time (only for UUID terminal IDs)
+            if ($terminalId && preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $terminalId)) {
                 Register::where('id', $terminalId)
                     ->update(['last_transaction_at' => now()]);
             }

@@ -196,6 +196,12 @@ return new class extends Migration
             'order_items' => [
                 'product_id' => "gen_random_uuid()",
             ],
+            'admin_users' => [
+                'two_factor_enabled' => "false",
+            ],
+            'provider_limit_overrides' => [
+                'set_by' => "gen_random_uuid()",
+            ],
         ];
 
         foreach ($defaults as $table => $cols) {

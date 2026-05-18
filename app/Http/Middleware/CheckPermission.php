@@ -40,8 +40,11 @@ class CheckPermission
             }
 
             foreach ($permissions as $permission) {
-                if ($user->hasPermission($permission)) {
-                    return $next($request);
+                // Support pipe-separated OR conditions: 'kb.manage|tickets.respond'
+                foreach (explode('|', $permission) as $orPermission) {
+                    if ($user->hasPermission(trim($orPermission))) {
+                        return $next($request);
+                    }
                 }
             }
 
@@ -73,8 +76,11 @@ class CheckPermission
 
         // Check if user has ANY of the required permissions
         foreach ($permissions as $permission) {
-            if (in_array($permission, $effectivePermissions, true)) {
-                return $next($request);
+            // Support pipe-separated OR conditions: 'kb.manage|tickets.respond'
+            foreach (explode('|', $permission) as $orPermission) {
+                if (in_array(trim($orPermission), $effectivePermissions, true)) {
+                    return $next($request);
+                }
             }
         }
 

@@ -269,9 +269,9 @@ class SubscriptionController extends BaseApiController
             'amount' => 'required|numeric|min:0.001',
             'store_id' => 'nullable|uuid|exists:stores,id',
             'order_id' => 'nullable|uuid',
-            'transaction_ref' => 'required|string|min:1|max:255',
+            'transaction_ref' => 'nullable|string|min:1|max:255',
             'payment_method' => 'nullable|string|max:50',
-            'terminal_id' => 'nullable|uuid|exists:registers,id',
+            'terminal_id' => 'nullable|string|max:255',
             'metadata' => 'nullable|array',
         ]);
 
@@ -293,11 +293,15 @@ class SubscriptionController extends BaseApiController
 
         // Verify terminal belongs to user's organization (via its store)
         if ($request->filled('terminal_id')) {
-            $terminal = \App\Domain\Core\Models\Register::where('id', $request->input('terminal_id'))
-                ->whereHas('store', fn ($q) => $q->where('organization_id', $organizationId))
-                ->first();
-            if (! $terminal) {
-                return $this->error(__('subscription.terminal_not_in_organization'), 403);
+            $terminalId = $request->input('terminal_id');
+            // Only look up by UUID; non-UUID terminal IDs (e.g. hardware serial numbers) are stored as-is
+            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $terminalId)) {
+                $terminal = \App\Domain\Core\Models\Register::where('id', $terminalId)
+                    ->whereHas('store', fn ($q) => $q->where('organization_id', $organizationId))
+                    ->first();
+                if (! $terminal) {
+                    return $this->error(__('subscription.terminal_not_in_organization'), 403);
+                }
             }
         }
 
