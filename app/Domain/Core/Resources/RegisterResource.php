@@ -26,6 +26,15 @@ class RegisterResource extends JsonResource
             'edfapay_token'            => $this->edfapay_token,
             'edfapay_token_updated_at' => $this->edfapay_token_updated_at?->toISOString(),
 
+            // EdfaPay / Terminal identity
+            'trsm'         => $this->trsm,
+            'provider_tid' => $this->provider_tid,
+            'provider_mid' => $this->provider_mid,
+
+            // Location
+            'location_lat' => $this->location_lat ? (float) $this->location_lat : null,
+            'location_lng' => $this->location_lng ? (float) $this->location_lng : null,
+
             // Device hardware
             'device_model'   => $this->device_model,
             'os_version'     => $this->os_version,

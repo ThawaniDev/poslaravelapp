@@ -34,6 +34,13 @@ class Register extends Model
         'nearpay_auth_key',
         'edfapay_token',
         'edfapay_token_updated_at',
+        // EdfaPay terminal identity
+        'trsm',
+        'provider_tid',
+        'provider_mid',
+        // Location
+        'location_lat',
+        'location_lng',
         // Acquirer
         'acquirer_source',
         'acquirer_name',
@@ -85,9 +92,11 @@ class Register extends Model
         'softpos_card_merchant_fee'  => 'decimal:3',
         'softpos_card_gateway_fee'   => 'decimal:3',
         'softpos_activated_at'      => 'datetime',
-        'last_transaction_at'       => 'datetime',
-        'edfapay_token'             => 'encrypted',
-        'edfapay_token_updated_at'  => 'datetime',
+        'last_transaction_at'        => 'datetime',
+        'edfapay_token'              => 'encrypted',
+        'edfapay_token_updated_at'   => 'datetime',
+        'location_lat'               => 'decimal:7',
+        'location_lng'               => 'decimal:7',
     ];
 
     protected $hidden = [

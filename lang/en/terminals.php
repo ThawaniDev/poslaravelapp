@@ -94,4 +94,32 @@ return [
     'cloned'                         => 'Terminal cloned successfully.',
     'bulk_toggle_softpos'            => 'Toggle SoftPOS for Selected',
     'bulk_toggle_softpos_warning'    => 'This will flip the SoftPOS enablement flag for every selected terminal. Already-active SoftPOS terminals will be disabled.',
+
+    // Device-ID auto-assign (API responses)
+    'device_matched'            => 'Register matched to your device.',
+    'device_auto_claimed'       => 'Register assigned to your device.',
+    'device_select_register'    => 'Multiple registers available. Please select one.',
+    'device_not_assigned_title' => 'This device is not assigned to any register.',
+    'device_not_assigned'       => 'All active registers are already assigned to other devices. Ask your owner to either unassign an existing device or create a new register for this device.',
+    'device_already_claimed'    => 'This register is already claimed by a different device.',
+
+    // Terminal Identity (admin panel)
+    'terminal_identity'         => 'Terminal Identity',
+    'terminal_identity_desc'    => 'EdfaPay and payment provider identifiers for this terminal.',
+    'trsm'                      => 'TRSM',
+    'trsm_helper'               => 'Terminal Risk State Machine identifier assigned by EdfaPay. Auto-populated after first successful SoftPOS initialisation.',
+    'provider_tid'              => 'Provider TID',
+    'provider_tid_helper'       => 'Terminal ID issued by the payment provider (EdfaPay, NearPay, etc.).',
+    'provider_mid'              => 'Provider MID',
+    'provider_mid_helper'       => 'Merchant ID issued by the payment provider.',
+    'location_lat'              => 'Location — Latitude',
+    'location_lng'              => 'Location — Longitude',
+    'assign_device_id'          => 'Assign Device ID',
+    'assign_device_id_desc'     => 'Update the physical device linked to this register. This will replace any existing device assignment.',
+    'new_device_id'             => 'New Device ID',
+    'new_device_id_helper'      => 'Paste the EdfaPay device UUID shown in the POS app (Hardware Setup → EdfaPay Device ID).',
+    'device_id_assigned'        => 'Device ID updated successfully.',
+    'device_id_cleared'         => 'Device ID cleared. The next device that opens a shift on this register will be auto-assigned.',
+    'clear_device_id'           => 'Clear Device ID',
+    'clear_device_id_confirm'   => 'Remove the current device assignment? The register will accept the next device that claims it.',
 ];

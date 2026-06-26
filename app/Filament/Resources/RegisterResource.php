@@ -76,7 +76,10 @@ class RegisterResource extends Resource
                                         ->maxLength(255),
                                     Forms\Components\TextInput::make('device_id')
                                         ->label(__('Device ID'))
-                                        ->maxLength(255),
+                                        ->maxLength(255)
+                                        ->disabled()
+                                        ->helperText(__('Use the "Assign Device ID" action to change this. The POS app auto-assigns it on first shift open.'))
+                                        ->dehydrated(false),
                                     Forms\Components\Select::make('platform')
                                         ->options(RegisterPlatform::class)
                                         ->native(false)
@@ -91,7 +94,7 @@ class RegisterResource extends Resource
                                 ])
                                 ->columns(2),
 
-                            Forms\Components\Section::make(__('terminals.device_model'))
+                            Forms\Components\Section::make(__('Device Hardware'))
                                 ->description(__('Hardware details'))
                                 ->schema([
                                     Forms\Components\TextInput::make('device_model')
@@ -108,6 +111,33 @@ class RegisterResource extends Resource
                                         ->default(false),
                                 ])
                                 ->columns(2),
+
+                            Forms\Components\Section::make(__('terminals.terminal_identity'))
+                                ->description(__('terminals.terminal_identity_desc'))
+                                ->icon('heroicon-o-identification')
+                                ->schema([
+                                    Forms\Components\TextInput::make('trsm')
+                                        ->label(__('terminals.trsm'))
+                                        ->helperText(__('terminals.trsm_helper'))
+                                        ->maxLength(100),
+                                    Forms\Components\TextInput::make('provider_tid')
+                                        ->label(__('terminals.provider_tid'))
+                                        ->helperText(__('terminals.provider_tid_helper'))
+                                        ->maxLength(50),
+                                    Forms\Components\TextInput::make('provider_mid')
+                                        ->label(__('terminals.provider_mid'))
+                                        ->helperText(__('terminals.provider_mid_helper'))
+                                        ->maxLength(50),
+                                    Forms\Components\TextInput::make('location_lat')
+                                        ->label(__('terminals.location_lat'))
+                                        ->numeric()
+                                        ->step(0.0000001),
+                                    Forms\Components\TextInput::make('location_lng')
+                                        ->label(__('terminals.location_lng'))
+                                        ->numeric()
+                                        ->step(0.0000001),
+                                ])
+                                ->columns(3),
                         ]),
 
                     // ── Tab 2: SoftPOS Settings ───────────────────
@@ -486,6 +516,41 @@ class RegisterResource extends Resource
                             $copy->save();
                             Notification::make()->title(__('terminals.cloned'))->success()->send();
                         }),
+                    Tables\Actions\Action::make('assign_device_id')
+                        ->label(__('terminals.assign_device_id'))
+                        ->icon('heroicon-o-device-phone-mobile')
+                        ->color('warning')
+                        ->visible(fn () => auth('admin')->user()?->hasPermission('terminals.edit'))
+                        ->form([
+                            Forms\Components\TextInput::make('device_id')
+                                ->label(__('terminals.new_device_id'))
+                                ->helperText(__('terminals.new_device_id_helper'))
+                                ->required()
+                                ->maxLength(255)
+                                ->placeholder('00000000-0000-0000-0000-000000000000'),
+                        ])
+                        ->action(function (Register $record, array $data) {
+                            $record->update(['device_id' => $data['device_id']]);
+                            Notification::make()
+                                ->title(__('terminals.device_id_assigned'))
+                                ->success()->send();
+                        }),
+                    Tables\Actions\Action::make('clear_device_id')
+                        ->label(__('terminals.clear_device_id'))
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->modalDescription(__('terminals.clear_device_id_confirm'))
+                        ->visible(fn (Register $record) =>
+                            auth('admin')->user()?->hasPermission('terminals.edit')
+                            && ! blank($record->device_id)
+                        )
+                        ->action(function (Register $record) {
+                            $record->update(['device_id' => null]);
+                            Notification::make()
+                                ->title(__('terminals.device_id_cleared'))
+                                ->success()->send();
+                        }),
                     Tables\Actions\Action::make('toggle_status')
                         ->label(fn (Register $record) => $record->is_active ? __('Deactivate') : __('Activate'))
                         ->icon(fn (Register $record) => $record->is_active ? 'heroicon-o-no-symbol' : 'heroicon-o-check-circle')
@@ -592,6 +657,7 @@ class RegisterResource extends Resource
                                     Infolists\Components\TextEntry::make('name')->weight('bold'),
                                     Infolists\Components\TextEntry::make('store.name')->label(__('Store')),
                                     Infolists\Components\TextEntry::make('device_id')->label(__('Device ID'))->copyable()->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('trsm')->label(__('terminals.trsm'))->copyable()->placeholder(__('N/A')),
                                     Infolists\Components\TextEntry::make('platform')
                                         ->badge()
                                         ->color(fn ($state) => match ($state?->value ?? $state) {
@@ -605,6 +671,31 @@ class RegisterResource extends Resource
                                     Infolists\Components\TextEntry::make('last_sync_at')->dateTime()->placeholder(__('Never')),
                                 ])
                                 ->columns(4),
+
+                            Infolists\Components\Section::make(__('terminals.terminal_identity'))
+                                ->description(__('terminals.terminal_identity_desc'))
+                                ->icon('heroicon-o-identification')
+                                ->schema([
+                                    Infolists\Components\TextEntry::make('trsm')
+                                        ->label(__('terminals.trsm'))
+                                        ->helperText(__('terminals.trsm_helper'))
+                                        ->copyable()->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('provider_tid')
+                                        ->label(__('terminals.provider_tid'))
+                                        ->helperText(__('terminals.provider_tid_helper'))
+                                        ->copyable()->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('provider_mid')
+                                        ->label(__('terminals.provider_mid'))
+                                        ->helperText(__('terminals.provider_mid_helper'))
+                                        ->copyable()->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('location_lat')
+                                        ->label(__('terminals.location_lat'))
+                                        ->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('location_lng')
+                                        ->label(__('terminals.location_lng'))
+                                        ->placeholder(__('N/A')),
+                                ])
+                                ->columns(3),
 
                             Infolists\Components\Section::make(__('Device Hardware'))
                                 ->schema([

@@ -71,7 +71,9 @@ Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
     Route::post('/inventory/adjustments', [PosTerminalController::class, 'applyInventoryAdjustments'])->middleware('permission:pos.sell');
 
     // Registers (read-only for cashiers to select during shift opening)
+    // Device-ID is passed via X-Device-Id header; backend auto-assigns when possible.
     Route::get('/registers', [RegisterController::class, 'listActive'])->middleware('permission:pos.sell');
+    Route::post('/registers/{register}/claim', [RegisterController::class, 'claimDevice'])->middleware('permission:pos.sell');
 
     // Terminals (Registers) — full CRUD for admins
     Route::middleware('permission:pos.manage_terminals')->group(function () {
