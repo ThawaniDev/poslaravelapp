@@ -58,7 +58,13 @@ Route::prefix('subscription')->group(function () {
         Route::get('invoices/{invoiceId}/pdf', [InvoiceController::class, 'downloadPdf'])->middleware('permission:subscription.view');
 
         // Sync — offline entitlement cache
-        Route::get('sync/entitlements', [SubscriptionController::class, 'syncEntitlements'])->middleware('permission:subscription.view');
+        // NOTE: No `subscription.view` permission gate here. This read-only
+        // snapshot is scoped to the caller's own organization and is required
+        // by EVERY authenticated POS user (cashiers included) to know which
+        // features/limits are active and whether the subscription is valid.
+        // Gating it behind `subscription.view` (a management permission) would
+        // wrongly 403 cashiers and break the POS feature-gate / paywall.
+        Route::get('sync/entitlements', [SubscriptionController::class, 'syncEntitlements']);
 
         // Add-ons for current store
         Route::get('store-add-ons', [SubscriptionController::class, 'storeAddOns'])->middleware('permission:subscription.view');

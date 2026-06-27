@@ -354,15 +354,54 @@ class PlanEnforcementService
         $subscription = $this->getActiveSubscription($organizationId);
 
         if (! $subscription) {
+            // No active/trial/grace subscription. Surface the most recent lapsed
+            // subscription (expired/cancelled) so the POS can render an accurate
+            // paywall with plan context — instead of treating a lapsed store the
+            // same as one that never subscribed. Features/limits stay empty so the
+            // POS remains gated until the customer renews.
+            $lapsed = StoreSubscription::with('subscriptionPlan')
+                ->where('organization_id', $organizationId)
+                ->whereIn('status', [
+                    SubscriptionStatus::Expired->value,
+                    SubscriptionStatus::Cancelled->value,
+                ])
+                ->orderByDesc('updated_at')
+                ->first();
+
+            $lapsedPlan = $lapsed?->subscriptionPlan;
+            $lapsedExpiresAt = $lapsed?->current_period_end?->toIso8601String();
+
             return [
                 'has_subscription' => false,
-                'status' => null,
-                'plan_code' => null,
-                'plan_name' => null,
-                'plan_name_ar' => null,
+                'status' => $lapsed?->status->value,
+                'plan_code' => $lapsedPlan?->slug,
+                'plan_name' => $lapsedPlan?->name,
+                'plan_name_ar' => $lapsedPlan?->name_ar,
+                'plan_id' => $lapsedPlan?->id,
+                'billing_cycle' => $lapsed?->billing_cycle?->value,
+                'expires_at' => $lapsedExpiresAt,
                 'features' => [],
                 'limits' => [],
                 'softpos' => null,
+                'is_softpos_free' => false,
+                'subscription' => $lapsed ? [
+                    'id' => $lapsed->id,
+                    'status' => $lapsed->status->value,
+                    'billing_cycle' => $lapsed->billing_cycle?->value,
+                    'expires_at' => $lapsedExpiresAt,
+                    'current_period_start' => $lapsed->current_period_start?->toIso8601String(),
+                    'current_period_end' => $lapsedExpiresAt,
+                    'trial_ends_at' => $lapsed->trial_ends_at?->toIso8601String(),
+                    'grace_period_ends_at' => null,
+                    'cancelled_at' => $lapsed->cancelled_at?->toIso8601String(),
+                    'is_softpos_free' => false,
+                ] : null,
+                'plan' => $lapsedPlan ? [
+                    'id' => $lapsedPlan->id,
+                    'slug' => $lapsedPlan->slug,
+                    'name' => $lapsedPlan->name,
+                    'name_ar' => $lapsedPlan->name_ar,
+                ] : null,
             ];
         }
 

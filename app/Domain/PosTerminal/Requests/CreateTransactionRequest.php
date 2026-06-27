@@ -22,6 +22,10 @@ class CreateTransactionRequest extends FormRequest
             'customer_id' => ['nullable', 'string'],
             'transaction_number' => ['nullable', 'string'],
             'idempotency_key' => ['nullable', 'string', 'max:64'],
+            // Offline client identity. Mapped to external_id "offline:{uuid}" so a
+            // sale that commits online but whose response is lost is not duplicated
+            // when the offline queue later replays it via the batch endpoint.
+            'client_uuid' => ['nullable', 'string', 'max:64'],
             'type' => ['required', 'string', 'in:sale,return,void,exchange'],
             'status' => ['nullable', 'string', 'in:completed,voided,pending'],
             'subtotal' => ['required', 'numeric', 'min:0'],

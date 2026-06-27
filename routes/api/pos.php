@@ -38,7 +38,11 @@ Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
 
     // Transactions
     Route::get('/transactions', [PosTerminalController::class, 'transactions'])->middleware('permission:pos.sell');
-    Route::post('/transactions', [PosTerminalController::class, 'createTransaction'])->middleware(['permission:pos.sell', 'plan.limit:transactions_per_month']);
+    // Creating a NEW online sale requires an active subscription (plan.active).
+    // This mirrors the client-side POS paywall: an expired/cancelled plan cannot
+    // ring up new sales server-side. Offline batch reconciliation (below) is
+    // intentionally NOT gated so already-captured sales are never lost.
+    Route::post('/transactions', [PosTerminalController::class, 'createTransaction'])->middleware(['permission:pos.sell', 'plan.active', 'plan.limit:transactions_per_month']);
     Route::post('/transactions/return', [PosTerminalController::class, 'returnTransaction'])->middleware('permission:pos.return');
     Route::get('/transactions/export', [PosTerminalController::class, 'exportTransactions'])->middleware('permission:transactions.export');
     Route::get('/transactions/by-number/{number}', [PosTerminalController::class, 'showTransactionByNumber'])->middleware('permission:pos.sell');

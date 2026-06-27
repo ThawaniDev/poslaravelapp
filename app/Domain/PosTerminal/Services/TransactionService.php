@@ -79,11 +79,28 @@ class TransactionService
     public function create(array $data, User $actor): Transaction
     {
         return DB::transaction(function () use ($data, $actor) {
-            // Idempotency: if a client-side key is provided, return the existing
-            // transaction rather than creating a duplicate (e.g. after offline retry).
-            if (!empty($data['idempotency_key'])) {
+            // Idempotency: a client-side key returns the existing transaction
+            // rather than creating a duplicate (e.g. after an offline retry).
+            // `client_uuid` maps to external_id "offline:{uuid}" — the SAME key
+            // the batch-replay endpoint uses — so a sale that committed online
+            // but whose response was lost (timeout) is never duplicated when the
+            // offline queue later replays it.
+            $externalKey = ! empty($data['client_uuid'])
+                ? 'offline:' . $data['client_uuid']
+                : ($data['external_id'] ?? null);
+
+            if (! empty($data['idempotency_key'])) {
                 $existing = Transaction::where('store_id', $actor->store_id)
                     ->where('idempotency_key', $data['idempotency_key'])
+                    ->first();
+                if ($existing) {
+                    return $existing->load(['transactionItems', 'payments']);
+                }
+            }
+
+            if ($externalKey) {
+                $existing = Transaction::where('store_id', $actor->store_id)
+                    ->where('external_id', $externalKey)
                     ->first();
                 if ($existing) {
                     return $existing->load(['transactionItems', 'payments']);
@@ -225,7 +242,7 @@ class TransactionService
                 'is_tax_exempt' => $data['is_tax_exempt'] ?? false,
                 'return_transaction_id' => $data['return_transaction_id'] ?? null,
                 'tab_id' => $data['tab_id'] ?? null,
-                'external_id' => $data['external_id'] ?? null,
+                'external_id' => $externalKey,
                 'external_type' => $data['external_type'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'approver_id' => $approverId,

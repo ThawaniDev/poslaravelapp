@@ -433,6 +433,50 @@ class DiscountAndSyncApiTest extends TestCase
             ->assertJsonPath('data.has_subscription', false);
     }
 
+    public function test_sync_entitlements_reports_expired_status_for_lapsed_subscription(): void
+    {
+        // Subscription lapsed (expired) — no longer active/trial/grace.
+        $this->subscription->update(['status' => SubscriptionStatus::Expired]);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/subscription/sync/entitlements');
+
+        $response->assertOk()
+            ->assertJsonPath('data.has_subscription', false)
+            // The POS paywall relies on this status being surfaced (not null)
+            // so the client can render an accurate "renew" screen.
+            ->assertJsonPath('data.status', 'expired')
+            ->assertJsonPath('data.subscription.status', 'expired')
+            ->assertJsonPath('data.plan_name', $this->plan->name);
+
+        // Features/limits must be empty so the POS stays gated until renewal.
+        $this->assertEmpty($response->json('data.features'));
+        $this->assertEmpty($response->json('data.limits'));
+    }
+
+    public function test_sync_entitlements_reports_cancelled_status_for_lapsed_subscription(): void
+    {
+        $this->subscription->update(['status' => SubscriptionStatus::Cancelled]);
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/subscription/sync/entitlements');
+
+        $response->assertOk()
+            ->assertJsonPath('data.has_subscription', false)
+            ->assertJsonPath('data.status', 'cancelled')
+            ->assertJsonPath('data.subscription.status', 'cancelled');
+    }
+
+    public function test_sync_entitlements_status_null_when_never_subscribed(): void
+    {
+        // No subscription record at all (truly never subscribed).
+        $this->subscription->delete();
+
+        $response = $this->withToken($this->token)->getJson('/api/v2/subscription/sync/entitlements');
+
+        $response->assertOk()
+            ->assertJsonPath('data.has_subscription', false)
+            ->assertJsonPath('data.status', null);
+    }
+
     public function test_sync_entitlements_requires_auth(): void
     {
         $response = $this->getJson('/api/v2/subscription/sync/entitlements');
