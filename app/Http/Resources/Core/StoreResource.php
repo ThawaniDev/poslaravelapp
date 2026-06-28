@@ -9,6 +9,13 @@ class StoreResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
+        $storeCrNumber = is_string($this->cr_number) ? trim($this->cr_number) : $this->cr_number;
+        $storeVatNumber = is_string($this->vat_number) ? trim($this->vat_number) : $this->vat_number;
+        $organizationCrNumber = $this->resource->relationLoaded('organization') ? $this->organization?->cr_number : null;
+        $organizationVatNumber = $this->resource->relationLoaded('organization') ? $this->organization?->vat_number : null;
+        $orgCr = is_string($organizationCrNumber) ? trim($organizationCrNumber) : $organizationCrNumber;
+        $orgVat = is_string($organizationVatNumber) ? trim($organizationVatNumber) : $organizationVatNumber;
+
         return [
             'id' => $this->id,
             'organization_id' => $this->organization_id,
@@ -66,6 +73,10 @@ class StoreResource extends JsonResource
             // Legal / licensing
             'cr_number' => $this->cr_number,
             'vat_number' => $this->vat_number,
+            'organization_cr_number' => $organizationCrNumber,
+            'organization_vat_number' => $organizationVatNumber,
+            'effective_cr_number' => $storeCrNumber !== '' && $storeCrNumber !== null ? $storeCrNumber : $orgCr,
+            'effective_vat_number' => $storeVatNumber !== '' && $storeVatNumber !== null ? $storeVatNumber : $orgVat,
             'municipal_license' => $this->municipal_license,
             'license_expiry_date' => $this->license_expiry_date?->toDateString(),
 

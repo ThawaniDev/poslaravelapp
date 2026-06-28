@@ -29,6 +29,7 @@ class StoreService
 
     private const LIST_RELATIONS = [
         'storeSettings',
+        'organization',
         'manager',
     ];
 

@@ -178,7 +178,9 @@ class BranchManagementApiTest extends TestCase
                     'has_delivery', 'has_pickup',
                     'opening_date', 'closing_date', 'max_registers', 'max_staff',
                     'area_sqm', 'seating_capacity',
-                    'cr_number', 'vat_number', 'municipal_license', 'license_expiry_date',
+                    'cr_number', 'vat_number', 'organization_cr_number', 'organization_vat_number',
+                    'effective_cr_number', 'effective_vat_number',
+                    'municipal_license', 'license_expiry_date',
                     'social_links', 'extra_metadata', 'internal_notes', 'sort_order',
                     'storage_used_mb', 'staff_count', 'register_count',
                     'settings', 'working_hours', 'organization',
@@ -196,6 +198,48 @@ class BranchManagementApiTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.id', $this->mainBranch->id);
+    }
+
+    public function test_store_resource_falls_back_to_organization_legal_numbers(): void
+    {
+        $this->org->update([
+            'cr_number' => 'ORG-CR-123',
+            'vat_number' => 'ORG-VAT-456',
+        ]);
+        $this->mainBranch->update([
+            'cr_number' => null,
+            'vat_number' => null,
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/core/stores/mine');
+
+        $response->assertOk()
+            ->assertJsonPath('data.cr_number', null)
+            ->assertJsonPath('data.vat_number', null)
+            ->assertJsonPath('data.organization_cr_number', 'ORG-CR-123')
+            ->assertJsonPath('data.organization_vat_number', 'ORG-VAT-456')
+            ->assertJsonPath('data.effective_cr_number', 'ORG-CR-123')
+            ->assertJsonPath('data.effective_vat_number', 'ORG-VAT-456');
+    }
+
+    public function test_store_resource_prefers_store_legal_numbers_over_organization(): void
+    {
+        $this->org->update([
+            'cr_number' => 'ORG-CR-123',
+            'vat_number' => 'ORG-VAT-456',
+        ]);
+        $this->mainBranch->update([
+            'cr_number' => 'STORE-CR-789',
+            'vat_number' => 'STORE-VAT-999',
+        ]);
+
+        $response = $this->withToken($this->token)
+            ->getJson('/api/v2/core/stores/mine');
+
+        $response->assertOk()
+            ->assertJsonPath('data.effective_cr_number', 'STORE-CR-789')
+            ->assertJsonPath('data.effective_vat_number', 'STORE-VAT-999');
     }
 
     public function test_returns_404_for_nonexistent_branch(): void
