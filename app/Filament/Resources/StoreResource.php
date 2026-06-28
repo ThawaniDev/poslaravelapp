@@ -105,6 +105,25 @@ class StoreResource extends Resource
                                         ->searchable(),
                                 ])
                                 ->columns(2),
+
+                            Forms\Components\Section::make(__('Legal & Tax Information'))
+                                ->description(__('Printed on receipts/invoices. Leave blank to fall back to the organization values.'))
+                                ->schema([
+                                    Forms\Components\TextInput::make('cr_number')
+                                        ->label(__('CR Number'))
+                                        ->maxLength(50)
+                                        ->helperText(__('Commercial registration number for this store/branch.')),
+                                    Forms\Components\TextInput::make('vat_number')
+                                        ->label(__('VAT Number'))
+                                        ->maxLength(20)
+                                        ->helperText(__('Falls back to the organization VAT number when empty.')),
+                                    Forms\Components\TextInput::make('municipal_license')
+                                        ->label(__('Municipal License'))
+                                        ->maxLength(100),
+                                    Forms\Components\DatePicker::make('license_expiry_date')
+                                        ->label(__('License Expiry Date')),
+                                ])
+                                ->columns(2),
                         ]),
 
                     // ── Tab 2: Contact & Location ─────────────────
@@ -158,25 +177,6 @@ class StoreResource extends Resource
                                         ->native(false),
                                 ])
                                 ->columns(3),
-
-                            Forms\Components\Section::make(__('Legal & Tax Information'))
-                                ->description(__('Store-level values are used on receipts and invoices. Leave blank to use the organization defaults.'))
-                                ->schema([
-                                    Forms\Components\TextInput::make('cr_number')
-                                        ->label(__('CR Number'))
-                                        ->maxLength(50)
-                                        ->helperText(__('Commercial registration number for this store/branch.')),
-                                    Forms\Components\TextInput::make('vat_number')
-                                        ->label(__('VAT Number'))
-                                        ->maxLength(20)
-                                        ->helperText(__('VAT number printed on receipts. Falls back to the organization VAT number when empty.')),
-                                    Forms\Components\TextInput::make('municipal_license')
-                                        ->label(__('Municipal License'))
-                                        ->maxLength(100),
-                                    Forms\Components\DatePicker::make('license_expiry_date')
-                                        ->label(__('License Expiry Date')),
-                                ])
-                                ->columns(2),
 
                             Forms\Components\Section::make(__('Status & Flags'))
                                 ->schema([
