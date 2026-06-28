@@ -20,7 +20,11 @@ Route::prefix('core')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
 
         // ─── Store (Branches) ────────────────────────────────
-        Route::get('stores/mine', [StoreController::class, 'mine'])->middleware('permission:branches.view');
+        // `stores/mine` returns only the authenticated user's own assigned
+        // store. Every POS user (cashiers included) needs it for receipt
+        // identity (name, CR/VAT) and branding, so it is gated on auth only —
+        // not the branch-management permission that cashiers typically lack.
+        Route::get('stores/mine', [StoreController::class, 'mine']);
         Route::get('stores/stats', [StoreController::class, 'stats'])->middleware('permission:branches.view');
         Route::get('stores/managers', [StoreController::class, 'managers'])->middleware('permission:branches.view');
         Route::put('stores/sort-order', [StoreController::class, 'updateSortOrder'])->middleware('permission:branches.manage');
