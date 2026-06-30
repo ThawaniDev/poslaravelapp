@@ -4,6 +4,7 @@ namespace App\Http\Resources\Core;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class StoreResource extends JsonResource
 {
@@ -24,12 +25,14 @@ class StoreResource extends JsonResource
             // Basic info
             'name' => $this->name,
             'name_ar' => $this->name_ar,
+            'legal_name_en' => $this->legal_name_en,
+            'legal_name_ar' => $this->legal_name_ar,
             'description' => $this->description,
             'description_ar' => $this->description_ar,
             'slug' => $this->slug,
             'branch_code' => $this->branch_code,
-            'logo_url' => $this->logo_url,
-            'cover_image_url' => $this->cover_image_url,
+            'logo_url' => $this->resolveStorageUrl($this->logo_url),
+            'cover_image_url' => $this->resolveStorageUrl($this->cover_image_url),
 
             // Location
             'address' => $this->address,
@@ -101,6 +104,8 @@ class StoreResource extends JsonResource
                 'id' => $this->organization->id,
                 'name' => $this->organization->name,
                 'name_ar' => $this->organization->name_ar,
+                'legal_name_en' => $this->organization->legal_name_en,
+                'legal_name_ar' => $this->organization->legal_name_ar,
                 'cr_number' => $this->organization->cr_number,
                 'vat_number' => $this->organization->vat_number,
             ]),
@@ -114,5 +119,23 @@ class StoreResource extends JsonResource
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * Convert a stored value to a full public URL.
+     *
+     * Uploaded images are stored as relative paths on the `public` disk
+     * (e.g. "stores/logos/abc.jpg"). Already-absolute URLs (starting with
+     * http/https) are returned unchanged so legacy data is never broken.
+     */
+    private function resolveStorageUrl(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (str_starts_with($value, 'http://') || str_starts_with($value, 'https://')) {
+            return $value;
+        }
+        return Storage::disk('public')->url($value);
     }
 }

@@ -120,6 +120,8 @@ class Store extends Model
         'manager_id',
         'name',
         'name_ar',
+        'legal_name_en',
+        'legal_name_ar',
         'description',
         'description_ar',
         'logo_url',

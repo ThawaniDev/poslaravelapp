@@ -99,6 +99,14 @@ class OrganizationResource extends Resource
 
                             Forms\Components\Section::make(__('Legal Information'))
                                 ->schema([
+                                    Forms\Components\TextInput::make('legal_name_en')
+                                        ->label(__('Legal Name (EN)'))
+                                        ->maxLength(255)
+                                        ->helperText(__('Official registered legal name in English.')),
+                                    Forms\Components\TextInput::make('legal_name_ar')
+                                        ->label(__('Legal Name (AR)'))
+                                        ->maxLength(255)
+                                        ->helperText(__('Official registered legal name in Arabic — required for ZATCA.')),
                                     Forms\Components\TextInput::make('cr_number')
                                         ->label(__('CR Number'))
                                         ->maxLength(50)

@@ -63,6 +63,30 @@ class StoreResource extends Resource
                     Forms\Components\Tabs\Tab::make(__('Basic Info'))
                         ->icon('heroicon-o-building-storefront')
                         ->schema([
+                            Forms\Components\Section::make(__('Store Images'))
+                                ->description(__('Logo is shown on the POS app, customer-facing display and receipts. Cover image is used as a banner in the app.'))
+                                ->schema([
+                                    Forms\Components\FileUpload::make('logo_url')
+                                        ->label(__('Store Logo'))
+                                        ->image()
+                                        ->disk('public')
+                                        ->directory('stores/logos')
+                                        ->maxSize(2048)
+                                        ->imagePreviewHeight('120')
+                                        ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+                                        ->helperText(__('Max 2 MB. Displayed on POS and customer screen.')),
+                                    Forms\Components\FileUpload::make('cover_image_url')
+                                        ->label(__('Cover / Banner Image'))
+                                        ->image()
+                                        ->disk('public')
+                                        ->directory('stores/covers')
+                                        ->maxSize(4096)
+                                        ->imagePreviewHeight('120')
+                                        ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp'])
+                                        ->helperText(__('Max 4 MB. Used as a banner in the Flutter POS app.')),
+                                ])
+                                ->columns(2),
+
                             Forms\Components\Section::make(__('Store Identity'))
                                 ->description(__('Core store information visible to customers'))
                                 ->schema([
@@ -109,6 +133,14 @@ class StoreResource extends Resource
                             Forms\Components\Section::make(__('Legal & Tax Information'))
                                 ->description(__('Printed on receipts/invoices. Leave blank to fall back to the organization values.'))
                                 ->schema([
+                                    Forms\Components\TextInput::make('legal_name_en')
+                                        ->label(__('Legal Name (EN)'))
+                                        ->maxLength(255)
+                                        ->helperText(__('Official registered legal name in English — used on ZATCA e-invoices.')),
+                                    Forms\Components\TextInput::make('legal_name_ar')
+                                        ->label(__('Legal Name (AR)'))
+                                        ->maxLength(255)
+                                        ->helperText(__('Official registered legal name in Arabic — required for ZATCA compliance.')),
                                     Forms\Components\TextInput::make('cr_number')
                                         ->label(__('CR Number'))
                                         ->maxLength(50)
@@ -380,6 +412,24 @@ class StoreResource extends Resource
                     Infolists\Components\Tabs\Tab::make(__('Overview'))
                         ->icon('heroicon-o-building-storefront')
                         ->schema([
+                            Infolists\Components\Section::make(__('Store Images'))
+                                ->schema([
+                                    Infolists\Components\ImageEntry::make('logo_url')
+                                        ->label(__('Logo'))
+                                        ->disk('public')
+                                        ->height(100)
+                                        ->defaultImageUrl(null)
+                                        ->visible(fn ($record) => $record->logo_url),
+                                    Infolists\Components\ImageEntry::make('cover_image_url')
+                                        ->label(__('Cover Image'))
+                                        ->disk('public')
+                                        ->height(100)
+                                        ->defaultImageUrl(null)
+                                        ->visible(fn ($record) => $record->cover_image_url),
+                                ])
+                                ->columns(2)
+                                ->visible(fn ($record) => $record->logo_url || $record->cover_image_url),
+
                             Infolists\Components\Section::make(__('Store Identity'))
                                 ->schema([
                                     Infolists\Components\TextEntry::make('name')->weight('bold'),
@@ -412,6 +462,12 @@ class StoreResource extends Resource
 
                             Infolists\Components\Section::make(__('Legal & Tax Information'))
                                 ->schema([
+                                    Infolists\Components\TextEntry::make('legal_name_en')
+                                        ->label(__('Legal Name (EN)'))
+                                        ->placeholder(__('N/A')),
+                                    Infolists\Components\TextEntry::make('legal_name_ar')
+                                        ->label(__('Legal Name (AR)'))
+                                        ->placeholder(__('N/A')),
                                     Infolists\Components\TextEntry::make('cr_number')
                                         ->label(__('Store CR Number'))
                                         ->copyable()
