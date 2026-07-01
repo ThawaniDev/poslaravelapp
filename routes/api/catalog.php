@@ -21,6 +21,9 @@ Route::prefix('catalog')->middleware(['auth:sanctum', 'branch.scope'])->group(fu
     Route::prefix('products')->group(function () {
         Route::get('/', [ProductController::class, 'index'])->middleware('permission:products.view');
         Route::post('/', [ProductController::class, 'store'])->middleware(['permission:products.manage', 'plan.limit:products']);
+        // Quick-add: cashiers can create a minimal product from the POS checkout
+        // without needing the full products.manage permission.
+        Route::post('/quick-add', [ProductController::class, 'quickAdd'])->middleware(['permission:pos.sell', 'plan.limit:products']);
         Route::get('/catalog', [ProductController::class, 'catalog'])->middleware('permission:products.view');
         Route::get('/changes', [ProductController::class, 'changes'])->middleware('permission:products.view');
         Route::post('/bulk-action', [ProductController::class, 'bulkAction'])->middleware('permission:products.manage');

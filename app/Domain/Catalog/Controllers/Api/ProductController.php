@@ -66,6 +66,37 @@ class ProductController extends BaseApiController
         return $this->created(new ProductResource($product));
     }
 
+    /**
+     * POST /catalog/products/quick-add
+     *
+     * Lightweight product creation from the POS checkout page.
+     * Requires only pos.sell so cashiers can add unlisted items without the
+     * full products.manage permission. Only name and sell_price are required;
+     * all other fields default gracefully.
+     */
+    public function quickAdd(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name'       => ['required', 'string', 'max:255'],
+            'name_ar'    => ['nullable', 'string', 'max:255'],
+            'sell_price' => ['required', 'numeric', 'min:0'],
+            'barcode'    => ['nullable', 'string', 'max:50'],
+            'is_active'  => ['sometimes', 'boolean'],
+        ]);
+
+        // Force is_active and mark as quick-add so owners can review later.
+        $validated['is_active'] = $validated['is_active'] ?? true;
+
+        $product = $this->productService->create($validated, $request->user());
+
+        $orgId = $this->resolveOrganizationId($request);
+        if ($orgId) {
+            $this->refreshUsageFor($orgId, 'products');
+        }
+
+        return $this->created(new ProductResource($product));
+    }
+
     public function show(Request $request, string $product): JsonResponse
     {
         $found = $this->productService->find($product);
