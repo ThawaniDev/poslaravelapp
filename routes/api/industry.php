@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('industry')->middleware('auth:sanctum')->group(function () {
+Route::prefix('industry')->middleware(['auth:sanctum', 'branch.scope'])->group(function () {
 
     // ── Pharmacy ─────────────────────────────────────────
     Route::prefix('pharmacy')->middleware(['permission:pharmacy.view', 'plan.feature:industry_pharmacy'])->group(function () {

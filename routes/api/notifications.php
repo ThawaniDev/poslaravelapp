@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 // ─── Provider Announcements ──────────────────────────────────
-Route::prefix('announcements')->middleware('auth:sanctum')->group(function () {
+Route::prefix('announcements')->middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::get('/', [ProviderAnnouncementController::class, 'index'])->middleware('permission:notifications.view');
     Route::post('{id}/dismiss', [ProviderAnnouncementController::class, 'dismiss'])->middleware('permission:notifications.view');
 });

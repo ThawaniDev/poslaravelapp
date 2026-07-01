@@ -3,7 +3,7 @@
 use App\Domain\MobileCompanion\Controllers\Api\CompanionController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'plan.feature:companion_app', 'permission:companion.view'])->prefix('companion')->group(function () {
+Route::middleware(['auth:sanctum', 'branch.scope', 'plan.feature:companion_app', 'permission:companion.view'])->prefix('companion')->group(function () {
     Route::get('/quick-stats', [CompanionController::class, 'quickStats']);
     Route::get('/summary', [CompanionController::class, 'mobileSummary']);
     Route::get('/dashboard', [CompanionController::class, 'dashboard']);

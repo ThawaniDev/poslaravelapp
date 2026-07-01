@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('hardware')->middleware('auth:sanctum')->group(function () {
+Route::prefix('hardware')->middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     Route::get('config', [HardwareController::class, 'listConfigs'])->middleware('permission:hardware.view');
     Route::post('config', [HardwareController::class, 'saveConfig'])->middleware('permission:hardware.manage');
     Route::delete('config/{id}', [HardwareController::class, 'removeConfig'])->middleware('permission:hardware.manage');

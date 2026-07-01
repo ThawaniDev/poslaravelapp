@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('pos')->middleware('auth:sanctum')->group(function () {
+Route::prefix('pos')->middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     // Sessions
     Route::get('/sessions', [PosTerminalController::class, 'sessions'])->middleware('permission:pos.view_sessions');
     Route::get('/sessions/mine/open', [PosTerminalController::class, 'myOpenSessions'])->middleware('permission:pos.sell');

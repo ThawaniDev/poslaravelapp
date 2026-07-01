@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     // ─── Payments ──────────────────────────────────────────────────────────
     Route::get('payments', [PaymentController::class, 'listPayments'])->middleware('permission:payments.process');
     Route::post('payments', [PaymentController::class, 'createPayment'])->middleware('permission:payments.process');

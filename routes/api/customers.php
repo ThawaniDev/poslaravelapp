@@ -5,7 +5,7 @@ use App\Domain\Customer\Controllers\Api\LoyaltyController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('customers')
-    ->middleware(['auth:sanctum', 'plan.active', 'plan.feature:customer_management'])
+    ->middleware(['auth:sanctum', 'branch.scope', 'plan.active', 'plan.feature:customer_management'])
     ->group(function () {
 
         // Customer CRUD

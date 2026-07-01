@@ -17,33 +17,46 @@ class CompanionController extends BaseApiController
         private readonly CompanionService $companionService,
     ) {}
 
+    /**
+     * Resolve the current user's store ID. The companion app is store-specific,
+     * so org-level users without an assigned store cannot use these endpoints.
+     */
+    private function requireStoreId(): string
+    {
+        $storeId = auth()->user()?->store_id;
+        if (! $storeId) {
+            abort(response()->json([
+                'success' => false,
+                'message' => 'A store assignment is required to use the companion app.',
+            ], 400));
+        }
+        return $storeId;
+    }
+
     public function quickStats(): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
-        $result = $this->companionService->quickStats($storeId);
+        $result = $this->companionService->quickStats($this->requireStoreId());
 
         return $this->success($result, __('companion.quick_stats_retrieved'));
     }
 
     public function dashboard(): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
-        $result = $this->companionService->getDashboard($storeId);
+        $result = $this->companionService->getDashboard($this->requireStoreId());
 
         return $this->success($result, __('companion.dashboard_retrieved'));
     }
 
     public function branches(): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
-        $result = $this->companionService->getBranches($storeId);
+        $result = $this->companionService->getBranches($this->requireStoreId());
 
         return $this->success($result, __('companion.branches_retrieved'));
     }
 
     public function salesSummary(Request $request): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
+        $storeId = $this->requireStoreId();
 
         $from = $request->query('from');
         $to = $request->query('to');
@@ -66,33 +79,29 @@ class CompanionController extends BaseApiController
 
     public function activeOrders(): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
-        $result = $this->companionService->getActiveOrders($storeId);
+        $result = $this->companionService->getActiveOrders($this->requireStoreId());
 
         return $this->success($result, __('companion.active_orders_retrieved'));
     }
 
     public function inventoryAlerts(): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
-        $result = $this->companionService->getInventoryAlerts($storeId);
+        $result = $this->companionService->getInventoryAlerts($this->requireStoreId());
 
         return $this->success($result, __('companion.inventory_alerts_retrieved'));
     }
 
     public function activeStaff(): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
-        $result = $this->companionService->getActiveStaff($storeId);
+        $result = $this->companionService->getActiveStaff($this->requireStoreId());
 
         return $this->success($result, __('companion.active_staff_retrieved'));
     }
 
     public function toggleAvailability(Request $request): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
         $isActive = (bool) $request->input('is_active', true);
-        $result = $this->companionService->toggleStoreAvailability($storeId, $isActive);
+        $result = $this->companionService->toggleStoreAvailability($this->requireStoreId(), $isActive);
 
         return $this->success($result, __('companion.availability_updated'));
     }
@@ -101,7 +110,7 @@ class CompanionController extends BaseApiController
     {
         $user = auth()->user();
         $result = $this->companionService->registerSession(
-            $user->store_id,
+            $this->requireStoreId(),
             $user->id,
             $request->validated(),
         );
@@ -118,8 +127,7 @@ class CompanionController extends BaseApiController
 
     public function listSessions(): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
-        $result = $this->companionService->listSessions($storeId);
+        $result = $this->companionService->listSessions($this->requireStoreId());
 
         return $this->success($result, __('companion.sessions_retrieved'));
     }
@@ -142,24 +150,21 @@ class CompanionController extends BaseApiController
 
     public function getQuickActions(): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
-        $result = $this->companionService->getQuickActions($storeId);
+        $result = $this->companionService->getQuickActions($this->requireStoreId());
 
         return $this->success($result, __('companion.quick_actions_retrieved'));
     }
 
     public function updateQuickActions(UpdateQuickActionsRequest $request): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
-        $result = $this->companionService->updateQuickActions($storeId, $request->validated());
+        $result = $this->companionService->updateQuickActions($this->requireStoreId(), $request->validated());
 
         return $this->success($result, __('companion.quick_actions_updated'));
     }
 
     public function mobileSummary(): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
-        $result = $this->companionService->getMobileSummary($storeId);
+        $result = $this->companionService->getMobileSummary($this->requireStoreId());
 
         return $this->success($result, __('companion.summary_retrieved'));
     }
@@ -168,7 +173,7 @@ class CompanionController extends BaseApiController
     {
         $user = auth()->user();
         $result = $this->companionService->logAppEvent(
-            $user->store_id,
+            $this->requireStoreId(),
             $user->id,
             $request->validated(),
         );
