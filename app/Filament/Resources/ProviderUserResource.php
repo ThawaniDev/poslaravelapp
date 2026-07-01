@@ -46,41 +46,127 @@ class ProviderUserResource extends Resource
 
     public static function form(Form $form): Form
     {
+        $isCreate = fn ($livewire) => $livewire instanceof \Filament\Resources\Pages\CreateRecord;
+
         return $form->schema([
-            Forms\Components\Section::make(__('User Details'))
-                ->description(__('Provider user account details (read-only)'))
-                ->icon('heroicon-o-user')
-                ->schema([
-                    Forms\Components\TextInput::make('name')
-                        ->label(__('Name'))
-                        ->disabled(),
+            Forms\Components\Tabs::make('ProviderUserTabs')
+                ->tabs([
 
-                    Forms\Components\TextInput::make('email')
-                        ->label(__('Email'))
-                        ->disabled(),
+                    // ── Tab 1: Account Details ─────────────────────────────
+                    Forms\Components\Tabs\Tab::make(__('Account Details'))
+                        ->icon('heroicon-o-user')
+                        ->schema([
+                            Forms\Components\Section::make(__('Identity'))
+                                ->schema([
+                                    Forms\Components\TextInput::make('name')
+                                        ->label(__('Full Name'))
+                                        ->required()
+                                        ->maxLength(255),
+                                    Forms\Components\TextInput::make('email')
+                                        ->label(__('Email'))
+                                        ->email()
+                                        ->required()
+                                        ->maxLength(255)
+                                        ->unique(User::class, 'email', ignoreRecord: true),
+                                    Forms\Components\TextInput::make('phone')
+                                        ->label(__('Phone'))
+                                        ->tel()
+                                        ->maxLength(30),
+                                    Forms\Components\Select::make('locale')
+                                        ->label(__('Language'))
+                                        ->options([
+                                            'ar' => 'العربية (Arabic)',
+                                            'en' => 'English',
+                                            'ur' => 'اردو (Urdu)',
+                                            'bn' => 'বাংলা (Bengali)',
+                                        ])
+                                        ->default('ar')
+                                        ->native(false),
+                                    Forms\Components\Select::make('role')
+                                        ->label(__('Role'))
+                                        ->options(collect(UserRole::cases())->mapWithKeys(fn ($r) => [$r->value => ucwords(str_replace('_', ' ', $r->value))]))
+                                        ->required()
+                                        ->native(false)
+                                        ->searchable()
+                                        ->live(),
+                                ])
+                                ->columns(2),
+                        ]),
 
-                    Forms\Components\TextInput::make('phone')
-                        ->label(__('Phone'))
-                        ->disabled(),
+                    // ── Tab 2: Security ────────────────────────────────────
+                    Forms\Components\Tabs\Tab::make(__('Security'))
+                        ->icon('heroicon-o-lock-closed')
+                        ->schema([
+                            Forms\Components\Section::make(__('Password'))
+                                ->schema([
+                                    Forms\Components\TextInput::make('password')
+                                        ->label(__('Password'))
+                                        ->password()
+                                        ->revealable()
+                                        ->required($isCreate)
+                                        ->minLength(8)
+                                        ->maxLength(255)
+                                        ->dehydrated(false)
+                                        ->helperText(fn ($livewire) => $isCreate($livewire) ? '' : __('Leave blank to keep the current password.')),
+                                    Forms\Components\TextInput::make('password_confirmation')
+                                        ->label(__('Confirm Password'))
+                                        ->password()
+                                        ->revealable()
+                                        ->required($isCreate)
+                                        ->same('password')
+                                        ->dehydrated(false),
+                                ])
+                                ->columns(2),
 
-                    Forms\Components\Select::make('role')
-                        ->label(__('Role'))
-                        ->options(collect(UserRole::cases())->mapWithKeys(fn ($r) => [$r->value => $r->name]))
-                        ->disabled(),
-                ])->columns(2),
+                            Forms\Components\Section::make(__('Account Status'))
+                                ->schema([
+                                    Forms\Components\Toggle::make('is_active')
+                                        ->label(__('Active'))
+                                        ->default(true)
+                                        ->helperText(__('Inactive users cannot log in or use the app')),
+                                    Forms\Components\Toggle::make('must_change_password')
+                                        ->label(__('Must Change Password on Next Login'))
+                                        ->default(false),
+                                ])
+                                ->columns(2),
+                        ]),
 
-            Forms\Components\Section::make(__('Account Controls'))
-                ->description(__('Manage account status'))
-                ->icon('heroicon-o-cog-6-tooth')
-                ->schema([
-                    Forms\Components\Toggle::make('is_active')
-                        ->label(__('Active'))
-                        ->helperText(__('Inactive users cannot log in or use the app')),
-
-                    Forms\Components\Toggle::make('must_change_password')
-                        ->label(__('Must Change Password'))
-                        ->helperText(__('Force user to change password on next login')),
-                ])->columns(2),
+                    // ── Tab 3: Organization & Store ────────────────────────
+                    Forms\Components\Tabs\Tab::make(__('Organization & Store'))
+                        ->icon('heroicon-o-building-office')
+                        ->schema([
+                            Forms\Components\Section::make(__('Assignment'))
+                                ->description(__('Assign the user to an organization and optionally a specific store branch. Leave Store blank for org-level access.'))
+                                ->schema([
+                                    Forms\Components\Select::make('organization_id')
+                                        ->label(__('Organization'))
+                                        ->relationship('organization', 'name')
+                                        ->searchable()
+                                        ->preload()
+                                        ->live()
+                                        ->afterStateUpdated(fn (Forms\Set $set) => $set('store_id', null))
+                                        ->required(),
+                                    Forms\Components\Select::make('store_id')
+                                        ->label(__('Store / Branch'))
+                                        ->options(fn (Forms\Get $get): array => \App\Domain\Core\Models\Store::when(
+                                            $get('organization_id'),
+                                            fn ($q, $orgId) => $q->where('organization_id', $orgId)
+                                        )
+                                        ->where('is_active', true)
+                                        ->orderBy('name')
+                                        ->pluck('name', 'id')
+                                        ->toArray())
+                                        ->searchable()
+                                        ->nullable()
+                                        ->required(fn (Forms\Get $get): bool => in_array($get('role'), ['cashier', 'branch_manager', 'kitchen_staff', 'inventory_clerk']))
+                                        ->placeholder(__('— Org-level (all stores) —'))
+                                        ->helperText(__('Required for Cashier / Branch Manager / Kitchen Staff / Inventory Clerk roles.')),
+                                ])
+                                ->columns(2),
+                        ]),
+                ])
+                ->columnSpanFull()
+                ->persistTabInQueryString(),
         ]);
     }
 
@@ -268,9 +354,10 @@ class ProviderUserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ProviderUserResource\Pages\ListProviderUsers::route('/'),
-            'view' => ProviderUserResource\Pages\ViewProviderUser::route('/{record}'),
-            'edit' => ProviderUserResource\Pages\EditProviderUser::route('/{record}/edit'),
+            'index'  => ProviderUserResource\Pages\ListProviderUsers::route('/'),
+            'create' => ProviderUserResource\Pages\CreateProviderUser::route('/create'),
+            'view'   => ProviderUserResource\Pages\ViewProviderUser::route('/{record}'),
+            'edit'   => ProviderUserResource\Pages\EditProviderUser::route('/{record}/edit'),
         ];
     }
 

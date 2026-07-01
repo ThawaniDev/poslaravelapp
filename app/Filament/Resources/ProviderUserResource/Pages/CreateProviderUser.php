@@ -3,29 +3,28 @@
 namespace App\Filament\Resources\ProviderUserResource\Pages;
 
 use App\Filament\Resources\ProviderUserResource;
-use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
+use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Hash;
 
-class EditProviderUser extends EditRecord
+class CreateProviderUser extends CreateRecord
 {
     protected static string $resource = ProviderUserResource::class;
 
-    protected function getHeaderActions(): array
-    {
-        return [
-            Actions\ViewAction::make(),
-            Actions\DeleteAction::make(),
-        ];
-    }
-
-    protected function mutateFormDataBeforeSave(array $data): array
+    protected function mutateFormDataBeforeCreate(array $data): array
     {
         if (!empty($data['password'])) {
             $data['password_hash'] = Hash::make($data['password']);
         }
         unset($data['password'], $data['password_confirmation']);
 
+        // Mark email as verified immediately since we're creating it via admin.
+        $data['email_verified_at'] = now();
+
         return $data;
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return $this->getResource()::getUrl('index');
     }
 }

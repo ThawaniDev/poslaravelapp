@@ -22,9 +22,16 @@ abstract class BaseApiController extends Controller
      */
     protected function resolveStoreId(Request $request): ?string
     {
-        // Prefer middleware-resolved value (set by BranchScope)
+        // Prefer middleware-resolved value (set by BranchScope), but only when
+        // it is a non-null value. When BranchScope sets it to null it means the
+        // request is intentionally org-scoped (owner selecting "all stores");
+        // in that case still fall back to the user's own store_id so that
+        // single-store users (cashiers, branch owners) always get their store.
         if ($request->attributes->has('resolved_store_id')) {
-            return $request->attributes->get('resolved_store_id');
+            $resolved = $request->attributes->get('resolved_store_id');
+            if ($resolved !== null) {
+                return $resolved;
+            }
         }
 
         return $request->header('X-Store-Id') ?? $request->user()?->store_id;
