@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\DB;
 
 class PosSessionService
 {
-    public function list(string $storeId, int $perPage = 20): LengthAwarePaginator
+    public function list(array $storeIds, int $perPage = 20): LengthAwarePaginator
     {
-        return PosSession::where('store_id', $storeId)
+        return PosSession::whereIn('store_id', $storeIds)
             ->with(['store:id,name', 'register:id,name', 'cashier:id,name'])
             ->orderByDesc('opened_at')
             ->paginate($perPage);

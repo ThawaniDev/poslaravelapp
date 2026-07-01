@@ -23,7 +23,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function enroll(EnrollRequest $request)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $result = $this->service->enroll(
             $storeId,
             $request->validated('otp'),
@@ -35,7 +35,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function renew(Request $request)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         try {
             $result = $this->service->renewCertificate($storeId);
         } catch (\RuntimeException $e) {
@@ -47,7 +47,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function submitInvoice(SubmitInvoiceRequest $request)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $result = $this->service->submitInvoice($storeId, $request->validated());
 
         return $this->created($result, __('zatca.invoice_submitted'));
@@ -55,7 +55,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function submitBatch(SubmitBatchRequest $request)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $result = $this->service->submitBatch($storeId, $request->validated('invoices'));
 
         return $this->success($result, __('zatca.batch_submitted'));
@@ -63,7 +63,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function invoices(InvoiceFilterRequest $request)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $result = $this->service->listInvoices($storeId, $request->validated());
 
         return $this->success($result, __('zatca.invoices_retrieved'));
@@ -71,7 +71,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function invoiceXml(Request $request, string $invoiceId)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $xml = $this->service->getInvoiceXml($storeId, $invoiceId);
 
         if (! $xml) {
@@ -83,7 +83,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function complianceSummary(Request $request)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $result = $this->service->complianceSummary($storeId);
 
         return $this->success($result, __('zatca.summary_retrieved'));
@@ -91,7 +91,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function vatReport(InvoiceFilterRequest $request)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $result = $this->service->vatReport($storeId, $request->validated());
 
         return $this->success($result, __('zatca.vat_report_retrieved'));
@@ -101,7 +101,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function listDevices(Request $request)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $devices = ZatcaDevice::where('store_id', $storeId)
             ->orderByDesc('created_at')
             ->get();
@@ -110,7 +110,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function provisionDevice(Request $request)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $env = (string) $request->input('environment', 'sandbox');
         $device = $this->devices->provision($storeId, $env);
         return $this->created([
@@ -124,7 +124,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function activateDevice(Request $request)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $data = $request->validate([
             'activation_code' => ['required', 'string', 'max:32'],
             'hardware_serial' => ['nullable', 'string', 'max:128'],
@@ -144,7 +144,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function resetDeviceTamper(Request $request, string $deviceId)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $device = ZatcaDevice::where('store_id', $storeId)->where('id', $deviceId)->first();
         if (! $device) {
             return $this->notFound(__('zatca.device_not_found'));
@@ -159,7 +159,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function verifyChain(Request $request, string $deviceId)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $device = ZatcaDevice::where('store_id', $storeId)->where('id', $deviceId)->first();
         if (! $device) {
             return $this->notFound(__('zatca.device_not_found'));
@@ -175,7 +175,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function dashboard(Request $request)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $summary = $this->service->complianceSummary($storeId);
         $recent = $this->service->listInvoices($storeId, ['per_page' => 10]);
         return $this->success([
@@ -186,7 +186,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function invoiceDetail(Request $request, string $invoiceId)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $detail = $this->service->getInvoiceFull($storeId, $invoiceId);
         if (! $detail) {
             return $this->notFound(__('zatca.invoice_not_found'));
@@ -196,7 +196,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function retrySubmission(Request $request, string $invoiceId)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $result = $this->service->retrySubmission($storeId, $invoiceId);
         if ($result === null) {
             return $this->notFound(__('zatca.invoice_not_found'));
@@ -206,7 +206,7 @@ class ZatcaComplianceController extends BaseApiController
 
     public function connectionStatus(Request $request)
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $status = $this->service->connectionStatus($storeId);
         return $this->success($status, __('zatca.connection_retrieved'));
     }

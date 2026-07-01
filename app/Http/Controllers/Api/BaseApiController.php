@@ -38,6 +38,30 @@ abstract class BaseApiController extends Controller
     }
 
     /**
+     * Resolve to a single non-null store ID suitable for store-scoped API calls
+     * (POS, sessions, transactions, etc.) that require exactly one store.
+     *
+     * Resolution order:
+     *  1. BranchScope middleware resolved_store_id (e.g. X-Store-Id header)
+     *  2. Authenticated user's own store_id (cashiers / branch staff)
+     *  3. First active store in the user's organization (org-level owners)
+     *
+     * Returns null only when the user is genuinely not associated with any store
+     * or organization (misconfigured account).
+     */
+    protected function resolveStoreIdRequired(Request $request): ?string
+    {
+        $single = $this->resolveStoreId($request);
+        if ($single !== null) {
+            return $single;
+        }
+
+        // Org-level user — fall back to first accessible store.
+        $ids = $this->resolvedStoreIds($request);
+        return $ids[0] ?? null;
+    }
+
+    /**
      * Resolve the organization_id for the current request.
      *
      * Always returns a non-null UUID for authenticated users, since every user

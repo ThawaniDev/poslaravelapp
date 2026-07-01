@@ -3,7 +3,7 @@
 use App\Domain\BackupSync\Controllers\Api\SyncController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum', 'plan.active'])->prefix('sync')->group(function () {
+Route::middleware(['auth:sanctum', 'branch.scope', 'plan.active'])->prefix('sync')->group(function () {
     Route::post('/push', [SyncController::class, 'push'])->middleware('permission:sync.manage');
     Route::get('/pull', [SyncController::class, 'pull'])->middleware('permission:sync.view');
     Route::get('/full', [SyncController::class, 'full'])->middleware('permission:sync.manage');

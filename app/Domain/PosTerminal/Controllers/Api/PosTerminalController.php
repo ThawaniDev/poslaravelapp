@@ -43,7 +43,7 @@ class PosTerminalController extends BaseApiController
     public function sessions(Request $request): JsonResponse
     {
         $paginator = $this->sessionService->list(
-            $this->resolvedStoreId($request) ?? $request->user()->store_id,
+            $this->resolvedStoreIds($request),
             (int) $request->get('per_page', 20),
         );
 
@@ -78,14 +78,14 @@ class PosTerminalController extends BaseApiController
 
 public function showSession(Request $request, string $session): JsonResponse
 {
-    $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
+    $found = $this->sessionService->find($session, $this->resolveStoreIdRequired($request));
         return $this->success(new PosSessionResource($found));
     }
 
     public function closeSession(CloseSessionRequest $request, string $session): JsonResponse
     {
         try {
-            $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
+            $found = $this->sessionService->find($session, $this->resolveStoreIdRequired($request));
             $closed = $this->sessionService->close($found, $request->validated());
             return $this->success(new PosSessionResource($closed));
         } catch (\RuntimeException $e) {
@@ -99,7 +99,7 @@ public function showSession(Request $request, string $session): JsonResponse
     public function reopenSession(Request $request, string $session): JsonResponse
     {
         try {
-            $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
+            $found = $this->sessionService->find($session, $this->resolveStoreIdRequired($request));
             $reopened = $this->sessionService->reopen($found);
             return $this->success(new PosSessionResource($reopened));
         } catch (\RuntimeException $e) {
@@ -144,7 +144,7 @@ public function showSession(Request $request, string $session): JsonResponse
     public function transactions(Request $request): JsonResponse
     {
         $paginator = $this->transactionService->list(
-            $this->resolvedStoreId($request) ?? $request->user()->store_id,
+            $this->resolveStoreIdRequired($request),
             $request->only(['session_id', 'type', 'status', 'search']),
             (int) $request->get('per_page', 20),
         );
@@ -187,7 +187,7 @@ public function showSession(Request $request, string $session): JsonResponse
 
     public function showTransaction(Request $request, string $transaction): JsonResponse
     {
-        $found = $this->transactionService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $transaction);
+        $found = $this->transactionService->find($this->resolveStoreIdRequired($request), $transaction);
         return $this->success(new TransactionResource($found));
     }
 
@@ -195,7 +195,7 @@ public function showSession(Request $request, string $session): JsonResponse
     {
         try {
             $found = $this->transactionService->findByNumber(
-                $this->resolvedStoreId($request) ?? $request->user()->store_id,
+                $this->resolveStoreIdRequired($request),
                 $number,
             );
             return $this->success(new TransactionResource($found));
@@ -207,7 +207,7 @@ public function showSession(Request $request, string $session): JsonResponse
     public function voidTransaction(VoidTransactionRequest $request, string $transaction): JsonResponse
     {
         try {
-            $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+            $storeId = $this->resolveStoreIdRequired($request);
             $found = $this->transactionService->find($storeId, $transaction);
 
             // Manager-PIN gate: a void requires manager approval whenever
@@ -247,7 +247,7 @@ public function showSession(Request $request, string $session): JsonResponse
     public function refundMethods(\Illuminate\Http\Request $request, string $transaction): JsonResponse
     {
         try {
-            $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+            $storeId = $this->resolveStoreIdRequired($request);
             $original = $this->transactionService->find($storeId, $transaction);
 
             $totalPaid = (float) $original->payments->sum('amount');
@@ -296,7 +296,7 @@ public function showSession(Request $request, string $session): JsonResponse
     public function updateTransactionNotes(UpdateTransactionNotesRequest $request, string $transaction): JsonResponse
     {
         try {
-            $found = $this->transactionService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $transaction);
+            $found = $this->transactionService->find($this->resolveStoreIdRequired($request), $transaction);
             $updated = $this->transactionService->updateNotes($found, $request->validated(), $request->user());
             return $this->success(new TransactionResource($updated));
         } catch (\RuntimeException $e) {
@@ -369,7 +369,7 @@ public function showSession(Request $request, string $session): JsonResponse
 
     public function transactionReceipt(Request $request, string $transaction): JsonResponse
     {
-        $found = $this->transactionService->find($this->resolvedStoreId($request) ?? $request->user()->store_id, $transaction);
+        $found = $this->transactionService->find($this->resolveStoreIdRequired($request), $transaction);
         $found->load(['transactionItems', 'payments', 'cashier', 'customer']);
 
         $store = \App\Domain\Core\Models\Store::find($found->store_id);
@@ -400,7 +400,7 @@ public function showSession(Request $request, string $session): JsonResponse
 
     public function heldCarts(Request $request): JsonResponse
     {
-        $carts = $this->heldCartService->list($this->resolvedStoreId($request) ?? $request->user()->store_id);
+        $carts = $this->heldCartService->list($this->resolveStoreIdRequired($request));
         return $this->success(HeldCartResource::collection($carts)->resolve());
     }
 
@@ -435,7 +435,7 @@ public function showSession(Request $request, string $session): JsonResponse
 
     public function cashEvents(Request $request, string $session): JsonResponse
     {
-        $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
+        $found = $this->sessionService->find($session, $this->resolveStoreIdRequired($request));
         return $this->success($this->sessionService->listCashEvents($found));
     }
 
@@ -449,7 +449,7 @@ public function showSession(Request $request, string $session): JsonResponse
         ]);
 
         try {
-            $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
+            $found = $this->sessionService->find($session, $this->resolveStoreIdRequired($request));
             $event = $this->sessionService->recordCashEvent($found, $data, $request->user());
             return $this->created($event);
         } catch (\RuntimeException $e) {
@@ -461,13 +461,13 @@ public function showSession(Request $request, string $session): JsonResponse
 
     public function xReport(Request $request, string $session): JsonResponse
     {
-        $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
+        $found = $this->sessionService->find($session, $this->resolveStoreIdRequired($request));
         return $this->success($this->sessionService->xReport($found));
     }
 
     public function zReport(Request $request, string $session): JsonResponse
     {
-        $found = $this->sessionService->find($session, $this->resolvedStoreId($request) ?? $request->user()->store_id);
+        $found = $this->sessionService->find($session, $this->resolveStoreIdRequired($request));
         return $this->success($this->sessionService->zReport($found));
     }
 
@@ -484,7 +484,7 @@ public function showSession(Request $request, string $session): JsonResponse
      */
     public function cfdDisplay(Request $request, string $session): JsonResponse
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $found = $this->sessionService->find($session, $storeId);
 
         $settings = \App\Domain\Core\Models\StoreSettings::where('store_id', $storeId)->first();
@@ -756,7 +756,7 @@ public function showSession(Request $request, string $session): JsonResponse
      */
     public function applyInventoryAdjustments(ApplyInventoryAdjustmentsRequest $request): JsonResponse
     {
-        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired($request);
         $stockService = app(\App\Domain\Inventory\Services\StockService::class);
 
         $results = [];

@@ -23,7 +23,7 @@ class SyncController extends BaseApiController
      */
     public function push(SyncPushRequest $request): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired(request());
         $data = $request->validated();
         // Preserve full record payloads (validated() strips fields not in rules)
         $data['changes'] = $request->input('changes', []);
@@ -37,7 +37,7 @@ class SyncController extends BaseApiController
      */
     public function pull(SyncPullRequest $request): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired(request());
         $result = $this->syncService->pull($storeId, $request->validated());
 
         return $this->success($result, __('sync.pull_success'));
@@ -48,7 +48,7 @@ class SyncController extends BaseApiController
      */
     public function full(Request $request): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired(request());
         $terminalId = $request->query('terminal_id');
 
         if (!$terminalId) {
@@ -65,7 +65,7 @@ class SyncController extends BaseApiController
      */
     public function status(): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired(request());
         $result = $this->syncService->status($storeId);
 
         return $this->success($result, __('sync.status_retrieved'));
@@ -76,7 +76,7 @@ class SyncController extends BaseApiController
      */
     public function resolveConflict(ResolveConflictRequest $request, string $conflictId): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired(request());
         $conflict = $this->syncService->resolveConflict($storeId, $conflictId, array_merge(
             $request->validated(),
             ['resolved_by' => auth()->id()]
@@ -94,7 +94,7 @@ class SyncController extends BaseApiController
      */
     public function conflicts(ConflictFilterRequest $request): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired(request());
         $result = $this->syncService->listConflicts($storeId, $request->validated());
 
         return $this->success($result, __('sync.conflicts_retrieved'));
@@ -105,7 +105,7 @@ class SyncController extends BaseApiController
      */
     public function heartbeat(Request $request): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired(request());
         $result = $this->syncService->heartbeat($storeId, $request->all());
 
         return $this->success($result, __('sync.heartbeat_ok'));
@@ -116,7 +116,7 @@ class SyncController extends BaseApiController
      */
     public function logs(Request $request): JsonResponse
     {
-        $storeId = auth()->user()->store_id;
+        $storeId = $this->resolveStoreIdRequired(request());
         $result = $this->syncService->listLogs($storeId, $request->only([
             'direction', 'status', 'terminal_id', 'per_page', 'page',
         ]));
