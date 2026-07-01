@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('catalog')->middleware('auth:sanctum')->group(function () {
+Route::prefix('catalog')->middleware(['auth:sanctum', 'branch.scope'])->group(function () {
 
     // ─── Products ────────────────────────────────────────────
     Route::prefix('products')->group(function () {

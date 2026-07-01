@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('reports')->middleware(['auth:sanctum', 'plan.feature:reports_basic'])->group(function () {
+Route::prefix('reports')->middleware(['auth:sanctum', 'branch.scope', 'plan.feature:reports_basic'])->group(function () {
     // Dashboard
     Route::get('dashboard', [ReportController::class, 'dashboard'])->middleware('permission:reports.view');
 

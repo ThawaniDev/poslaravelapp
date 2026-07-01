@@ -33,8 +33,26 @@ trait ResolvesBranchScope
             return $query->whereIn($column, $storeIds);
         }
 
-        // Fallback: user's own store
-        return $query->where($column, $request->user()->store_id);
+        // No branch.scope middleware ran — resolve manually.
+        $user = $request->user();
+
+        if ($user?->store_id) {
+            return $query->where($column, $user->store_id);
+        }
+
+        // Org-level user (no store_id): scope across all active org stores.
+        if ($user?->organization_id) {
+            $orgStoreIds = \App\Domain\Core\Models\Store::where('organization_id', $user->organization_id)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->toArray();
+            if (!empty($orgStoreIds)) {
+                return $query->whereIn($column, $orgStoreIds);
+            }
+        }
+
+        // Fully misconfigured user — return nothing safely.
+        return $query->whereRaw('1=0');
     }
 
     /**

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('settings')->middleware('auth:sanctum')->group(function () {
+Route::prefix('settings')->middleware(['auth:sanctum', 'branch.scope'])->group(function () {
     // Locales
     Route::get('locales', [LocalizationController::class, 'listLocales'])->middleware('permission:settings.localization');
     Route::post('locales', [LocalizationController::class, 'saveLocale'])->middleware('permission:settings.localization');

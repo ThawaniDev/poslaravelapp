@@ -27,27 +27,55 @@ class ReportController extends BaseApiController
      * if `branch_id` was passed in the request), then falls back to the
      * authenticated user's own store_id.
      *
-     * Additionally validates that the requested branch belongs to the same
-     * organisation as the authenticated user's store.
+     * For org-level users (no assigned store) a specific branch may be
+     * requested via ?branch_id= or X-Store-Id. Falls back to the first
+     * active store in the org so report endpoints always receive a valid ID.
      */
     protected function resolveStoreId(Request $request): string
     {
         $user = $request->user();
-        $requestedBranch = $request->input('branch_id');
 
-        if ($requestedBranch && $requestedBranch !== $user->store_id) {
-            $orgId = DB::table('stores')->where('id', $user->store_id)->value('organization_id');
+        // 1. Explicit selection via branch.scope middleware (X-Store-Id header).
+        $resolved = $request->attributes->get('resolved_store_id');
+        if ($resolved) {
+            return $resolved;
+        }
+
+        // 2. Explicit ?branch_id= param validated against the user's org.
+        $orgId = $user->organization_id
+            ?? ($user->store_id
+                ? DB::table('stores')->where('id', $user->store_id)->value('organization_id')
+                : null);
+
+        $requestedBranch = $request->input('branch_id');
+        if ($requestedBranch) {
             $valid = $orgId && DB::table('stores')
                 ->where('id', $requestedBranch)
                 ->where('organization_id', $orgId)
                 ->exists();
-
             if ($valid) {
                 return $requestedBranch;
             }
         }
 
-        return $user->store_id;
+        // 3. Branch-scoped user: their own store.
+        if ($user->store_id) {
+            return $user->store_id;
+        }
+
+        // 4. Org-level user: first active store in the org.
+        if ($orgId) {
+            $firstStore = DB::table('stores')
+                ->where('organization_id', $orgId)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->value('id');
+            if ($firstStore) {
+                return $firstStore;
+            }
+        }
+
+        throw new \RuntimeException('Cannot resolve a store for the current user.');
     }
 
     /**
