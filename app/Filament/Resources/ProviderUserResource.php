@@ -106,7 +106,6 @@ class ProviderUserResource extends Resource
                                         ->required($isCreate)
                                         ->minLength(8)
                                         ->maxLength(255)
-                                        ->dehydrated(false)
                                         ->helperText(fn ($livewire) => $isCreate($livewire) ? '' : __('Leave blank to keep the current password.')),
                                     Forms\Components\TextInput::make('password_confirmation')
                                         ->label(__('Confirm Password'))
@@ -248,6 +247,49 @@ class ProviderUserResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+
+                // ── Change Password ─── prominent standalone action ──────────
+                Tables\Actions\Action::make('change_password')
+                    ->label(__('Change Password'))
+                    ->icon('heroicon-o-key')
+                    ->color('warning')
+                    ->modalHeading(fn (User $record) => __('Change password for :name', ['name' => $record->name]))
+                    ->modalDescription(__('Set a new password. All active sessions for this user will be revoked immediately.'))
+                    ->modalWidth('md')
+                    ->form([
+                        Forms\Components\TextInput::make('new_password')
+                            ->label(__('New Password'))
+                            ->password()
+                            ->revealable()
+                            ->required()
+                            ->minLength(8)
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('new_password_confirmation')
+                            ->label(__('Confirm New Password'))
+                            ->password()
+                            ->revealable()
+                            ->required()
+                            ->same('new_password'),
+                        Forms\Components\Toggle::make('must_change_password')
+                            ->label(__('Force user to change password on next login'))
+                            ->default(false),
+                    ])
+                    ->action(function (User $record, array $data): void {
+                        $record->update([
+                            'password_hash'        => Hash::make($data['new_password']),
+                            'must_change_password' => (bool) $data['must_change_password'],
+                        ]);
+
+                        // Revoke all active Sanctum tokens so the user must re-login.
+                        $record->tokens()->delete();
+
+                        Notification::make()
+                            ->title(__('Password changed'))
+                            ->body(__('Password updated for :name. All sessions have been revoked.', ['name' => $record->name]))
+                            ->success()
+                            ->send();
+                    }),
+
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('toggle_active')
                         ->label(fn (User $record): string => $record->is_active ? __('Deactivate') : __('Activate'))
@@ -258,25 +300,6 @@ class ProviderUserResource extends Resource
                             $record->update(['is_active' => !$record->is_active]);
                             $status = $record->is_active ? __('activated') : __('deactivated');
                             Notification::make()->title(__('User :status', ['status' => $status]))->success()->send();
-                        }),
-                    Tables\Actions\Action::make('reset_password')
-                        ->label(__('Reset Password'))
-                        ->icon('heroicon-o-key')
-                        ->color('warning')
-                        ->form([
-                            Forms\Components\TextInput::make('new_password')
-                                ->label(__('New Password'))
-                                ->password()
-                                ->revealable()
-                                ->required()
-                                ->minLength(8),
-                        ])
-                        ->action(function (User $record, array $data) {
-                            $record->update([
-                                'password_hash' => Hash::make($data['new_password']),
-                                'must_change_password' => true,
-                            ]);
-                            Notification::make()->title(__('Password reset and user must change on next login'))->success()->send();
                         }),
                     Tables\Actions\Action::make('force_password_change')
                         ->label(__('Force Password Change'))

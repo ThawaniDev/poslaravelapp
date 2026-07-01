@@ -50,8 +50,31 @@ trait ResolvesBranchScope
      */
     protected function resolvedStoreIds(Request $request): array
     {
-        return $request->attributes->get('resolved_store_ids')
-            ?? [$request->user()->store_id];
+        $fromMiddleware = $request->attributes->get('resolved_store_ids');
+        if (!empty($fromMiddleware)) {
+            return $fromMiddleware;
+        }
+
+        // No branch.scope middleware — fall back manually.
+        $user = $request->user();
+
+        // Branch user with an assigned store.
+        if ($user?->store_id) {
+            return [$user->store_id];
+        }
+
+        // Org-level user (no store_id): query all active stores in their org.
+        if ($user?->organization_id) {
+            $storeIds = \App\Domain\Core\Models\Store::where('organization_id', $user->organization_id)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->toArray();
+            if (!empty($storeIds)) {
+                return $storeIds;
+            }
+        }
+
+        return [];
     }
 
     /**

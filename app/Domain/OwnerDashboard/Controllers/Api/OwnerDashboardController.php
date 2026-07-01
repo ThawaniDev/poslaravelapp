@@ -22,16 +22,20 @@ class OwnerDashboardController extends BaseApiController
      */
     public function summary(DashboardFilterRequest $request): JsonResponse
     {
-        $user  = $request->user();
-        $store = $user->store;
+        $user = $request->user();
 
-        if (! $store?->organization_id) {
+        // Resolve organization_id from the user directly (works for org-level users
+        // with no assigned store) then fall back to the store relation.
+        $organizationId = $user->organization_id
+            ?? $user->store?->organization_id;
+
+        if (! $organizationId) {
             return $this->error(__('owner_dashboard.no_organization'), 400);
         }
 
         $data = $this->dashboardService->summary(
             $this->resolvedStoreIds($request),
-            $store->organization_id,
+            $organizationId,
             $request->validated(),
         );
 
@@ -152,14 +156,16 @@ class OwnerDashboardController extends BaseApiController
     public function branches(Request $request): JsonResponse
     {
         $user = $request->user();
-        $store = $user->store;
 
-        if (! $store?->organization_id) {
+        $organizationId = $user->organization_id
+            ?? $user->store?->organization_id;
+
+        if (! $organizationId) {
             return $this->error(__('owner_dashboard.no_organization'), 400);
         }
 
         $data = $this->dashboardService->branchOverview(
-            $store->organization_id,
+            $organizationId,
         );
 
         return $this->success($data, __('owner_dashboard.branches_retrieved'));

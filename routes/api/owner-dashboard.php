@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::prefix('owner-dashboard')->middleware(['auth:sanctum', 'permission:dashboard.view'])->group(function () {
+Route::prefix('owner-dashboard')->middleware(['auth:sanctum', 'permission:dashboard.view', 'branch.scope'])->group(function () {
     // Aggregated single-request endpoint (used by provider app on dashboard load)
     Route::get('summary', [OwnerDashboardController::class, 'summary']);
 
