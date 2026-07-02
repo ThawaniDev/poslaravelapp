@@ -732,10 +732,52 @@ class ThawaniService
         return $result;
     }
 
+    /**
+     * Returns the built-in field-mapping config for the given entity type,
+     * indexed by thawani_field — mirrors the rows in thawani_column_mappings
+     * and is used as a safe fallback when the DB table is empty.
+     */
+    private function defaultColumnMappings(string $entityType): array
+    {
+        $defaults = [
+            'product' => [
+                'name'             => ['wameed_field' => 'name',          'transform_type' => 'direct', 'transform_config' => null],
+                'name_ar'          => ['wameed_field' => 'name_ar',        'transform_type' => 'direct', 'transform_config' => null],
+                'description'      => ['wameed_field' => 'description',    'transform_type' => 'direct', 'transform_config' => null],
+                'description_ar'   => ['wameed_field' => 'description_ar', 'transform_type' => 'direct', 'transform_config' => null],
+                'price'            => ['wameed_field' => 'sell_price',     'transform_type' => 'direct', 'transform_config' => null],
+                'offer_price'      => ['wameed_field' => 'offer_price',    'transform_type' => 'direct', 'transform_config' => null],
+                // Thawani sends offer_start_date / offer_end_date;
+                // Wameed products table uses offer_start / offer_end.
+                'offer_start_date' => ['wameed_field' => 'offer_start',    'transform_type' => 'direct', 'transform_config' => null],
+                'offer_end_date'   => ['wameed_field' => 'offer_end',      'transform_type' => 'direct', 'transform_config' => null],
+                'image'            => ['wameed_field' => 'image_url',      'transform_type' => 'direct', 'transform_config' => null],
+                'barcode'          => ['wameed_field' => 'barcode',        'transform_type' => 'direct', 'transform_config' => null],
+                'is_active'        => ['wameed_field' => 'is_active',      'transform_type' => 'direct', 'transform_config' => null],
+                // NOTE: thawani_product_id, store_category_id, has_offer,
+                // wameed_product_id, sync_status, last_synced_at and quantity
+                // are intentionally NOT mapped — they are Thawani-internal or
+                // handled separately (category via categoryMappings, quantity
+                // via inventory, etc.).
+            ],
+            'category' => [
+                'name'    => ['wameed_field' => 'name',      'transform_type' => 'direct', 'transform_config' => null],
+                'name_ar' => ['wameed_field' => 'name_ar',   'transform_type' => 'direct', 'transform_config' => null],
+                'image'   => ['wameed_field' => 'image_url', 'transform_type' => 'direct', 'transform_config' => null],
+            ],
+        ];
+
+        return $defaults[$entityType] ?? [];
+    }
+
     private function applyColumnMappingsIncoming(array $thawaniData, array $mappings): array
     {
+        // When no DB mappings are configured, use the hardcoded defaults so
+        // that unmapped Thawani fields (thawani_product_id, store_category_id,
+        // sync_status, etc.) never leak into the Wameed model and cause a
+        // MassAssignmentException.
         if (empty($mappings)) {
-            return $thawaniData;
+            $mappings = $this->defaultColumnMappings('product');
         }
 
         $result = [];
