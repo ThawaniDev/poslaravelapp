@@ -347,6 +347,19 @@ class ThawaniService
         return $result;
     }
 
+    /**
+     * Pull all products from Thawani and upsert them into the Wameed catalog.
+     *
+     * Behaviour per product:
+     *  • Already mapped (ThawaniProductMapping exists with a product_id)
+     *    → UPDATE the existing Wameed product so prices/names stay in sync.
+     *  • Not yet mapped → CREATE a new product and save the mapping.
+     *
+     * Performance: all existing mappings for this store are loaded in ONE query
+     * before the loop so there are no N+1 queries during processing.
+     * All pages are fetched (per_page=100, Thawani's max) so 1 000+ products
+     * are fully pulled rather than only the first 50.
+     */
     public function pullProductsFromThawani(string $storeId): array
     {
         $client = new ThawaniApiClient($storeId);
@@ -356,70 +369,105 @@ class ThawaniService
             return ['success' => false, 'message' => 'Not connected to Thawani'];
         }
 
-        $result = $client->get('products');
+        $columnMappings  = ThawaniColumnMapping::getMappingsForEntity('product');
+        $categoryMappings = ThawaniCategoryMapping::where('store_id', $storeId)
+            ->pluck('category_id', 'thawani_category_id')
+            ->toArray();
 
-        if ($result['success'] && isset($result['data'])) {
-            $columnMappings = ThawaniColumnMapping::getMappingsForEntity('product');
-            $categoryMappings = ThawaniCategoryMapping::where('store_id', $storeId)
-                ->pluck('category_id', 'thawani_category_id')
-                ->toArray();
+        // Pre-load ALL existing mappings for this store in one query
+        // keyed by thawani_product_id so the inner loop never hits the DB
+        // for lookups (eliminates the N+1 pattern).
+        $existingMappings = ThawaniProductMapping::where('store_id', $storeId)
+            ->whereNotNull('product_id')
+            ->get(['thawani_product_id', 'product_id'])
+            ->keyBy('thawani_product_id');
 
-            // Products response is paginated: {data: [...], pagination: {...}}
+        $totalCreated = 0;
+        $totalUpdated = 0;
+        $lastResult   = null;
+        $page         = 1;
+        $perPage      = 100; // Thawani API max per_page
+
+        do {
+            $result     = $client->get('products', ['page' => $page, 'per_page' => $perPage]);
+            $lastResult = $result;
+
+            if (!$result['success'] || !isset($result['data'])) {
+                break;
+            }
+
             $productsData = isset($result['data']['data']) && is_array($result['data']['data'])
                 ? $result['data']['data']
                 : (is_array($result['data']) ? $result['data'] : []);
 
+            $lastPage = (int) ($result['data']['pagination']['last_page'] ?? 1);
+
             foreach ($productsData as $thawaniProduct) {
                 if (!isset($thawaniProduct['thawani_product_id'])) continue;
 
-                $mapped = $this->applyColumnMappingsIncoming($thawaniProduct, $columnMappings);
+                $thawaniId = $thawaniProduct['thawani_product_id'];
+                $mapped    = $this->applyColumnMappingsIncoming($thawaniProduct, $columnMappings);
 
-                // Map category
-                if (isset($thawaniProduct['store_category_id']) && isset($categoryMappings[$thawaniProduct['store_category_id']])) {
+                // Map Thawani category → Wameed category
+                if (isset($thawaniProduct['store_category_id'], $categoryMappings[$thawaniProduct['store_category_id']])) {
                     $mapped['category_id'] = $categoryMappings[$thawaniProduct['store_category_id']];
                 }
 
-                $existing = ThawaniProductMapping::where('store_id', $storeId)
-                    ->where('thawani_product_id', $thawaniProduct['thawani_product_id'])
-                    ->first();
+                $mapping = $existingMappings->get($thawaniId);
 
-                if ($existing && $existing->product_id) {
-                    $product = Product::find($existing->product_id);
+                if ($mapping) {
+                    // Already pulled before: update price/name/image to stay in sync.
+                    $product = Product::find($mapping->product_id);
                     if ($product) {
                         $product->update(array_filter($mapped));
                     }
+                    $totalUpdated++;
                 } else {
+                    // First time seeing this product: create it and record the mapping.
                     $product = Product::create(array_merge($mapped, [
                         'organization_id' => $config->store?->organization_id,
-                        'is_active' => true,
+                        'is_active'       => true,
                     ]));
 
                     ThawaniProductMapping::updateOrCreate(
-                        ['store_id' => $storeId, 'thawani_product_id' => $thawaniProduct['thawani_product_id']],
+                        ['store_id' => $storeId, 'thawani_product_id' => $thawaniId],
                         [
-                            'product_id' => $product->id,
-                            'is_published' => true,
+                            'product_id'     => $product->id,
+                            'is_published'   => true,
                             'last_synced_at' => now(),
                         ]
                     );
+
+                    // Add to local cache so duplicate entries in later pages don't re-create
+                    $existingMappings->put($thawaniId, (object)['thawani_product_id' => $thawaniId, 'product_id' => $product->id]);
+                    $totalCreated++;
                 }
             }
-        }
 
-        $pulledCount = isset($result['data']['data']) && is_array($result['data']['data'])
-            ? count($result['data']['data'])
-            : (is_array($result['data'] ?? null) ? count($result['data']) : 0);
+            $page++;
+        } while ($page <= $lastPage);
+
+        $totalPulled = $totalCreated + $totalUpdated;
 
         $this->logSync(
             $storeId, 'product', null, 'pull', 'incoming',
-            $result['success'] ? 'success' : 'failed',
+            ($lastResult['success'] ?? false) ? 'success' : 'failed',
             null,
-            ['count' => $pulledCount],
-            $result['success'] ? null : ($result['message'] ?? 'Pull products failed'),
-            $result['http_status'] ?? null,
+            [
+                'total'         => $totalPulled,
+                'created'       => $totalCreated,
+                'updated'       => $totalUpdated,
+                'pages_fetched' => $page - 1,
+            ],
+            ($lastResult['success'] ?? false) ? null : ($lastResult['message'] ?? 'Pull products failed'),
+            $lastResult['http_status'] ?? null,
         );
 
-        return $result;
+        return array_merge($lastResult ?? ['success' => false], [
+            'pulled_count'  => $totalPulled,
+            'created_count' => $totalCreated,
+            'updated_count' => $totalUpdated,
+        ]);
     }
 
     // ==================== Sync Queue ====================
