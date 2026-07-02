@@ -577,7 +577,13 @@ public function showSession(Request $request, string $session): JsonResponse
 
     public function products(Request $request): JsonResponse
     {
-        $query = Product::where('organization_id', $request->user()->organization_id)
+        $organizationId = $this->posCatalogOrganizationId($request);
+
+        if (! $organizationId) {
+            return $this->error(__('No organization context for product lookup.'), 400);
+        }
+
+        $query = Product::where('organization_id', $organizationId)
             ->where('is_active', true);
 
         if ($request->filled('category_id')) {
@@ -616,7 +622,13 @@ public function showSession(Request $request, string $session): JsonResponse
 
     public function customers(Request $request): JsonResponse
     {
-        $query = Customer::where('organization_id', $request->user()->organization_id);
+        $organizationId = $this->posCatalogOrganizationId($request);
+
+        if (! $organizationId) {
+            return $this->error(__('No organization context for customer lookup.'), 400);
+        }
+
+        $query = Customer::where('organization_id', $organizationId);
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -795,5 +807,28 @@ public function showSession(Request $request, string $session): JsonResponse
         }
 
         return $this->success(['results' => $results]);
+    }
+
+    /**
+     * Resolve the organization whose catalog the POS terminal should see.
+     *
+     * Priority:
+     *  1. The ACTIVE STORE's organization — from X-Store-Id header via the
+     *     branch.scope middleware (already validated against the user's
+     *     accessible stores) or the user's own store_id. This guarantees
+     *     scans/searches always hit the catalog of the store the terminal
+     *     is physically operating for, even if the user record's
+     *     organization_id is stale or belongs to a different tenant.
+     *  2. Fallback: the authenticated user's organization_id.
+     */
+    private function posCatalogOrganizationId(Request $request): ?string
+    {
+        $storeId = $this->resolvedStoreId($request) ?? $request->user()->store_id;
+
+        $organizationId = $storeId
+            ? \App\Domain\Core\Models\Store::where('id', $storeId)->value('organization_id')
+            : null;
+
+        return $organizationId ?? $request->user()->organization_id;
     }
 }
